@@ -5,7 +5,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "./ui/dialog";
-import { Mail, Lock, User } from "lucide-react";
+import { Mail, Lock, User, Phone, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "./ui/alert";
 import axios from 'axios';
 
 interface AuthCardProps {
@@ -14,30 +15,26 @@ interface AuthCardProps {
 }
 
 const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'forgot-password'>('signin');
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
   });
   const [signUpData, setSignUpData] = useState({
-    name: '',
+    full_name: '',
     email: '',
-    password: ''
+    password: '',
+    phone_number: ''
   });
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   
-  const toggleForm = () => {
-    setIsFlipped(!isFlipped);
-    // Reset form data when toggling
-    setSignInData({
-      email: '',
-      password: ''
-    });
-    setSignUpData({
-      name: '',
-      email: '',
-      password: ''
-    });
+  const toggleForm = (view: 'signin' | 'signup' | 'forgot-password') => {
+    setCurrentView(view);
+    setError('');
+    setSuccessMessage('');
   };
 
   const handleSignInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,21 +55,54 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     }));
   };
 
+  const validatePassword = (password: string) => {
+    // Password must be at least 8 characters long, contain letters and numbers
+    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    return regex.test(password);
+  };
+
+  const validateSafaricomPhone = (phone: string) => {
+    // Simple validation for Safaricom phone numbers
+    // This should be a valid Kenyan Safaricom number
+    // More complex validation would be done on the backend
+    const regex = /^(07\d{8}|01\d{8})$/;
+    return regex.test(phone);
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
     
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/login`,
+        `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
         { withCredentials: true }
       );
       
-      // Handle successful sign-in
+      setSuccessMessage('Login successful!');
       console.log('Sign in successful', response.data);
-      onClose();
+      
+      // Store the token in localStorage or a secure cookie
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+      }
+      
+      // Close the dialog after a short delay to show the success message
+      setTimeout(() => {
+        onClose();
+        // Optionally refresh the page or update the app state
+        window.location.reload();
+      }, 1500);
+      
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.error || 'Failed to sign in. Please check your credentials.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
       console.error('Error during sign in:', error);
     } finally {
       setIsLoading(false);
@@ -81,20 +111,72 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+
+    // Validate password
+    if (!validatePassword(signUpData.password)) {
+      setError('Password must be at least 8 characters long and contain both letters and numbers.');
+      return;
+    }
+
+    // Validate phone number
+    if (!validateSafaricomPhone(signUpData.phone_number)) {
+      setError('Please enter a valid Safaricom phone number (e.g., 0712345678).');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/signup`,
+        `${import.meta.env.VITE_API_URL}/auth/register`,
         signUpData,
         { withCredentials: true }
       );
       
-      // Handle successful sign-up
+      setSuccessMessage('Account created successfully! You can now sign in.');
       console.log('Sign up successful', response.data);
-      toggleForm(); // Flip to sign in after successful registration
+      
+      // Switch to sign in view after successful registration
+      setTimeout(() => {
+        toggleForm('signin');
+      }, 2000);
+      
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.msg || 'Failed to create account. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
       console.error('Error during sign up:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+    
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/forgot-password`,
+        { email: forgotPasswordEmail }
+      );
+      
+      setSuccessMessage('Password reset link sent to your email!');
+      console.log('Password reset requested', response.data);
+      
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.msg || 'Failed to request password reset. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+      console.error('Error during password reset request:', error);
     } finally {
       setIsLoading(false);
     }
@@ -103,29 +185,38 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
   const handleGoogleLogin = async () => {
     try {
       // Redirect to Google OAuth endpoint
-      window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`;
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
     } catch (error) {
       console.error('Error with Google login:', error);
+      setError('Failed to initiate Google login. Please try again.');
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] p-0 bg-transparent border-none shadow-none">
-        <div className="relative [perspective:1000px] w-full h-[580px]">
-          <div
-            className={cn(
-              "absolute w-full h-full transition-all duration-500 [transform-style:preserve-3d]",
-              isFlipped ? "[transform:rotateY(180deg)]" : ""
-            )}
-          >
-            {/* Sign In Side */}
-            <Card className="absolute w-full h-full [backface-visibility:hidden] p-6 glass-card">
+        <div className="relative w-full min-h-[580px]">
+          {/* Sign In View */}
+          {currentView === 'signin' && (
+            <Card className="w-full p-6 glass-card">
               <CardHeader className="space-y-1">
                 <CardTitle className="text-2xl text-gradient">Sign In</CardTitle>
                 <CardDescription>Enter your credentials to access your account</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {successMessage && (
+                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <form onSubmit={handleSignIn}>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -143,7 +234,16 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div className="space-y-2 mt-4">
-                    <Label htmlFor="password">Password</Label>
+                    <div className="flex justify-between items-center">
+                      <Label htmlFor="password">Password</Label>
+                      <button 
+                        type="button" 
+                        onClick={() => toggleForm('forgot-password')}
+                        className="text-sm text-pulse-purple hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input 
@@ -180,6 +280,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                 <Button 
                   className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-300"
                   onClick={handleGoogleLogin}
+                  type="button"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -194,7 +295,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                 <p className="text-sm text-muted-foreground text-center w-full">
                   Don't have an account?{" "}
                   <button
-                    onClick={toggleForm}
+                    onClick={() => toggleForm('signup')}
                     className="text-pulse-purple hover:underline font-medium"
                     type="button"
                   >
@@ -203,24 +304,39 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                 </p>
               </CardFooter>
             </Card>
+          )}
 
-            {/* Sign Up Side */}
-            <Card className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] p-6 glass-card">
+          {/* Sign Up View */}
+          {currentView === 'signup' && (
+            <Card className="w-full p-6 glass-card">
               <CardHeader className="space-y-1">
                 <CardTitle className="text-2xl text-gradient">Create Account</CardTitle>
                 <CardDescription>Enter your details to create your account</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {successMessage && (
+                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <form onSubmit={handleSignUp}>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-full_name">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input 
-                        id="signup-name" 
+                        id="signup-full_name" 
                         placeholder="Enter your full name" 
                         className="pl-10" 
-                        value={signUpData.name}
+                        value={signUpData.full_name}
                         onChange={handleSignUpChange}
                         required
                       />
@@ -242,6 +358,21 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div className="space-y-2 mt-4">
+                    <Label htmlFor="signup-phone_number">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <Input 
+                        id="signup-phone_number" 
+                        placeholder="Enter your Safaricom number" 
+                        className="pl-10" 
+                        value={signUpData.phone_number}
+                        onChange={handleSignUpChange}
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Must be a valid Safaricom number (e.g., 0712345678)</p>
+                  </div>
+                  <div className="space-y-2 mt-4">
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -255,6 +386,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         required
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">Password must be at least 8 characters long and include both letters and numbers</p>
                   </div>
                   <div className="mt-6">
                     <Button 
@@ -294,7 +426,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                 <p className="text-sm text-muted-foreground text-center w-full">
                   Already have an account?{" "}
                   <button
-                    onClick={toggleForm}
+                    onClick={() => toggleForm('signin')}
                     className="text-pulse-purple hover:underline font-medium"
                     type="button"
                   >
@@ -303,7 +435,70 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                 </p>
               </CardFooter>
             </Card>
-          </div>
+          )}
+
+          {/* Forgot Password View */}
+          {currentView === 'forgot-password' && (
+            <Card className="w-full p-6 glass-card">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl text-gradient">Forgot Password</CardTitle>
+                <CardDescription>Enter your email to receive a password reset link</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                {successMessage && (
+                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <form onSubmit={handleForgotPassword}>
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <Input 
+                        id="forgot-email" 
+                        placeholder="Enter your email" 
+                        type="email" 
+                        className="pl-10" 
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple" 
+                      type="submit"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+              <CardFooter className="pt-2">
+                <p className="text-sm text-muted-foreground text-center w-full">
+                  Remembered your password?{" "}
+                  <button
+                    onClick={() => toggleForm('signin')}
+                    className="text-pulse-purple hover:underline font-medium"
+                    type="button"
+                  >
+                    Back to Sign In
+                  </button>
+                </p>
+              </CardFooter>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>
