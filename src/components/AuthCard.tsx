@@ -15,7 +15,11 @@ interface AuthCardProps {
 
 const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [formData, setFormData] = useState({
+  const [signInData, setSignInData] = useState({
+    email: '',
+    password: ''
+  });
+  const [signUpData, setSignUpData] = useState({
     name: '',
     email: '',
     password: ''
@@ -25,18 +29,30 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
   const toggleForm = () => {
     setIsFlipped(!isFlipped);
     // Reset form data when toggling
-    setFormData({
+    setSignInData({
+      email: '',
+      password: ''
+    });
+    setSignUpData({
       name: '',
       email: '',
       password: ''
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    const fieldName = id.startsWith('signup-') ? id.replace('signup-', '') : id;
+    setSignInData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleSignUpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    const fieldName = id.replace('signup-', '');
     
-    setFormData(prev => ({
+    setSignUpData(prev => ({
       ...prev,
       [fieldName]: value
     }));
@@ -49,10 +65,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/login`,
-        { 
-          email: formData.email, 
-          password: formData.password 
-        },
+        signInData,
         { withCredentials: true }
       );
       
@@ -73,7 +86,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/signup`,
-        formData,
+        signUpData,
         { withCredentials: true }
       );
       
@@ -123,8 +136,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         placeholder="Enter your email" 
                         type="email" 
                         className="pl-10" 
-                        value={formData.email}
-                        onChange={handleInputChange}
+                        value={signInData.email}
+                        onChange={handleSignInChange}
                         required
                       />
                     </div>
@@ -138,8 +151,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         type="password" 
                         placeholder="Enter your password" 
                         className="pl-10" 
-                        value={formData.password}
-                        onChange={handleInputChange}
+                        value={signInData.password}
+                        onChange={handleSignInChange}
                         required
                       />
                     </div>
@@ -200,15 +213,15 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
               <CardContent className="space-y-4">
                 <form onSubmit={handleSignUp}>
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
+                    <Label htmlFor="signup-name">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input 
-                        id="name" 
+                        id="signup-name" 
                         placeholder="Enter your full name" 
                         className="pl-10" 
-                        value={formData.name}
-                        onChange={handleInputChange}
+                        value={signUpData.name}
+                        onChange={handleSignUpChange}
                         required
                       />
                     </div>
@@ -222,8 +235,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         placeholder="Enter your email" 
                         type="email" 
                         className="pl-10" 
-                        value={formData.email}
-                        onChange={handleInputChange}
+                        value={signUpData.email}
+                        onChange={handleSignUpChange}
                         required
                       />
                     </div>
@@ -237,8 +250,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         type="password" 
                         placeholder="Create a password" 
                         className="pl-10" 
-                        value={formData.password}
-                        onChange={handleInputChange}
+                        value={signUpData.password}
+                        onChange={handleSignUpChange}
                         required
                       />
                     </div>
