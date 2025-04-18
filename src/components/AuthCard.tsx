@@ -186,6 +186,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     try {
       // Redirect to Google OAuth endpoint
       window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
+
+  
     } catch (error) {
       console.error('Error with Google login:', error);
       setError('Failed to initiate Google login. Please try again.');
