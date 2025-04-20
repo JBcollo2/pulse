@@ -2,34 +2,71 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface User {
+  id: number;
+  full_name: string;
+  email: string;
+  phone_number: string;
+  role: string;
+}
 
 interface Organizer {
   id: number;
-  name: string;
+  full_name: string;
   email: string;
   phone_number: string;
-  events_count: number;
+  role: string;
+  organizer_profile?: {
+    company_name: string;
+    company_description: string;
+    website: string;
+    social_media_links: {
+      facebook?: string;
+      twitter?: string;
+      instagram?: string;
+      linkedin?: string;
+    };
+    business_registration_number: string;
+    tax_id: string;
+    address: string;
+    events_count: number;
+  };
 }
 
 const Organizer = () => {
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [newOrganizer, setNewOrganizer] = useState({
-    name: '',
-    email: '',
-    phone_number: ''
+    user_id: '',
+    company_name: '',
+    company_description: '',
+    website: '',
+    business_registration_number: '',
+    tax_id: '',
+    address: ''
   });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchOrganizers();
+    fetchUsers();
   }, []);
 
   const fetchOrganizers = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/organizers`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/organizers`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -52,10 +89,35 @@ const Organizer = () => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      // Filter out users who are already organizers
+      const nonOrganizerUsers = data.filter((user: User) => user.role !== 'ORGANIZER');
+      setUsers(nonOrganizerUsers);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch users",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAddOrganizer = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/organizers`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin/register-organizer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +132,18 @@ const Organizer = () => {
 
       const data = await response.json();
       setOrganizers([...organizers, data]);
-      setNewOrganizer({ name: '', email: '', phone_number: '' });
+      setNewOrganizer({
+        user_id: '',
+        company_name: '',
+        company_description: '',
+        website: '',
+        business_registration_number: '',
+        tax_id: '',
+        address: ''
+      });
+      
+      // Refresh users list to remove the newly added organizer
+      fetchUsers();
       
       toast({
         title: "Success",
@@ -101,6 +174,9 @@ const Organizer = () => {
 
       setOrganizers(organizers.filter(org => org.id !== id));
       
+      // Refresh users list to include the removed organizer
+      fetchUsers();
+      
       toast({
         title: "Success",
         description: "Organizer deleted successfully",
@@ -130,36 +206,80 @@ const Organizer = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAddOrganizer} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="user" className="text-sm font-medium">Select User</label>
+              <Select
+                value={newOrganizer.user_id}
+                onValueChange={(value) => setNewOrganizer({...newOrganizer, user_id: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.full_name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="companyName" className="text-sm font-medium">Company Name</label>
+              <Input
+                id="companyName"
+                value={newOrganizer.company_name}
+                onChange={(e) => setNewOrganizer({...newOrganizer, company_name: e.target.value})}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="companyDescription" className="text-sm font-medium">Company Description</label>
+              <Textarea
+                id="companyDescription"
+                value={newOrganizer.company_description}
+                onChange={(e) => setNewOrganizer({...newOrganizer, company_description: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">Name</label>
+                <label htmlFor="website" className="text-sm font-medium">Website</label>
                 <Input
-                  id="name"
-                  value={newOrganizer.name}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, name: e.target.value})}
-                  required
+                  id="website"
+                  value={newOrganizer.website}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, website: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <label htmlFor="businessRegNumber" className="text-sm font-medium">Business Registration Number</label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={newOrganizer.email}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, email: e.target.value})}
-                  required
+                  id="businessRegNumber"
+                  value={newOrganizer.business_registration_number}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, business_registration_number: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="phone" className="text-sm font-medium">Phone Number</label>
+                <label htmlFor="taxId" className="text-sm font-medium">Tax ID</label>
                 <Input
-                  id="phone"
-                  value={newOrganizer.phone_number}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, phone_number: e.target.value})}
-                  required
+                  id="taxId"
+                  value={newOrganizer.tax_id}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, tax_id: e.target.value})}
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label htmlFor="address" className="text-sm font-medium">Address</label>
+              <Textarea
+                id="address"
+                value={newOrganizer.address}
+                onChange={(e) => setNewOrganizer({...newOrganizer, address: e.target.value})}
+              />
+            </div>
+
             <Button type="submit">Add Organizer</Button>
           </form>
         </CardContent>
@@ -174,6 +294,7 @@ const Organizer = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Company</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Events</TableHead>
@@ -183,10 +304,11 @@ const Organizer = () => {
             <TableBody>
               {organizers.map((organizer) => (
                 <TableRow key={organizer.id}>
-                  <TableCell>{organizer.name}</TableCell>
+                  <TableCell>{organizer.full_name}</TableCell>
+                  <TableCell>{organizer.organizer_profile?.company_name}</TableCell>
                   <TableCell>{organizer.email}</TableCell>
                   <TableCell>{organizer.phone_number}</TableCell>
-                  <TableCell>{organizer.events_count}</TableCell>
+                  <TableCell>{organizer.organizer_profile?.events_count || 0}</TableCell>
                   <TableCell>
                     <Button
                       variant="outline"

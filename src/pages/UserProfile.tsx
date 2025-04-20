@@ -2,23 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 
 interface UserProfile {
-  first_name: string;
-  last_name: string;
+  id: number;
+  full_name: string;
   email: string;
   phone_number: string;
   role: string;
+  organizer_profile?: {
+    company_name: string;
+    company_description: string;
+    website: string;
+    social_media_links: {
+      facebook?: string;
+      twitter?: string;
+      instagram?: string;
+      linkedin?: string;
+    };
+    business_registration_number: string;
+    tax_id: string;
+    address: string;
+  };
 }
 
 const UserProfile = () => {
   const [profile, setProfile] = useState<UserProfile>({
-    first_name: '',
-    last_name: '',
+    id: 0,
+    full_name: '',
     email: '',
     phone_number: '',
-    role: ''
+    role: '',
+    organizer_profile: {
+      company_name: '',
+      company_description: '',
+      website: '',
+      social_media_links: {},
+      business_registration_number: '',
+      tax_id: '',
+      address: ''
+    }
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -26,7 +50,9 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/profile`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+
+          method: 'GET',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
@@ -55,7 +81,7 @@ const UserProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/profile`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -94,23 +120,13 @@ const UserProfile = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstName" className="text-sm font-medium">First Name</label>
-                <Input
-                  id="firstName"
-                  value={profile.first_name}
-                  onChange={(e) => setProfile({...profile, first_name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="lastName" className="text-sm font-medium">Last Name</label>
-                <Input
-                  id="lastName"
-                  value={profile.last_name}
-                  onChange={(e) => setProfile({...profile, last_name: e.target.value})}
-                />
-              </div>
+            <div className="space-y-2">
+              <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
+              <Input
+                id="fullName"
+                value={profile.full_name}
+                onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+              />
             </div>
             
             <div className="space-y-2">
@@ -119,7 +135,7 @@ const UserProfile = () => {
                 id="email"
                 type="email"
                 value={profile.email}
-                onChange={(e) => setProfile({...profile, email: e.target.value})}
+                disabled
               />
             </div>
             
@@ -140,6 +156,104 @@ const UserProfile = () => {
                 disabled
               />
             </div>
+
+            {profile.role === 'ORGANIZER' && profile.organizer_profile && (
+              <>
+                <div className="mt-6 pt-6 border-t">
+                  <h2 className="text-xl font-semibold mb-4">Organizer Profile</h2>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="companyName" className="text-sm font-medium">Company Name</label>
+                    <Input
+                      id="companyName"
+                      value={profile.organizer_profile.company_name}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          company_name: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="companyDescription" className="text-sm font-medium">Company Description</label>
+                    <Textarea
+                      id="companyDescription"
+                      value={profile.organizer_profile.company_description}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          company_description: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="website" className="text-sm font-medium">Website</label>
+                    <Input
+                      id="website"
+                      value={profile.organizer_profile.website}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          website: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="businessRegNumber" className="text-sm font-medium">Business Registration Number</label>
+                    <Input
+                      id="businessRegNumber"
+                      value={profile.organizer_profile.business_registration_number}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          business_registration_number: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="taxId" className="text-sm font-medium">Tax ID</label>
+                    <Input
+                      id="taxId"
+                      value={profile.organizer_profile.tax_id}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          tax_id: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="address" className="text-sm font-medium">Address</label>
+                    <Textarea
+                      id="address"
+                      value={profile.organizer_profile.address}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        organizer_profile: {
+                          ...profile.organizer_profile!,
+                          address: e.target.value
+                        }
+                      })}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
             
             <Button type="submit">Save Changes</Button>
           </form>
