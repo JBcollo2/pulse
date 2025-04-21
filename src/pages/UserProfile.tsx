@@ -53,9 +53,7 @@ const UserProfile = () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
 
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          credentials: 'include'
         });
         
         if (!response.ok) {
@@ -83,9 +81,10 @@ const UserProfile = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          
         },
         body: JSON.stringify(profile)
       });
