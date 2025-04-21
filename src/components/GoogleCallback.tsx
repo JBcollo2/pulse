@@ -1,37 +1,54 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useToast } from "@/components/ui/use-toast";
 
-const GoogleCallback: React.FC = () => {
+const GoogleCallback = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the URL to redirect back to
+        // Get the pre-auth URL from localStorage
         const preAuthUrl = localStorage.getItem('preAuthUrl');
-        localStorage.removeItem('preAuthUrl'); // Clean up
         
-        // Redirect back to the original URL or home page
-        if (preAuthUrl) {
-          window.location.href = preAuthUrl;
-        } else {
+        // Clear the pre-auth URL from localStorage
+        localStorage.removeItem('preAuthUrl');
+        
+        // Check if we have the access token cookie
+        const hasAccessToken = document.cookie.includes('access_token');
+        
+        if (!hasAccessToken) {
+          toast({
+            title: "Error",
+            description: "Failed to authenticate with Google. Please try again.",
+            variant: "destructive"
+          });
           navigate('/');
+          return;
         }
+
+        // Redirect to the original URL or home page
+        navigate(preAuthUrl || '/');
       } catch (error) {
         console.error('Error handling Google callback:', error);
-        navigate('/login');
+        toast({
+          title: "Error",
+          description: "An error occurred during authentication. Please try again.",
+          variant: "destructive"
+        });
+        navigate('/');
       }
     };
 
     handleCallback();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-4">Completing Sign In...</h2>
-        <p className="text-gray-600">Please wait while we redirect you back to the application.</p>
+        <h1 className="text-2xl font-bold mb-4">Redirecting...</h1>
+        <p>Please wait while we redirect you back to the application.</p>
       </div>
     </div>
   );

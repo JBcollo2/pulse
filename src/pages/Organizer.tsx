@@ -84,12 +84,40 @@ const Organizer = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch organizers');
+        if (response.status === 401) {
+          throw new Error('Unauthorized: Please login again');
+        }
+        if (response.status === 403) {
+          throw new Error('Forbidden: You do not have permission to view organizers');
+        }
+        throw new Error(`Failed to fetch organizers: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setOrganizers(data);
+      
+      // Validate and transform the data
+      const validatedOrganizers = data.map((org: any) => ({
+        id: Number(org.id),
+        full_name: org.full_name || 'N/A',
+        email: org.email || 'N/A',
+        phone_number: org.phone_number || 'N/A',
+        role: org.role || 'N/A',
+        organizer_profile: org.organizer_profile ? {
+          company_name: org.organizer_profile.company_name || 'N/A',
+          company_description: org.organizer_profile.company_description || '',
+          website: org.organizer_profile.website || '',
+          business_registration_number: org.organizer_profile.business_registration_number || '',
+          tax_id: org.organizer_profile.tax_id || '',
+          address: org.organizer_profile.address || '',
+          events_count: Number(org.organizer_profile.events_count) || 0,
+          company_logo: org.organizer_profile.company_logo || null,
+          social_media_links: org.organizer_profile.social_media_links || {}
+        } : null
+      }));
+
+      setOrganizers(validatedOrganizers);
     } catch (error) {
+      console.error('Error fetching organizers:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to fetch organizers",
@@ -212,7 +240,21 @@ const Organizer = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!loading && organizers.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No organizers found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -365,6 +407,9 @@ const Organizer = () => {
                         src={organizer.organizer_profile.company_logo} 
                         alt={`${organizer.organizer_profile.company_name} logo`}
                         className="w-10 h-10 object-cover rounded-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-logo.png';
+                        }}
                       />
                     ) : (
                       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
@@ -373,7 +418,7 @@ const Organizer = () => {
                     )}
                   </TableCell>
                   <TableCell>{organizer.full_name}</TableCell>
-                  <TableCell>{organizer.organizer_profile?.company_name}</TableCell>
+                  <TableCell>{organizer.organizer_profile?.company_name || 'N/A'}</TableCell>
                   <TableCell>{organizer.email}</TableCell>
                   <TableCell>{organizer.phone_number}</TableCell>
                   <TableCell>{organizer.organizer_profile?.events_count || 0}</TableCell>
