@@ -79,16 +79,16 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
-        { withCredentials: true }
+        { 
+          withCredentials: true,  // This is important for cookies
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
       
       setSuccessMessage('Login successful!');
       console.log('Sign in successful', response.data);
-      
-      // Store the token in localStorage or a secure cookie
-      if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-      }
       
       // Close the dialog after a short delay to show the success message
       setTimeout(() => {
@@ -184,10 +184,12 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleLogin = async () => {
     try {
+      // Store the current URL to redirect back after Google login
+      const currentUrl = window.location.href;
+      localStorage.setItem('preAuthUrl', currentUrl);
+      
       // Redirect to Google OAuth endpoint
       window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
-
-  
     } catch (error) {
       console.error('Error with Google login:', error);
       setError('Failed to initiate Google login. Please try again.');

@@ -24,9 +24,7 @@ const Tickets = () => {
     const fetchTickets = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/tickets`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          credentials: 'include'
         });
         
         if (!response.ok) {
@@ -49,9 +47,7 @@ const Tickets = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/tickets/${ticketId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
