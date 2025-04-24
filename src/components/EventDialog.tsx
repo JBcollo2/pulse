@@ -13,10 +13,17 @@ import {
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { Plus, Trash2 } from "lucide-react";
 
 interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface TicketType {
+  type_name: string;
+  price: number;
+  quantity: number;
 }
 
 interface EventFormData {
@@ -28,7 +35,10 @@ interface EventFormData {
   end_time: string;
   location: string;
   image: File | null;
+  ticket_types: TicketType[];
 }
+
+const TICKET_TYPES = ["REGULAR", "VIP", "EARLY_BIRD", "GROUP", "STUDENT"];
 
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) => {
   const [newEvent, setNewEvent] = useState<EventFormData>({
@@ -39,9 +49,33 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
     start_time: '',
     end_time: '',
     location: '',
-    image: null
+    image: null,
+    ticket_types: []
   });
   const { toast } = useToast();
+
+  const handleAddTicketType = () => {
+    setNewEvent(prev => ({
+      ...prev,
+      ticket_types: [...prev.ticket_types, { type_name: TICKET_TYPES[0], price: 0, quantity: 0 }]
+    }));
+  };
+
+  const handleRemoveTicketType = (index: number) => {
+    setNewEvent(prev => ({
+      ...prev,
+      ticket_types: prev.ticket_types.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleTicketTypeChange = (index: number, field: keyof TicketType, value: string | number) => {
+    setNewEvent(prev => ({
+      ...prev,
+      ticket_types: prev.ticket_types.map((ticket, i) => 
+        i === index ? { ...ticket, [field]: value } : ticket
+      )
+    }));
+  };
 
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +104,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
       // Log the data before sending
       console.log('Event data before sending:', newEvent);
       
-      // Append all form fields to FormData
+      
       Object.entries(newEvent).forEach(([key, value]) => {
         if (key === 'image' && value instanceof File) {
           formData.append('file', value);
@@ -80,34 +114,55 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
           if (format(value, 'yyyy-MM-dd') !== format(newEvent.date, 'yyyy-MM-dd')) {
             formData.append('end_date', format(value, 'yyyy-MM-dd'));
           }
-        } else if (typeof value === 'string' && value !== '') {
+        } else if (key !== 'ticket_types' && typeof value === 'string' && value !== '') {
           formData.append(key, value);
         }
       });
 
-      // Log the FormData contents
-      console.log('FormData contents:');
-      for (let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
+      // First create the event
+      const eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!eventResponse.ok) {
+        const errorData = await eventResponse.json();
         console.error('Error response:', errorData);
         throw new Error(errorData.message || 'Failed to create event');
       }
 
-      const data = await response.json();
+      const eventData = await eventResponse.json();
+      const eventId = eventData.id;
+
+      // Then create ticket types for the event
+      if (newEvent.ticket_types.length > 0) {
+        for (const ticketType of newEvent.ticket_types) {
+          const ticketTypeResponse = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              event_id: eventId,
+              type_name: ticketType.type_name,
+              price: ticketType.price,
+              quantity: ticketType.quantity
+            })
+          });
+
+          if (!ticketTypeResponse.ok) {
+            const errorData = await ticketTypeResponse.json();
+            console.error('Error creating ticket type:', errorData);
+            throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
+          }
+        }
+      }
       
       toast({
         title: "Success",
-        description: "Event created successfully",
+        description: "Event and ticket types created successfully",
         variant: "default"
       });
       
@@ -120,7 +175,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
         start_time: '',
         end_time: '',
         location: '',
-        image: null
+        image: null,
+        ticket_types: []
       });
     } catch (error) {
       console.error('Error creating event:', error);
@@ -179,7 +235,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                   value={newEvent.start_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    // Add seconds to the time
                     setNewEvent({...newEvent, start_time: time + ':00'});
                   }}
                   required
@@ -204,7 +259,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                   value={newEvent.end_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    // Add seconds to the time
                     setNewEvent({...newEvent, end_time: time + ':00'});
                   }}
                 />
@@ -236,6 +290,69 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
               }}
             />
             <p className="text-xs text-muted-foreground">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Ticket Types</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddTicketType}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Ticket Type
+              </Button>
+            </div>
+            
+            {newEvent.ticket_types.map((ticket, index) => (
+              <div key={index} className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={ticket.type_name}
+                    onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
+                  >
+                    {TICKET_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Price</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={ticket.price}
+                    onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantity</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={ticket.quantity}
+                      onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value))}
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveTicketType(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="flex justify-end space-x-2">

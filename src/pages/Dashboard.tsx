@@ -8,6 +8,8 @@ import Tickets from './Tickets';
 import QRScanner from './QRScanner';
 import UserProfile from './UserProfile';
 import Organizer from './Organizer';
+import Admin from './Admin';
+
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -54,11 +56,12 @@ const Dashboard = () => {
           
           {/* Main Content */}
           <div className="flex-1">
-            {activeTab === "overview" && <Overview />}
+            {activeTab === "overview" && <Admin />}
             {activeTab === "tickets" && <Tickets />}
             {activeTab === "scanner" && <QRScanner />}
             {activeTab === "organizers" && <Organizer />}
             {activeTab === "profile" && <UserProfile />}
+            {activeTab === "admin" && <Admin />}
           </div>
         </div>
       </main>
