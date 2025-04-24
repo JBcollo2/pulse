@@ -55,21 +55,44 @@ const RecentEvents = () => {
     const fetchEvents = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/events`, {
-          credentials: 'include'
+          credentials: 'include',
+        
         });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch events');
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch events');
         }
 
         const data = await response.json();
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format: expected an array of events');
+        }
+
         setEvents(data);
 
         // Calculate statistics
         const totalEvents = data.length;
-        const activeEvents = data.filter(event => event.status === 'active').length;
-        const totalTickets = data.reduce((sum, event) => sum + (event.tickets_sold || 0), 0);
-        const totalRevenue = data.reduce((sum, event) => sum + (event.revenue || 0), 0);
+        const activeEvents = data.filter(event => {
+          const eventDate = new Date(event.date);
+          return eventDate > new Date();
+        }).length;
+        
+        const totalTickets = data.reduce((sum, event) => {
+          return sum + (event.tickets?.reduce((ticketSum, ticket) => 
+            ticket.payment_status === 'completed' ? ticketSum + (ticket.quantity || 0) : ticketSum, 0) || 0);
+        }, 0);
+        
+        const totalRevenue = data.reduce((sum, event) => {
+          return sum + (event.tickets?.reduce((revenueSum, ticket) => {
+            if (ticket.payment_status === 'completed') {
+              const ticketType = event.ticket_types?.find(type => type.type_name === ticket.type_name);
+              return revenueSum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+            }
+            return revenueSum;
+          }, 0) || 0);
+        }, 0);
 
         // Group events by month
         const eventsByMonth = data.reduce((acc: Record<string, number>, event) => {
@@ -80,7 +103,14 @@ const RecentEvents = () => {
 
         // Group revenue by event
         const revenueByEvent = data.reduce((acc: Record<string, number>, event) => {
-          acc[event.name] = (acc[event.name] || 0) + (event.revenue || 0);
+          const eventRevenue = event.tickets?.reduce((sum, ticket) => {
+            if (ticket.payment_status === 'completed') {
+              const ticketType = event.ticket_types?.find(type => type.type_name === ticket.type_name);
+              return sum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+            }
+            return sum;
+          }, 0) || 0;
+          acc[event.name] = (acc[event.name] || 0) + eventRevenue;
           return acc;
         }, {});
 
@@ -102,7 +132,7 @@ const RecentEvents = () => {
         console.error('Error fetching events:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch events",
+          description: error instanceof Error ? error.message : "Failed to fetch events",
           variant: "destructive",
         });
       } finally {
