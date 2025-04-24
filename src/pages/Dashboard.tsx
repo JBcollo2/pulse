@@ -8,6 +8,7 @@ import Tickets from './Tickets';
 import QRScanner from './QRScanner';
 import UserProfile from './UserProfile';
 import Organizer from './Organizer';
+import Admin from './Admin';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -33,6 +34,7 @@ const Dashboard = () => {
                     { id: "scanner", name: "QR Scanner", icon: QrCode },
                     { id: "organizers", name: "Organizers", icon: Users },
                     { id: "profile", name: "Profile", icon: Settings },
+                    { id: "admin", name: "Admin", icon: Settings },
                   ].map((item) => (
                     <button
                       key={item.id}
@@ -59,6 +61,7 @@ const Dashboard = () => {
             {activeTab === "scanner" && <QRScanner />}
             {activeTab === "organizers" && <Organizer />}
             {activeTab === "profile" && <UserProfile />}
+            {activeTab === "admin" && <Admin isOpen={true} onClose={() => setActiveTab("overview")} />}
           </div>
         </div>
       </main>
