@@ -35,6 +35,7 @@ const Dashboard = () => {
                     { id: "scanner", name: "QR Scanner", icon: QrCode },
                     { id: "organizers", name: "Organizers", icon: Users },
                     { id: "profile", name: "Profile", icon: Settings },
+                    { id: "admin", name: "Admin", icon: Settings },
                   ].map((item) => (
                     <button
                       key={item.id}
