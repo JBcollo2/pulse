@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, MapPin, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,8 @@ interface FeaturedEventProps {
   location: string;
   image: string;
   price: string;
+  onLike?: () => Promise<void>;
+  likesCount?: number;
 }
 
 const FeaturedEvent: React.FC<FeaturedEventProps> = ({

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import EventCard from './EventCard';
 import { Button } from '@/components/ui/button';
@@ -7,89 +6,30 @@ import { Calendar, Flame, Sparkles, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
-// Sample event data
-const events = [
-  {
-    id: '1',
-    title: 'Summer Music Festival',
-    date: 'Sat, Jun 15, 2025',
-    time: '2:00 PM',
-    location: 'Central Park, New York',
-    image: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$49.99',
-    category: 'Music',
-    trending: true,
-    upcoming: true
-  },
-  {
-    id: '2',
-    title: 'International Film Festival',
-    date: 'Fri, May 23, 2025',
-    time: '7:00 PM',
-    location: 'Lincoln Center, New York',
-    image: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$24.99',
-    category: 'Film',
-    trending: true,
-    upcoming: true
-  },
-  {
-    id: '3',
-    title: 'Tech Conference 2025',
-    date: 'Mon, Jul 10, 2025',
-    time: '9:00 AM',
-    location: 'Convention Center, San Francisco',
-    image: 'https://images.unsplash.com/photo-1540304453527-62f979142a17?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$99.99',
-    category: 'Tech',
-    upcoming: true
-  },
-  {
-    id: '4',
-    title: 'Broadway: Hamilton',
-    date: 'Wed, Jun 5, 2025',
-    time: '8:00 PM',
-    location: 'Richard Rodgers Theatre, NY',
-    image: 'https://images.unsplash.com/photo-1503095396549-807759245b35?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$199.99',
-    category: 'Theater',
-    trending: true
-  },
-  {
-    id: '5',
-    title: 'Food & Wine Festival',
-    date: 'Sat, Aug 12, 2025',
-    time: '12:00 PM',
-    location: 'Riverfront Park, Chicago',
-    image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$75.00',
-    category: 'Food',
-    upcoming: true
-  },
-  {
-    id: '6',
-    title: 'NBA Finals Game 5',
-    date: 'Thu, Jun 19, 2025',
-    time: '9:00 PM',
-    location: 'Madison Square Garden, NY',
-    image: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80',
-    price: '$350.00',
-    category: 'Sports',
-    trending: true
-  }
-];
-
-// Get today's date in format MM/DD/YYYY for comparison
-const today = new Date().toLocaleDateString('en-US');
-
-// Add today property to events
-const eventsWithToday = events.map(event => {
-  const eventDate = new Date(event.date.split(', ')[1]).toLocaleDateString('en-US');
-  return {
-    ...event,
-    today: eventDate === today
+interface Event {
+  id: number;
+  name: string;
+  description: string;
+  date: string;
+  start_time: string;
+  end_time: string | null;
+  location: string;
+  image: string | null;
+  organizer_id: number;
+  featured: boolean;
+  likes_count: number;
+  organizer: {
+    id: number;
+    company_name: string;
+    company_description: string;
   };
-});
+}
+
+interface EventsSectionProps {
+  events: Event[];
+  onLike: (eventId: number) => Promise<void>;
+  showLikes?: boolean;
+}
 
 const tabs = [
   { id: 'all', label: 'All Events', icon: Sparkles },
@@ -98,25 +38,27 @@ const tabs = [
   { id: 'upcoming', label: 'Upcoming', icon: Calendar }
 ];
 
-const EventsSection = () => {
+const EventsSection: React.FC<EventsSectionProps> = ({ events, onLike, showLikes = false }) => {
   const [activeTab, setActiveTab] = useState('all');
-  const [filteredEvents, setFilteredEvents] = useState(eventsWithToday);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     filterEvents();
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, events]);
 
   const filterEvents = () => {
-    let result = eventsWithToday;
+    let result = events;
     
     // Filter by tab
     if (activeTab === 'trending') {
-      result = result.filter(event => event.trending);
+      result = result.filter(event => event.likes_count > 0);
     } else if (activeTab === 'today') {
-      result = result.filter(event => event.today);
+      const today = new Date().toISOString().split('T')[0];
+      result = result.filter(event => event.date === today);
     } else if (activeTab === 'upcoming') {
-      result = result.filter(event => event.upcoming);
+      const today = new Date().toISOString().split('T')[0];
+      result = result.filter(event => event.date >= today);
     }
     
     // Filter by search query
@@ -124,9 +66,9 @@ const EventsSection = () => {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         event => 
-          event.title.toLowerCase().includes(query) ||
-          event.location.toLowerCase().includes(query) ||
-          event.category.toLowerCase().includes(query)
+          event.name.toLowerCase().includes(query) ||
+          event.description.toLowerCase().includes(query) ||
+          event.location.toLowerCase().includes(query)
       );
     }
     
@@ -181,8 +123,26 @@ const EventsSection = () => {
       {filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event) => (
-            <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${parseInt(event.id) * 0.1}s` }}>
-              <EventCard {...event} />
+            <div key={event.id} className="animate-fade-in" style={{ animationDelay: `${event.id * 0.1}s` }}>
+              <EventCard
+                id={event.id.toString()}
+                title={event.name}
+                description={event.description}
+                date={new Date(event.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+                time={`${event.start_time} - ${event.end_time || 'Till Late'}`}
+                location={event.location}
+                image={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
+                price="Starting from $129.99"
+                category="Event"
+                onLike={() => onLike(event.id)}
+                likesCount={event.likes_count}
+                showLikes={showLikes}
+              />
             </div>
           ))}
         </div>

@@ -38,7 +38,7 @@ interface EventFormData {
   ticket_types: TicketType[];
 }
 
-const TICKET_TYPES = ["REGULAR", "VIP", "EARLY_BIRD", "GROUP", "STUDENT"];
+const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
 
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) => {
   const [newEvent, setNewEvent] = useState<EventFormData>({
@@ -155,6 +155,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
           if (!ticketTypeResponse.ok) {
             const errorData = await ticketTypeResponse.json();
             console.error('Error creating ticket type:', errorData);
+            console.error('Request payload:', {
+              event_id: eventId,
+              type_name: ticketType.type_name,
+              price: ticketType.price,
+              quantity: ticketType.quantity
+            });
             throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
           }
         }
