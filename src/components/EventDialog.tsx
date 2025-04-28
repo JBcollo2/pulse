@@ -104,6 +104,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
       // Log the data before sending
       console.log('Event data before sending:', newEvent);
       
+      // Log the time values specifically
+      console.log('Start time value:', newEvent.start_time);
+      console.log('End time value:', newEvent.end_time);
       
       Object.entries(newEvent).forEach(([key, value]) => {
         if (key === 'image' && value instanceof File) {
@@ -155,12 +158,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
           if (!ticketTypeResponse.ok) {
             const errorData = await ticketTypeResponse.json();
             console.error('Error creating ticket type:', errorData);
-            console.error('Request payload:', {
-              event_id: eventId,
-              type_name: ticketType.type_name,
-              price: ticketType.price,
-              quantity: ticketType.quantity
-            });
             throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
           }
         }
@@ -241,7 +238,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                   value={newEvent.start_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    setNewEvent({...newEvent, start_time: time + ':00'});
+                    setNewEvent({...newEvent, start_time: time});
                   }}
                   required
                 />
@@ -265,7 +262,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                   value={newEvent.end_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    setNewEvent({...newEvent, end_time: time + ':00'});
+                    setNewEvent({...newEvent, end_time: time});
                   }}
                 />
               </div>
