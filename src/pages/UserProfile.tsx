@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { EventDialog } from "@/components/EventDialog";
 
 interface UserProfile {
   id: number;
@@ -46,16 +47,14 @@ const UserProfile = () => {
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [showEventDialog, setShowEventDialog] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
-
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          credentials: 'include'
         });
         
         if (!response.ok) {
@@ -83,9 +82,9 @@ const UserProfile = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify(profile)
       });
@@ -112,7 +111,19 @@ const UserProfile = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Profile Settings</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Profile Settings</h1>
+        {profile.role === 'ORGANIZER' && (
+          <Button variant="outline" onClick={() => setShowEventDialog(true)}>
+            Add Event
+          </Button>
+        )}
+      </div>
+
+      <EventDialog 
+        open={showEventDialog} 
+        onOpenChange={setShowEventDialog} 
+      />
       
       <Card>
         <CardHeader>

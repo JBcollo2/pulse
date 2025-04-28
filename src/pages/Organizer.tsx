@@ -19,6 +19,7 @@ interface User {
   email: string;
   phone_number: string;
   role: string;
+  is_organizer: boolean;
 }
 
 interface Organizer {
@@ -41,6 +42,7 @@ interface Organizer {
     tax_id: string;
     address: string;
     events_count: number;
+    company_logo?: string;
   };
 }
 
@@ -48,6 +50,7 @@ const Organizer = () => {
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [newOrganizer, setNewOrganizer] = useState({
     user_id: '',
     company_name: '',
@@ -55,7 +58,8 @@ const Organizer = () => {
     website: '',
     business_registration_number: '',
     tax_id: '',
-    address: ''
+    address: '',
+    company_logo: null as File | null
   });
   const { toast } = useToast();
 
@@ -64,21 +68,56 @@ const Organizer = () => {
     fetchUsers();
   }, []);
 
+  // Add debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchOrganizers = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/organizers`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch organizers');
+        if (response.status === 401) {
+          throw new Error('Unauthorized: Please login again');
+        }
+        if (response.status === 403) {
+          throw new Error('Forbidden: You do not have permission to view organizers');
+        }
+        throw new Error(`Failed to fetch organizers: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setOrganizers(data);
+      
+      // Validate and transform the data
+      const validatedOrganizers = data.map((org: any) => ({
+        id: Number(org.id),
+        full_name: org.full_name || 'N/A',
+        email: org.email || 'N/A',
+        phone_number: org.phone_number || 'N/A',
+        role: org.role || 'N/A',
+        organizer_profile: org.organizer_profile ? {
+          company_name: org.organizer_profile.company_name || 'N/A',
+          company_description: org.organizer_profile.company_description || '',
+          website: org.organizer_profile.website || '',
+          business_registration_number: org.organizer_profile.business_registration_number || '',
+          tax_id: org.organizer_profile.tax_id || '',
+          address: org.organizer_profile.address || '',
+          events_count: Number(org.organizer_profile.events_count) || 0,
+          company_logo: org.organizer_profile.company_logo || null,
+          social_media_links: org.organizer_profile.social_media_links || {}
+        } : null
+      }));
+
+      setOrganizers(validatedOrganizers);
     } catch (error) {
+      console.error('Error fetching organizers:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to fetch organizers",
@@ -91,10 +130,13 @@ const Organizer = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const url = new URL(`${import.meta.env.VITE_API_URL}/auth/users`);
+      if (searchQuery) {
+        url.searchParams.append('search', searchQuery);
+      }
+
+      const response = await fetch(url.toString(), {
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -103,7 +145,7 @@ const Organizer = () => {
       
       const data = await response.json();
       // Filter out users who are already organizers
-      const nonOrganizerUsers = data.filter((user: User) => user.role !== 'ORGANIZER');
+      const nonOrganizerUsers = data.filter((user: User) => !user.is_organizer);
       setUsers(nonOrganizerUsers);
     } catch (error) {
       toast({
@@ -117,13 +159,21 @@ const Organizer = () => {
   const handleAddOrganizer = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const formData = new FormData();
+      
+      // Append all form fields to FormData
+      Object.entries(newOrganizer).forEach(([key, value]) => {
+        if (key === 'company_logo' && value) {
+          formData.append(key, value);
+        } else if (value !== null) {
+          formData.append(key, value);
+        }
+      });
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/admin/register-organizer`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(newOrganizer)
+        credentials: 'include',
+        body: formData
       });
 
       if (!response.ok) {
@@ -139,7 +189,8 @@ const Organizer = () => {
         website: '',
         business_registration_number: '',
         tax_id: '',
-        address: ''
+        address: '',
+        company_logo: null
       });
       
       // Refresh users list to remove the newly added organizer
@@ -163,9 +214,7 @@ const Organizer = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/organizers/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -191,7 +240,21 @@ const Organizer = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!loading && organizers.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">No organizers found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -208,21 +271,38 @@ const Organizer = () => {
           <form onSubmit={handleAddOrganizer} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="user" className="text-sm font-medium">Select User</label>
-              <Select
-                value={newOrganizer.user_id}
-                onValueChange={(value) => setNewOrganizer({...newOrganizer, user_id: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a user" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.full_name} ({user.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Input
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+                <Select
+                  value={newOrganizer.user_id}
+                  onValueChange={(value) => setNewOrganizer({...newOrganizer, user_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.length > 0 ? (
+                      users.map((user) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          <div className="flex items-center space-x-2">
+                            <span>{user.full_name}</span>
+                            <span className="text-sm text-muted-foreground">({user.email})</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-muted-foreground">
+                        No users found
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -280,6 +360,22 @@ const Organizer = () => {
               />
             </div>
 
+            <div className="space-y-2">
+              <label htmlFor="companyLogo" className="text-sm font-medium">Company Logo</label>
+              <Input
+                id="companyLogo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setNewOrganizer({...newOrganizer, company_logo: file});
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">Upload your company logo (PNG, JPG, JPEG, GIF, WEBP)</p>
+            </div>
+
             <Button type="submit">Add Organizer</Button>
           </form>
         </CardContent>
@@ -293,6 +389,7 @@ const Organizer = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Logo</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Email</TableHead>
@@ -304,8 +401,24 @@ const Organizer = () => {
             <TableBody>
               {organizers.map((organizer) => (
                 <TableRow key={organizer.id}>
+                  <TableCell>
+                    {organizer.organizer_profile?.company_logo ? (
+                      <img 
+                        src={organizer.organizer_profile.company_logo} 
+                        alt={`${organizer.organizer_profile.company_name} logo`}
+                        className="w-10 h-10 object-cover rounded-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder-logo.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-gray-500">No logo</span>
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>{organizer.full_name}</TableCell>
-                  <TableCell>{organizer.organizer_profile?.company_name}</TableCell>
+                  <TableCell>{organizer.organizer_profile?.company_name || 'N/A'}</TableCell>
                   <TableCell>{organizer.email}</TableCell>
                   <TableCell>{organizer.phone_number}</TableCell>
                   <TableCell>{organizer.organizer_profile?.events_count || 0}</TableCell>

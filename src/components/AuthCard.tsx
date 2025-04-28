@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { Mail, Lock, User, Phone, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import axios from 'axios';
+import { toast } from "@/components/ui/use-toast";
 
 interface AuthCardProps {
   isOpen: boolean;
@@ -79,16 +80,16 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
-        { withCredentials: true }
+        { 
+          withCredentials: true,  // This is important for cookies
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
       
       setSuccessMessage('Login successful!');
       console.log('Sign in successful', response.data);
-      
-      // Store the token in localStorage or a secure cookie
-      if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-      }
       
       // Close the dialog after a short delay to show the success message
       setTimeout(() => {
@@ -182,15 +183,34 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     try {
+      // Store the current URL to redirect back after Google login
+      const currentUrl = window.location.href;
+      localStorage.setItem('preAuthUrl', currentUrl);
+      
+      // Log the API URL for debugging
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+      
+      // Construct the Google login URL
+      const googleLoginUrl = `${import.meta.env.VITE_API_URL}/auth/login/google`;
+      console.log('Google Login URL:', googleLoginUrl);
+      
       // Redirect to Google OAuth endpoint
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
-
-  
+      window.location.href = googleLoginUrl;
     } catch (error) {
-      console.error('Error with Google login:', error);
-      setError('Failed to initiate Google login. Please try again.');
+      console.error('Error initiating Google login:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      toast({
+        title: "Error",
+        description: "Failed to initiate Google login. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

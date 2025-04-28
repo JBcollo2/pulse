@@ -12,7 +12,7 @@ import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import EventDetails from "./pages/EventDetails";
-
+import GoogleCallback from "./components/GoogleCallback";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -31,6 +31,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="*" element={<NotFound />} />
+            <Route path="/auth/callback/google" element={<GoogleCallback />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

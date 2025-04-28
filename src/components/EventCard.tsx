@@ -8,74 +8,88 @@ import { Link } from 'react-router-dom';
 interface EventCardProps {
   id: string;
   title: string;
+  description: string;
   date: string;
   time: string;
   location: string;
   image: string;
   price: string;
   category: string;
+  onLike?: () => Promise<void>;
+  likesCount?: number;
+  showLikes?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
   id,
   title,
+  description,
   date,
   time,
   location,
   image,
   price,
-  category
+  category,
+  onLike,
+  likesCount = 0,
+  showLikes = false
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!onLike || isLiking) return;
+
+    try {
+      setIsLiking(true);
+      await onLike();
+      setIsLiked(true);
+    } catch (error) {
+      console.error('Error liking event:', error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   return (
-    <Link to={`/event/${id}`} className="block">
-      <div 
-        className={cn(
-          "glass-card overflow-hidden transition-all duration-300 group",
-          isHovered && "transform scale-[1.02] shadow-xl"
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="relative aspect-[4/3] overflow-hidden">
+    <Link to={`/event/${id}`} className="group">
+      <div className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="relative">
           <img 
             src={image} 
             alt={title} 
-            className={cn(
-              "w-full h-full object-cover transition-transform duration-500",
-              isHovered && "scale-110"
-            )}
+            className="w-full h-48 object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-          
           <Badge 
-            className="absolute top-4 left-4 bg-pulse-purple hover:bg-pulse-purple text-white animate-fade-in" 
+            className="absolute top-4 left-4 bg-pulse-purple hover:bg-pulse-purple text-white" 
             variant="secondary"
           >
             {category}
           </Badge>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-3 right-3 text-white hover:text-pulse-purple hover:bg-white/10 rounded-full"
-            onClick={(e) => {
-              e.preventDefault();
-              setIsFavorite(!isFavorite);
-            }}
-          >
-            <Heart className={cn("h-5 w-5 transition-all", isFavorite && "fill-pulse-purple text-pulse-purple")} />
-          </Button>
+          {showLikes && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-700",
+                isLiked && "text-red-500"
+              )}
+              onClick={handleLike}
+              disabled={isLiking}
+            >
+              <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+              {likesCount > 0 && (
+                <span className="ml-1 text-sm">{likesCount}</span>
+              )}
+            </Button>
+          )}
         </div>
         
         <div className="p-5">
-          <Link to={`/event/${id}`}>
-            <h3 className="text-xl font-bold line-clamp-2 mb-3 group-hover:text-pulse-purple transition-colors">
-              {title}
-            </h3>
-          </Link>
+          <h3 className="text-xl font-bold line-clamp-2 mb-3 group-hover:text-pulse-purple transition-colors">
+            {title}
+          </h3>
           
           <div className="space-y-2 mb-5">
             <div className="flex items-center text-muted-foreground">
