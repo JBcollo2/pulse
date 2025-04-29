@@ -6,22 +6,38 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
+// Define User type for consistency
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  phone_number?: string;
+  // Add other user properties if they exist
+}
+
 interface UserManagementProps {
   view: 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'nonAttendees';
   onRegister: (data: any) => Promise<void>;
-  users?: any[];
+  users?: User[]; // Expects the already fetched/filtered list from parent
   isLoading: boolean;
   error?: string;
   successMessage?: string;
+  // Props for search handled by parent (AdminDashboard)
+  searchTerm?: string; // Current search term passed down
+  onSearchTermChange?: (term: string) => void; // Handler to call when search input changes
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({
   view,
   onRegister,
-  users,
+  users, // The list of users (either full or filtered) is passed down
   isLoading,
   error,
-  successMessage
+  successMessage,
+  // Destructure search props
+  searchTerm,
+  onSearchTermChange // Handler from AdminDashboard
 }) => {
   const [formData, setFormData] = useState({
     email: '',
@@ -29,6 +45,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     password: '',
     full_name: ''
   });
+
+  // Removed internal searchTerm state
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -42,6 +60,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
     e.preventDefault();
     await onRegister(formData);
   };
+
+  // Removed filteredUsers and internal filtering logic
 
   if (view === 'viewAllUsers' || view === 'nonAttendees') {
     return (
@@ -68,23 +88,47 @@ const UserManagement: React.FC<UserManagementProps> = ({
             </Alert>
           )}
 
+          {/* Add Search Input Field - only render if onSearchTermChange prop is provided */}
+          {onSearchTermChange && (
+            <div className="mb-4">
+              <Input
+                placeholder="Search by email..."
+                value={searchTerm || ''} // Use the prop value
+                onChange={(e) => onSearchTermChange(e.target.value)} // Call the parent handler
+              />
+            </div>
+          )}
+
+
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {users?.length === 0 && !isLoading && <p className="text-center text-muted-foreground">No users found.</p>}
-            {users?.map(user => (
-              <div key={user.id} className="border p-4 rounded shadow">
-                <p><strong>ID:</strong> {user.id}</p>
-                <p><strong>Name:</strong> {user.full_name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Role:</strong> {user.role}</p>
-                {user.phone_number && <p><strong>Phone:</strong> {user.phone_number}</p>}
-              </div>
-            ))}
+            {/* Display users directly - they are already fetched/filtered by the parent */}
+            {isLoading && users?.length === 0 ? ( // Show loading only if no users are currently displayed
+                 <p className="text-center text-muted-foreground">Loading users...</p>
+            ) : users?.length === 0 ? ( // Show no users message if the array is empty after loading
+                searchTerm ? ( // Differentiate message if a search term is active
+                    <p className="text-center text-muted-foreground">No users found matching "{searchTerm}".</p>
+                ) : (
+                    <p className="text-center text-muted-foreground">No users found.</p>
+                )
+            ) : (
+                // Map and display the users received as a prop
+                users?.map(user => (
+                  <div key={user.id} className="border p-4 rounded shadow">
+                    <p><strong>ID:</strong> {user.id}</p>
+                    <p><strong>Name:</strong> {user.full_name}</p>
+                    <p><strong>Email:</strong> {user.email}</p>
+                    <p><strong>Role:</strong> {user.role}</p>
+                    {user.phone_number && <p><strong>Phone:</strong> {user.phone_number}</p>}
+                  </div>
+                ))
+            )}
           </div>
         </CardContent>
       </Card>
     );
   }
 
+  // Rest of the component for 'registerAdmin' and 'registerSecurity' views
   return (
     <Card className="w-full p-6 glass-card">
       <CardHeader className="space-y-1">
@@ -158,4 +202,4 @@ const UserManagement: React.FC<UserManagementProps> = ({
   );
 };
 
-export default UserManagement; 
+export default UserManagement;

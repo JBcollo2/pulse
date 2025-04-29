@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-// Import necessary components from recharts, including Legend and LabelList
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 
@@ -165,7 +164,6 @@ const SystemReports = () => {
           </div>
       );
   }
-
 
   return (
     <div className="space-y-6">
