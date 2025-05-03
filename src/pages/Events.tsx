@@ -4,6 +4,7 @@ import EventsSection from '@/components/EventsSection';
 import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
   id: number;
@@ -28,11 +29,13 @@ const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
           credentials: 'include'
         });
@@ -42,8 +45,17 @@ const Events = () => {
         }
         
         const data = await response.json();
-        setEvents(data);
-        setFilteredEvents(data);
+        console.log('Events data:', data); // Add logging
+        
+        if (!data.events || !Array.isArray(data.events)) {
+          console.error('Invalid events data structure:', data);
+          setEvents([]);
+          setFilteredEvents([]);
+          return;
+        }
+        
+        setEvents(data.events);
+        setFilteredEvents(data.events);
       } catch (error) {
         console.error('Error fetching events:', error);
         toast({
@@ -51,6 +63,8 @@ const Events = () => {
           description: "Failed to fetch events",
           variant: "destructive"
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -58,6 +72,12 @@ const Events = () => {
   }, []);
 
   useEffect(() => {
+    if (!Array.isArray(events)) {
+      console.error('Events is not an array:', events);
+      setFilteredEvents([]);
+      return;
+    }
+
     const filtered = events.filter(event => 
       event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -122,11 +142,24 @@ const Events = () => {
             />
           </div>
           
-          <EventsSection 
-            events={filteredEvents} 
-            onLike={handleLike}
-            showLikes={true}
-          />
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(9)].map((_, index) => (
+                <div key={index} className="space-y-3">
+                  <Skeleton className="h-[200px] w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/3" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EventsSection 
+              events={filteredEvents} 
+              onLike={handleLike}
+              showLikes={true}
+            />
+          )}
         </div>
       </main>
       

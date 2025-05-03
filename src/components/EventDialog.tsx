@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Category {
+  id: number;
+  name: string;
+  description: string | null;
+}
 
 interface EventDialogProps {
   open: boolean;
@@ -36,11 +43,13 @@ interface EventFormData {
   location: string;
   image: File | null;
   ticket_types: TicketType[];
+  category_id: number | null;
 }
 
 const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
 
 export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [newEvent, setNewEvent] = useState<EventFormData>({
     name: '',
     description: '',
@@ -50,9 +59,36 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
     end_time: '',
     location: '',
     image: null,
-    ticket_types: []
+    ticket_types: [],
+    category_id: null
   });
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        
+        const data = await response.json();
+        setCategories(data.categories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch categories",
+          variant: "destructive"
+        });
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleAddTicketType = () => {
     setNewEvent(prev => ({
@@ -101,12 +137,10 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
       // Add organizer_id first
       formData.append('organizer_id', organizer_id.toString());
       
-      // Log the data before sending
-      console.log('Event data before sending:', newEvent);
-      
-      // Log the time values specifically
-      console.log('Start time value:', newEvent.start_time);
-      console.log('End time value:', newEvent.end_time);
+      // Add category_id if selected
+      if (newEvent.category_id) {
+        formData.append('category_id', newEvent.category_id.toString());
+      }
       
       Object.entries(newEvent).forEach(([key, value]) => {
         if (key === 'image' && value instanceof File) {
@@ -179,7 +213,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
         end_time: '',
         location: '',
         image: null,
-        ticket_types: []
+        ticket_types: [],
+        category_id: null
       });
     } catch (error) {
       console.error('Error creating event:', error);
@@ -216,6 +251,25 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
               onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={newEvent.category_id?.toString()}
+              onValueChange={(value) => setNewEvent({...newEvent, category_id: value ? parseInt(value) : null})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

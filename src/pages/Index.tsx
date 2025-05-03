@@ -7,6 +7,7 @@ import CTASection from '@/components/CTASection';
 import TicketPreview from '@/components/TicketPreview';
 import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
   id: number;
@@ -30,12 +31,14 @@ interface Event {
 const Index = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
+        setIsLoading(true);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/events?per_page=7`, {
           credentials: 'include'
         });
         
@@ -44,12 +47,25 @@ const Index = () => {
         }
         
         const data = await response.json();
-        setEvents(data);
+        console.log('Fetched events data:', data);
         
-        // Find the most liked event as featured
-        const mostLikedEvent = data.reduce((prev: Event, current: Event) => 
-          (prev.likes_count > current.likes_count) ? prev : current
-        );
+        if (!data.events || !Array.isArray(data.events)) {
+          console.error('Invalid events data structure:', data);
+          setEvents([]);
+          setFeaturedEvent(null);
+          return;
+        }
+        
+        setEvents(data.events);
+        
+        // Find the most liked event, defaulting to the first event if no likes
+        const mostLikedEvent = data.events.length > 0 
+          ? data.events.reduce((prev, current) => 
+              (current.likes_count > prev.likes_count) ? current : prev, 
+              data.events[0]
+            )
+          : null;
+        
         setFeaturedEvent(mostLikedEvent);
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -58,6 +74,8 @@ const Index = () => {
           description: "Failed to fetch events",
           variant: "destructive"
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -113,7 +131,16 @@ const Index = () => {
         
         <div className="container mx-auto px-4 py-16">
           <h2 className="text-3xl font-bold mb-10 text-center">Featured Event</h2>
-          {featuredEvent && (
+          {isLoading ? (
+            <div className="max-w-4xl mx-auto">
+              <Skeleton className="h-[400px] w-full rounded-lg mb-4" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+          ) : featuredEvent && (
             <FeaturedEvent
               id={featuredEvent.id.toString()}
               title={featuredEvent.name}
@@ -134,7 +161,21 @@ const Index = () => {
           )}
         </div>
         
-        <EventsSection events={events} onLike={handleLike} />
+        {isLoading ? (
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="space-y-3">
+                  <Skeleton className="h-[200px] w-full rounded-lg" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <EventsSection events={events} onLike={handleLike} />
+        )}
         
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto">
