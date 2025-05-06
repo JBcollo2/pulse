@@ -51,6 +51,7 @@ const Organizer = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const [newOrganizer, setNewOrganizer] = useState({
     user_id: '',
     company_name: '',
@@ -248,138 +249,142 @@ const Organizer = () => {
     );
   }
 
-  if (!loading && organizers.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No organizers found</p>
-      </div>
-    );
-  }
+  // if (!loading && organizers.length === 0) {
+  //   return (
+  //     <div className="text-center py-8">
+  //       <p className="text-gray-500">No organizers found</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Organizers</h1>
-        <Button>Add Organizer</Button>
-      </div>
+        <Button onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Cancel" : "Add Organizer"}
+                    </Button>
+    </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Organizer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAddOrganizer} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="user" className="text-sm font-medium">Select User</label>
+      {showForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Add New Organizer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAddOrganizer} className="space-y-4">
               <div className="space-y-2">
-                <Input
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="mb-2"
-                />
-                <Select
-                  value={newOrganizer.user_id}
-                  onValueChange={(value) => setNewOrganizer({...newOrganizer, user_id: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.length > 0 ? (
-                      users.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          <div className="flex items-center space-x-2">
-                            <span>{user.full_name}</span>
-                            <span className="text-sm text-muted-foreground">({user.email})</span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="p-2 text-sm text-muted-foreground">
-                        No users found
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                <label htmlFor="user" className="text-sm font-medium">Select User</label>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="mb-2"
+                  />
+                  <Select
+                    value={newOrganizer.user_id}
+                    onValueChange={(value) => setNewOrganizer({...newOrganizer, user_id: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.length > 0 ? (
+                        users.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            <div className="flex items-center space-x-2">
+                              <span>{user.full_name}</span>
+                              <span className="text-sm text-muted-foreground">({user.email})</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-muted-foreground">
+                          No users found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label htmlFor="companyName" className="text-sm font-medium">Company Name</label>
-              <Input
-                id="companyName"
-                value={newOrganizer.company_name}
-                onChange={(e) => setNewOrganizer({...newOrganizer, company_name: e.target.value})}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="companyDescription" className="text-sm font-medium">Company Description</label>
-              <Textarea
-                id="companyDescription"
-                value={newOrganizer.company_description}
-                onChange={(e) => setNewOrganizer({...newOrganizer, company_description: e.target.value})}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="website" className="text-sm font-medium">Website</label>
+                <label htmlFor="companyName" className="text-sm font-medium">Company Name</label>
                 <Input
-                  id="website"
-                  value={newOrganizer.website}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, website: e.target.value})}
+                  id="companyName"
+                  value={newOrganizer.company_name}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, company_name: e.target.value})}
+                  required
                 />
               </div>
+
               <div className="space-y-2">
-                <label htmlFor="businessRegNumber" className="text-sm font-medium">Business Registration Number</label>
-                <Input
-                  id="businessRegNumber"
-                  value={newOrganizer.business_registration_number}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, business_registration_number: e.target.value})}
+                <label htmlFor="companyDescription" className="text-sm font-medium">Company Description</label>
+                <Textarea
+                  id="companyDescription"
+                  value={newOrganizer.company_description}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, company_description: e.target.value})}
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="website" className="text-sm font-medium">Website</label>
+                  <Input
+                    id="website"
+                    value={newOrganizer.website}
+                    onChange={(e) => setNewOrganizer({...newOrganizer, website: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="businessRegNumber" className="text-sm font-medium">Business Registration Number</label>
+                  <Input
+                    id="businessRegNumber"
+                    value={newOrganizer.business_registration_number}
+                    onChange={(e) => setNewOrganizer({...newOrganizer, business_registration_number: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="taxId" className="text-sm font-medium">Tax ID</label>
+                  <Input
+                    id="taxId"
+                    value={newOrganizer.tax_id}
+                    onChange={(e) => setNewOrganizer({...newOrganizer, tax_id: e.target.value})}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <label htmlFor="taxId" className="text-sm font-medium">Tax ID</label>
-                <Input
-                  id="taxId"
-                  value={newOrganizer.tax_id}
-                  onChange={(e) => setNewOrganizer({...newOrganizer, tax_id: e.target.value})}
+                <label htmlFor="address" className="text-sm font-medium">Address</label>
+                <Textarea
+                  id="address"
+                  value={newOrganizer.address}
+                  onChange={(e) => setNewOrganizer({...newOrganizer, address: e.target.value})}
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label htmlFor="address" className="text-sm font-medium">Address</label>
-              <Textarea
-                id="address"
-                value={newOrganizer.address}
-                onChange={(e) => setNewOrganizer({...newOrganizer, address: e.target.value})}
-              />
-            </div>
+              <div className="space-y-2">
+                <label htmlFor="companyLogo" className="text-sm font-medium">Company Logo</label>
+                <Input
+                  id="companyLogo"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setNewOrganizer({...newOrganizer, company_logo: file});
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Upload your company logo (PNG, JPG, JPEG, GIF, WEBP)</p>
+              </div>
 
-            <div className="space-y-2">
-              <label htmlFor="companyLogo" className="text-sm font-medium">Company Logo</label>
-              <Input
-                id="companyLogo"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setNewOrganizer({...newOrganizer, company_logo: file});
-                  }
-                }}
-              />
-              <p className="text-xs text-muted-foreground">Upload your company logo (PNG, JPG, JPEG, GIF, WEBP)</p>
-            </div>
-
-            <Button type="submit">Add Organizer</Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit">Add Organizer</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -403,8 +408,8 @@ const Organizer = () => {
                 <TableRow key={organizer.id}>
                   <TableCell>
                     {organizer.organizer_profile?.company_logo ? (
-                      <img 
-                        src={organizer.organizer_profile.company_logo} 
+                      <img
+                        src={organizer.organizer_profile.company_logo}
                         alt={`${organizer.organizer_profile.company_name} logo`}
                         className="w-10 h-10 object-cover rounded-full"
                         onError={(e) => {
