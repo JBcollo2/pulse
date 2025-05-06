@@ -136,10 +136,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
       
       // Add organizer_id first
       formData.append('organizer_id', organizer_id.toString());
+      console.log("Added organizer_id to form data:", organizer_id);
       
       // Add category_id if selected
       if (newEvent.category_id) {
         formData.append('category_id', newEvent.category_id.toString());
+        console.log("Added category_id to form data:", newEvent.category_id);
       }
       
       Object.entries(newEvent).forEach(([key, value]) => {
@@ -153,10 +155,18 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
           }
         } else if (key !== 'ticket_types' && typeof value === 'string' && value !== '') {
           formData.append(key, value);
+          console.log(`Added ${key} to form data:`, value);
         }
       });
 
+      // Debug: Log all form data entries
+      console.log("Final FormData contents:");
+      for(let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
       // First create the event
+      console.log("Submitting event creation request...");
       const eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
         method: 'POST',
         credentials: 'include',
@@ -170,6 +180,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
       }
 
       const eventData = await eventResponse.json();
+      console.log("Event created successfully:", eventData);
       const eventId = eventData.id;
 
       // Then create ticket types for the event
@@ -197,6 +208,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
         }
       }
       
+      console.log("Event creation process completed successfully");
       toast({
         title: "Success",
         description: "Event and ticket types created successfully",
