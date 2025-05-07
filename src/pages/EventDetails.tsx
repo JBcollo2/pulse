@@ -322,8 +322,8 @@ const EventDetails = () => {
                     <p className="text-muted-foreground mb-4">{event.location}</p>
                     <EventMap 
                       location={event.location}
-                      latitude={event.latitude}
-                      longitude={event.longitude}
+                      // latitude={event.latitude}
+                      // longitude={event.longitude}
                     />
                   </div>
                 </div>
