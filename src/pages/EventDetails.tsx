@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, MapPin, User, CreditCard, Share2, Phone } from 'lucide-react';
+import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X,CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EventMap from '@/components/EventMap';
 import {
@@ -19,6 +20,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface TicketType {
   id: number;
@@ -47,6 +49,15 @@ interface Event {
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const paymentReference = searchParams.get('reference');
+  const location = useLocation();
+
+  // Add payment status handling state
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending' | null>(null);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+
   const [event, setEvent] = useState<Event | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -256,6 +267,128 @@ const EventDetails = () => {
     }
   };
 
+  // Check for payment status in the URL path
+  useEffect(() => {
+    if (location.pathname.includes('/payment-success')) {
+      setPaymentStatus('success');
+    } else if (location.pathname.includes('/payment-failed')) {
+      setPaymentStatus('failed');
+    } else if (location.pathname.includes('/payment-pending')) {
+      setPaymentStatus('pending');
+    }
+
+    // If there's a reference, verify the payment
+    if (paymentReference && !paymentStatus) {
+      verifyPaymentStatus(paymentReference);
+    }
+  }, [location.pathname, paymentReference]);
+
+  // Add function to verify payment status
+  const verifyPaymentStatus = async (reference: string) => {
+    setVerifyingPayment(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/paystack/verify/${reference}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      console.log("Payment verification response:", data);
+
+      if (response.ok && data.status === 'success') {
+        setPaymentStatus('success');
+        toast({
+          title: "Payment Successful",
+          description: "Your ticket purchase was successful!",
+          duration: 5000,
+        });
+      } else {
+        setPaymentStatus('failed');
+        toast({
+          title: "Payment Failed",
+          description: "Your payment could not be verified.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      setPaymentStatus('failed');
+      toast({
+        title: "Verification Error",
+        description: "Could not verify payment status.",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
+
+  // Render payment status alert if applicable
+  const renderPaymentStatusAlert = () => {
+    if (!paymentStatus) return null;
+
+    switch (paymentStatus) {
+      case 'success':
+        return (
+          <Alert className="mb-6 bg-green-50 text-green-800 border-green-300">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle>Payment Successful!</AlertTitle>
+            <AlertDescription>
+              Your payment was successful and your tickets have been issued. Check your email for details.
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 border-green-300 text-green-800"
+                onClick={() => navigate('/tickets')}
+              >
+                View My Tickets
+              </Button>
+            </AlertDescription>
+          </Alert>
+        );
+      case 'failed':
+        return (
+          <Alert className="mb-6 bg-red-50 text-red-800 border-red-300">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertTitle>Payment Failed</AlertTitle>
+            <AlertDescription>
+              Your payment was not successful. Please try again or contact support for assistance.
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 border-red-300 text-red-800"
+                onClick={() => setPaymentStatus(null)}
+              >
+                Try Again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        );
+      case 'pending':
+        return (
+          <Alert className="mb-6 bg-yellow-50 text-yellow-800 border-yellow-300">
+            <Clock className="h-4 w-4 text-yellow-600" />
+            <AlertTitle>Payment Pending</AlertTitle>
+            <AlertDescription>
+              Your payment is being processed. We'll notify you once it's complete.
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 border-yellow-300 text-yellow-800"
+                onClick={() => window.location.reload()}
+              >
+                Check Status
+              </Button>
+            </AlertDescription>
+          </Alert>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -277,6 +410,14 @@ const EventDetails = () => {
       <Navbar />
       <main className="py-12">
         <div className="container mx-auto px-4">
+          {/* Payment Status Alert */}
+          {verifyingPayment ? (
+            <div className="mb-6 text-center p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p>Verifying your payment...</p>
+            </div>
+          ) : renderPaymentStatusAlert()}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Event Details */}
             <div className="lg:col-span-2">
