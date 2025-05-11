@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import EventDetails from "./pages/EventDetails";
 import GoogleCallback from "./components/GoogleCallback";
+import PaymentStatus from "./pages/PaymentStatus";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -28,9 +29,8 @@ const App = () => (
             <Route path="/venues" element={<Venues />} />
             <Route path="/artists" element={<Artists />} />
             <Route path="/about" element={<About />} />
-            <Route path="/payment-success" element={<EventDetails />} />
-            <Route path="/payment-failed" element={<EventDetails />} />
-            <Route path="/payment-pending" element={<EventDetails />} />
+      
+            <Route path="/payment-status" element={<PaymentStatus />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="*" element={<NotFound />} />
