@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import EventsSection from '@/components/EventsSection';
@@ -29,16 +30,21 @@ interface Event {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Get current date for filtering upcoming events
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/events?per_page=7`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/events?per_page=12`, {
           credentials: 'include'
         });
         
@@ -58,15 +64,24 @@ const Index = () => {
         
         setEvents(data.events);
         
-        // Find the most liked event, defaulting to the first event if no likes
-        const mostLikedEvent = data.events.length > 0 
-          ? data.events.reduce((prev, current) => 
-              (current.likes_count > prev.likes_count) ? current : prev, 
-              data.events[0]
-            )
-          : null;
+        // Find featured event - prioritize upcoming events with most likes
+        const upcomingEvents = data.events.filter(
+          (event: Event) => new Date(event.date) >= currentDate
+        );
         
-        setFeaturedEvent(mostLikedEvent);
+        if (upcomingEvents.length > 0) {
+          const mostLikedUpcoming = upcomingEvents.reduce(
+            (prev: Event, current: Event) => (current.likes_count > prev.likes_count) ? current : prev,
+            upcomingEvents[0]
+          );
+          setFeaturedEvent(mostLikedUpcoming);
+        } else {
+          // If no upcoming events, use the most recent past event
+          const sortedByDate = [...data.events].sort(
+            (a: Event, b: Event) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          setFeaturedEvent(sortedByDate[0] || null);
+        }
       } catch (error) {
         console.error('Error fetching events:', error);
         toast({
@@ -122,18 +137,23 @@ const Index = () => {
     }
   };
 
+  // Handler for search submissions from the hero section
+  const handleHeroSearch = (query: string) => {
+    navigate(`/events?search=${encodeURIComponent(query)}`);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground pt-16">
       <Navbar />
       
       <main>
-        <HeroSection />
+        <HeroSection onSearch={handleHeroSearch} />
         
-        <div className="container mx-auto px-4 py-16">
-          <h2 className="text-3xl font-bold mb-10 text-center">Featured Event</h2>
+        <div className="container mx-auto px-4 py-8 md:py-16">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-center">Featured Event</h2>
           {isLoading ? (
             <div className="max-w-4xl mx-auto">
-              <Skeleton className="h-[400px] w-full rounded-lg mb-4" />
+              <Skeleton className="h-64 md:h-[400px] w-full rounded-lg mb-4" />
               <div className="space-y-2">
                 <Skeleton className="h-6 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
@@ -157,16 +177,17 @@ const Index = () => {
               price="Starting from $129.99"
               onLike={() => handleLike(featuredEvent.id)}
               likesCount={featuredEvent.likes_count}
+              isPast={new Date(featuredEvent.date) < currentDate}
             />
           )}
         </div>
         
         {isLoading ? (
           <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {[...Array(6)].map((_, index) => (
                 <div key={index} className="space-y-3">
-                  <Skeleton className="h-[200px] w-full rounded-lg" />
+                  <Skeleton className="h-48 md:h-[200px] w-full rounded-lg" />
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
@@ -174,14 +195,18 @@ const Index = () => {
             </div>
           </div>
         ) : (
-          <EventsSection events={events} onLike={handleLike} />
+          <EventsSection 
+            events={events.filter(event => new Date(event.date) >= currentDate)} 
+            onLike={handleLike}
+            showPastEvents={true}
+          />
         )}
         
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 py-8 md:py-16">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold mb-4">Digital Tickets, Real Experiences</h2>
-              <p className="text-xl text-muted-foreground">
+            <div className="text-center mb-6 md:mb-10">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">Digital Tickets, Real Experiences</h2>
+              <p className="text-base md:text-xl text-muted-foreground">
                 Our tickets come to life with animations and secure QR codes for easy scanning at venues
               </p>
             </div>

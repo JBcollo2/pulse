@@ -3,6 +3,7 @@ import { Calendar, MapPin, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { isPast } from 'date-fns';
 
 interface FeaturedEventProps {
   id: string;
@@ -15,6 +16,7 @@ interface FeaturedEventProps {
   price: string;
   onLike?: () => Promise<void>;
   likesCount?: number;
+  isPast?: boolean;
 }
 
 const FeaturedEvent: React.FC<FeaturedEventProps> = ({
@@ -25,7 +27,8 @@ const FeaturedEvent: React.FC<FeaturedEventProps> = ({
   time,
   location,
   image,
-  price
+  price,
+  isPast = false
 }) => {
   return (
     <div className="relative overflow-hidden rounded-3xl">

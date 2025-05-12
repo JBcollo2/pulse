@@ -5,6 +5,8 @@ import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+
 
 interface Event {
   id: number;
@@ -30,7 +32,31 @@ const Events = () => {
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('');
   const { toast } = useToast();
+  const [categories, setCategories] = useState<string[]>([]);
+
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+
+        const data = await response.json();
+        setCategories(data.categories.map((category: { name: string }) => category.name));
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -78,13 +104,24 @@ const Events = () => {
       return;
     }
 
-    const filtered = events.filter(event => 
-      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filtered = events.filter(event => {
+      const matchesSearch = searchQuery === '' || 
+        event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCategory = activeCategory === '' || 
+        (event.description && event.description.toLowerCase().includes(activeCategory.toLowerCase()));
+      
+      return matchesSearch && matchesCategory;
+    });
+    
     setFilteredEvents(filtered);
-  }, [searchQuery, events]);
+  }, [searchQuery, activeCategory, events]);
+
+  const handleCategoryClick = (category: string) => {
+    setActiveCategory(category === activeCategory ? '' : category);
+  };
 
   const handleLike = async (eventId: number) => {
     try {
@@ -154,11 +191,30 @@ const Events = () => {
               ))}
             </div>
           ) : (
-            <EventsSection 
-              events={filteredEvents} 
-              onLike={handleLike}
-              showLikes={true}
-            />
+            <>
+            <div className="mt-12 mb-6">
+                <h2 className="text-2xl font-semibold mb-4">Categories</h2>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(category => (
+                    <Button
+                      key={category}
+                      variant={activeCategory === category ? "default" : "outline"}
+                      className="rounded-full text-sm md:text-base"
+                      onClick={() => handleCategoryClick(category)}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <EventsSection 
+                events={filteredEvents}  
+                onLike={handleLike}
+                showLikes={true}
+              />
+              
+              
+            </>
           )}
         </div>
       </main>

@@ -3,8 +3,22 @@ import React from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useState } from 'react';
 
-const HeroSection = () => {
+
+interface HeroSectionProps {
+  onSearch?: (query: string) => void;
+}
+
+const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (onSearch && searchQuery.trim()) {
+    onSearch(searchQuery);
+  }
+};
   return (
     <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
       {/* Background with animated gradient */}
@@ -30,13 +44,19 @@ const HeroSection = () => {
           <div className="glass-card flex items-center p-2 gap-2">
             <Search className="text-muted-foreground ml-2" />
             <Input 
-              type="text" 
-              placeholder="Search events, artists, or venues" 
-              className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
-            />
-            <Button className="bg-pulse-purple hover:bg-pulse-deep-purple rounded-xl">
-              Search
-            </Button>
+                type="text" 
+                placeholder="Search events, artists, or venues" 
+                className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button 
+                type="submit"
+                className="bg-pulse-purple hover:bg-pulse-deep-purple rounded-xl"
+                onClick={handleSubmit}
+              >
+                Search
+              </Button>
           </div>
         </div>
         

@@ -18,6 +18,7 @@ interface EventCardProps {
   onLike?: () => Promise<void>;
   likesCount?: number;
   showLikes?: boolean;
+  isPast?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
@@ -32,7 +33,8 @@ const EventCard: React.FC<EventCardProps> = ({
   category,
   onLike,
   likesCount = 0,
-  showLikes = false
+  showLikes = false,
+  isPast = false
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
@@ -61,27 +63,21 @@ const EventCard: React.FC<EventCardProps> = ({
             alt={title} 
             className="w-full h-48 object-cover"
           />
-          <Badge 
-            className="absolute top-4 left-4 bg-pulse-purple hover:bg-pulse-purple text-white" 
-            variant="secondary"
-          >
-            {category}
-          </Badge>
+          <div className="absolute top-2 left-2">
+            <Badge className="bg-pulse-purple text-white">{category}</Badge>
+          </div>
           {showLikes && (
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-700",
-                isLiked && "text-red-500"
+                "absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700",
+                isLiked && "text-purple-500"
               )}
               onClick={handleLike}
               disabled={isLiking}
             >
               <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
-              {likesCount > 0 && (
-                <span className="ml-1 text-sm">{likesCount}</span>
-              )}
             </Button>
           )}
         </div>
