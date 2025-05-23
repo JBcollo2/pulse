@@ -132,7 +132,7 @@ const PaymentStatus = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
-                onClick={() => navigate('/tickets')} 
+                onClick={() => navigate('/dashboard')} 
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 View My Tickets
