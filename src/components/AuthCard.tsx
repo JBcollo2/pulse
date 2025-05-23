@@ -13,25 +13,26 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get token from URL if present
-  const resetToken = searchParams.get('token') || 
+  const resetToken = searchParams.get('token') ||
     window.location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1] ||
     location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1];
-  
+
   // State management
   const [currentView, setCurrentView] = useState(initialView);
   const [token, setToken] = useState(resetToken || '');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  
+  const [tokenValidated, setTokenValidated] = useState(false);
+
   // Sign In state
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
   });
-  
+
   // Sign Up state
   const [signUpData, setSignUpData] = useState({
     full_name: '',
@@ -39,14 +40,14 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     phone_number: '',
     password: ''
   });
-  
+
   // Forgot Password state
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
-  
+
   // Reset Password state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Auto-detect reset password flow
   useEffect(() => {
     if (resetToken) {
@@ -58,23 +59,28 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   }, [resetToken]);
 
   const validateResetToken = async (tokenToValidate) => {
+    setIsLoading(true);
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/auth/validate-reset-token/${tokenToValidate}`,
+        `${import.meta.env.VITE_API_URL}/auth/reset-password/${tokenToValidate}`,
         { withCredentials: true }
       );
-      
-      if (response.data.valid) {
-        setSuccessMessage('Token is valid. You can now reset your password.');
+
+      if (response.status === 200) {
+        setSuccessMessage(response.data.msg || 'Token is valid. You can now reset your password.');
+        setTokenValidated(true);
       }
     } catch (error) {
       console.error('Token validation error:', error);
       setError('Invalid or expired reset token. Please request a new password reset.');
-      // Optionally redirect to forgot password form after showing error
+
+      // Redirect to forgot password form after showing error
       setTimeout(() => {
         setCurrentView('forgot-password');
         setError('');
       }, 3000);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,6 +88,8 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setCurrentView(view);
     setError('');
     setSuccessMessage('');
+    setTokenValidated(false);
+
     // Clear form data when switching views
     if (view === 'signin') {
       setSignInData({ email: '', password: '' });
@@ -117,7 +125,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       setSuccessMessage('Sign in successful!');
       console.log('Sign in successful', response.data);
-      
+
       // Handle successful login (e.g., redirect, update auth state)
       setTimeout(() => {
         if (onClose) onClose();
@@ -157,7 +165,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       setSuccessMessage('Account created successfully! Please check your email for verification.');
       console.log('Sign up successful', response.data);
-      
+
       // Switch to sign in after successful registration
       setTimeout(() => {
         toggleForm('signin');
@@ -264,6 +272,14 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       if (axios.isAxiosError(error) && error.response) {
         console.error('Error response:', error.response);
         setError(error.response.data.msg || 'Failed to reset password. Please try again.');
+
+        // If token is invalid or expired, redirect to forgot password
+        if (error.response.status === 400) {
+          setTimeout(() => {
+            setCurrentView('forgot-password');
+            setError('Your reset link has expired. Please request a new one.');
+          }, 2000);
+        }
       } else {
         console.error('Error:', error);
         setError('An unexpected error occurred. Please try again.');
@@ -315,7 +331,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] p-0 bg-transparent border-none shadow-none">
         <div className="relative w-full min-h-[580px]">
-          
           {/* Sign In View */}
           {currentView === 'signin' && (
             <Card className="w-full p-6 glass-card">
@@ -661,7 +676,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       Password must be at least 8 characters long and include both letters and numbers
                     </p>
                   </div>
-                  
+
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
                     <div className="relative">
@@ -684,15 +699,15 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       <p className="text-xs text-green-600">Passwords match ✓</p>
                     )}
                   </div>
-                  
+
                   <div className="mt-6">
                     <Button
                       className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
                       type="submit"
                       disabled={
-                        isLoading || 
-                        !newPassword || 
-                        !confirmPassword || 
+                        isLoading ||
+                        !newPassword ||
+                        !confirmPassword ||
                         newPassword !== confirmPassword ||
                         newPassword.length < 8
                       }
