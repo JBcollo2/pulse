@@ -160,9 +160,7 @@ const QRScanner = () => {
         {},
         {
           withCredentials: true,
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          
         }
       );
       

@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import EventDetails from "./pages/EventDetails";
 import GoogleCallback from "./components/GoogleCallback";
+import ProtectedRoute from "./components/prt";
 import PaymentStatus from "./pages/PaymentStatus";
 const queryClient = new QueryClient();
 
@@ -31,7 +32,11 @@ const App = () => (
             <Route path="/about" element={<About />} />
       
             <Route path="/payment-status" element={<PaymentStatus />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+
+            <Route path="/" element={<ProtectedRoute />}>
+              <Route path="dashboard" element={<Dashboard />} />
+            </Route>
+            
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="*" element={<NotFound />} />
             <Route path="/auth/callback/google" element={<GoogleCallback />} />

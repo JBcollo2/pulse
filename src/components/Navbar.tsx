@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LayoutDashboard } from "lucide-react";
 import { cn } from '@/lib/utils';
@@ -6,25 +6,45 @@ import { Link, useLocation } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import AuthCard from './AuthCard';
 
-const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login state
+
+const Navbar: React.FC = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const location = useLocation();
-  
+
   // Function to determine if a link is active
-  const isActive = (path) => {
+  const isActive = (path: string): boolean => {
     if (path === '/') {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(path);
   };
 
-  // Mock login function - in a real app this would be connected to authentication
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setIsAuthOpen(false);
+ useEffect(() => {
+  const checkLogin = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsLoggedIn(true);
+        console.log("User:", data.user);
+      } else {
+        setIsLoggedIn(false);
+      }
+    } catch (err) {
+      console.error("Auth check failed:", err);
+      setIsLoggedIn(false);
+    }
   };
+
+  checkLogin();
+}, []);
+
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/90 border-b border-border shadow-sm">
