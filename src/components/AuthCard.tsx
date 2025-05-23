@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
@@ -16,7 +16,7 @@ interface AuthCardProps {
 }
 
 const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
-  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'forgot-password'>('signin');
+  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'forgot-password' | 'reset-password'>('signin');
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
@@ -28,11 +28,23 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     phone_number: ''
   });
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  
-  const toggleForm = (view: 'signin' | 'signup' | 'forgot-password') => {
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    // Extract token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setToken(token);
+      setCurrentView('reset-password');
+    }
+  }, []);
+
+  const toggleForm = (view: 'signin' | 'signup' | 'forgot-password' | 'reset-password') => {
     setCurrentView(view);
     setError('');
     setSuccessMessage('');
@@ -49,7 +61,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
   const handleSignUpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const fieldName = id.replace('signup-', '');
-    
+
     setSignUpData(prev => ({
       ...prev,
       [fieldName]: value
@@ -75,29 +87,29 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
-    
+
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
-        { 
+        {
           withCredentials: true,  // This is important for cookies
           headers: {
             'Content-Type': 'application/json'
           }
         }
       );
-      
+
       setSuccessMessage('Login successful!');
       console.log('Sign in successful', response.data);
-      
+
       // Close the dialog after a short delay to show the success message
       setTimeout(() => {
         onClose();
         // Optionally refresh the page or update the app state
         window.location.reload();
       }, 1500);
-      
+
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.error || 'Failed to sign in. Please check your credentials.');
@@ -128,22 +140,22 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     }
 
     setIsLoading(true);
-    
+
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/register`,
         signUpData,
         { withCredentials: true }
       );
-      
+
       setSuccessMessage('Account created successfully! You can now sign in.');
       console.log('Sign up successful', response.data);
-      
+
       // Switch to sign in view after successful registration
       setTimeout(() => {
         toggleForm('signin');
       }, 2000);
-      
+
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.msg || 'Failed to create account. Please try again.');
@@ -161,16 +173,16 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
-    
+
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/forgot-password`,
+        `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
         { email: forgotPasswordEmail }
       );
-      
+
       setSuccessMessage('Password reset link sent to your email!');
       console.log('Password reset requested', response.data);
-      
+
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.msg || 'Failed to request password reset. Please try again.');
@@ -183,19 +195,51 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`,
+        { password: newPassword }
+      );
+
+      setSuccessMessage('Password reset successful!');
+      console.log('Password reset successful', response.data);
+
+      // Switch to sign in view after successful password reset
+      setTimeout(() => {
+        toggleForm('signin');
+      }, 2000);
+
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        setError(error.response.data.msg || 'Failed to reset password. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+      console.error('Error during password reset:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleLogin = () => {
     try {
       // Store the current URL to redirect back after Google login
       const currentUrl = window.location.href;
       localStorage.setItem('preAuthUrl', currentUrl);
-      
+
       // Log the API URL for debugging
       console.log('API URL:', import.meta.env.VITE_API_URL);
-      
+
       // Construct the Google login URL
       const googleLoginUrl = `${import.meta.env.VITE_API_URL}/auth/login/google`;
       console.log('Google Login URL:', googleLoginUrl);
-      
+
       // Redirect to Google OAuth endpoint
       window.location.href = googleLoginUrl;
     } catch (error) {
@@ -232,23 +276,23 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 {successMessage && (
                   <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
                     <AlertDescription>{successMessage}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 <form onSubmit={handleSignIn}>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="email" 
-                        placeholder="Enter your email" 
-                        type="email" 
-                        className="pl-10" 
+                      <Input
+                        id="email"
+                        placeholder="Enter your email"
+                        type="email"
+                        className="pl-10"
                         value={signInData.email}
                         onChange={handleSignInChange}
                         required
@@ -258,8 +302,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2 mt-4">
                     <div className="flex justify-between items-center">
                       <Label htmlFor="password">Password</Label>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => toggleForm('forgot-password')}
                         className="text-sm text-pulse-purple hover:underline"
                       >
@@ -268,11 +312,11 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="Enter your password" 
-                        className="pl-10" 
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        className="pl-10"
                         value={signInData.password}
                         onChange={handleSignInChange}
                         required
@@ -280,8 +324,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div className="mt-6">
-                    <Button 
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple" 
+                    <Button
+                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
                       type="submit"
                       disabled={isLoading}
                     >
@@ -289,7 +333,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </Button>
                   </div>
                 </form>
-                
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t"></span>
@@ -298,8 +342,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                   </div>
                 </div>
-                
-                <Button 
+
+                <Button
                   className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-300"
                   onClick={handleGoogleLogin}
                   type="button"
@@ -342,22 +386,22 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 {successMessage && (
                   <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
                     <AlertDescription>{successMessage}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 <form onSubmit={handleSignUp}>
                   <div className="space-y-2">
                     <Label htmlFor="signup-full_name">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="signup-full_name" 
-                        placeholder="Enter your full name" 
-                        className="pl-10" 
+                      <Input
+                        id="signup-full_name"
+                        placeholder="Enter your full name"
+                        className="pl-10"
                         value={signUpData.full_name}
                         onChange={handleSignUpChange}
                         required
@@ -368,11 +412,11 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="signup-email" 
-                        placeholder="Enter your email" 
-                        type="email" 
-                        className="pl-10" 
+                      <Input
+                        id="signup-email"
+                        placeholder="Enter your email"
+                        type="email"
+                        className="pl-10"
                         value={signUpData.email}
                         onChange={handleSignUpChange}
                         required
@@ -383,10 +427,10 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <Label htmlFor="signup-phone_number">Phone Number</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="signup-phone_number" 
-                        placeholder="Enter your Safaricom number" 
-                        className="pl-10" 
+                      <Input
+                        id="signup-phone_number"
+                        placeholder="Enter your Safaricom number"
+                        className="pl-10"
                         value={signUpData.phone_number}
                         onChange={handleSignUpChange}
                         required
@@ -398,11 +442,11 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="signup-password" 
-                        type="password" 
-                        placeholder="Create a password" 
-                        className="pl-10" 
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="Create a password"
+                        className="pl-10"
                         value={signUpData.password}
                         onChange={handleSignUpChange}
                         required
@@ -411,8 +455,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <p className="text-xs text-muted-foreground">Password must be at least 8 characters long and include both letters and numbers</p>
                   </div>
                   <div className="mt-6">
-                    <Button 
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple" 
+                    <Button
+                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
                       type="submit"
                       disabled={isLoading}
                     >
@@ -420,7 +464,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </Button>
                   </div>
                 </form>
-                
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t"></span>
@@ -429,8 +473,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                   </div>
                 </div>
-                
-                <Button 
+
+                <Button
                   className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-300"
                   onClick={handleGoogleLogin}
                   type="button"
@@ -473,23 +517,23 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 {successMessage && (
                   <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
                     <AlertDescription>{successMessage}</AlertDescription>
                   </Alert>
                 )}
-                
+
                 <form onSubmit={handleForgotPassword}>
                   <div className="space-y-2">
                     <Label htmlFor="forgot-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input 
-                        id="forgot-email" 
-                        placeholder="Enter your email" 
-                        type="email" 
-                        className="pl-10" 
+                      <Input
+                        id="forgot-email"
+                        placeholder="Enter your email"
+                        type="email"
+                        className="pl-10"
                         value={forgotPasswordEmail}
                         onChange={(e) => setForgotPasswordEmail(e.target.value)}
                         required
@@ -497,12 +541,75 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                   <div className="mt-6">
-                    <Button 
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple" 
+                    <Button
+                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
                       type="submit"
                       disabled={isLoading}
                     >
                       {isLoading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+              <CardFooter className="pt-2">
+                <p className="text-sm text-muted-foreground text-center w-full">
+                  Remembered your password?{" "}
+                  <button
+                    onClick={() => toggleForm('signin')}
+                    className="text-pulse-purple hover:underline font-medium"
+                    type="button"
+                  >
+                    Back to Sign In
+                  </button>
+                </p>
+              </CardFooter>
+            </Card>
+          )}
+
+          {/* Reset Password View */}
+          {currentView === 'reset-password' && (
+            <Card className="w-full p-6 glass-card">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl text-gradient">Reset Password</CardTitle>
+                <CardDescription>Enter your new password</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {successMessage && (
+                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+
+                <form onSubmit={handleResetPassword}>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="new-password"
+                        type="password"
+                        placeholder="Enter your new password"
+                        className="pl-10"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <Button
+                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
+                      type="submit"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Resetting..." : "Reset Password"}
                     </Button>
                   </div>
                 </form>
