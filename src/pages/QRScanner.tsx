@@ -150,7 +150,7 @@ const QRScanner = () => {
     }
   };
 
-  const verifyTicket = async (ticketId) => {
+  const verifyTicket = async (ticketId : string) => {
     setLoading(true);
     setVerification({ status: null, message: '', ticketData: null });
     
@@ -240,7 +240,7 @@ const QRScanner = () => {
     }
   };
 
-  const formatDateTime = (dateString) => {
+  const formatDateTime = (dateString : string) => {
     const options = { 
       year: 'numeric', 
       month: 'long', 
