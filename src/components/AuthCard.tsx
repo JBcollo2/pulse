@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Dialog, DialogContent } from './ui/dialog';
@@ -15,17 +15,17 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const location = useLocation();
 
   // Get token from URL if present
-  const resetToken = searchParams.get('token') ||
-    window.location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1] ||
-    location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1];
+  // Prioritize query param, then path segment
+  const resetTokenFromUrl = searchParams.get('token') ||
+    (location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1]);
 
   // State management
   const [currentView, setCurrentView] = useState(initialView);
-  const [token, setToken] = useState(resetToken || '');
+  const [token, setToken] = useState(resetTokenFromUrl || ''); // Store the token
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [tokenValidated, setTokenValidated] = useState(false);
+  const [tokenValidated, setTokenValidated] = useState(false); // New state to track token validation status
 
   // Sign In state
   const [signInData, setSignInData] = useState({
@@ -48,18 +48,32 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Auto-detect reset password flow
-  useEffect(() => {
-    if (resetToken) {
-      setCurrentView('reset-password');
-      setToken(resetToken);
-      // Validate token immediately
-      validateResetToken(resetToken);
-    }
-  }, [resetToken]);
+  // Helper to reset all form-specific states when changing views
+  const resetFormStates = useCallback(() => {
+    setError('');
+    setSuccessMessage('');
+    setIsLoading(false);
+    setTokenValidated(false); // Crucial to reset this
+    setSignInData({ email: '', password: '' });
+    setSignUpData({ full_name: '', email: '', phone_number: '', password: '' });
+    setForgotPasswordEmail('');
+    setNewPassword('');
+    setConfirmPassword('');
+    // Do NOT reset `token` here if `resetTokenFromUrl` is the source, it's URL-driven
+  }, []);
 
-  const validateResetToken = async (tokenToValidate) => {
+  const toggleForm = useCallback((view) => {
+    setCurrentView(view);
+    resetFormStates(); // Reset states when switching forms
+  }, [resetFormStates]);
+
+  // Token validation function
+  const validateResetToken = useCallback(async (tokenToValidate) => {
     setIsLoading(true);
+    setError(''); // Clear previous errors
+    setSuccessMessage(''); // Clear previous success messages
+    setTokenValidated(false); // Reset token validation state before validation attempt
+
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/auth/reset-password/${tokenToValidate}`,
@@ -68,40 +82,37 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       if (response.status === 200) {
         setSuccessMessage(response.data.msg || 'Token is valid. You can now reset your password.');
-        setTokenValidated(true);
+        setTokenValidated(true); // Token is valid, enable the form
       }
     } catch (error) {
       console.error('Token validation error:', error);
-      setError('Invalid or expired reset token. Please request a new password reset.');
+      let errorMessage = 'Invalid or expired reset token. Please request a new password reset.';
+      if (axios.isAxiosError(error) && error.response && error.response.data.msg) {
+        errorMessage = error.response.data.msg;
+      }
+      setError(errorMessage);
+      setTokenValidated(false); // Token is invalid, keep form disabled
 
       // Redirect to forgot password form after showing error
       setTimeout(() => {
-        setCurrentView('forgot-password');
-        setError('');
-      }, 3000);
+        toggleForm('forgot-password'); // Use toggleForm to reset relevant states and switch view
+      }, 3000); // Give user time to read the error
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toggleForm]);
 
-  const toggleForm = (view) => {
-    setCurrentView(view);
-    setError('');
-    setSuccessMessage('');
-    setTokenValidated(false);
-
-    // Clear form data when switching views
-    if (view === 'signin') {
-      setSignInData({ email: '', password: '' });
-    } else if (view === 'signup') {
-      setSignUpData({ full_name: '', email: '', phone_number: '', password: '' });
-    } else if (view === 'forgot-password') {
-      setForgotPasswordEmail('');
-    } else if (view === 'reset-password') {
-      setNewPassword('');
-      setConfirmPassword('');
+  // Auto-detect reset password flow on component mount or URL change
+  useEffect(() => {
+    if (resetTokenFromUrl) {
+      setCurrentView('reset-password'); // Set view to reset-password
+      setToken(resetTokenFromUrl); // Store the token in state
+      validateResetToken(resetTokenFromUrl); // Initiate token validation
+    } else {
+      // If no reset token, ensure we are on the initial view (e.g., signin)
+      setCurrentView(initialView);
     }
-  };
+  }, [resetTokenFromUrl, validateResetToken, initialView]);
 
   // Sign In handlers
   const handleSignInChange = (e) => {
@@ -129,7 +140,8 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       // Handle successful login (e.g., redirect, update auth state)
       setTimeout(() => {
         if (onClose) onClose();
-        // Add your post-login logic here
+        // Optionally navigate to a dashboard or home page after login
+        // navigate('/dashboard');
       }, 1000);
 
     } catch (error) {
@@ -217,21 +229,17 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setError('');
     setSuccessMessage('');
 
-    // Validate passwords match
+    // Basic client-side validation
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       setIsLoading(false);
       return;
     }
-
-    // Validate password strength
     if (newPassword.length < 8) {
       setError('Password must be at least 8 characters long.');
       setIsLoading(false);
       return;
     }
-
-    // Basic password strength validation
     const hasLetter = /[a-zA-Z]/.test(newPassword);
     const hasNumber = /\d/.test(newPassword);
     if (!hasLetter || !hasNumber) {
@@ -250,38 +258,37 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       setSuccessMessage('Password reset successful! Redirecting to sign in...');
       console.log('Password reset successful', response.data);
 
-      // Clear the URL parameters
-      if (resetToken && navigate) {
-        navigate('/', { replace: true });
+      // Clear the token from the URL for a cleaner state
+      // Navigate to the base path (e.g., '/') and replace the history entry
+      if (navigate) {
+        // Example: If URL was /auth/reset-password/token, it becomes /auth
+        // If URL was /reset-password/token, it becomes /
+        const basePath = location.pathname.split('/reset-password')[0] || '/';
+        navigate(basePath, { replace: true });
       }
 
       // Switch to sign in view after successful password reset
       setTimeout(() => {
-        setCurrentView('signin');
-        setNewPassword('');
-        setConfirmPassword('');
-        setToken('');
-        setSuccessMessage('');
-        // Close modal if it's in a modal
+        toggleForm('signin'); // Use toggleForm to reset states and switch view
         if (onClose) {
-          onClose();
+          onClose(); // Close modal if it's in a modal
         }
-      }, 2000);
+      }, 2000); // Give user time to read the success message
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.error('Error response:', error.response);
         setError(error.response.data.msg || 'Failed to reset password. Please try again.');
 
-        // If token is invalid or expired, redirect to forgot password
-        if (error.response.status === 400) {
+        // If token is invalid or expired (e.g., 400 Bad Request), redirect to forgot password
+        if (error.response.status === 400 || error.response.status === 401) { // Add 401 for unauthorized/invalid token
           setTimeout(() => {
-            setCurrentView('forgot-password');
-            setError('Your reset link has expired. Please request a new one.');
+            toggleForm('forgot-password'); // Use toggleForm
+            setError('Your reset link has expired or is invalid. Please request a new one.');
           }, 2000);
         }
       } else {
-        console.error('Error:', error);
+        console.error('An unexpected error occurred during password reset:', error);
         setError('An unexpected error occurred. Please try again.');
       }
     } finally {
@@ -656,66 +663,75 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                   </Alert>
                 )}
 
-                <form onSubmit={handleResetPassword}>
-                  <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <div className="relative">
-                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="new-password"
-                        type="password"
-                        placeholder="Enter your new password"
-                        className="pl-10"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        minLength={8}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Password must be at least 8 characters long and include both letters and numbers
-                    </p>
-                  </div>
+                {/* Conditional rendering of the form based on token validation and loading state */}
+                {isLoading && <p className="text-center text-muted-foreground">Validating reset link...</p>}
+                {!isLoading && !tokenValidated && !error && resetTokenFromUrl && (
+                  <p className="text-center text-muted-foreground">Please wait while we validate your reset link, or it might be invalid/expired.</p>
+                )}
 
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <div className="relative">
-                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="Confirm your new password"
-                        className="pl-10"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={8}
-                      />
+                {!isLoading && tokenValidated && !error && (
+                  <form onSubmit={handleResetPassword}>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <div className="relative">
+                        <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          id="new-password"
+                          type="password"
+                          placeholder="Enter your new password"
+                          className="pl-10"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          required
+                          minLength={8}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 8 characters long and include both letters and numbers
+                      </p>
                     </div>
-                    {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                      <p className="text-xs text-red-500">Passwords do not match</p>
-                    )}
-                    {newPassword && confirmPassword && newPassword === confirmPassword && (
-                      <p className="text-xs text-green-600">Passwords match ✓</p>
-                    )}
-                  </div>
 
-                  <div className="mt-6">
-                    <Button
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
-                      type="submit"
-                      disabled={
-                        isLoading ||
-                        !newPassword ||
-                        !confirmPassword ||
-                        newPassword !== confirmPassword ||
-                        newPassword.length < 8
-                      }
-                    >
-                      {isLoading ? "Resetting..." : "Reset Password"}
-                    </Button>
-                  </div>
-                </form>
+                    <div className="space-y-2 mt-4">
+                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <div className="relative">
+                        <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="Confirm your new password"
+                          className="pl-10"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          minLength={8}
+                        />
+                      </div>
+                      {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                        <p className="text-xs text-red-500">Passwords do not match</p>
+                      )}
+                      {newPassword && confirmPassword && newPassword === confirmPassword && (
+                        <p className="text-xs text-green-600">Passwords match ✓</p>
+                      )}
+                    </div>
+
+                    <div className="mt-6">
+                      <Button
+                        className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
+                        type="submit"
+                        disabled={
+                          isLoading ||
+                          !newPassword ||
+                          !confirmPassword ||
+                          newPassword !== confirmPassword ||
+                          newPassword.length < 8 ||
+                          !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword)) // Added strength check to button disable
+                        }
+                      >
+                        {isLoading ? "Resetting..." : "Reset Password"}
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </CardContent>
               <CardFooter className="pt-2">
                 <p className="text-sm text-muted-foreground text-center w-full">
