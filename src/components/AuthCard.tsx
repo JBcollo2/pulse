@@ -9,6 +9,7 @@ import { Mail, Lock, User, Phone, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "./ui/alert";
 import axios from 'axios';
 import { toast } from "@/components/ui/use-toast";
+import { useParams } from 'react-router-dom';
 
 interface AuthCardProps {
   isOpen: boolean;
@@ -33,16 +34,15 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [token, setToken] = useState(null);
+  const { token: urlToken } = useParams();
 
   useEffect(() => {
     // Extract token from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (token) {
-      setToken(token);
+    if (urlToken) {
+      setToken(urlToken);
       setCurrentView('reset-password');
     }
-  }, []);
+  }, [urlToken]);
 
   const toggleForm = (view: 'signin' | 'signup' | 'forgot-password' | 'reset-password') => {
     setCurrentView(view);
