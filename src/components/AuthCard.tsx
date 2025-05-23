@@ -204,7 +204,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`,
-        { password: newPassword }
+        { password: newPassword },
+        { withCredentials: true }  // Ensure cookies are included
       );
 
       setSuccessMessage('Password reset successful!');
@@ -217,11 +218,12 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
+        console.error('Error response:', error.response);
         setError(error.response.data.msg || 'Failed to reset password. Please try again.');
       } else {
+        console.error('Error:', error);
         setError('An unexpected error occurred. Please try again.');
       }
-      console.error('Error during password reset:', error);
     } finally {
       setIsLoading(false);
     }
