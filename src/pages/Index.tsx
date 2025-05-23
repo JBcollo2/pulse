@@ -137,7 +137,7 @@ const Index = () => {
     }
   };
 
-  // Handler for search submissions from the hero section
+  
   const handleHeroSearch = (query: string) => {
     navigate(`/events?search=${encodeURIComponent(query)}`);
   };
