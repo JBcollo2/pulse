@@ -1,88 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { cn } from "@/lib/utils";
-import { Dialog, DialogContent } from "./ui/dialog";
-import { Mail, Lock, User, Phone, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "./ui/alert";
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { toast } from "@/components/ui/use-toast";
-import { useParams } from 'react-router-dom';
+import { Dialog, DialogContent } from './ui/dialog';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Alert, AlertDescription } from './ui/alert';
+import * as lucideReact from 'lucide-react';
 
-interface AuthCardProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
-  const [currentView, setCurrentView] = useState<'signin' | 'signup' | 'forgot-password' | 'reset-password'>('signin');
+const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get token from URL if present
+  const resetToken = searchParams.get('token') || 
+    window.location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1] ||
+    location.pathname.match(/\/reset-password\/([^\/]+)/)?.[1];
+  
+  // State management
+  const [currentView, setCurrentView] = useState(initialView);
+  const [token, setToken] = useState(resetToken || '');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  
+  // Sign In state
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
   });
+  
+  // Sign Up state
   const [signUpData, setSignUpData] = useState({
     full_name: '',
     email: '',
-    password: '',
-    phone_number: ''
+    phone_number: '',
+    password: ''
   });
+  
+  // Forgot Password state
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  
+  // Reset Password state
   const [newPassword, setNewPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [token, setToken] = useState(null);
-  const { token: urlToken } = useParams();
-
+  const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Auto-detect reset password flow
   useEffect(() => {
-    // Extract token from URL
-    if (urlToken) {
-      setToken(urlToken);
+    if (resetToken) {
       setCurrentView('reset-password');
+      setToken(resetToken);
+      // Validate token immediately
+      validateResetToken(resetToken);
     }
-  }, [urlToken]);
+  }, [resetToken]);
 
-  const toggleForm = (view: 'signin' | 'signup' | 'forgot-password' | 'reset-password') => {
+  const validateResetToken = async (tokenToValidate) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/auth/validate-reset-token/${tokenToValidate}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.valid) {
+        setSuccessMessage('Token is valid. You can now reset your password.');
+      }
+    } catch (error) {
+      console.error('Token validation error:', error);
+      setError('Invalid or expired reset token. Please request a new password reset.');
+      // Optionally redirect to forgot password form after showing error
+      setTimeout(() => {
+        setCurrentView('forgot-password');
+        setError('');
+      }, 3000);
+    }
+  };
+
+  const toggleForm = (view) => {
     setCurrentView(view);
     setError('');
     setSuccessMessage('');
+    // Clear form data when switching views
+    if (view === 'signin') {
+      setSignInData({ email: '', password: '' });
+    } else if (view === 'signup') {
+      setSignUpData({ full_name: '', email: '', phone_number: '', password: '' });
+    } else if (view === 'forgot-password') {
+      setForgotPasswordEmail('');
+    } else if (view === 'reset-password') {
+      setNewPassword('');
+      setConfirmPassword('');
+    }
   };
 
-  const handleSignInChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Sign In handlers
+  const handleSignInChange = (e) => {
     const { id, value } = e.target;
-    setSignInData(prev => ({
-      ...prev,
-      [id]: value
-    }));
+    const field = id.replace('signin-', '');
+    setSignInData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSignUpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    const fieldName = id.replace('signup-', '');
-
-    setSignUpData(prev => ({
-      ...prev,
-      [fieldName]: value
-    }));
-  };
-
-  const validatePassword = (password: string) => {
-    // Password must be at least 8 characters long, contain letters and numbers
-    const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    return regex.test(password);
-  };
-
-  const validateSafaricomPhone = (phone: string) => {
-    // Simple validation for Safaricom phone numbers
-    // This should be a valid Kenyan Safaricom number
-    // More complex validation would be done on the backend
-    const regex = /^(07\d{8}|01\d{8})$/;
-    return regex.test(phone);
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -92,54 +112,41 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
-        {
-          withCredentials: true,  // This is important for cookies
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+        { withCredentials: true }
       );
 
-      setSuccessMessage('Login successful!');
+      setSuccessMessage('Sign in successful!');
       console.log('Sign in successful', response.data);
-
-      // Close the dialog after a short delay to show the success message
+      
+      // Handle successful login (e.g., redirect, update auth state)
       setTimeout(() => {
-        onClose();
-        // Optionally refresh the page or update the app state
-        window.location.reload();
-      }, 1500);
+        if (onClose) onClose();
+        // Add your post-login logic here
+      }, 1000);
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.error || 'Failed to sign in. Please check your credentials.');
+        setError(error.response.data.msg || 'Sign in failed. Please try again.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
-      console.error('Error during sign in:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  // Sign Up handlers
+  const handleSignUpChange = (e) => {
+    const { id, value } = e.target;
+    const field = id.replace('signup-', '');
+    setSignUpData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSignUp = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setError('');
     setSuccessMessage('');
-
-    // Validate password
-    if (!validatePassword(signUpData.password)) {
-      setError('Password must be at least 8 characters long and contain both letters and numbers.');
-      return;
-    }
-
-    // Validate phone number
-    if (!validateSafaricomPhone(signUpData.phone_number)) {
-      setError('Please enter a valid Safaricom phone number (e.g., 0712345678).');
-      return;
-    }
-
-    setIsLoading(true);
 
     try {
       const response = await axios.post(
@@ -148,27 +155,27 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
         { withCredentials: true }
       );
 
-      setSuccessMessage('Account created successfully! You can now sign in.');
+      setSuccessMessage('Account created successfully! Please check your email for verification.');
       console.log('Sign up successful', response.data);
-
-      // Switch to sign in view after successful registration
+      
+      // Switch to sign in after successful registration
       setTimeout(() => {
         toggleForm('signin');
       }, 2000);
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.msg || 'Failed to create account. Please try again.');
+        setError(error.response.data.msg || 'Registration failed. Please try again.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
-      console.error('Error during sign up:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  // Forgot Password handler
+  const handleForgotPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -177,43 +184,80 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
-        { email: forgotPasswordEmail }
+        { email: forgotPasswordEmail },
+        { withCredentials: true }
       );
 
       setSuccessMessage('Password reset link sent to your email!');
-      console.log('Password reset requested', response.data);
+      console.log('Forgot password successful', response.data);
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        setError(error.response.data.msg || 'Failed to request password reset. Please try again.');
+        setError(error.response.data.msg || 'Failed to send reset link. Please try again.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
-      console.error('Error during password reset request:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  // Reset Password handler
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
 
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password strength
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Basic password strength validation
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      setError('Password must contain both letters and numbers.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`,
         { password: newPassword },
-        { withCredentials: true }  // Ensure cookies are included
+        { withCredentials: true }
       );
 
-      setSuccessMessage('Password reset successful!');
+      setSuccessMessage('Password reset successful! Redirecting to sign in...');
       console.log('Password reset successful', response.data);
+
+      // Clear the URL parameters
+      if (resetToken && navigate) {
+        navigate('/', { replace: true });
+      }
 
       // Switch to sign in view after successful password reset
       setTimeout(() => {
-        toggleForm('signin');
+        setCurrentView('signin');
+        setNewPassword('');
+        setConfirmPassword('');
+        setToken('');
+        setSuccessMessage('');
+        // Close modal if it's in a modal
+        if (onClose) {
+          onClose();
+        }
       }, 2000);
 
     } catch (error) {
@@ -229,11 +273,14 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  // Google Login handler
   const handleGoogleLogin = () => {
     try {
       // Store the current URL to redirect back after Google login
       const currentUrl = window.location.href;
-      localStorage.setItem('preAuthUrl', currentUrl);
+      if (typeof Storage !== 'undefined') {
+        localStorage.setItem('preAuthUrl', currentUrl);
+      }
 
       // Log the API URL for debugging
       console.log('API URL:', import.meta.env.VITE_API_URL);
@@ -252,11 +299,15 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
           stack: error.stack
         });
       }
-      toast({
-        title: "Error",
-        description: "Failed to initiate Google login. Please try again.",
-        variant: "destructive"
-      });
+      if (toast) {
+        toast({
+          title: "Error",
+          description: "Failed to initiate Google login. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        setError("Failed to initiate Google login. Please try again.");
+      }
     }
   };
 
@@ -264,6 +315,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] p-0 bg-transparent border-none shadow-none">
         <div className="relative w-full min-h-[580px]">
+          
           {/* Sign In View */}
           {currentView === 'signin' && (
             <Card className="w-full p-6 glass-card">
@@ -274,7 +326,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
               <CardContent className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <lucideReact.AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -289,7 +341,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="email"
                         placeholder="Enter your email"
@@ -313,7 +365,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                       </button>
                     </div>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="password"
                         type="password"
@@ -384,7 +436,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
               <CardContent className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <lucideReact.AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -399,7 +451,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2">
                     <Label htmlFor="signup-full_name">Full Name</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="signup-full_name"
                         placeholder="Enter your full name"
@@ -413,7 +465,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="signup-email"
                         placeholder="Enter your email"
@@ -428,7 +480,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="signup-phone_number">Phone Number</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="signup-phone_number"
                         placeholder="Enter your Safaricom number"
@@ -443,7 +495,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2 mt-4">
                     <Label htmlFor="signup-password">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="signup-password"
                         type="password"
@@ -515,7 +567,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
               <CardContent className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <lucideReact.AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -530,7 +582,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2">
                     <Label htmlFor="forgot-email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="forgot-email"
                         placeholder="Enter your email"
@@ -573,12 +625,12 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
             <Card className="w-full p-6 glass-card">
               <CardHeader className="space-y-1">
                 <CardTitle className="text-2xl text-gradient">Reset Password</CardTitle>
-                <CardDescription>Enter your new password</CardDescription>
+                <CardDescription>Enter your new password below</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
+                    <lucideReact.AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -593,7 +645,7 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="new-password"
                         type="password"
@@ -602,14 +654,48 @@ const AuthCard: React.FC<AuthCardProps> = ({ isOpen, onClose }) => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
+                        minLength={8}
                       />
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 8 characters long and include both letters and numbers
+                    </p>
                   </div>
+                  
+                  <div className="space-y-2 mt-4">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <div className="relative">
+                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        placeholder="Confirm your new password"
+                        className="pl-10"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={8}
+                      />
+                    </div>
+                    {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-xs text-red-500">Passwords do not match</p>
+                    )}
+                    {newPassword && confirmPassword && newPassword === confirmPassword && (
+                      <p className="text-xs text-green-600">Passwords match ✓</p>
+                    )}
+                  </div>
+                  
                   <div className="mt-6">
                     <Button
                       className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
                       type="submit"
-                      disabled={isLoading}
+                      disabled={
+                        isLoading || 
+                        !newPassword || 
+                        !confirmPassword || 
+                        newPassword !== confirmPassword ||
+                        newPassword.length < 8
+                      }
                     >
                       {isLoading ? "Resetting..." : "Reset Password"}
                     </Button>
