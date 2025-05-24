@@ -13,18 +13,43 @@ declare global {
   }
 }
 
+interface TicketData {
+  id: number;
+  event?: {
+    title?: string;
+    start_time?: string;
+    location?: string;
+  };
+  attendee_name?: string;
+  ticket_type?: string;
+  event_id?: number;
+  scanned_at?: string;
+  scanned_by?: string;
+}
+
+interface ScanHistoryItem {
+  id: string;
+  timestamp: string;
+  status: 'success' | 'error';
+  details: TicketData | { error: string };
+}
+
 const QRScanner = () => {
   const { toast } = useToast();
   const [scanning, setScanning] = useState(false);
-  const [scannedCode, setScannedCode] = useState(null);
-  const [verification, setVerification] = useState({ status: null, message: '', ticketData: null });
-  const [history, setHistory] = useState([]);
-  const [cameraPermission, setCameraPermission] = useState(null);
+  const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [verification, setVerification] = useState<{ 
+    status: 'success' | 'error' | null; 
+    message: string; 
+    ticketData: TicketData | null 
+  }>({ status: null, message: '', ticketData: null });
+  const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+  const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('scanner');
   const [loading, setLoading] = useState(false);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const scannerIntervalRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     console.log("QRScanner component mounted");
@@ -113,6 +138,8 @@ const QRScanner = () => {
     
     const canvas = document.createElement('canvas');
     const canvasContext = canvas.getContext('2d');
+    if (!canvasContext) return;
+    
     const width = video.videoWidth;
     const height = video.videoHeight;
     
@@ -131,8 +158,6 @@ const QRScanner = () => {
       setScannedCode(code.data);
       verifyTicket(code.data);
       setScanning(false);
-    } else {
-      console.log("No QR code detected in this frame.");
     }
   };
 
@@ -150,17 +175,20 @@ const QRScanner = () => {
     }
   };
 
-  const verifyTicket = async (ticketId : string) => {
+  const verifyTicket = async (ticketCode: string) => {
     setLoading(true);
     setVerification({ status: null, message: '', ticketData: null });
     
     try {
+      // Option 1: Send the QR code content to validate_ticket endpoint
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/tickets/${ticketId}/verify`,
+        `${import.meta.env.VITE_API_URL}/api/tickets/${ticketCode}/verify`,
         {},
         {
           withCredentials: true,
-          
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
       );
       
@@ -174,7 +202,7 @@ const QRScanner = () => {
         
         // Add to history
         setHistory(prev => [{
-          id: ticketId,
+          id: ticketCode,
           timestamp: new Date().toISOString(),
           status: 'success',
           details: response.data.data
@@ -195,7 +223,7 @@ const QRScanner = () => {
         
         // Add to history
         setHistory(prev => [{
-          id: ticketId,
+          id: ticketCode,
           timestamp: new Date().toISOString(),
           status: 'error',
           details: { error: response.data.message }
@@ -207,18 +235,26 @@ const QRScanner = () => {
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error verifying ticket:', error);
       
       setVerification({
         status: 'error',
-        message: 'Network error. Please try again.',
+        message: error.response?.data?.message || 'Network error. Please try again.',
         ticketData: null
       });
       
+      // Add to history
+      setHistory(prev => [{
+        id: ticketCode,
+        timestamp: new Date().toISOString(),
+        status: 'error',
+        details: { error: error.response?.data?.message || 'Network error' }
+      }, ...prev.slice(0, 19)]);
+      
       toast({
         title: "Error",
-        description: "Network error. Please try again.",
+        description: error.response?.data?.message || "Network error. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -240,15 +276,17 @@ const QRScanner = () => {
     }
   };
 
-  const formatDateTime = (dateString : string) => {
-    const options = { 
+  const formatDateTime = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    
+    const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     };
-    return new Date(dateString).toLocaleString(undefined);
+    return new Date(dateString).toLocaleString(undefined, options);
   };
 
   return (
@@ -302,7 +340,11 @@ const QRScanner = () => {
                 </div>
               ) : scannedCode ? (
                 <div className="space-y-4">
-                  {verification.status === 'success' ? (
+                  {loading ? (
+                    <div className="flex justify-center p-4">
+                      <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : verification.status === 'success' ? (
                     <Alert variant="default" className="bg-green-50 border-green-200">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
                       <AlertTitle className="text-green-800">Valid Ticket</AlertTitle>
@@ -318,11 +360,7 @@ const QRScanner = () => {
                         {verification.message}
                       </AlertDescription>
                     </Alert>
-                  ) : (
-                    <div className="flex justify-center p-4">
-                      <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  )}
+                  ) : null}
                   
                   {verification.ticketData && (
                     <Card className="border-green-200">
@@ -337,7 +375,10 @@ const QRScanner = () => {
                           <p>{verification.ticketData.event?.title || 'N/A'}</p>
                           
                           <p className="font-medium">Date:</p>
-                          <p>{verification.ticketData.event ? formatDateTime(verification.ticketData.event.start_time) : 'N/A'}</p>
+                          <p>{verification.ticketData.event?.start_time ? formatDateTime(verification.ticketData.event.start_time) : 'N/A'}</p>
+                          
+                          <p className="font-medium">Location:</p>
+                          <p>{verification.ticketData.event?.location || 'N/A'}</p>
                           
                           <p className="font-medium">Ticket ID:</p>
                           <p className="font-mono">{verification.ticketData.id}</p>
@@ -347,6 +388,9 @@ const QRScanner = () => {
                           
                           <p className="font-medium">Ticket Type:</p>
                           <p>{verification.ticketData.ticket_type || 'Standard'}</p>
+                          
+                          <p className="font-medium">Scanned:</p>
+                          <p>{verification.ticketData.scanned_at ? formatDateTime(verification.ticketData.scanned_at) : 'Just now'}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -401,9 +445,14 @@ const QRScanner = () => {
                           </span>
                         </div>
                         <p className="text-sm mt-1">
-                          {item.status === 'success' 
-                            ? item.details?.event?.title || 'Ticket verified' 
-                            : item.details?.error || 'Verification failed'}
+                          
+                          {item.status === 'success'
+                            ? 'event' in item.details && item.details.event?.title
+                              ? item.details.event.title
+                              : 'Ticket verified'
+                            : 'error' in item.details
+                              ? item.details.error
+                              : 'Verification failed'}
                         </p>
                       </div>
                     </div>
