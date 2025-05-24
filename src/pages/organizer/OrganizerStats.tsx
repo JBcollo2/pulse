@@ -1,264 +1,272 @@
-import React, { useState, useEffect } from 'react';
+// frontend/pulse/src/pages/organizer/OrganizerStats.tsx
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-// Import icons for stats
-import { CalendarDays, DollarSign, CheckCircle, BarChart2, Users, TrendingUp } from 'lucide-react';
-// Import recharts components if planning graphical representation
-// import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { toast } from "@/components/ui/use-toast";
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    BarChart, Bar
+} from 'recharts';
 
-
-// Define a type for the expected statistics data from the backend
-// This is a hypothetical structure, adjust based on your actual backend endpoint
-interface OrganizerStatsData {
-  totalEvents: number;
-  totalTicketsSold: number;
-  totalRevenue: number;
-  averageTicketsPerEvent?: number; // Optional stat
-  eventsCreatedOverTime?: { date: string; count: number }[]; // Data for a time series chart
-  ticketsSoldOverTime?: { date: string; count: number }[]; // Data for a time series chart
-  revenueByEventType?: { type: string; amount: number }[]; // Data for a chart
+// --- Interfaces for Data Structures ---
+// Define the shape of the aggregate statistics data you expect from your backend.
+export interface OrganizerOverallStats {
+    total_events: number;
+    total_tickets_sold_all_events: number;
+    total_revenue_all_events: number;
+    upcoming_events_count: number;
+    past_events_count: number;
+    // Example for trends over time
+    tickets_sold_monthly_trend: { month: string; tickets: number }[];
+    revenue_monthly_trend: { month: string; revenue: number }[];
+    // You can add more aggregate stats here, e.g., popular event categories, top-performing events
 }
 
+// --- OrganizerStats Component ---
 const OrganizerStats: React.FC = () => {
-  const [stats, setStats] = useState<OrganizerStatsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null); // Error can be null
+    const [overallStats, setOverallStats] = useState<OrganizerOverallStats | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-  const { toast } = useToast();
+    // --- Data Fetching Logic (Simulated) ---
+    const fetchOverallStats = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        setOverallStats(null); // Clear previous stats
 
-  // Placeholder for error handling function
-  const handleFetchError = async (response: Response) => {
-    let errorMessage = `HTTP error! status: ${response.status}`;
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-    } catch (jsonError) {
-      console.error('Failed to parse error response:', jsonError);
-    }
-    setError(errorMessage);
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-  };
+        try {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
 
-  // Function to fetch aggregated organizer statistics
-  const fetchOrganizerStats = async () => {
-    setIsLoading(true);
-    setError(null); // Clear previous errors
-    setStats(null); // Clear previous stats
-    try {
-      // NOTE: This endpoint is hypothetical. You need a backend endpoint
-      // that provides aggregated statistics for the logged-in organizer.
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/organizer/stats`, {
-        credentials: 'include', // Important for sending cookies with JWT
-      });
+            // --- IMPORTANT: Replace with your actual API call to fetch overall organizer stats ---
+            /*
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error("Authentication token not found. Please log in.");
+            }
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/organizer/stats/overall`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-      if (!response.ok) {
-        await handleFetchError(response);
-         if (response.status === 403) {
-             setError("You are not authorized to view statistics.");
-         } else {
-             setError('Failed to fetch organizer statistics.');
-         }
-        return;
-      }
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to fetch overall statistics.");
+            }
+            const data: OrganizerOverallStats = await response.json();
+            */
 
-      const data: OrganizerStatsData = await response.json();
-      setStats(data);
+            // Dummy data for demonstration
+            const data: OrganizerOverallStats = {
+                total_events: 15,
+                total_tickets_sold_all_events: 5800,
+                total_revenue_all_events: 350000.75,
+                upcoming_events_count: 5,
+                past_events_count: 10,
+                tickets_sold_monthly_trend: [
+                    { month: 'Jan', tickets: 300 },
+                    { month: 'Feb', tickets: 450 },
+                    { month: 'Mar', tickets: 600 },
+                    { month: 'Apr', tickets: 550 },
+                    { month: 'May', tickets: 800 },
+                    { month: 'Jun', tickets: 900 },
+                    { month: 'Jul', tickets: 700 },
+                ],
+                revenue_monthly_trend: [
+                    { month: 'Jan', revenue: 15000 },
+                    { month: 'Feb', revenue: 22000 },
+                    { month: 'Mar', revenue: 30000 },
+                    { month: 'Apr', revenue: 28000 },
+                    { month: 'May', revenue: 40000 },
+                    { month: 'Jun', revenue: 45000 },
+                    { month: 'Jul', revenue: 35000 },
+                ],
+            };
 
-    } catch (err) {
-      console.error('Fetch organizer stats error:', err);
-      setError('An unexpected error occurred while fetching statistics.');
-      toast({
-        title: "Error",
-        description: 'An unexpected error occurred while fetching statistics.',
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            setOverallStats(data);
+            toast({ title: "Stats Loaded", description: "Overall statistics fetched successfully.", duration: 3000 });
 
-  // Fetch stats when the component mounts
-  useEffect(() => {
-    fetchOrganizerStats();
-  }, []); // Empty dependency array means this runs once on mount
+        } catch (err: any) {
+            console.error("Failed to fetch overall stats:", err);
+            setError(err.message || "An unknown error occurred while fetching overall statistics.");
+            toast({ variant: "destructive", title: "Stats Error", description: err.message || "Failed to load overall statistics." });
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
+    // Fetch overall stats on component mount
+    useEffect(() => {
+        fetchOverallStats();
+    }, [fetchOverallStats]);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Organizer Statistics</CardTitle>
-            <CardDescription>Loading statistics...</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, index) => ( // Show a few loading placeholders
-                <div key={index} className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              ))}
+    // --- Conditional Rendering ---
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Overall Statistics</CardTitle>
+                        <CardDescription>Loading your overall event performance...</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-center h-48 animate-pulse text-muted-foreground">
+                            <p>Loading overall statistics...</p>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+        );
+    }
 
-  if (error) {
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Overall Statistics</CardTitle>
+                        <CardDescription>Error loading statistics.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-red-500 font-semibold">Error: {error}</p>
+                        <p className="text-muted-foreground mt-2">Please try refreshing.</p>
+                        <button onClick={fetchOverallStats} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            Retry
+                        </button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    if (!overallStats) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Overall Statistics</CardTitle>
+                        <CardDescription>No overall statistics available.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            Could not retrieve overall statistics. This might happen if you haven't created any events yet.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+
+    // --- Main Content ---
     return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Organizer Statistics</CardTitle>
-            <CardDescription>Error loading statistics.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-500">Error: {error}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If not loading and no error, but no stats data (e.g., organizer has no events)
-  if (!stats) {
-     return (
         <div className="space-y-6">
-           <Card>
-               <CardHeader>
-                   <CardTitle>Organizer Statistics</CardTitle>
-                   <CardDescription>No statistics available.</CardDescription>
-               </CardHeader>
-               <CardContent>
-                   <p>Statistics will appear here once you have created events and made sales.</p>
-               </CardContent>
-           </Card>
-       </div>
-     );
-  }
+            <h1 className="text-3xl font-bold text-foreground">Overall Statistics</h1>
+            <p className="text-muted-foreground text-lg">
+                Gain insights into your performance across all events.
+            </p>
 
+            {/* Key Metrics Summary */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Total Events Managed</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-primary">
+                        {overallStats.total_events}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Total Tickets Sold</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-green-600">
+                        {overallStats.total_tickets_sold_all_events}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Total Revenue Generated</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-blue-600">
+                        ${overallStats.total_revenue_all_events?.toFixed(2)}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Upcoming Events</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-yellow-600">
+                        {overallStats.upcoming_events_count}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Past Events</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-gray-600">
+                        {overallStats.past_events_count}
+                    </CardContent>
+                </Card>
+            </div>
 
-  // Display the stats if data is available
-  return (
-    <div className="space-y-6">
-      <h1>Organizer Statistics</h1>
-      <p>Aggregated statistics across all your events.</p>
-
-      {/* Summary Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events Created</CardTitle>
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEvents}</div>
-             {/* Add comparison text if available */}
-            {/* <p className="text-xs text-muted-foreground">+XX% from last period</p> */}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTicketsSold}</div>
-             {/* Add comparison text if available */}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.totalRevenue?.toFixed(2) || '0.00'}</div> {/* Added optional chaining and default */}
-             {/* Add comparison text if available */}
-          </CardContent>
-        </Card>
-
-         {/* Optional: Average Tickets Per Event */}
-         {stats.averageTicketsPerEvent !== undefined && (
-             <Card>
-               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                 <CardTitle className="text-sm font-medium">Avg Tickets per Event</CardTitle>
-                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
-               </CardHeader>
-               <CardContent>
-                 <div className="text-2xl font-bold">{stats.averageTicketsPerEvent?.toFixed(1) || '0.0'}</div> {/* Added optional chaining and default */}
-               </CardContent>
-             </Card>
-         )}
-      </div>
-
-       {/* Placeholder for Charts */}
-       <div className="grid gap-4 md:grid-cols-2">
-            {/* Example: Events Created Over Time Chart */}
-           {/* {stats.eventsCreatedOverTime && stats.eventsCreatedOverTime.length > 0 && (
-             <Card>
-                <CardHeader><CardTitle>Events Created Over Time</CardTitle></CardHeader>
+            {/* Monthly Tickets Sold Trend */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Monthly Tickets Sold Trend</CardTitle>
+                    <CardDescription>Tickets sold over the last few months.</CardDescription>
+                </CardHeader>
                 <CardContent>
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stats.eventsCreatedOverTime}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Bar dataKey="count" name="Events" fill="#8884d8" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+                    {overallStats.tickets_sold_monthly_trend && overallStats.tickets_sold_monthly_trend.length > 0 ? (
+                        <div className="h-72">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={overallStats.tickets_sold_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="tickets" stroke="#8884d8" activeDot={{ r: 8 }} name="Tickets Sold" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="h-72 flex items-center justify-center text-muted-foreground">No monthly ticket sales trend data.</div>
+                    )}
                 </CardContent>
-             </Card>
-           )} */}
+            </Card>
 
-           {/* Example: Revenue by Event Type Chart (if backend provides this) */}
-            {/* {stats.revenueByEventType && stats.revenueByEventType.length > 0 && (
-             <Card>
-                <CardHeader><CardTitle>Revenue by Event Type</CardTitle></CardHeader>
+            {/* Monthly Revenue Trend */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Monthly Revenue Trend</CardTitle>
+                    <CardDescription>Revenue generated over the last few months.</CardDescription>
+                </CardHeader>
                 <CardContent>
-                     <div className="h-[300px]">
-                       <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={stats.revenueByEventType}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                outerRadius={80}
-                                fill="#00C49F"
-                                dataKey="amount"
-                                nameKey="type"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                              >
-                                {stats.revenueByEventType.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip formatter={(value, name) => [`$${Number(value).toFixed(2)}`, name]}/>
-                              <Legend />
-                           </PieChart>
-                        </ResponsiveContainer>
-                    </div>
+                    {overallStats.revenue_monthly_trend && overallStats.revenue_monthly_trend.length > 0 ? (
+                        <div className="h-72">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={overallStats.revenue_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis tickFormatter={(value: number) => `$${value}`} />
+                                    <Tooltip formatter={(value: number) => [`$${value?.toFixed(2)}`, 'Revenue']} />
+                                    <Legend />
+                                    <Bar dataKey="revenue" fill="#82ca9d" name="Revenue" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <div className="h-72 flex items-center justify-center text-muted-foreground">No monthly revenue trend data.</div>
+                    )}
                 </CardContent>
-             </Card>
-           )} */}
-       </div>
+            </Card>
 
+            {/* You can add more complex charts or lists for other aggregate data here,
+                e.g., top-performing events, events by category, average ticket price etc. */}
 
-    </div>
-  );
+        </div>
+    );
 };
 
 export default OrganizerStats;

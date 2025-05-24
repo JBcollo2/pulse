@@ -1,23 +1,27 @@
+// src/pages/Dashboard.tsx
+
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Calendar, Ticket, Settings, Users, QrCode } from 'lucide-react';
+
+// Import your main page-level components
 import Overview from './Overview';
 import Tickets from './Tickets';
 import QRScanner from './QRScanner';
 import UserProfile from './UserProfile';
-import Organizer from './Organizer';
 import Admin from './Admin';
+import ManageOrganizersPage from './Manage_organizer'; // Correctly import the component for managing organizers
 
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  
+
   return (
     <div className="min-h-screen bg-background text-foreground pt-16">
       <Navbar />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar */}
@@ -33,7 +37,7 @@ const Dashboard = () => {
                     { id: "overview", name: "Overview", icon: BarChart },
                     { id: "tickets", name: "Tickets", icon: Ticket },
                     { id: "scanner", name: "QR Scanner", icon: QrCode },
-                    { id: "organizers", name: "Organizers", icon: Users },
+                    { id: "organizers", name: "Organizers", icon: Users }, // Tab for managing organizers
                     { id: "profile", name: "Profile", icon: Settings },
                     { id: "admin", name: "Admin", icon: Settings },
                   ].map((item) => (
@@ -54,19 +58,19 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Main Content */}
           <div className="flex-1">
-            {activeTab === "overview" && <Admin />}
+            {activeTab === "overview" && <Overview />}
             {activeTab === "tickets" && <Tickets />}
             {activeTab === "scanner" && <QRScanner />}
-            {activeTab === "organizers" && <Organizer />}
+            {activeTab === "organizers" && <ManageOrganizersPage />} {/* Render ManageOrganizersPage here */}
             {activeTab === "profile" && <UserProfile />}
             {activeTab === "admin" && <Admin />}
           </div>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );
