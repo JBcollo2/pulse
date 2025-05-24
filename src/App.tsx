@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import EventDetails from "./pages/EventDetails";
 import GoogleCallback from "./components/GoogleCallback";
+import AuthCard from './components/AuthCard';
 import ProtectedRoute from "./components/prt";
 import PaymentStatus from "./pages/PaymentStatus";
 const queryClient = new QueryClient();
@@ -40,6 +41,19 @@ const App = () => (
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="*" element={<NotFound />} />
             <Route path="/auth/callback/google" element={<GoogleCallback />} />
+            <Route
+              path="/reset-password/:token"
+              element={
+                <AuthCard
+                  isOpen={true}
+                  onClose={() => {}}
+                  initialView="reset-password"
+                  toast={() => {}}
+                />
+              }
+            />
+            
+
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
