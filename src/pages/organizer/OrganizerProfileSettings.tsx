@@ -68,45 +68,21 @@ const OrganizerProfileSettings: React.FC = () => {
 
     const { register, handleSubmit, reset, formState: { errors, isDirty } } = form; // isDirty checks if form has changed
 
-    // --- Fetch Profile Data (Simulated) ---
+    // --- Fetch Profile Data ---
     const fetchProfile = useCallback(async () => {
         setIsLoadingProfile(true);
         setProfileError(null);
         try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // --- IMPORTANT: Replace with your actual API call to fetch organizer profile ---
-            /*
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error("Authentication token not found. Please log in.");
-            }
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/organizer/profile`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                credentials: 'include'
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to fetch profile data.");
             }
+
             const data: OrganizerProfile = await response.json();
-            */
-
-            // Dummy data for demonstration
-            const data: OrganizerProfile = {
-                id: 1,
-                name: "John Doe",
-                email: "john.doe@example.com",
-                contact_phone: "+254712345678",
-                organization_name: "EventPro Solutions",
-                address: "123 Event Ave",
-                city: "Nairobi",
-                country: "Kenya",
-            };
-
             setProfile(data);
             // Reset the form with the fetched data
             reset(data);
@@ -121,33 +97,24 @@ const OrganizerProfileSettings: React.FC = () => {
         } finally {
             setIsLoadingProfile(false);
         }
-    }, [reset]); // `reset` from useForm should be stable, but added for correctness
+    }, [reset]);
 
     // Fetch profile data on component mount
     useEffect(() => {
         fetchProfile();
     }, [fetchProfile]);
 
-    // --- Update Profile Data (Simulated) ---
+    // --- Update Profile Data ---
     const onSubmit = async (data: ProfileFormValues) => {
         setIsUpdating(true);
         setProfileError(null); // Clear previous errors
 
         try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // --- IMPORTANT: Replace with your actual API call to update organizer profile ---
-            /*
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error("Authentication token not found. Please log in.");
-            }
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/organizer/profile`, {
-                method: 'PUT', // Or PATCH, depending on your API
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                method: 'PUT',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(data),
             });
@@ -156,15 +123,8 @@ const OrganizerProfileSettings: React.FC = () => {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update profile data.");
             }
+
             const updatedProfile: OrganizerProfile = await response.json();
-            */
-
-            // Dummy success simulation
-            const updatedProfile: OrganizerProfile = {
-                ...profile!, // Use existing ID
-                ...data, // Merge submitted data
-            };
-
             setProfile(updatedProfile);
             toast({
                 title: "Profile Updated",
@@ -195,8 +155,13 @@ const OrganizerProfileSettings: React.FC = () => {
                     <CardDescription>Loading your profile details...</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-center h-48 animate-pulse text-muted-foreground">
-                        Loading profile...
+                    <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                            <div key={index} className="animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
                     </div>
                 </CardContent>
             </Card>

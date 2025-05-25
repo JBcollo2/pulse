@@ -1,27 +1,52 @@
-// frontend/pulse/src/pages/organizer/OrganizerReports.tsx
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend
+    PieChart, Pie, Cell, Legend, LabelList
 } from 'recharts';
 
-// Import the EventReport interface from OrganizerDashboard for type consistency.
-// This ensures the report data structure is understood across components.
-import { EventReport } from './OrganizerDashboard'; // Adjust path if necessary
+// Define specific colors for each ticket type
+const COLORS_BY_TICKET = {
+  REGULAR: '#FF8042',     // Orange
+  VIP: '#FFBB28',         // Yellow
+  STUDENT: '#0088FE',     // Blue
+  GROUP_OF_5: '#00C49F',  // Green
+  COUPLES: '#FF6699',     // Pinkish
+  EARLY_BIRD: '#AA336A',  // Purple
+  VVIP: '#00FF00',        // Bright Green for VVIP
+  GIVEAWAY: '#CCCCCC',    // Grey
+  UNKNOWN_TYPE: '#A9A9A9', // Darker Grey for unknown types
+};
+
+// Fallback color if a ticket type is not in COLORS_BY_TICKET
+const FALLBACK_COLOR = COLORS_BY_TICKET.UNKNOWN_TYPE;
 
 // Define the props interface for the OrganizerReports component.
-// This component expects specific data and state flags from its parent.
 interface OrganizerReportsProps {
     isLoading: boolean; // Indicates if the report data is currently being fetched.
     error: string | null; // Stores any error message if data fetching fails.
     eventReport: EventReport | null; // The actual report data for the event, can be null if not loaded or an error occurred.
 }
 
-// Define a set of appealing colors for the pie chart slices and bar chart bars.
-// These provide visual distinction for different data categories.
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#A4DE6C', '#D0ED57', '#FFC658'];
+// Define the EventReport interface for type consistency.
+interface EventReport {
+    event_id: number;
+    event_name: string;
+    total_tickets_sold: number;
+    number_of_attendees: number;
+    total_revenue: number;
+    event_date: string;
+    event_location: string;
+    tickets_sold_by_type: { [key: string]: number };
+    revenue_by_ticket_type: { [key: string]: number };
+    attendees_by_ticket_type: { [key: string]: number };
+    payment_method_usage: { [key: string]: number };
+    tickets_sold_by_type_for_graph: { labels: string[], data: number[] };
+    attendees_by_ticket_type_for_graph: { labels: string[], data: number[] };
+    revenue_by_ticket_type_for_graph: { labels: string[], data: number[] };
+    payment_method_usage_for_graph: { labels: string[], data: number[] };
+}
 
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({
     isLoading,
@@ -50,8 +75,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
     };
 
     // Prepare data for each chart by transforming the raw data from `eventReport`.
-    // We use optional chaining (`?.`) to safely access nested properties, returning an empty array
-    // for chart data if `eventReport` or its specific graph data property is null/undefined.
     const ticketsSoldData = eventReport ? transformGraphData(eventReport.tickets_sold_by_type_for_graph?.labels, eventReport.tickets_sold_by_type_for_graph?.data) : [];
     const attendeesData = eventReport ? transformGraphData(eventReport.attendees_by_ticket_type_for_graph?.labels, eventReport.attendees_by_ticket_type_for_graph?.data) : [];
     const revenueData = eventReport ? transformGraphData(eventReport.revenue_by_ticket_type_for_graph?.labels, eventReport.revenue_by_ticket_type_for_graph?.data) : [];
@@ -69,9 +92,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
                         <CardDescription>Fetching report data...</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {/* Simple loading animation placeholder */}
-                        <div className="flex items-center justify-center h-48 animate-pulse text-muted-foreground">
-                            <p>Loading event report data...</p>
+                        <div className="space-y-4">
+                            {[...Array(3)].map((_, index) => (
+                                <div key={index} className="animate-pulse">
+                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            ))}
                         </div>
                     </CardContent>
                 </Card>
@@ -98,7 +125,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
     }
 
     // 3. **No Data State:** Display a message if no report data is available after loading and without errors.
-    // This could happen if the event has no sales or scans yet, or if the backend returns empty data.
     if (!eventReport) {
         return (
             <div className="space-y-6">
@@ -118,64 +144,82 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
     }
 
     // --- Main Report Content (if data is successfully loaded) ---
-    // If we reach this point, `eventReport` is guaranteed to be an `EventReport` object.
     return (
         <div className="space-y-6">
-            {/* The main title like "Report for [Event Name]" and the "Back" button
-                are handled in the parent component (OrganizerDashboard) where this component is rendered. */}
-
             {/* Summary Card: Displays key numerical metrics at the top of the report */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Event Summary</CardTitle>
-                    <CardDescription>Key performance indicators for your event.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                        <strong>Total Tickets Sold:</strong> {eventReport.total_tickets_sold}
-                    </div>
-                    <div>
-                        <strong>Number of Attendees:</strong> {eventReport.number_of_attendees}
-                    </div>
-                    <div>
-                        {/* Format revenue as currency, providing '0.00' if total_revenue is null/undefined */}
-                        <strong>Total Revenue:</strong> ${eventReport.total_revenue?.toFixed(2) || '0.00'}
-                    </div>
-                    {/* Display event date and location from the report data */}
-                    {eventReport.event_date && (
-                        <div><strong>Event Date:</strong> {eventReport.event_date}</div>
-                    )}
-                    {eventReport.event_location && (
-                        <div><strong>Location:</strong> {eventReport.event_location}</div>
-                    )}
-                </CardContent>
-            </Card>
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Total Tickets Sold</CardTitle>
+                        <CardDescription>Number of tickets sold</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{eventReport.total_tickets_sold}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Total Revenue</CardTitle>
+                        <CardDescription>Total revenue from all events</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">${eventReport.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Number of Attendees</CardTitle>
+                        <CardDescription>Number of attendees</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{eventReport.number_of_attendees}</div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Graphical Reports Section: Displays charts for visual insights */}
             <div className="grid gap-6 md:grid-cols-2">
-
                 {/* Tickets Sold by Type Bar Chart */}
                 <Card>
-                    <CardHeader><CardTitle>Tickets Sold by Type</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Tickets Sold by Type</CardTitle>
+                        <CardDescription>Number of tickets sold by type</CardDescription>
+                    </CardHeader>
                     <CardContent>
-                        {/* ResponsiveContainer ensures the chart scales appropriately */}
-                        <div className="h-64 md:h-72 lg:h-80"> {/* Define a fixed height for chart consistency */}
+                        <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                {/* Render BarChart only if `ticketsSoldData` has entries */}
                                 {ticketsSoldData.length > 0 ? (
-                                    <BarChart data={ticketsSoldData}>
-                                        <CartesianGrid strokeDasharray="3 3" /> {/* Dashed grid lines for background */}
+                                    <BarChart
+                                        data={ticketsSoldData}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                                         <XAxis
                                             dataKey="name"
-                                            interval={0} // Show all labels
-                                            angle={-30} // Angle labels to prevent overlap
-                                            textAnchor="end" // Anchor text at the end for angled labels
-                                            height={60} // Provide enough height for angled labels
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            interval={0}
+                                            style={{ fontSize: '12px' }}
+                                            tick={{ fill: '#aaa', fontSize: 12 }}
                                         />
-                                        <YAxis /> {/* Y-axis for the count */}
-                                        <Tooltip formatter={(value: number) => [`${value} tickets`, 'Count']} /> {/* Custom tooltip for clarity */}
-                                        <Legend /> {/* Legend for the bar series */}
-                                        <Bar dataKey="value" name="Tickets Sold" fill={COLORS[0]} /> {/* Use 'value' for bar height */}
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fill: '#aaa', fontSize: 12 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: "#1a1a2e", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            formatter={(value: number) => [`${value} tickets`, 'Count']}
+                                            labelFormatter={(label) => `Ticket Type: ${label}`}
+                                        />
+                                        <Bar
+                                            dataKey="value"
+                                            fill="#8884d8"
+                                            radius={[10, 10, 0, 0]}
+                                            animationDuration={1500}
+                                        >
+                                            <LabelList dataKey="value" position="top" fill="#fff" fontSize={12} />
+                                        </Bar>
                                     </BarChart>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-muted-foreground">No ticket sales data available for chart.</div>
@@ -187,53 +231,95 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
 
                 {/* Revenue by Ticket Type Pie Chart */}
                 <Card>
-                    <CardHeader><CardTitle>Revenue by Ticket Type</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Revenue by Ticket Type</CardTitle>
+                        <CardDescription>Revenue distribution across ticket types</CardDescription>
+                    </CardHeader>
                     <CardContent>
-                        <div className="h-64 md:h-72 lg:h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                                {revenueData.length > 0 ? (
+                        <div className="h-[300px] flex flex-col items-center justify-center">
+                            {revenueData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={250}>
                                     <PieChart>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            formatter={(value: number, name: string, entry: any) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, entry.payload.name]}
+                                        />
                                         <Pie
                                             data={revenueData}
-                                            cx="50%" // Center X-coordinate of the pie chart
-                                            cy="50%" // Center Y-coordinate of the pie chart
-                                            labelLine={false} // Hide lines connecting slices to labels
-                                            outerRadius="80%" // Outer radius of the pie slices (relative to container)
-                                            dataKey="value" // Specifies which key in data stores the slice value
-                                            nameKey="name" // Specifies which key in data stores the slice name for tooltips/labels
-                                            label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} // Label format (e.g., "General (50%)")
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={3}
+                                            animationDuration={1500}
+                                            labelLine={true}
+                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                                         >
-                                            {/* Map over data to apply distinct colors to each slice */}
                                             {revenueData.map((entry, index) => (
-                                                <Cell key={`cell-revenue-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS_BY_TICKET[entry.name.toUpperCase()] || FALLBACK_COLOR}
+                                                />
                                             ))}
                                         </Pie>
-                                        {/* Tooltip formatted to show value as currency */}
-                                        <Tooltip formatter={(value: number, name: string) => [`$${value?.toFixed(2) || '0.00'}`, name]} />
-                                        <Legend /> {/* Legend matching slice colors to names */}
+                                        <Legend
+                                            layout="horizontal"
+                                            align="center"
+                                            verticalAlign="bottom"
+                                            wrapperStyle={{ paddingTop: '10px' }}
+                                        />
                                     </PieChart>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-muted-foreground">No revenue data available for chart.</div>
-                                )}
-                            </ResponsiveContainer>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-muted-foreground">No revenue data by ticket type available for chart.</div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
 
                 {/* Attendees by Ticket Type Bar Chart */}
                 <Card>
-                    <CardHeader><CardTitle>Attendees by Ticket Type</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Attendees by Ticket Type</CardTitle>
+                        <CardDescription>Number of attendees by ticket type</CardDescription>
+                    </CardHeader>
                     <CardContent>
-                        <div className="h-64 md:h-72 lg:h-80">
+                        <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 {attendeesData.length > 0 ? (
-                                    <BarChart data={attendeesData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" interval={0} angle={-30} textAnchor="end" height={60} />
-                                        <YAxis />
-                                        <Tooltip formatter={(value: number) => [`${value} attendees`, 'Count']} />
-                                        <Legend />
-                                        <Bar dataKey="value" name="Attendees" fill={COLORS[1]} /> {/* Using a different color for distinction */}
+                                    <BarChart
+                                        data={attendeesData}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                                        <XAxis
+                                            dataKey="name"
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={80}
+                                            interval={0}
+                                            style={{ fontSize: '12px' }}
+                                            tick={{ fill: '#aaa', fontSize: 12 }}
+                                        />
+                                        <YAxis
+                                            allowDecimals={false}
+                                            tick={{ fill: '#aaa', fontSize: 12 }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: "#1a1a2e", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            formatter={(value: number) => [`${value} attendees`, 'Count']}
+                                            labelFormatter={(label) => `Ticket Type: ${label}`}
+                                        />
+                                        <Bar
+                                            dataKey="value"
+                                            fill="#8884d8"
+                                            radius={[10, 10, 0, 0]}
+                                            animationDuration={1500}
+                                        >
+                                            <LabelList dataKey="value" position="top" fill="#fff" fontSize={12} />
+                                        </Bar>
                                     </BarChart>
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-muted-foreground">No attendee data available for chart.</div>
@@ -245,33 +331,50 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
 
                 {/* Payment Method Usage Pie Chart */}
                 <Card>
-                    <CardHeader><CardTitle>Payment Method Usage</CardTitle></CardHeader>
+                    <CardHeader>
+                        <CardTitle>Payment Method Usage</CardTitle>
+                        <CardDescription>Payment method usage distribution</CardDescription>
+                    </CardHeader>
                     <CardContent>
-                        <div className="h-64 md:h-72 lg:h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                                {paymentMethodData.length > 0 ? (
+                        <div className="h-[300px] flex flex-col items-center justify-center">
+                            {paymentMethodData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height={250}>
                                     <PieChart>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            formatter={(value: number) => [`${value} transactions`, 'Count']}
+                                        />
                                         <Pie
                                             data={paymentMethodData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            outerRadius="80%"
                                             dataKey="value"
                                             nameKey="name"
-                                            label={({ name, value }) => `${name} (${value})`} // Show name and count (e.g., "Credit Card (120)")
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={60}
+                                            outerRadius={90}
+                                            paddingAngle={3}
+                                            animationDuration={1500}
+                                            labelLine={true}
+                                            label={({ name, value }) => `${name} (${value})`}
                                         >
                                             {paymentMethodData.map((entry, index) => (
-                                                <Cell key={`cell-payment-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={COLORS_BY_TICKET[entry.name.toUpperCase()] || FALLBACK_COLOR}
+                                                />
                                             ))}
                                         </Pie>
-                                        <Tooltip formatter={(value: number) => [`${value} transactions`, 'Count']} />
-                                        <Legend />
+                                        <Legend
+                                            layout="horizontal"
+                                            align="center"
+                                            verticalAlign="bottom"
+                                            wrapperStyle={{ paddingTop: '10px' }}
+                                        />
                                     </PieChart>
-                                ) : (
-                                    <div className="flex items-center justify-center h-full text-muted-foreground">No payment data available for chart.</div>
-                                )}
-                            </ResponsiveContainer>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-muted-foreground">No payment data available for chart.</div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -279,16 +382,20 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
 
             {/* Detailed Lists Section: Displays data in text format, complementing the charts */}
             <Card>
-                <CardHeader><CardTitle>Detailed Breakdown</CardTitle></CardHeader>
+                <CardHeader>
+                    <CardTitle>Detailed Breakdown</CardTitle>
+                    <CardDescription>Detailed breakdown of event data</CardDescription>
+                </CardHeader>
                 <CardContent className="space-y-6 text-sm">
                     {/* Tickets Sold by Type List */}
                     <div>
                         <h4 className="font-semibold mb-2 text-lg">Tickets Sold by Type:</h4>
-                        {/* Check if the object exists and has entries before mapping */}
                         {eventReport.tickets_sold_by_type && Object.entries(eventReport.tickets_sold_by_type).length > 0 ? (
                             <ul className="list-disc pl-5 space-y-1">
                                 {Object.entries(eventReport.tickets_sold_by_type).map(([type, count]) => (
-                                    <li key={type}>{type}: <span className="font-medium">{count} tickets</span></li>
+                                    <li key={type}>
+                                        <Badge variant="outline">{type}</Badge>: <span className="font-medium">{count} tickets</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -302,7 +409,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
                         {eventReport.revenue_by_ticket_type && Object.entries(eventReport.revenue_by_ticket_type).length > 0 ? (
                             <ul className="list-disc pl-5 space-y-1">
                                 {Object.entries(eventReport.revenue_by_ticket_type).map(([type, revenue]) => (
-                                    <li key={type}>{type}: <span className="font-medium">${revenue?.toFixed(2) || '0.00'}</span></li>
+                                    <li key={type}>
+                                        <Badge variant="outline">{type}</Badge>: <span className="font-medium">${revenue?.toFixed(2) || '0.00'}</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -316,7 +425,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
                         {eventReport.attendees_by_ticket_type && Object.entries(eventReport.attendees_by_ticket_type).length > 0 ? (
                             <ul className="list-disc pl-5 space-y-1">
                                 {Object.entries(eventReport.attendees_by_ticket_type).map(([type, count]) => (
-                                    <li key={type}>{type}: <span className="font-medium">{count} attendees</span></li>
+                                    <li key={type}>
+                                        <Badge variant="outline">{type}</Badge>: <span className="font-medium">{count} attendees</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -330,7 +441,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
                         {eventReport.payment_method_usage && Object.entries(eventReport.payment_method_usage).length > 0 ? (
                             <ul className="list-disc pl-5 space-y-1">
                                 {Object.entries(eventReport.payment_method_usage).map(([method, count]) => (
-                                    <li key={method}>{method}: <span className="font-medium">{count} transactions</span></li>
+                                    <li key={method}>
+                                        <Badge variant="outline">{method}</Badge>: <span className="font-medium">{count} transactions</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -339,11 +452,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Note: A button to download a PDF report would typically trigger a backend endpoint
-                that generates and emails/serves the PDF. The current backend implementation
-                sends the PDF via email when the report is fetched. */}
-
         </div>
     );
 };

@@ -1,5 +1,3 @@
-// frontend/pulse/src/pages/organizer/OrganizerStats.tsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
@@ -28,62 +26,24 @@ const OrganizerStats: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    // --- Data Fetching Logic (Simulated) ---
+    // --- Data Fetching Logic ---
     const fetchOverallStats = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         setOverallStats(null); // Clear previous stats
 
         try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // --- IMPORTANT: Replace with your actual API call to fetch overall organizer stats ---
-            /*
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error("Authentication token not found. Please log in.");
-            }
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/organizer/stats/overall`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            // Fetch data from the endpoint
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/event/<event_id>/report`, {
+                credentials: 'include'
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to fetch overall statistics.");
             }
+
             const data: OrganizerOverallStats = await response.json();
-            */
-
-            // Dummy data for demonstration
-            const data: OrganizerOverallStats = {
-                total_events: 15,
-                total_tickets_sold_all_events: 5800,
-                total_revenue_all_events: 350000.75,
-                upcoming_events_count: 5,
-                past_events_count: 10,
-                tickets_sold_monthly_trend: [
-                    { month: 'Jan', tickets: 300 },
-                    { month: 'Feb', tickets: 450 },
-                    { month: 'Mar', tickets: 600 },
-                    { month: 'Apr', tickets: 550 },
-                    { month: 'May', tickets: 800 },
-                    { month: 'Jun', tickets: 900 },
-                    { month: 'Jul', tickets: 700 },
-                ],
-                revenue_monthly_trend: [
-                    { month: 'Jan', revenue: 15000 },
-                    { month: 'Feb', revenue: 22000 },
-                    { month: 'Mar', revenue: 30000 },
-                    { month: 'Apr', revenue: 28000 },
-                    { month: 'May', revenue: 40000 },
-                    { month: 'Jun', revenue: 45000 },
-                    { month: 'Jul', revenue: 35000 },
-                ],
-            };
-
             setOverallStats(data);
             toast({ title: "Stats Loaded", description: "Overall statistics fetched successfully.", duration: 3000 });
 
