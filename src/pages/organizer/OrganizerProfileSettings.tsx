@@ -1,306 +1,304 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { CalendarDays, DollarSign, CheckCircle } from 'lucide-react';
-import OrganizerNavigation from './OrganizerNavigation';
-import OrganizerReports from './OrganizerReports';
-import OrganizerStats from './OrganizerStats';
-import OrganizerProfileSettings from './OrganizerProfileSettings'; // Import the OrganizerProfileSettings component
-import { debounce } from 'lodash';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
 
-interface Event {
-  id: number;
-  name: string;
-  date: string;
-  location: string;
+// Form-related imports for validation and state management
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// --- Interfaces for Data Structures ---
+// Define the shape of the organizer profile data you expect from your backend.
+interface OrganizerProfile {
+    id: number;
+    name: string;
+    email: string;
+    contact_phone: string;
+    organization_name: string;
+    address?: string; // Optional field
+    city?: string;    // Optional field
+    country?: string; // Optional field
 }
 
-interface EventReport {
-  event_id: number;
-  event_name: string;
-  total_tickets_sold: number;
-  number_of_attendees: number;
-  total_revenue: number;
-  event_date: string;
-  event_location: string;
-  tickets_sold_by_type: { [key: string]: number };
-  revenue_by_ticket_type: { [key: string]: number };
-  attendees_by_ticket_type: { [key: string]: number };
-  payment_method_usage: { [key: string]: number };
-  tickets_sold_by_type_for_graph: { labels: string[], data: number[] };
-  attendees_by_ticket_type_for_graph: { labels: string[], data: number[] };
-  revenue_by_ticket_type_for_graph: { labels: string[], data: number[] };
-  payment_method_usage_for_graph: { labels: string[], data: number[] };
-}
+// --- Zod Schema for Form Validation ---
+// This schema defines the validation rules for your form fields.
+const profileFormSchema = z.object({
+    name: z.string().min(2, { message: "Name must be at least 2 characters." }).max(50, { message: "Name must not be longer than 50 characters." }),
+    email: z.string().email({ message: "Please enter a valid email address." }),
+    contact_phone: z.string()
+        .min(10, { message: "Phone number must be at least 10 digits." })
+        .max(15, { message: "Phone number must not be longer than 15 digits." })
+        .regex(/^\+?[0-9\s-()]*$/, { message: "Invalid phone number format." }), // Basic phone number regex
+    organization_name: z.string().min(2, { message: "Organization name must be at least 2 characters." }).max(100, { message: "Organization name must not be longer than 100 characters." }),
+    address: z.string().max(100, { message: "Address must not be longer than 100 characters." }).optional().nullable(),
+    city: z.string().max(50, { message: "City must not be longer than 50 characters." }).optional().nullable(),
+    country: z.string().max(50, { message: "Country must not be longer than 50 characters." }).optional().nullable(),
+});
 
-const OrganizerDashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport'>('overview');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | undefined>();
-  const [successMessage, setSuccessMessage] = useState<string | undefined>();
-  const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
-  const [eventReport, setEventReport] = useState<EventReport | null>(null);
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-  const { toast } = useToast();
+// Define the type for the form data based on the Zod schema
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-  const handleFetchError = useCallback(async (response: Response) => {
-    let errorMessage = `HTTP error! status: ${response.status}`;
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
-    } catch (jsonError) {
-      console.error('Failed to parse error response:', jsonError);
-    }
-    setError(errorMessage);
-    toast({
-      title: "Error",
-      description: errorMessage,
-      variant: "destructive",
+// --- OrganizerProfileSettings Component ---
+const OrganizerProfileSettings: React.FC = () => {
+    // State to hold the current profile data
+    const [profile, setProfile] = useState<OrganizerProfile | null>(null);
+    // State to manage loading status for fetching profile
+    const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
+    // State to manage error message for fetching profile
+    const [profileError, setProfileError] = useState<string | null>(null);
+    // State to manage loading status for updating profile
+    const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
+    // Initialize React Hook Form with Zod resolver for validation
+    const form = useForm<ProfileFormValues>({
+        resolver: zodResolver(profileFormSchema),
+        defaultValues: {
+            name: "",
+            email: "",
+            contact_phone: "",
+            organization_name: "",
+            address: "",
+            city: "",
+            country: "",
+        },
     });
-  }, [toast]);
 
-  const fetchOrganizerEvents = useCallback(async () => {
-    setIsLoading(true);
-    setError(undefined);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/organizer/events`, {
-        credentials: 'include'
-      });
+    const { register, handleSubmit, reset, formState: { errors, isDirty } } = form; // isDirty checks if form has changed
 
-      if (!response.ok) {
-        await handleFetchError(response);
-        return;
-      }
+    // --- Fetch Profile Data ---
+    const fetchProfile = useCallback(async () => {
+        setIsLoadingProfile(true);
+        setProfileError(null);
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                credentials: 'include'
+            });
 
-      const data: Event[] = await response.json();
-      setOrganizerEvents(data);
-    } catch (err) {
-      console.error('Fetch events error:', err);
-      setError('An unexpected error occurred while fetching events.');
-      toast({
-        title: "Error",
-        description: 'An unexpected error occurred while fetching events.',
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to fetch profile data.");
+            }
+
+            const data: OrganizerProfile = await response.json();
+            setProfile(data);
+            // Reset the form with the fetched data
+            reset(data);
+        } catch (err: any) {
+            console.error("Error fetching profile:", err);
+            setProfileError(err.message || "Failed to load profile.");
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: err.message || "Failed to load profile data.",
+            });
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    }, [reset]);
+
+    // Fetch profile data on component mount
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
+
+    // --- Update Profile Data ---
+    const onSubmit = async (data: ProfileFormValues) => {
+        setIsUpdating(true);
+        setProfileError(null); // Clear previous errors
+
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to update profile data.");
+            }
+
+            const updatedProfile: OrganizerProfile = await response.json();
+            setProfile(updatedProfile);
+            toast({
+                title: "Profile Updated",
+                description: "Your profile has been successfully updated.",
+                duration: 3000,
+            });
+            // Reset form state to reflect the updated data and clear dirty flag
+            reset(updatedProfile);
+        } catch (err: any) {
+            console.error("Error updating profile:", err);
+            setProfileError(err.message || "Failed to update profile.");
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: err.message || "There was an error updating your profile.",
+            });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    // --- Render Logic ---
+    if (isLoadingProfile) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Organizer Profile</CardTitle>
+                    <CardDescription>Loading your profile details...</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {[...Array(3)].map((_, index) => (
+                            <div key={index} className="animate-pulse">
+                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
-  }, [handleFetchError, toast]);
 
-  const fetchEventReport = useCallback(async (eventId: number) => {
-    setIsLoading(true);
-    setError(undefined);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/event/${eventId}/report`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        await handleFetchError(response);
-        return;
-      }
-
-      const data: EventReport = await response.json();
-      setEventReport(data);
-      toast({
-        title: "Success",
-        description: "Event report fetched successfully.",
-        variant: "default",
-      });
-    } catch (err) {
-      console.error('Fetch event report error:', err);
-      setError('An unexpected error occurred while fetching the event report.');
-      toast({
-        title: "Error",
-        description: 'An unexpected error occurred while fetching the event report.',
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    if (profileError) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Organizer Profile</CardTitle>
+                    <CardDescription>Error loading profile.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-red-500 font-semibold">Error: {profileError}</p>
+                    <Button onClick={fetchProfile} className="mt-4">Retry Loading Profile</Button>
+                </CardContent>
+            </Card>
+        );
     }
-  }, [handleFetchError, toast]);
 
-  const handleLogout = async () => {
-    setIsLoading(true);
-    setError(undefined);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+    // If profile is loaded successfully, display the form
+    return (
+        <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-foreground">Profile Settings</h1>
+            <p className="text-muted-foreground text-lg">
+                Update your personal and organization details.
+            </p>
 
-      if (!response.ok) {
-        await handleFetchError(response);
-        return;
-      }
-
-      setSuccessMessage('Logout successful.');
-      toast({
-        title: "Success",
-        description: "Logout successful.",
-        variant: "default",
-      });
-      window.location.href = '/';
-    } catch (err) {
-      console.error('Logout error:', err);
-      setError('An unexpected error occurred while logging out.');
-      toast({
-        title: "Error",
-        description: 'An unexpected error occurred while logging out.',
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleViewChange = (view: string) => {
-    setCurrentView(view as any);
-    setError(undefined);
-    setSuccessMessage('');
-  };
-
-  const handleViewReport = (eventId: number) => {
-    setSelectedEventId(eventId);
-    setCurrentView('viewReport');
-    fetchEventReport(eventId);
-  };
-
-  useEffect(() => {
-    if (currentView === 'myEvents') {
-      fetchOrganizerEvents();
-    }
-  }, [currentView, fetchOrganizerEvents]);
-
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-6">
-        <div className="flex gap-6">
-          <div className="w-48 flex-shrink-0">
-            <OrganizerNavigation
-              currentView={currentView}
-              onViewChange={handleViewChange}
-              onLogout={handleLogout}
-              isLoading={isLoading}
-            />
-          </div>
-          <div className="flex-1">
-            {currentView === 'overview' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold text-foreground">Organizer Dashboard Overview</h1>
-                <p className="text-muted-foreground text-lg">
-                  Welcome to your event management dashboard. Here you can get a quick glance at your overall activities.
-                </p>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Total Events</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-3xl font-bold text-primary">
-                      {organizerEvents.length}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upcoming Events</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-3xl font-bold text-green-500">
-                      {organizerEvents.filter(e => new Date(e.date) > new Date()).length}
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Past Events</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-3xl font-bold text-red-500">
-                      {organizerEvents.filter(e => new Date(e.date) <= new Date()).length}
-                    </CardContent>
-                  </Card>
-                </div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex gap-2">
-                    <button onClick={() => handleViewChange('myEvents')} className="px-4 py-2 bg-blue-500 text-white rounded">Manage Events</button>
-                    <button onClick={() => handleViewChange('overallStats')} className="px-4 py-2 bg-gray-200 rounded">View Overall Stats</button>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {currentView === 'myEvents' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold text-foreground">My Events</h1>
-                <p className="text-muted-foreground text-lg">
-                  View and manage all your past and upcoming events.
-                </p>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {organizerEvents.length > 0 ? (
-                    organizerEvents.map(event => (
-                      <Card key={event.id} className="flex flex-col h-full">
-                        <CardHeader>
-                          <CardTitle>{event.name}</CardTitle>
-                          <CardDescription>{event.date} • {event.location}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow">
-                          <p className="text-sm text-gray-600">Event ID: {event.id}</p>
-                        </CardContent>
-                        <div className="p-4 border-t flex gap-2 justify-end">
-                          <button onClick={() => console.log('Edit event:', event.id)} className="px-4 py-2 bg-blue-500 text-white rounded">Edit Event</button>
-                          <button onClick={() => handleViewReport(event.id)} className="px-4 py-2 bg-gray-200 rounded">View Report</button>
+            <Card className="max-w-3xl">
+                <CardHeader>
+                    <CardTitle>Your Profile Information</CardTitle>
+                    <CardDescription>
+                        Manage your contact details and organization information.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {/* Use the form's handleSubmit for submission */}
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        {/* Name Field */}
+                        <div>
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                id="name"
+                                type="text"
+                                {...register("name")} // Connects input to React Hook Form
+                                className="mt-1"
+                            />
+                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
                         </div>
-                      </Card>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground col-span-full">No events found. Start by creating a new event!</p>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {currentView === 'overallStats' && (
-              <OrganizerStats />
-            )}
+                        {/* Email Field */}
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                {...register("email")}
+                                className="mt-1"
+                                disabled // Email often not directly editable here, might require separate process
+                            />
+                            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+                        </div>
 
-            {currentView === 'reports' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold text-foreground">Event Reports</h1>
-                <p className="text-muted-foreground text-lg">
-                  Access detailed reports for individual events. Select an event from "My Events" to generate its report.
-                </p>
-                <Card>
-                  <CardContent className="p-6 text-center text-muted-foreground">
-                    <p>Navigate to "My Events" to select an event and click "View Report".</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                        {/* Contact Phone Field */}
+                        <div>
+                            <Label htmlFor="contact_phone">Contact Phone</Label>
+                            <Input
+                                id="contact_phone"
+                                type="tel" // Use type="tel" for phone numbers
+                                {...register("contact_phone")}
+                                className="mt-1"
+                            />
+                            {errors.contact_phone && <p className="text-red-500 text-sm mt-1">{errors.contact_phone.message}</p>}
+                        </div>
 
-            {currentView === 'settings' && (
-              <OrganizerProfileSettings />
-            )}
+                        {/* Organization Name Field */}
+                        <div>
+                            <Label htmlFor="organization_name">Organization Name</Label>
+                            <Input
+                                id="organization_name"
+                                type="text"
+                                {...register("organization_name")}
+                                className="mt-1"
+                            />
+                            {errors.organization_name && <p className="text-red-500 text-sm mt-1">{errors.organization_name.message}</p>}
+                        </div>
 
-            {currentView === 'viewReport' && selectedEventId !== null && (
-              <div className="space-y-6">
-                <button onClick={() => setCurrentView('myEvents')} className="mb-4 px-4 py-2 bg-gray-200 rounded">
-                  ← Back to My Events
-                </button>
-                <h1 className="text-3xl font-bold text-foreground">
-                  Event Report: {organizerEvents.find(e => e.id === selectedEventId)?.name || 'Unknown Event'}
-                </h1>
-                <OrganizerReports
-                  eventReport={eventReport}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </div>
-            )}
-          </div>
+                        {/* Address Field (Optional) */}
+                        <div>
+                            <Label htmlFor="address">Address (Optional)</Label>
+                            <Input
+                                id="address"
+                                type="text"
+                                {...register("address")}
+                                className="mt-1"
+                            />
+                            {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+                        </div>
+
+                        {/* City Field (Optional) */}
+                        <div>
+                            <Label htmlFor="city">City (Optional)</Label>
+                            <Input
+                                id="city"
+                                type="text"
+                                {...register("city")}
+                                className="mt-1"
+                            />
+                            {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>}
+                        </div>
+
+                        {/* Country Field (Optional) */}
+                        <div>
+                            <Label htmlFor="country">Country (Optional)</Label>
+                            <Input
+                                id="country"
+                                type="text"
+                                {...register("country")}
+                                className="mt-1"
+                            />
+                            {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country.message}</p>}
+                        </div>
+
+                        {/* Submit Button */}
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isUpdating || !isDirty} // Disable if updating or no changes made
+                        >
+                            {isUpdating ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-export default OrganizerDashboard;
+export default OrganizerProfileSettings;

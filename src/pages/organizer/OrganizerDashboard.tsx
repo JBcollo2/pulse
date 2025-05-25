@@ -5,6 +5,7 @@ import { CalendarDays, DollarSign, CheckCircle } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
+import OrganizerProfileSettings from './OrganizerProfileSettings'; // Import the OrganizerProfileSettings component
 import { debounce } from 'lodash';
 
 interface Event {
@@ -277,18 +278,7 @@ const OrganizerDashboard: React.FC = () => {
             )}
 
             {currentView === 'settings' && (
-              <div className="space-y-6">
-                <h1 className="text-3xl font-bold text-foreground">Organizer Settings</h1>
-                <p className="text-muted-foreground text-lg">
-                  Manage your profile, account preferences, and other organizer-specific settings.
-                </p>
-                <Card>
-                  <CardContent className="p-6 text-center text-muted-foreground">
-                    <p>Settings management coming soon!</p>
-                    <p>This could include profile updates, notification preferences, etc.</p>
-                  </CardContent>
-                </Card>
-              </div>
+              <OrganizerProfileSettings />
             )}
 
             {currentView === 'viewReport' && selectedEventId !== null && (
