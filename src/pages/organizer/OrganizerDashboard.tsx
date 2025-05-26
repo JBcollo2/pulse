@@ -47,8 +47,6 @@ const OrganizerDashboard: React.FC = () => {
     const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
     const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
 
     const { toast } = useToast();
 
@@ -193,222 +191,79 @@ const OrganizerDashboard: React.FC = () => {
     const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
     const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
-    const menuItems = [
-        {
-          id: "overview",
-          name: "Overview",
-          icon: LayoutDashboard,
-          description: "Dashboard analytics",
-          color: "text-blue-500"
-        },
-        {
-          id: "myEvents",
-          name: "My Events",
-          icon: CalendarDays,
-          description: "Manage your events",
-          color: "text-green-500"
-        },
-        {
-            id: "overallStats",
-            name: "Overall Stats",
-            icon: BarChart2,
-            description: "View aggregate data",
-            color: "text-purple-500"
-        },
-        {
-          id: "reports",
-          name: "Reports",
-          icon: FileText,
-          description: "Generate and view reports",
-          color: "text-orange-500"
-        },
-        {
-          id: "settings",
-          name: "Settings",
-          icon: Settings,
-          description: "Account preferences",
-          color: "text-gray-500"
-        },
-      ];
-
-    const filteredMenuItems = menuItems.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const activeMenuItem = menuItems.find(item => item.id === currentView);
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-foreground main-container">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-foreground">
             <main className="pt-0">
                 <div className="flex">
-                    {/* Sidebar */}
-                    <div className={cn(
-                        "fixed md:relative top-0 md:top-0 left-0 h-screen sidebar",
-                        "bg-white/80 backdrop-blur-xl border-r border-gray-200/60",
-                        "shadow-xl md:shadow-none z-30 transition-all duration-300 ease-in-out",
-                        sidebarCollapsed ? 'w-16' : 'w-80',
-                        "flex flex-col"
-                    )}>
-                        <div className="p-6 border-b border-gray-100 flex-shrink-0">
-                            <div className="flex items-center justify-between">
-                                {!sidebarCollapsed && (
-                                    <div className="animate-fade-in">
-                                        <h2 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                            Organizer Panel
-                                        </h2>
-                                        <p className="text-sm text-muted-foreground mt-1">Manage your events</p>
-                                    </div>
-                                )}
-                                <button
-                                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                                    className="p-2 rounded-lg hover:bg-muted transition-colors duration-200"
-                                >
-                                    {sidebarCollapsed ? <Menu className="h-4 w-4 text-foreground" /> : <X className="h-4 w-4 text-foreground" />}
-                                </button>
-                            </div>
-
-                            {!sidebarCollapsed && (
-                                <div className="mt-4 relative animate-fade-in">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search menu..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 text-sm bg-muted border border-border rounded-lg
-                                                   focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-                                                   transition-all duration-200"
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        <nav className="p-4 space-y-2 overflow-y-auto custom-scrollbar flex-grow">
-                            {filteredMenuItems.map((item, index) => {
-                                const isActive = currentView === item.id;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => handleViewChange(item.id)}
-                                        className={cn(
-                                            `group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl`,
-                                            `transition-all duration-300 ease-out transform hover:scale-[1.02]`,
-                                            isActive
-                                                ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/25"
-                                                : "hover:bg-muted text-muted-foreground hover:text-foreground",
-                                            "animate-fade-in"
-                                        )}
-                                        style={{
-                                            animationDelay: `${index * 50}ms`
-                                        }}
-                                    >
-                                        <item.icon className={cn(
-                                            `h-5 w-5 transition-all duration-300`,
-                                            isActive ? "text-primary-foreground" : item.color,
-                                            sidebarCollapsed ? "mx-auto" : ""
-                                        )} />
-
-                                        {!sidebarCollapsed && (
-                                            <>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-medium truncate">{item.name}</div>
-                                                    <div className={cn(
-                                                        `text-xs truncate transition-colors duration-300`,
-                                                        isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-                                                    )}>
-                                                        {item.description}
-                                                    </div>
-                                                </div>
-
-                                                <ChevronRight className={cn(
-                                                    `h-4 w-4 transition-all duration-300`,
-                                                    isActive ? "text-primary-foreground opacity-100 transform rotate-90" : "text-muted-foreground opacity-0 group-hover:opacity-50"
-                                                )} />
-                                            </>
-                                        )}
-
-                                        {sidebarCollapsed && (
-                                            <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg
-                                                        opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none
-                                                        whitespace-nowrap z-50">
-                                                {item.name}
-                                                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1
-                                                            border-4 border-transparent border-r-gray-900"></div>
-                                            </div>
-                                        )}
-
-                                        {isActive && (
-                                            <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8
-                                                        bg-primary-foreground rounded-l-full opacity-80"></div>
-                                        )}
-                                    </button>
-                                );
-                            })}
-
-                            {!sidebarCollapsed && (
-                                <div className="pt-6 mt-6 border-t border-border flex-shrink-0">
-                                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-4">
-                                        Quick Actions
-                                    </h3>
-                                    <div className="space-y-2">
-                                        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground
-                                                    hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200
-                                                    group">
-                                            <Plus className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                                            Create Event
-                                        </button>
-                                        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground
-                                                    hover:bg-secondary/10 hover:text-secondary rounded-lg transition-all duration-200
-                                                    group">
-                                            <Bell className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                                            Notifications
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!sidebarCollapsed && (
-                                <div className="p-4 mt-auto pt-6 border-t border-border flex-shrink-0">
-                                    <button
-                                        onClick={handleLogout}
-                                        disabled={isLoading}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600
-                                                    hover:bg-red-50 rounded-lg transition-all duration-200 group"
-                                    >
-                                        <X className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-                                        {isLoading ? 'Logging Out...' : 'Logout'}
-                                    </button>
-                                </div>
-                            )}
-                        </nav>
-                    </div>
+                    {/* Organizer Navigation */}
+                    <OrganizerNavigation
+                        currentView={currentView}
+                        onViewChange={handleViewChange}
+                        onLogout={handleLogout}
+                        isLoading={isLoading}
+                    />
 
                     {/* Main Content Area */}
-                    <div className={cn(
-                        "flex-1 transition-all duration-300 main-content",
-                        sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-80'
-                    )}>
+                    <div className="flex-1 transition-all duration-300">
                         <div className="bg-white/70 backdrop-blur-sm border-b border-border px-8 py-6 sticky top-0 z-10">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                                        {activeMenuItem && (
-                                            <activeMenuItem.icon className={`h-6 w-6 ${activeMenuItem.color}`} />
+                                        {currentView === 'overview' && (
+                                            <>
+                                                <LayoutDashboard className="h-6 w-6 text-blue-500" />
+                                                Overview
+                                            </>
                                         )}
-                                        {activeMenuItem?.name}
+                                        {currentView === 'myEvents' && (
+                                            <>
+                                                <CalendarDays className="h-6 w-6 text-green-500" />
+                                                My Events
+                                            </>
+                                        )}
+                                        {currentView === 'overallStats' && (
+                                            <>
+                                                <BarChart2 className="h-6 w-6 text-purple-500" />
+                                                Overall Stats
+                                            </>
+                                        )}
+                                        {currentView === 'reports' && (
+                                            <>
+                                                <FileText className="h-6 w-6 text-orange-500" />
+                                                Reports
+                                            </>
+                                        )}
+                                        {currentView === 'settings' && (
+                                            <>
+                                                <Settings className="h-6 w-6 text-gray-500" />
+                                                Settings
+                                            </>
+                                        )}
                                     </h1>
-                                    <p className="text-muted-foreground mt-1">{activeMenuItem?.description}</p>
+                                    <p className="text-muted-foreground mt-1">
+                                        {currentView === 'overview' && 'Dashboard analytics'}
+                                        {currentView === 'myEvents' && 'Manage your events'}
+                                        {currentView === 'overallStats' && 'View aggregate data'}
+                                        {currentView === 'reports' && 'Generate and view reports'}
+                                        {currentView === 'settings' && 'Account preferences'}
+                                    </p>
                                 </div>
 
                                 <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
                                     <span>Dashboard</span>
                                     <ChevronRight className="h-4 w-4" />
-                                    <span className="text-foreground font-medium">{activeMenuItem?.name}</span>
+                                    <span className="text-foreground font-medium">
+                                        {currentView === 'overview' && 'Overview'}
+                                        {currentView === 'myEvents' && 'My Events'}
+                                        {currentView === 'overallStats' && 'Overall Stats'}
+                                        {currentView === 'reports' && 'Reports'}
+                                        {currentView === 'settings' && 'Settings'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar main-content-scrollable">
+                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
                             {error && (
                                 <div className="p-4 mb-4 bg-destructive/10 border border-destructive/20 text-destructive-foreground rounded-lg shadow-sm animate-fade-in-up">
                                     <p className="font-semibold">Error:</p>
