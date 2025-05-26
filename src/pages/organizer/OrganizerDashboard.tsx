@@ -107,7 +107,7 @@ const OrganizerDashboard: React.FC = () => {
         setIsLoading(true);
         setError(undefined);
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/organizer/summary-report`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/organizer/summary`, {
                 credentials: 'include'
             });
 
