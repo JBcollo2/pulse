@@ -5,7 +5,6 @@ import { CalendarDays, DollarSign, CheckCircle } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
-import OrganizerProfileSettings from './OrganizerProfileSettings';
 
 // --- Interface Definitions ---
 interface Event {
@@ -379,11 +378,6 @@ const OrganizerDashboard: React.FC = () => {
                                     </CardContent>
                                 </Card>
                             </div>
-                        )}
-
-                        {/* --- Profile Settings Section --- */}
-                        {currentView === 'settings' && (
-                            <OrganizerProfileSettings />
                         )}
 
                         {/* --- View Individual Event Report Section --- */}

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, CalendarDays, BarChart2, FileText, Settings } from "lucide-react";
+import { LogOut, LayoutDashboard, CalendarDays, BarChart2, FileText } from "lucide-react";
 
 interface OrganizerNavigationProps {
   currentView: string;
@@ -22,8 +22,6 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
     { id: 'myEvents', label: 'My Events', icon: CalendarDays },
     { id: 'overallStats', label: 'Overall Stats', icon: BarChart2 }, // Changed from 'stats' to 'overallStats' for clarity
     { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'createEvent', label: 'Create Event', icon: CalendarDays }, // Added 'Create Event' for direct navigation
   ];
 
   return (
