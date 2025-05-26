@@ -1,12 +1,13 @@
+// src/components/OrganizerStats.tsx
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
-import { Users, Ticket, TrendingUp, DollarSign, Calendar, AlertCircle, Shield, Waypoints } from 'lucide-react'; // Added relevant icons
-import { useToast } from "@/components/ui/use-toast"; // Assuming useToast is used for notifications
-import { Skeleton } from "@/components/ui/skeleton"; // For loading states
+import { Users, Ticket, TrendingUp, DollarSign, Calendar, AlertCircle, Shield, Waypoints } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define the interface for the overall summary data
 interface OverallSummary {
@@ -35,7 +36,7 @@ interface OrganizerStatsProps {
 }
 
 const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoading, error }) => {
-    const { toast } = useToast(); // Initialize toast for potential future use or consistency
+    const { toast } = useToast();
 
     // --- Loading State ---
     if (isLoading) {
@@ -44,8 +45,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                 <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
                     <Skeleton className="h-10 w-96" />
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[...Array(3)].map((_, index) => (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[...Array(4)].map((_, index) => ( // Adjusted to 4 for consistency with AdminStats
                         <Card key={index}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <Skeleton className="h-4 w-32" />
@@ -103,7 +104,6 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                 </CardHeader>
                 <CardContent>
                     <p className="text-destructive font-medium text-sm mb-4">{error}</p>
-                    {/* No retry mechanism here as it's a prop-driven component, parent should handle retry */}
                     <p className="text-muted-foreground text-sm">Please try again later or contact support if the issue persists.</p>
                 </CardContent>
             </Card>
@@ -111,7 +111,10 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
     }
 
     // --- No Data State ---
-    if (!overallSummary || overallSummary.events_details.length === 0) { // Check both summary and event details
+    if (!overallSummary || (!overallSummary.events_details || overallSummary.events_details.length === 0) &&
+        overallSummary.total_tickets_sold_across_all_events === 0 &&
+        overallSummary.total_revenue_across_all_events === 0 &&
+        (overallSummary.total_events === 0 || overallSummary.total_events === undefined)) {
         return (
             <Card className="max-w-3xl mx-auto my-8">
                 <CardHeader>
@@ -132,7 +135,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
                 <div>
                     <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                        Overall Statistics for {overallSummary.organizer_name}
+                        Overall Statistics for {overallSummary.organizer_name || "Your Organization"}
                     </h1>
                     <p className="text-muted-foreground text-lg">
                         A comprehensive overview of your performance across all events.
@@ -198,7 +201,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
 
             {/* --- Event Breakdowns --- */}
             <h2 className="text-2xl font-bold tracking-tight mt-8">Individual Event Performance</h2>
-            {overallSummary.events_details.length > 0 ? (
+            {overallSummary.events_details && overallSummary.events_details.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {overallSummary.events_details.map(event => (
                         <Card key={event.event_id}>
@@ -234,9 +237,9 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                                         <YAxis allowDecimals={false} />
                                         <Tooltip
                                             cursor={{ strokeDasharray: '3 3' }}
-                                            contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                            itemStyle={{ color: '#ffffff' }}
-                                            labelStyle={{ color: '#a0aec0' }}
+                                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                            labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
                                             formatter={(value: number) => [`${value} Tickets`, 'Sold']}
                                         />
                                         <Legend />
@@ -263,9 +266,9 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                                         <YAxis tickFormatter={(value: number) => `$${value}`} />
                                         <Tooltip
                                             cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                            contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                            itemStyle={{ color: '#ffffff' }}
-                                            labelStyle={{ color: '#a0aec0' }}
+                                            contentStyle={{ backgroundColor: "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                            itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                            labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
                                             formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
                                         />
                                         <Legend />
