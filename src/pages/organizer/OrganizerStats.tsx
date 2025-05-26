@@ -13,8 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface OverallSummary {
     organizer_name: string;
     total_tickets_sold_across_all_events: number;
-    total_revenue_across_all_events: number;
-    events_details: {
+    total_revenue_across_all_events: string; // Changed to string
+    events_summary: { // Changed from events_details
         event_id: number;
         event_name: string;
         date: string;
@@ -46,7 +46,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                     <Skeleton className="h-10 w-96" />
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, index) => ( // Adjusted to 4 for consistency with AdminStats
+                    {[...Array(4)].map((_, index) => (
                         <Card key={index}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <Skeleton className="h-4 w-32" />
@@ -111,9 +111,9 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
     }
 
     // --- No Data State ---
-    if (!overallSummary || (!overallSummary.events_details || overallSummary.events_details.length === 0) &&
+    if (!overallSummary || (!overallSummary.events_summary || overallSummary.events_summary.length === 0) &&
         overallSummary.total_tickets_sold_across_all_events === 0 &&
-        overallSummary.total_revenue_across_all_events === 0 &&
+        overallSummary.total_revenue_across_all_events === "0" &&
         (overallSummary.total_events === 0 || overallSummary.total_events === undefined)) {
         return (
             <Card className="max-w-3xl mx-auto my-8">
@@ -164,7 +164,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                     </CardHeader>
                     <CardContent>
                         <div className="text-4xl font-bold text-green-600">
-                            ${overallSummary.total_revenue_across_all_events.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ${overallSummary.total_revenue_across_all_events}
                         </div>
                         <p className="text-xs text-muted-foreground">From all ticket sales</p>
                     </CardContent>
@@ -201,9 +201,9 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
 
             {/* --- Event Breakdowns --- */}
             <h2 className="text-2xl font-bold tracking-tight mt-8">Individual Event Performance</h2>
-            {overallSummary.events_details && overallSummary.events_details.length > 0 ? (
+            {overallSummary.events_summary && overallSummary.events_summary.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {overallSummary.events_details.map(event => (
+                    {overallSummary.events_summary.map(event => (
                         <Card key={event.event_id}>
                             <CardHeader>
                                 <CardTitle className="truncate">{event.event_name}</CardTitle>

@@ -20,8 +20,8 @@ interface Event {
 interface OverallSummary {
     organizer_name: string;
     total_tickets_sold_across_all_events: number;
-    total_revenue_across_all_events: number;
-    events_details: {
+    total_revenue_across_all_events: string; // Changed to string
+    events_summary: { // Changed from events_details
         event_id: number;
         event_name: string;
         date: string;
@@ -29,11 +29,11 @@ interface OverallSummary {
         tickets_sold: number;
         revenue: number;
     }[];
-    total_events?: number; // Added as per OrganizerStats expectation
-    upcoming_events_count?: number; // Added as per OrganizerStats expectation
-    past_events_count?: number; // Added as per OrganizerStats expectation
-    tickets_sold_monthly_trend?: { month: string; tickets: number }[]; // Added for charts
-    revenue_monthly_trend?: { month: string; revenue: number }[]; // Added for charts
+    total_events?: number;
+    upcoming_events_count?: number;
+    past_events_count?: number;
+    tickets_sold_monthly_trend?: { month: string; tickets: number }[];
+    revenue_monthly_trend?: { month: string; revenue: number }[];
 }
 
 // Define the allowed view types (removed createEvent)
@@ -121,7 +121,7 @@ const OrganizerDashboard: React.FC = () => {
             // Ensure optional fields are handled if not always present in API response
             const processedData: OverallSummary = {
                 ...data,
-                events_details: data.events_details || [],
+                events_summary: data.events_summary || [], // Changed from events_details
                 tickets_sold_monthly_trend: data.tickets_sold_monthly_trend || [],
                 revenue_monthly_trend: data.revenue_monthly_trend || [],
             };
@@ -298,8 +298,8 @@ const OrganizerDashboard: React.FC = () => {
                                                     )}
                                                     <div className="mt-3">
                                                         <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                                            new Date(event.date) > new Date() 
-                                                                ? 'bg-green-100 text-green-800' 
+                                                            new Date(event.date) > new Date()
+                                                                ? 'bg-green-100 text-green-800'
                                                                 : 'bg-gray-100 text-gray-800'
                                                         }`}>
                                                             {new Date(event.date) > new Date() ? 'Upcoming' : 'Past Event'}
@@ -307,8 +307,8 @@ const OrganizerDashboard: React.FC = () => {
                                                     </div>
                                                 </CardContent>
                                                 <div className="p-4 border-t flex gap-2 justify-end">
-                                                    <button 
-                                                        onClick={() => handleViewReport(event.id)} 
+                                                    <button
+                                                        onClick={() => handleViewReport(event.id)}
                                                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                     >
                                                         View Report
@@ -369,8 +369,8 @@ const OrganizerDashboard: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="mt-6 pt-4 border-t">
-                                            <button 
-                                                onClick={() => handleViewChange('myEvents')} 
+                                            <button
+                                                onClick={() => handleViewChange('myEvents')}
                                                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                             >
                                                 Go to My Events
@@ -389,8 +389,8 @@ const OrganizerDashboard: React.FC = () => {
                         {/* --- View Individual Event Report Section --- */}
                         {currentView === 'viewReport' && selectedEventId !== null && (
                             <div className="space-y-6">
-                                <button 
-                                    onClick={() => setCurrentView('myEvents')} 
+                                <button
+                                    onClick={() => setCurrentView('myEvents')}
                                     className="mb-4 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
                                 >
                                     ← Back to My Events
