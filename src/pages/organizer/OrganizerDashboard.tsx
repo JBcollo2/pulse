@@ -5,12 +5,11 @@ import {
   LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings
 } from 'lucide-react';
 
-import OrganizerNavigation from './OrganizerNavigation'; // Assuming this component is still used for sidebar navigation
+import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
-import { cn } from "@/lib/utils"; // Import cn utility
+import { cn } from "@/lib/utils";
 
-// --- Interface Definitions ---
 interface Event {
     id: number;
     name: string;
@@ -41,7 +40,6 @@ interface OverallSummary {
 type ViewType = 'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport';
 
 const OrganizerDashboard: React.FC = () => {
-    // --- State Management ---
     const [currentView, setCurrentView] = useState<ViewType>('overview');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | undefined>();
@@ -49,12 +47,11 @@ const OrganizerDashboard: React.FC = () => {
     const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
     const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // For sidebar collapse
-    const [searchQuery, setSearchQuery] = useState(""); // For sidebar search
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const { toast } = useToast();
 
-    // --- Helper Function for API Errors ---
     const handleFetchError = useCallback(async (response: Response) => {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
@@ -71,7 +68,6 @@ const OrganizerDashboard: React.FC = () => {
         });
     }, [toast]);
 
-    // --- API Call Functions ---
     const fetchOrganizerEvents = useCallback(async () => {
         setIsLoading(true);
         setError(undefined);
@@ -168,7 +164,6 @@ const OrganizerDashboard: React.FC = () => {
         }
     }, [handleFetchError, toast]);
 
-    // --- View Navigation Handlers ---
     const handleViewChange = useCallback((view: string) => {
         if (['overview', 'myEvents', 'overallStats', 'reports', 'settings', 'viewReport'].includes(view)) {
             setCurrentView(view as ViewType);
@@ -184,7 +179,6 @@ const OrganizerDashboard: React.FC = () => {
         setCurrentView('viewReport');
     }, []);
 
-    // --- useEffect for Data Fetching based on Current View ---
     useEffect(() => {
         if (currentView === 'myEvents') {
             fetchOrganizerEvents();
@@ -196,28 +190,26 @@ const OrganizerDashboard: React.FC = () => {
         }
     }, [currentView, fetchOrganizerEvents, fetchOverallSummary]);
 
-    // Determine upcoming and past events for overview
     const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
     const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
-    // Menu items for navigation (similar to Dashboard.tsx)
     const menuItems = [
         {
           id: "overview",
           name: "Overview",
-          icon: LayoutDashboard, // Changed from BarChart to LayoutDashboard for consistency
+          icon: LayoutDashboard,
           description: "Dashboard analytics",
-          color: "text-blue-500" // Example color, will be overridden by active state
+          color: "text-blue-500"
         },
         {
-          id: "myEvents", // Changed from 'tickets'
+          id: "myEvents",
           name: "My Events",
-          icon: CalendarDays, // Changed from Ticket to CalendarDays
+          icon: CalendarDays,
           description: "Manage your events",
           color: "text-green-500"
         },
         {
-            id: "overallStats", // New item for your stats component
+            id: "overallStats",
             name: "Overall Stats",
             icon: BarChart2,
             description: "View aggregate data",
@@ -226,7 +218,7 @@ const OrganizerDashboard: React.FC = () => {
         {
           id: "reports",
           name: "Reports",
-          icon: FileText, // Changed from Users
+          icon: FileText,
           description: "Generate and view reports",
           color: "text-orange-500"
         },
@@ -237,7 +229,6 @@ const OrganizerDashboard: React.FC = () => {
           description: "Account preferences",
           color: "text-gray-500"
         },
-        // 'viewReport' is a sub-view, not a main menu item
       ];
 
     const filteredMenuItems = menuItems.filter(item =>
@@ -246,25 +237,19 @@ const OrganizerDashboard: React.FC = () => {
 
     const activeMenuItem = menuItems.find(item => item.id === currentView);
 
-
-    // --- Render Logic ---
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-foreground">
-            {/* Navbar Placeholder - If you have one, include it here, otherwise remove this comment */}
-            {/* <Navbar /> */}
-
-            <main className="pt-0"> {/* Adjusted pt-0 as we're handling the main structure */}
+            <main className="pt-0">
                 <div className="flex">
                     {/* Sidebar */}
                     <div className={cn(
-                        "fixed md:relative top-0 md:top-0 left-0 h-screen", // Use h-screen
+                        "fixed md:relative top-0 md:top-0 left-0 h-screen",
                         "bg-white/80 backdrop-blur-xl border-r border-gray-200/60",
                         "shadow-xl md:shadow-none z-30 transition-all duration-300 ease-in-out",
                         sidebarCollapsed ? 'w-16' : 'w-80',
-                        "flex flex-col" // Added flex-col to enable scrolling for content
+                        "flex flex-col"
                     )}>
-                        {/* Sidebar Header */}
-                        <div className="p-6 border-b border-gray-100 flex-shrink-0"> {/* flex-shrink-0 to prevent shrinking */}
+                        <div className="p-6 border-b border-gray-100 flex-shrink-0">
                             <div className="flex items-center justify-between">
                                 {!sidebarCollapsed && (
                                     <div className="animate-fade-in">
@@ -282,7 +267,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </button>
                             </div>
 
-                            {/* Search Bar */}
                             {!sidebarCollapsed && (
                                 <div className="mt-4 relative animate-fade-in">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -299,8 +283,7 @@ const OrganizerDashboard: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Navigation Menu */}
-                        <nav className="p-4 space-y-2 overflow-y-auto custom-scrollbar flex-grow"> {/* Added flex-grow for scrollable area */}
+                        <nav className="p-4 space-y-2 overflow-y-auto custom-scrollbar flex-grow">
                             {filteredMenuItems.map((item, index) => {
                                 const isActive = currentView === item.id;
                                 return (
@@ -313,16 +296,15 @@ const OrganizerDashboard: React.FC = () => {
                                             isActive
                                                 ? "bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/25"
                                                 : "hover:bg-muted text-muted-foreground hover:text-foreground",
-                                            "animate-fade-in" // Apply fade-in to menu items
+                                            "animate-fade-in"
                                         )}
                                         style={{
                                             animationDelay: `${index * 50}ms`
                                         }}
                                     >
-                                        {/* Icon with dynamic color */}
                                         <item.icon className={cn(
                                             `h-5 w-5 transition-all duration-300`,
-                                            isActive ? "text-primary-foreground" : item.color, // Keep item.color for non-active, text-primary-foreground for active
+                                            isActive ? "text-primary-foreground" : item.color,
                                             sidebarCollapsed ? "mx-auto" : ""
                                         )} />
 
@@ -338,7 +320,6 @@ const OrganizerDashboard: React.FC = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Active indicator */}
                                                 <ChevronRight className={cn(
                                                     `h-4 w-4 transition-all duration-300`,
                                                     isActive ? "text-primary-foreground opacity-100 transform rotate-90" : "text-muted-foreground opacity-0 group-hover:opacity-50"
@@ -346,7 +327,6 @@ const OrganizerDashboard: React.FC = () => {
                                             </>
                                         )}
 
-                                        {/* Hover effect for collapsed sidebar */}
                                         {sidebarCollapsed && (
                                             <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg
                                                         opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none
@@ -357,7 +337,6 @@ const OrganizerDashboard: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {/* Active tab indicator */}
                                         {isActive && (
                                             <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8
                                                         bg-primary-foreground rounded-l-full opacity-80"></div>
@@ -366,7 +345,6 @@ const OrganizerDashboard: React.FC = () => {
                                 );
                             })}
 
-                            {/* Quick Actions */}
                             {!sidebarCollapsed && (
                                 <div className="pt-6 mt-6 border-t border-border flex-shrink-0">
                                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-4">
@@ -388,7 +366,7 @@ const OrganizerDashboard: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-                            {/* Logout Button in Sidebar */}
+
                             {!sidebarCollapsed && (
                                 <div className="p-4 mt-auto pt-6 border-t border-border flex-shrink-0">
                                     <button
@@ -408,9 +386,8 @@ const OrganizerDashboard: React.FC = () => {
                     {/* Main Content Area */}
                     <div className={cn(
                         "flex-1 transition-all duration-300",
-                        sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-80' // Adjusted based on sidebar width
+                        sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-80'
                     )}>
-                        {/* Content Header */}
                         <div className="bg-white/70 backdrop-blur-sm border-b border-border px-8 py-6 sticky top-0 z-10">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -423,7 +400,6 @@ const OrganizerDashboard: React.FC = () => {
                                     <p className="text-muted-foreground mt-1">{activeMenuItem?.description}</p>
                                 </div>
 
-                                {/* Breadcrumb indicator */}
                                 <div className="hidden md:flex items-center space-x-2 text-sm text-muted-foreground">
                                     <span>Dashboard</span>
                                     <ChevronRight className="h-4 w-4" />
@@ -432,9 +408,7 @@ const OrganizerDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Main Content */}
-                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar"> {/* Added custom-scrollbar here */}
-                            {/* Global error/success messages */}
+                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
                             {error && (
                                 <div className="p-4 mb-4 bg-destructive/10 border border-destructive/20 text-destructive-foreground rounded-lg shadow-sm animate-fade-in-up">
                                     <p className="font-semibold">Error:</p>
@@ -448,7 +422,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- Overview Section --- */}
                             {currentView === 'overview' && (
                                 <div className="space-y-8 animate-fade-in-up">
                                     <h1 className="text-4xl font-extrabold text-gradient mb-6">
@@ -459,7 +432,6 @@ const OrganizerDashboard: React.FC = () => {
                                     </p>
 
                                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                        {/* Card for Total Events */}
                                         <div className="bg-card text-card-foreground border border-border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-md">
@@ -473,7 +445,6 @@ const OrganizerDashboard: React.FC = () => {
                                             <p className="text-sm text-muted-foreground mt-1">All events you've organized.</p>
                                         </div>
 
-                                        {/* Card for Upcoming Events */}
                                         <div className="bg-card text-card-foreground border border-border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center shadow-md">
@@ -487,7 +458,6 @@ const OrganizerDashboard: React.FC = () => {
                                             <p className="text-sm text-muted-foreground mt-1">Events scheduled for the future.</p>
                                         </div>
 
-                                        {/* Card for Past Events */}
                                         <div className="bg-card text-card-foreground border border-border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className="w-10 h-10 bg-destructive rounded-xl flex items-center justify-center shadow-md">
@@ -502,7 +472,6 @@ const OrganizerDashboard: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Quick Actions Card */}
                                     <div className="bg-card text-card-foreground border border-border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                         <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
                                         <div className="flex flex-wrap gap-3">
@@ -527,7 +496,6 @@ const OrganizerDashboard: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Quick Stats section */}
                                     {overallSummary && (
                                         <div className="bg-card text-card-foreground border border-border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                             <div className="flex items-center gap-2 mb-4">
@@ -557,7 +525,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- My Events Section --- */}
                             {currentView === 'myEvents' && (
                                 <div className="space-y-8 animate-fade-in-up">
                                     <h1 className="text-4xl font-extrabold text-gradient mb-6">
@@ -606,7 +573,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- Overall Stats Section --- */}
                             {currentView === 'overallStats' && (
                                 <div className="animate-fade-in-up">
                                     <h1 className="text-4xl font-extrabold text-gradient mb-6">
@@ -623,7 +589,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- Reports Section --- */}
                             {currentView === 'reports' && (
                                 <div className="space-y-8 animate-fade-in-up">
                                     <h1 className="text-4xl font-extrabold text-gradient mb-6">
@@ -669,7 +634,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- View Individual Event Report Section --- */}
                             {currentView === 'viewReport' && selectedEventId !== null && (
                                 <div className="space-y-8 animate-fade-in-up">
                                     <button
@@ -687,7 +651,6 @@ const OrganizerDashboard: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* --- Settings Section (Placeholder) --- */}
                             {currentView === 'settings' && (
                                 <div className="bg-card text-card-foreground border border-border rounded-xl p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
                                     <h1 className="text-4xl font-extrabold text-gradient mb-6">
@@ -704,9 +667,6 @@ const OrganizerDashboard: React.FC = () => {
                 </div>
             </main>
 
-            {/* <Footer /> If you have one, include it here, otherwise remove this comment and the import */}
-
-            {/* Custom CSS for animations and scrollbar (copied from Dashboard.tsx) */}
             <style>{`
                 @keyframes fade-in {
                     from {
@@ -723,11 +683,10 @@ const OrganizerDashboard: React.FC = () => {
                     animation: fade-in 0.3s ease-out forwards;
                 }
 
-                .animate-fade-in-up { /* Added for section animations */
+                .animate-fade-in-up {
                     animation: fade-in 0.5s ease-out forwards;
                 }
 
-                /* Smooth scrollbar */
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 4px;
                 }
