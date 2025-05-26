@@ -22,6 +22,11 @@ interface OrganizerNavigationProps {
   onViewChange: (view: string) => void;
   onLogout: () => void;
   isLoading: boolean;
+  // New props to control sidebar behavior from parent
+  isExpanded: boolean; // Controls desktop expanded/collapsed state
+  setIsExpanded: (expanded: boolean) => void; // Function to update expanded state
+  isMobileOpen: boolean; // Controls mobile open/closed state (passed from parent)
+  setIsMobileOpen: (open: boolean) => void; // Function to update mobile open state
 }
 
 const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
@@ -29,55 +34,55 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   onViewChange,
   onLogout,
   isLoading,
+  isExpanded,
+  setIsExpanded,
+  isMobileOpen,
+  setIsMobileOpen,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const navigationItems = [
-    { 
-      id: "overview", 
-      label: "Overview", 
-      icon: LayoutDashboard, 
+    {
+      id: "overview",
+      label: "Overview",
+      icon: LayoutDashboard,
       color: "from-blue-500 to-cyan-500",
       bgColor: "hover:bg-blue-50",
       description: "Dashboard overview"
     },
-    { 
-      id: "myEvents", 
-      label: "My Events", 
-      icon: CalendarDays, 
+    {
+      id: "myEvents",
+      label: "My Events",
+      icon: CalendarDays,
       color: "from-green-500 to-emerald-500",
       bgColor: "hover:bg-green-50",
       description: "Manage your events"
     },
-    { 
-      id: "overallStats", 
-      label: "Overall Stats", 
-      icon: BarChart2, 
+    {
+      id: "overallStats",
+      label: "Overall Stats",
+      icon: BarChart2,
       color: "from-purple-500 to-violet-500",
       bgColor: "hover:bg-purple-50",
       description: "Analytics & insights"
     },
-    { 
-      id: "reports", 
-      label: "Reports", 
-      icon: FileText, 
+    {
+      id: "reports",
+      label: "Reports",
+      icon: FileText,
       color: "from-orange-500 to-red-500",
       bgColor: "hover:bg-orange-50",
       description: "Generate reports"
     },
   ];
 
-  const toggleSidebar = () => setIsExpanded((prev) => !prev);
-  const toggleMobileMenu = () => setIsMobileOpen((prev) => !prev);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         sidebarRef.current &&
-        !sidebarRef.current.contains(event.target as Node)
+        !sidebarRef.current.contains(event.target as Node) &&
+        isMobileOpen // Only close if it's open on mobile
       ) {
         setIsMobileOpen(false);
       }
@@ -92,40 +97,27 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isMobileOpen]);
+  }, [isMobileOpen, setIsMobileOpen]);
 
   return (
     <>
-      {/* Desktop Toggle Button */}
-      <div className="fixed top-6 left-6 z-50 hidden sm:block">
+      {/* Mobile Toggle Button (remains in OrganizerNavigation for easy access on small screens) */}
+      <div className="fixed top-6 left-6 z-50 md:hidden">
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleSidebar}
-          className="bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white hover:scale-105 
-                     shadow-lg border border-gray-200/60 transition-all duration-200"
-        >
-          {isExpanded ? <X size={20} /> : <Menu size={20} />}
-        </Button>
-      </div>
-
-      {/* Mobile Toggle Button */}
-      <div className="fixed top-6 left-6 z-50 sm:hidden">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleMobileMenu}
-          className="bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white hover:scale-105 
+          onClick={() => setIsMobileOpen(!isMobileOpen)} // Directly toggle isMobileOpen
+          className="bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white hover:scale-105
                      shadow-lg border border-gray-200/60 transition-all duration-200"
         >
           {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
         </Button>
       </div>
 
-      {/* Backdrop for mobile */}
+      {/* Backdrop for mobile (ONLY for mobile) */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 sm:hidden transition-opacity duration-300"
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden transition-opacity duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -137,21 +129,25 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           "fixed top-0 left-0 h-screen bg-gradient-to-br from-white via-gray-50 to-white",
           "backdrop-blur-xl border-r border-gray-200/60 shadow-2xl flex flex-col z-40",
           "transition-all duration-500 ease-in-out",
-          isExpanded ? "w-72" : "w-20",
-          isMobileOpen ? "translate-x-0 sm:translate-x-0" : "-translate-x-full sm:translate-x-0"
+          // Desktop behavior (md and up): width depends on isExpanded, always visible
+          "md:relative md:translate-x-0 md:shadow-none md:z-auto",
+          isExpanded ? "md:w-72" : "md:w-20",
+          // Mobile behavior (below md): fixed, off-canvas by default, slides in when isMobileOpen
+          isMobileOpen ? "translate-x-0 w-72" : "-translate-x-full w-72",
+          "md:w-auto"
         )}
       >
         {/* Header Section */}
         <div className="p-6 border-b border-gray-100/80">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl 
-                          flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl
+                            flex items-center justify-center shadow-lg">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             {isExpanded && (
               <div className="animate-fade-in">
-                <h2 className="font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600 
-                             bg-clip-text text-transparent">
+                <h2 className="font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600
+                               bg-clip-text text-transparent">
                   Pulse
                 </h2>
                 <p className="text-xs text-gray-500 font-medium">Event Organizer</p>
@@ -166,7 +162,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             {navigationItems.map((item, index) => {
               const isActive = currentView === item.id;
               const isHovered = hoveredItem === item.id;
-              
+
               return (
                 <div
                   key={item.id}
@@ -177,7 +173,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                   <button
                     onClick={() => {
                       onViewChange(item.id);
-                      setIsMobileOpen(false);
+                      setIsMobileOpen(false); // Close sidebar on view change for mobile
                     }}
                     className={cn(
                       "relative group flex items-center w-full p-3 rounded-xl text-sm font-medium",
@@ -192,28 +188,28 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                   >
                     {/* Active indicator */}
                     {isActive && (
-                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 
-                                    bg-white rounded-r-full shadow-sm" />
+                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8
+                                        bg-white rounded-r-full shadow-sm" />
                     )}
 
                     {/* Icon */}
                     <div className={cn(
                       "relative p-2 rounded-lg transition-all duration-300",
-                      isActive 
-                        ? "bg-white/20" 
-                        : isHovered 
-                          ? "bg-white shadow-sm" 
+                      isActive
+                        ? "bg-white/20"
+                        : isHovered
+                          ? "bg-white shadow-sm"
                           : "bg-transparent"
                     )}>
                       <item.icon className={cn(
                         "h-5 w-5 transition-all duration-300",
                         isActive ? "text-white" : "text-gray-600",
-                        isExpanded ? "" : "mx-auto"
+                        isExpanded ? "" : "mx-auto" // For collapsed state
                       )} />
                     </div>
 
                     {/* Label */}
-                    {isExpanded && (
+                    {isExpanded && ( // Only show label if expanded
                       <div className="flex-1 ml-3 text-left">
                         <div className="font-semibold">{item.label}</div>
                         <div className={cn(
@@ -226,25 +222,25 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     )}
 
                     {/* Arrow indicator */}
-                    {isExpanded && (
+                    {isExpanded && ( // Only show arrow if expanded
                       <ChevronRight className={cn(
                         "h-4 w-4 transition-all duration-300",
-                        isActive 
-                          ? "text-white opacity-100 transform rotate-90" 
+                        isActive
+                          ? "text-white opacity-100 transform rotate-90"
                           : "text-gray-400 opacity-0 group-hover:opacity-50"
                       )} />
                     )}
 
                     {/* Tooltip for collapsed state */}
-                    {!isExpanded && (
+                    {!isExpanded && ( // Only show tooltip if collapsed
                       <div className={cn(
                         "absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg",
                         "opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none",
                         "whitespace-nowrap z-50 shadow-xl"
                       )}>
                         {item.label}
-                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
-                                      border-4 border-transparent border-r-gray-900" />
+                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1
+                                         border-4 border-transparent border-r-gray-900" />
                       </div>
                     )}
 
@@ -289,8 +285,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           {/* Profile Section */}
           {isExpanded && (
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full 
-                            flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full
+                               flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
@@ -327,7 +323,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           <Button
             onClick={() => {
               onLogout();
-              setIsMobileOpen(false);
+              setIsMobileOpen(false); // Close sidebar on logout for mobile
             }}
             disabled={isLoading}
             className={cn(
@@ -354,7 +350,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         )}
       </div>
 
-      {/* Custom Styles */}
+      {/* Custom Styles (keep these) */}
       <style>{`
         @keyframes fade-in {
           from {
@@ -366,25 +362,24 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             transform: translateX(0);
           }
         }
-        
+
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
         }
-        
+
         /* Custom scrollbar */
         .overflow-y-auto::-webkit-scrollbar {
           width: 4px;
         }
-        
+
         .overflow-y-auto::-webkit-scrollbar-track {
           background: transparent;
         }
-        
+
         .overflow-y-auto::-webkit-scrollbar-thumb {
           background: rgb(203 213 225);
-          border-radius: 2px;
         }
-        
+
         .overflow-y-auto::-webkit-scrollbar-thumb:hover {
           background: rgb(148 163 184);
         }

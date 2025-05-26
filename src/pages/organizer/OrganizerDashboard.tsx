@@ -47,6 +47,8 @@ const OrganizerDashboard: React.FC = () => {
     const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
     const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
     const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const { toast } = useToast();
 
@@ -201,10 +203,17 @@ const OrganizerDashboard: React.FC = () => {
                         onViewChange={handleViewChange}
                         onLogout={handleLogout}
                         isLoading={isLoading}
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        isMobileOpen={isMobileOpen}
+                        setIsMobileOpen={setIsMobileOpen}
                     />
 
                     {/* Main Content Area */}
-                    <div className="flex-1 transition-all duration-300">
+                    <div className={cn(
+                        "flex-1 transition-all duration-300",
+                        isExpanded ? 'md:ml-72' : 'md:ml-20'
+                    )}>
                         <div className="bg-white/70 backdrop-blur-sm border-b border-border px-8 py-6 sticky top-0 z-10">
                             <div className="flex items-center justify-between">
                                 <div>
