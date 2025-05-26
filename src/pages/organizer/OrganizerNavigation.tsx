@@ -9,10 +9,13 @@ import {
   FileText,
   Menu,
   X,
-  Sun,
-  Moon,
+  ChevronRight,
+  Settings,
+  Bell,
+  User,
+  Sparkles,
+  Activity,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface OrganizerNavigationProps {
   currentView: string;
@@ -29,22 +32,46 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const navigationItems = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "myEvents", label: "My Events", icon: CalendarDays },
-    { id: "overallStats", label: "Overall Stats", icon: BarChart2 },
-    { id: "reports", label: "Reports", icon: FileText },
+    { 
+      id: "overview", 
+      label: "Overview", 
+      icon: LayoutDashboard, 
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "hover:bg-blue-50",
+      description: "Dashboard overview"
+    },
+    { 
+      id: "myEvents", 
+      label: "My Events", 
+      icon: CalendarDays, 
+      color: "from-green-500 to-emerald-500",
+      bgColor: "hover:bg-green-50",
+      description: "Manage your events"
+    },
+    { 
+      id: "overallStats", 
+      label: "Overall Stats", 
+      icon: BarChart2, 
+      color: "from-purple-500 to-violet-500",
+      bgColor: "hover:bg-purple-50",
+      description: "Analytics & insights"
+    },
+    { 
+      id: "reports", 
+      label: "Reports", 
+      icon: FileText, 
+      color: "from-orange-500 to-red-500",
+      bgColor: "hover:bg-orange-50",
+      description: "Generate reports"
+    },
   ];
 
   const toggleSidebar = () => setIsExpanded((prev) => !prev);
   const toggleMobileMenu = () => setIsMobileOpen((prev) => !prev);
-  const toggleTheme = () => {
-    document.documentElement.classList.toggle("dark");
-    setIsDark(!isDark);
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -70,122 +97,298 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   return (
     <>
       {/* Desktop Toggle Button */}
-      <div className="fixed top-4 left-4 z-50 hidden sm:block">
+      <div className="fixed top-6 left-6 z-50 hidden sm:block">
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="bg-muted text-foreground hover:bg-accent"
+          className="bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white hover:scale-105 
+                     shadow-lg border border-gray-200/60 transition-all duration-200"
         >
           {isExpanded ? <X size={20} /> : <Menu size={20} />}
         </Button>
       </div>
 
       {/* Mobile Toggle Button */}
-      <div className="fixed top-4 left-4 z-50 sm:hidden">
+      <div className="fixed top-6 left-6 z-50 sm:hidden">
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleMobileMenu}
-          className="bg-muted text-foreground hover:bg-accent"
+          className="bg-white/80 backdrop-blur-md text-gray-700 hover:bg-white hover:scale-105 
+                     shadow-lg border border-gray-200/60 transition-all duration-200"
         >
           {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
         </Button>
       </div>
 
+      {/* Backdrop for mobile */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 sm:hidden transition-opacity duration-300"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <AnimatePresence>
-        {(isMobileOpen || true) && (
-          <motion.aside
-            ref={sidebarRef}
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: "spring", stiffness: 200, damping: 30 }}
-            className={cn(
-              "fixed top-0 left-0 h-screen bg-background text-foreground shadow-lg flex flex-col justify-between z-40 transition-all duration-300",
-              isExpanded ? "w-48" : "w-16",
-              isMobileOpen ? "sm:hidden" : "hidden sm:flex"
+      <div
+        ref={sidebarRef}
+        className={cn(
+          "fixed top-0 left-0 h-screen bg-gradient-to-br from-white via-gray-50 to-white",
+          "backdrop-blur-xl border-r border-gray-200/60 shadow-2xl flex flex-col z-40",
+          "transition-all duration-500 ease-in-out",
+          isExpanded ? "w-72" : "w-20",
+          isMobileOpen ? "translate-x-0 sm:translate-x-0" : "-translate-x-full sm:translate-x-0"
+        )}
+      >
+        {/* Header Section */}
+        <div className="p-6 border-b border-gray-100/80">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl 
+                          flex items-center justify-center shadow-lg">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            {isExpanded && (
+              <div className="animate-fade-in">
+                <h2 className="font-bold text-xl bg-gradient-to-r from-gray-800 to-gray-600 
+                             bg-clip-text text-transparent">
+                  Pulse
+                </h2>
+                <p className="text-xs text-gray-500 font-medium">Event Organizer</p>
+              </div>
             )}
-          >
-            {/* Navigation */}
-            <div className="flex flex-col items-center mt-10 space-y-2 w-full px-2">
-              {navigationItems.map((item) => {
-                const isActive = currentView === item.id;
-                return (
+          </div>
+        </div>
+
+        {/* Navigation Items */}
+        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <div className="space-y-1">
+            {navigationItems.map((item, index) => {
+              const isActive = currentView === item.id;
+              const isHovered = hoveredItem === item.id;
+              
+              return (
+                <div
+                  key={item.id}
+                  className="relative"
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
                   <button
-                    key={item.id}
                     onClick={() => {
                       onViewChange(item.id);
                       setIsMobileOpen(false);
                     }}
                     className={cn(
-                      "relative group flex items-center w-full px-3 py-3 rounded-lg text-sm font-medium transition-all",
+                      "relative group flex items-center w-full p-3 rounded-xl text-sm font-medium",
+                      "transition-all duration-300 ease-out transform hover:scale-[1.02]",
                       isActive
-                        ? "bg-gradient-to-r from-orange-500 to-purple-500 text-white shadow"
-                        : "hover:bg-muted text-muted-foreground"
+                        ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-${item.color.split('-')[1]}-500/25`
+                        : `${item.bgColor} text-gray-700 hover:text-gray-900 hover:shadow-md`
                     )}
-                    style={{ marginTop: '10px' }}
+                    style={{
+                      animationDelay: `${index * 100}ms`
+                    }}
                   >
+                    {/* Active indicator */}
                     {isActive && (
-                      <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-md" />
+                      <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 
+                                    bg-white rounded-r-full shadow-sm" />
                     )}
-                    <item.icon className="h-5 w-5 shrink-0" />
-                    <span
-                      className={cn(
-                        "ml-3 whitespace-nowrap transition-opacity duration-300",
-                        isExpanded ? "opacity-100" : "opacity-0"
-                      )}
-                    >
-                      {item.label}
-                    </span>
+
+                    {/* Icon */}
+                    <div className={cn(
+                      "relative p-2 rounded-lg transition-all duration-300",
+                      isActive 
+                        ? "bg-white/20" 
+                        : isHovered 
+                          ? "bg-white shadow-sm" 
+                          : "bg-transparent"
+                    )}>
+                      <item.icon className={cn(
+                        "h-5 w-5 transition-all duration-300",
+                        isActive ? "text-white" : "text-gray-600",
+                        isExpanded ? "" : "mx-auto"
+                      )} />
+                    </div>
+
+                    {/* Label */}
+                    {isExpanded && (
+                      <div className="flex-1 ml-3 text-left">
+                        <div className="font-semibold">{item.label}</div>
+                        <div className={cn(
+                          "text-xs transition-colors duration-300",
+                          isActive ? "text-white/80" : "text-gray-500"
+                        )}>
+                          {item.description}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Arrow indicator */}
+                    {isExpanded && (
+                      <ChevronRight className={cn(
+                        "h-4 w-4 transition-all duration-300",
+                        isActive 
+                          ? "text-white opacity-100 transform rotate-90" 
+                          : "text-gray-400 opacity-0 group-hover:opacity-50"
+                      )} />
+                    )}
+
+                    {/* Tooltip for collapsed state */}
+                    {!isExpanded && (
+                      <div className={cn(
+                        "absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg",
+                        "opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none",
+                        "whitespace-nowrap z-50 shadow-xl"
+                      )}>
+                        {item.label}
+                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 
+                                      border-4 border-transparent border-r-gray-900" />
+                      </div>
+                    )}
+
+                    {/* Ripple effect */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-xl transition-all duration-300",
+                      isHovered && !isActive ? "bg-gradient-to-r from-transparent via-white/10 to-transparent" : ""
+                    )} />
                   </button>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Bottom Controls */}
-            <div className="w-full px-2 pb-6 border-t border-border space-y-2">
-              {/* Theme Toggle */}
-              <Button
-                onClick={toggleTheme}
-                variant="outline"
-                className="w-full flex justify-start items-center text-sm"
-              >
-                {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                <span
-                  className={cn(
-                    "ml-3 transition-opacity duration-300",
-                    isExpanded ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  {isDark ? "Light Mode" : "Dark Mode"}
-                </span>
-              </Button>
+          {/* Quick Stats */}
+          {isExpanded && (
+            <div className="mt-8 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm font-semibold text-indigo-900">Quick Stats</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Active Events</span>
+                  <span className="font-bold text-indigo-600">12</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Tickets</span>
+                  <span className="font-bold text-green-600">1,247</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Revenue</span>
+                  <span className="font-bold text-purple-600">$24.5k</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-              {/* Logout */}
+        {/* Bottom Section */}
+        <div className="p-4 border-t border-gray-100/80 space-y-2">
+          {/* Profile Section */}
+          {isExpanded && (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full 
+                            flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">John Doe</div>
+                <div className="text-xs text-gray-500">Event Organizer</div>
+              </div>
               <Button
-                onClick={() => {
-                  onLogout();
-                  setIsMobileOpen(false);
-                }}
-                className="w-full bg-red-500 hover:bg-red-600 text-white text-sm py-2 flex items-center justify-start"
-                disabled={isLoading}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-gray-200"
               >
-                <LogOut className="h-5 w-5 shrink-0" />
-                <span
-                  className={cn(
-                    "ml-3 transition-opacity duration-300",
-                    isExpanded ? "opacity-100" : "opacity-0"
-                  )}
-                >
-                  Logout
-                </span>
+                <Settings className="w-4 h-4" />
               </Button>
             </div>
-          </motion.aside>
+          )}
+
+          {/* Notifications */}
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 p-3 hover:bg-yellow-50 text-gray-700 hover:text-yellow-700",
+              "transition-all duration-200 hover:shadow-sm",
+              !isExpanded && "justify-center"
+            )}
+          >
+            <div className="relative">
+              <Bell className="h-5 w-5" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            </div>
+            {isExpanded && <span className="font-medium">Notifications</span>}
+          </Button>
+
+          {/* Logout Button */}
+          <Button
+            onClick={() => {
+              onLogout();
+              setIsMobileOpen(false);
+            }}
+            disabled={isLoading}
+            className={cn(
+              "w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
+              "text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]",
+              "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+              !isExpanded && "aspect-square p-0"
+            )}
+          >
+            <LogOut className={cn("h-5 w-5", isExpanded && "mr-2")} />
+            {isExpanded && (
+              <span className="font-medium">
+                {isLoading ? "Logging out..." : "Logout"}
+              </span>
+            )}
+          </Button>
+        </div>
+
+        {/* Loading overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
         )}
-      </AnimatePresence>
+      </div>
+
+      {/* Custom Styles */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+        
+        /* Custom scrollbar */
+        .overflow-y-auto::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+          background: rgb(203 213 225);
+          border-radius: 2px;
+        }
+        
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+          background: rgb(148 163 184);
+        }
+      `}</style>
     </>
   );
 };
