@@ -20,10 +20,6 @@ interface EventReport {
     revenue_by_ticket_type: { [key: string]: number };
     attendees_by_ticket_type: { [key: string]: number };
     payment_method_usage: { [key: string]: number };
-    // The '_for_graph' properties seem redundant if you're transforming the object directly for Recharts
-    // If your backend *only* sends data in this specific pre-formatted way, then keep them.
-    // Otherwise, it's better to process 'tickets_sold_by_type' etc. directly for graphs.
-    // Assuming we will process the object directly for Recharts
 }
 
 // Define the props interface for the OrganizerReports component
@@ -103,7 +99,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         setError(null);
 
         try {
-            let url = `${import.meta.env.VITE_API_URL}/event/${eventId}/report/download/${format}`;
+            // UPDATED LINE HERE: Use 'export' for CSV, 'download' for PDF
+            let url = `${import.meta.env.VITE_API_URL}/event/${eventId}/report/${format === 'csv' ? 'export' : 'download'}/${format}`;
             const params = new URLSearchParams();
             if (startDate) params.append('start_date', startDate);
             if (endDate) params.append('end_date', endDate);
@@ -242,7 +239,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         It looks like there's no report generated for this event yet, or no data matches your filters.
                     </p>
                     <Button onClick={fetchReport} className="w-full mt-4">
-                         Generate Report
+                            Generate Report
                     </Button>
                 </CardContent>
             </Card>
@@ -448,22 +445,22 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </CardHeader>
                     <CardContent>
                         {reportData.attendees_by_ticket_type && Object.keys(reportData.attendees_by_ticket_type).length > 0 ? (
-                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={formatChartData(reportData.attendees_by_ticket_type)} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
-                                    <YAxis allowDecimals={false} />
-                                    <Tooltip
-                                        cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                        contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                        itemStyle={{ color: '#ffffff' }}
-                                        labelStyle={{ color: '#a0aec0' }}
-                                        formatter={(value: number) => [`${value} Attendees`, 'Count']}
-                                    />
-                                    <Legend />
-                                    <Bar dataKey="value" fill="hsl(var(--accent))" name="Attendees" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                               <ResponsiveContainer width="100%" height={300}>
+                                 <BarChart data={formatChartData(reportData.attendees_by_ticket_type)} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                     <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
+                                     <YAxis allowDecimals={false} />
+                                     <Tooltip
+                                         cursor={{ fill: 'rgba(0,0,0,0.1)' }}
+                                         contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                         itemStyle={{ color: '#ffffff' }}
+                                         labelStyle={{ color: '#a0aec0' }}
+                                         formatter={(value: number) => [`${value} Attendees`, 'Count']}
+                                     />
+                                     <Legend />
+                                     <Bar dataKey="value" fill="hsl(var(--accent))" name="Attendees" radius={[4, 4, 0, 0]} />
+                                 </BarChart>
+                             </ResponsiveContainer>
                         ) : (
                             <div className="h-[300px] flex items-center justify-center text-muted-foreground">No attendee data available by ticket type for this period.</div>
                         )}
