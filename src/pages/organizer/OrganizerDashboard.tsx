@@ -72,7 +72,6 @@ const OrganizerDashboard: React.FC = () => {
     }, [toast]);
 
     // --- API Call Functions (Belong to OrganizerDashboard) ---
-
     // Endpoint: GET /organizer/events
     const fetchOrganizerEvents = useCallback(async () => {
         setIsLoading(true);
@@ -211,7 +210,7 @@ const OrganizerDashboard: React.FC = () => {
 
     // --- Render Logic ---
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gray-900 text-white">
             <div className="container mx-auto py-6">
                 <div className="flex gap-6">
                     <div className="w-48 flex-shrink-0">
@@ -230,39 +229,39 @@ const OrganizerDashboard: React.FC = () => {
                         {/* --- Overview Section --- */}
                         {currentView === 'overview' && (
                             <div className="space-y-6">
-                                <h1 className="text-3xl font-bold text-foreground">Organizer Dashboard Overview</h1>
-                                <p className="text-muted-foreground text-lg">
+                                <h1 className="text-3xl font-bold text-white">Organizer Dashboard Overview</h1>
+                                <p className="text-gray-400 text-lg">
                                     Welcome to your event management dashboard. Here you can get a quick glance at your overall activities.
                                 </p>
                                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    <Card>
+                                    <Card className="bg-gray-800 border-gray-700">
                                         <CardHeader>
-                                            <CardTitle>Total Events</CardTitle>
+                                            <CardTitle className="text-white">Total Events</CardTitle>
                                         </CardHeader>
-                                        <CardContent className="text-3xl font-bold text-primary">
+                                        <CardContent className="text-3xl font-bold text-purple-500">
                                             {isLoading ? '...' : organizerEvents.length}
                                         </CardContent>
                                     </Card>
-                                    <Card>
+                                    <Card className="bg-gray-800 border-gray-700">
                                         <CardHeader>
-                                            <CardTitle>Upcoming Events</CardTitle>
+                                            <CardTitle className="text-white">Upcoming Events</CardTitle>
                                         </CardHeader>
                                         <CardContent className="text-3xl font-bold text-green-500">
                                             {isLoading ? '...' : organizerEvents.filter(e => new Date(e.date) > new Date()).length}
                                         </CardContent>
                                     </Card>
-                                    <Card>
+                                    <Card className="bg-gray-800 border-gray-700">
                                         <CardHeader>
-                                            <CardTitle>Past Events</CardTitle>
+                                            <CardTitle className="text-white">Past Events</CardTitle>
                                         </CardHeader>
                                         <CardContent className="text-3xl font-bold text-red-500">
                                             {isLoading ? '...' : organizerEvents.filter(e => new Date(e.date) <= new Date()).length}
                                         </CardContent>
                                     </Card>
                                 </div>
-                                <Card>
+                                <Card className="bg-gray-800 border-gray-700">
                                     <CardHeader>
-                                        <CardTitle>Quick Actions</CardTitle>
+                                        <CardTitle className="text-white">Quick Actions</CardTitle>
                                     </CardHeader>
                                     <CardContent className="flex gap-2">
                                         <button onClick={() => handleViewChange('myEvents')} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">View My Events</button>
@@ -276,24 +275,24 @@ const OrganizerDashboard: React.FC = () => {
                         {/* --- My Events Section --- */}
                         {currentView === 'myEvents' && (
                             <div className="space-y-6">
-                                <h1 className="text-3xl font-bold text-foreground">My Events</h1>
-                                <p className="text-muted-foreground text-lg">
+                                <h1 className="text-3xl font-bold text-white">My Events</h1>
+                                <p className="text-gray-400 text-lg">
                                     View all your past and upcoming events and access their reports.
                                 </p>
                                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     {isLoading ? (
-                                        <p className="col-span-full text-center text-muted-foreground">Loading events...</p>
+                                        <p className="col-span-full text-center text-gray-400">Loading events...</p>
                                     ) : organizerEvents.length > 0 ? (
                                         organizerEvents.map(event => (
-                                            <Card key={event.id} className="flex flex-col h-full">
+                                            <Card key={event.id} className="flex flex-col h-full bg-gray-800 border-gray-700">
                                                 <CardHeader>
-                                                    <CardTitle>{event.name}</CardTitle>
-                                                    <CardDescription>{event.date} • {event.location}</CardDescription>
+                                                    <CardTitle className="text-white">{event.name}</CardTitle>
+                                                    <CardDescription className="text-gray-400">{event.date} • {event.location}</CardDescription>
                                                 </CardHeader>
                                                 <CardContent className="flex-grow">
-                                                    <p className="text-sm text-gray-600">Event ID: {event.id}</p>
+                                                    <p className="text-sm text-gray-400">Event ID: {event.id}</p>
                                                     {event.description && (
-                                                        <p className="text-sm text-gray-600 mt-2">{event.description}</p>
+                                                        <p className="text-sm text-gray-400 mt-2">{event.description}</p>
                                                     )}
                                                     <div className="mt-3">
                                                         <span className={`inline-block px-2 py-1 text-xs rounded-full ${
@@ -305,7 +304,7 @@ const OrganizerDashboard: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 </CardContent>
-                                                <div className="p-4 border-t flex gap-2 justify-end">
+                                                <div className="p-4 border-t border-gray-700 flex gap-2 justify-end">
                                                     <button
                                                         onClick={() => handleViewReport(event.id)}
                                                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -317,7 +316,7 @@ const OrganizerDashboard: React.FC = () => {
                                         ))
                                     ) : (
                                         <div className="col-span-full text-center">
-                                            <p className="text-muted-foreground mb-4">No events found.</p>
+                                            <p className="text-gray-400 mb-4">No events found.</p>
                                             <p className="text-sm text-gray-500">Events are managed through the main event management system.</p>
                                         </div>
                                     )}
@@ -337,37 +336,37 @@ const OrganizerDashboard: React.FC = () => {
                         {/* --- Reports Section --- */}
                         {currentView === 'reports' && (
                             <div className="space-y-6">
-                                <h1 className="text-3xl font-bold text-foreground">Event Reports</h1>
-                                <p className="text-muted-foreground text-lg">
+                                <h1 className="text-3xl font-bold text-white">Event Reports</h1>
+                                <p className="text-gray-400 text-lg">
                                     Access detailed reports for individual events. Select an event from "My Events" to generate its report.
                                 </p>
-                                <Card>
+                                <Card className="bg-gray-800 border-gray-700">
                                     <CardHeader>
-                                        <CardTitle>How to Access Reports</CardTitle>
+                                        <CardTitle className="text-white">How to Access Reports</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="flex items-start gap-3">
                                             <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
                                             <div>
-                                                <h4 className="font-medium">Go to My Events</h4>
-                                                <p className="text-sm text-muted-foreground">Navigate to the "My Events" section to see all your events.</p>
+                                                <h4 className="font-medium text-white">Go to My Events</h4>
+                                                <p className="text-sm text-gray-400">Navigate to the "My Events" section to see all your events.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
                                             <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
                                             <div>
-                                                <h4 className="font-medium">Select an Event</h4>
-                                                <p className="text-sm text-muted-foreground">Click "View Report" on any event card to see detailed analytics.</p>
+                                                <h4 className="font-medium text-white">Select an Event</h4>
+                                                <p className="text-sm text-gray-400">Click "View Report" on any event card to see detailed analytics.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
                                             <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
                                             <div>
-                                                <h4 className="font-medium">Analyze Performance</h4>
-                                                <p className="text-sm text-muted-foreground">Review ticket sales, revenue, and other important metrics.</p>
+                                                <h4 className="font-medium text-white">Analyze Performance</h4>
+                                                <p className="text-sm text-gray-400">Review ticket sales, revenue, and other important metrics.</p>
                                             </div>
                                         </div>
-                                        <div className="mt-6 pt-4 border-t">
+                                        <div className="mt-6 pt-4 border-t border-gray-700">
                                             <button
                                                 onClick={() => handleViewChange('myEvents')}
                                                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -389,7 +388,7 @@ const OrganizerDashboard: React.FC = () => {
                                 >
                                     ← Back to My Events
                                 </button>
-                                <h1 className="text-3xl font-bold text-foreground">
+                                <h1 className="text-3xl font-bold text-white">
                                     Event Report: {organizerEvents.find(e => e.id === selectedEventId)?.name || `Event ID: ${selectedEventId}`}
                                 </h1>
                                 <OrganizerReports
