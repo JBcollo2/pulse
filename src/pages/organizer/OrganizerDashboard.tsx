@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { CalendarDays, DollarSign, CheckCircle, LayoutDashboard, BarChart2, FileText, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
+import { CalendarDays, DollarSign, CheckCircle, LayoutDashboard, BarChart2, FileText, LogOut, Menu, X, Sun, Moon, ChevronRight, Settings, Bell, User, Sparkles, Activity } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
