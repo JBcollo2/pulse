@@ -22,11 +22,11 @@ interface OrganizerNavigationProps {
   onViewChange: (view: string) => void;
   onLogout: () => void;
   isLoading: boolean;
-  // New props to control sidebar behavior from parent
-  isExpanded: boolean; // Controls desktop expanded/collapsed state
-  setIsExpanded: (expanded: boolean) => void; // Function to update expanded state
-  isMobileOpen: boolean; // Controls mobile open/closed state (passed from parent)
-  setIsMobileOpen: (open: boolean) => void; // Function to update mobile open state
+  isExpanded: boolean;
+  setIsExpanded: (expanded: boolean) => void;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (open: boolean) => void;
+  darkMode: boolean; // Add the darkMode prop
 }
 
 const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
@@ -38,6 +38,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   setIsExpanded,
   isMobileOpen,
   setIsMobileOpen,
+  darkMode, // Destructure the darkMode prop
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -126,7 +127,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       <div
         ref={sidebarRef}
         className={cn(
-          "fixed top-0 left-0 h-screen bg-gradient-to-br from-white via-gray-50 to-white",
+          "fixed top-0 left-0 h-screen",
+          darkMode ? "bg-gradient-to-br from-gray-800 via-gray-900 to-gray-800" : "bg-gradient-to-br from-white via-gray-50 to-white",
           "backdrop-blur-xl border-r border-gray-200/60 shadow-2xl flex flex-col z-40",
           "transition-all duration-500 ease-in-out",
           // Desktop behavior (md and up): width depends on isExpanded, always visible
@@ -180,7 +182,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                       "transition-all duration-300 ease-out transform hover:scale-[1.02]",
                       isActive
                         ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-${item.color.split('-')[1]}-500/25`
-                        : `${item.bgColor} text-gray-700 hover:text-gray-900 hover:shadow-md`
+                        : `${item.bgColor} ${darkMode ? "text-gray-300 hover:text-white" : "text-gray-700 hover:text-gray-900"} hover:shadow-md`
                     )}
                     style={{
                       animationDelay: `${index * 100}ms`
@@ -203,7 +205,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     )}>
                       <item.icon className={cn(
                         "h-5 w-5 transition-all duration-300",
-                        isActive ? "text-white" : "text-gray-600",
+                        isActive ? "text-white" : darkMode ? "text-gray-300" : "text-gray-600",
                         isExpanded ? "" : "mx-auto" // For collapsed state
                       )} />
                     </div>
@@ -214,7 +216,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                         <div className="font-semibold">{item.label}</div>
                         <div className={cn(
                           "text-xs transition-colors duration-300",
-                          isActive ? "text-white/80" : "text-gray-500"
+                          isActive ? "text-white/80" : darkMode ? "text-gray-400" : "text-gray-500"
                         )}>
                           {item.description}
                         </div>
@@ -227,7 +229,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                         "h-4 w-4 transition-all duration-300",
                         isActive
                           ? "text-white opacity-100 transform rotate-90"
-                          : "text-gray-400 opacity-0 group-hover:opacity-50"
+                          : darkMode ? "text-gray-400 opacity-0 group-hover:opacity-50" : "text-gray-400 opacity-0 group-hover:opacity-50"
                       )} />
                     )}
 

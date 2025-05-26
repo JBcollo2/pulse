@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Loader2, AlertCircle, FileText, Download, Mail, PieChart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Define the interface for the event report data
 interface EventReport {
@@ -29,9 +30,10 @@ interface EventReport {
 interface OrganizerReportsProps {
     eventId: number;
     eventReport?: EventReport | null; // Optional prop for initial data (e.g., if passed from a parent)
+    darkMode: boolean; // Add the darkMode prop
 }
 
-const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
+const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null, darkMode }) => {
     const [reportData, setReportData] = useState<EventReport | null>(initialReport);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
@@ -245,14 +247,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     // --- Loading State for initial fetch ---
     if (isLoadingReport && !reportData && !error) { // Only show full loading screen if no data/error is present
         return (
-            <Card className="max-w-3xl mx-auto my-8">
+            <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
                 <CardHeader>
                     <CardTitle>Event Report</CardTitle>
                     <CardDescription>Loading event report data...</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-64">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-lg text-muted-foreground">Fetching event insights...</p>
+                    <p className={cn("mt-4 text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>Fetching event insights...</p>
                 </CardContent>
             </Card>
         );
@@ -265,17 +267,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     const attendeesByTicketTypeData = formatChartData(reportData?.attendees_by_ticket_type);
 
     return (
-        <div className="space-y-8 p-6 lg:p-8 max-w-6xl mx-auto">
+        <div className={cn("space-y-8 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-white" : "text-foreground")}>
             <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight text-foreground">
+                    <h1 className="text-4xl font-bold tracking-tight">
                         Event Report{reportData ? `: ${reportData.event_name}` : ''}
                     </h1>
-                    <p className="text-muted-foreground text-lg">
+                    <p className={cn("text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>
                         Detailed analytics for your event.
                     </p>
                     {reportData && (
-                        <p className="text-muted-foreground text-sm mt-1">
+                        <p className={cn("text-sm mt-1", darkMode ? "text-gray-300" : "text-muted-foreground")}>
                             Event Date: {reportData.event_date} | Location: {reportData.event_location}
                         </p>
                     )}
@@ -286,6 +288,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             variant="outline"
                             onClick={() => downloadReport('pdf')}
                             disabled={isLoadingDownload || !canFetchReport}
+                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
                         >
                             <Download className="mr-2 h-4 w-4" />
                             {isLoadingDownload ? "Downloading..." : "Download PDF"}
@@ -294,6 +297,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             variant="outline"
                             onClick={() => downloadReport('csv')}
                             disabled={isLoadingDownload || !canFetchReport}
+                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
                         >
                             <Download className="mr-2 h-4 w-4" />
                             {isLoadingDownload ? "Downloading..." : "Download CSV"}
@@ -301,6 +305,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         <Button
                             onClick={resendReportEmail}
                             disabled={isLoadingEmail || !canFetchReport}
+                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
                         >
                             <Mail className="mr-2 h-4 w-4" />
                             {isLoadingEmail ? "Sending..." : "Resend Email"}
@@ -310,7 +315,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
 
             {/* --- Date Filters --- */}
-            <Card>
+            <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                 <CardHeader>
                     <CardTitle>Filter Report by Date</CardTitle>
                     <CardDescription>Adjust the time range for the report data.</CardDescription>
@@ -345,7 +350,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </Button>
                     </div>
                     {error && ( // Display error message below the date inputs
-                        <p className="text-destructive text-sm mt-4 flex items-center gap-2">
+                        <p className={cn("text-sm mt-4 flex items-center gap-2", darkMode ? "text-red-400" : "text-destructive")}>
                             <AlertCircle className="h-4 w-4" /> {error}
                         </p>
                     )}
@@ -358,27 +363,27 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     {/* --- Summary Cards --- */}
                     <h2 className="text-2xl font-bold tracking-tight">Summary Overview</h2>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
                                 <FileText className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-4xl font-bold">{reportData.total_tickets_sold}</div>
-                                <p className="text-xs text-muted-foreground">+20.1% from last month</p> {/* Placeholder for dynamic data */}
+                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+20.1% from last month</p> {/* Placeholder for dynamic data */}
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                                 <PieChart className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-4xl font-bold">${reportData.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <p className="text-xs text-muted-foreground">+15.5% from last month</p> {/* Placeholder for dynamic data */}
+                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+15.5% from last month</p> {/* Placeholder for dynamic data */}
                             </CardContent>
                         </Card>
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Number of Attendees</CardTitle>
                                 <svg
@@ -399,7 +404,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             </CardHeader>
                             <CardContent>
                                 <div className="text-4xl font-bold">{reportData.number_of_attendees}</div>
-                                <p className="text-xs text-muted-foreground">+5.2% from last month</p> {/* Placeholder for dynamic data */}
+                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+5.2% from last month</p> {/* Placeholder for dynamic data */}
                             </CardContent>
                         </Card>
                     </div>
@@ -407,7 +412,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     {/* --- Detailed Charts --- */}
                     <h2 className="text-2xl font-bold tracking-tight">Detailed Breakdown</h2>
                     <div className="grid gap-6 lg:grid-cols-2">
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader>
                                 <CardTitle>Tickets Sold by Type</CardTitle>
                                 <CardDescription>Distribution of tickets sold across different types.</CardDescription>
@@ -421,7 +426,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                             <YAxis allowDecimals={false} />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
                                                 itemStyle={{ color: '#ffffff' }}
                                                 labelStyle={{ color: '#a0aec0' }}
                                                 formatter={(value: number) => [`${value} Tickets`, 'Count']}
@@ -436,7 +441,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader>
                                 <CardTitle>Revenue by Ticket Type</CardTitle>
                                 <CardDescription>Revenue generated from each ticket category.</CardDescription>
@@ -450,7 +455,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                             <YAxis tickFormatter={(value: number) => `$${value.toFixed(2)}`} />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
                                                 itemStyle={{ color: '#ffffff' }}
                                                 labelStyle={{ color: '#a0aec0' }}
                                                 formatter={(value: number) => [`$${value.toFixed(2)} Revenue`, 'Amount']}
@@ -465,7 +470,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader>
                                 <CardTitle>Attendees by Ticket Type</CardTitle>
                                 <CardDescription>Number of attendees associated with each ticket type.</CardDescription>
@@ -479,7 +484,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                             <YAxis allowDecimals={false} />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
                                                 itemStyle={{ color: '#ffffff' }}
                                                 labelStyle={{ color: '#a0aec0' }}
                                                 formatter={(value: number) => [`${value} Attendees`, 'Count']}
@@ -494,7 +499,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             </CardContent>
                         </Card>
 
-                        <Card>
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
                             <CardHeader>
                                 <CardTitle>Payment Method Usage</CardTitle>
                                 <CardDescription>Breakdown of transactions by payment method.</CardDescription>
@@ -508,7 +513,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                             <YAxis allowDecimals={false} />
                                             <Tooltip
                                                 cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: "#1e293b", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
                                                 itemStyle={{ color: '#ffffff' }}
                                                 labelStyle={{ color: '#a0aec0' }}
                                                 formatter={(value: number) => [`${value} Transactions`, 'Count']}
@@ -525,13 +530,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </div>
                 </>
             ) : (
-                <Card className="max-w-3xl mx-auto my-8">
+                <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
                     <CardHeader>
                         <CardTitle>No Report Data</CardTitle>
                         <CardDescription>Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-center text-muted-foreground h-32 flex items-center justify-center">
+                        <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-300" : "text-muted-foreground")}>
                             Once you select the dates and apply the filter, the report data and charts will appear here.
                         </p>
                     </CardContent>
