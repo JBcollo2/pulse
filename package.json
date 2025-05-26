@@ -47,7 +47,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
-    "framer-motion": "^10.17.9",
+    "framer-motion": "^10.18.0",
     "html5-qrcode": "^2.3.8",
     "input-otp": "^1.2.4",
     "jsqr": "^1.4.0",
