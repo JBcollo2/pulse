@@ -109,7 +109,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             )}
           >
             {/* Navigation */}
-            <div className="flex flex-col items-center mt-6 space-y-2 w-full px-2">
+            <div className="flex flex-col items-center mt-10 space-y-2 w-full px-2">
               {navigationItems.map((item) => {
                 const isActive = currentView === item.id;
                 return (
@@ -125,6 +125,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                         ? "bg-gradient-to-r from-orange-500 to-purple-500 text-white shadow"
                         : "hover:bg-muted text-muted-foreground"
                     )}
+                    style={{ marginTop: '10px' }}
                   >
                     {isActive && (
                       <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-md" />
