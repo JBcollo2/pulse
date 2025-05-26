@@ -93,4 +93,22 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-pulse-purple to-pulse-blue;
   }
+
+  /* Custom styles for layout */
+  .main-container {
+    @apply flex min-h-screen;
+  }
+
+  .sidebar {
+    @apply w-64 flex-shrink-0 bg-gray-100 p-4;
+  }
+
+  .main-content {
+    @apply flex-grow p-4;
+  }
+
+  .main-content-scrollable {
+    @apply overflow-y-auto;
+    height: calc(100vh - 4rem); /* Adjust based on header/footer height */
+  }
 }

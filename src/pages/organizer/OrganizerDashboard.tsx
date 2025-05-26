@@ -238,12 +238,12 @@ const OrganizerDashboard: React.FC = () => {
     const activeMenuItem = menuItems.find(item => item.id === currentView);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-foreground">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-foreground main-container">
             <main className="pt-0">
                 <div className="flex">
                     {/* Sidebar */}
                     <div className={cn(
-                        "fixed md:relative top-0 md:top-0 left-0 h-screen",
+                        "fixed md:relative top-0 md:top-0 left-0 h-screen sidebar",
                         "bg-white/80 backdrop-blur-xl border-r border-gray-200/60",
                         "shadow-xl md:shadow-none z-30 transition-all duration-300 ease-in-out",
                         sidebarCollapsed ? 'w-16' : 'w-80',
@@ -385,7 +385,7 @@ const OrganizerDashboard: React.FC = () => {
 
                     {/* Main Content Area */}
                     <div className={cn(
-                        "flex-1 transition-all duration-300",
+                        "flex-1 transition-all duration-300 main-content",
                         sidebarCollapsed ? 'ml-16' : 'ml-0 md:ml-80'
                     )}>
                         <div className="bg-white/70 backdrop-blur-sm border-b border-border px-8 py-6 sticky top-0 z-10">
@@ -408,7 +408,7 @@ const OrganizerDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
+                        <div className="p-8 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar main-content-scrollable">
                             {error && (
                                 <div className="p-4 mb-4 bg-destructive/10 border border-destructive/20 text-destructive-foreground rounded-lg shadow-sm animate-fade-in-up">
                                     <p className="font-semibold">Error:</p>
