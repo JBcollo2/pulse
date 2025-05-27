@@ -6,14 +6,14 @@ import { Badge } from "@/components/ui/badge";
 
 // Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
-  REGULAR: '#FF8042',     // Orange
-  VIP: '#FFBB28',         // Yellow
-  STUDENT: '#0088FE',     // Blue
-  GROUP_OF_5: '#00C49F',  // Green
-  COUPLES: '#FF6699',     // Pinkish
-  EARLY_BIRD: '#AA336A',  // Purple
-  VVIP: '#00FF00',        // Bright Green for VVIP
-  GIVEAWAY: '#CCCCCC',    // Grey
+  REGULAR: '#FF8042',    // Orange
+  VIP: '#FFBB28',        // Yellow
+  STUDENT: '#0088FE',    // Blue
+  GROUP_OF_5: '#00C49F', // Green
+  COUPLES: '#FF6699',    // Pinkish
+  EARLY_BIRD: '#AA336A', // Purple
+  VVIP: '#00FF00',       // Bright Green for VVIP
+  GIVEAWAY: '#CCCCCC',   // Grey
   UNKNOWN_TYPE: '#A9A9A9', // Darker Grey for unknown types
   // Add other specific ticket types and their colors here (use uppercase)
 };
@@ -21,15 +21,17 @@ const COLORS_BY_TICKET = {
 // Fallback color if a ticket type is not in COLORS_BY_TICKET
 const FALLBACK_COLOR = COLORS_BY_TICKET.UNKNOWN_TYPE;
 
+// Updated Report interface to match the backend's as_dict() output
 interface Report {
   id: number;
   event_id: number;
-  event_name: string;
-  ticket_type: string; // Ensure this matches the key used in COLORS_BY_TICKET (case-insensitive check is good)
-  total_tickets_sold: number;
-  total_revenue: number;
-  created_at: string;
-  // Add other fields if your backend returns them
+  event_name: string; // From Report.event.name
+  ticket_type_id: number | null; // New field
+  ticket_type_name: string | null; // From Report.ticket_type.type_name.value
+  total_tickets_sold_summary: number; // Renamed from total_tickets_sold
+  total_revenue_summary: number; // Renamed from total_revenue
+  report_data: Record<string, any>; // For the JSONB field
+  timestamp: string; // From Report.timestamp (ISO format)
 }
 
 interface ReportStats {
@@ -37,7 +39,7 @@ interface ReportStats {
   totalRevenue: number;
   totalTickets: number;
   reportsByEvent: { event_name: string; count: number }[];
-  revenueByTicketType: { ticket_type: string; amount: number }[];
+  revenueByTicketType: { ticket_type_name: string; amount: number }[]; // Updated key name
 }
 
 const SystemReports = () => {
@@ -62,38 +64,39 @@ const SystemReports = () => {
         if (!response.ok) {
           const errorData = await response.json();
           const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
-           console.error('Error fetching reports:', errorMessage);
+          console.error('Error fetching reports:', errorMessage);
           throw new Error(errorMessage);
         }
 
         const data = await response.json();
-        const reportsData = Array.isArray(data) ? data : (data.reports || []);
+        // The backend now always returns an array of reports directly, so no need for data.reports
+        const reportsData = Array.isArray(data) ? data : []; 
 
         if (!Array.isArray(reportsData)) {
-             console.error('API response data is not an array:', reportsData);
-             throw new Error('Invalid data format received from API');
+          console.error('API response data is not an array:', reportsData);
+          throw new Error('Invalid data format received from API');
         }
 
         setReports(reportsData);
 
-        // Calculate statistics
-        const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue || 0), 0);
-        const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold || 0), 0);
+        // Calculate statistics based on the new field names
+        const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
+        const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
 
         // Group reports by event
         const reportsByEvent = reportsData.reduce((acc: Record<string, number>, report) => {
-          const eventName = report.event_name && typeof report.event_name === 'string' ? report.event_name : 'Unknown Event';
+          const eventName = report.event_name && typeof report.event_name === 'string' ? report.event_name : 'N/A Event';
           acc[eventName] = (acc[eventName] || 0) + 1;
           return acc;
         }, {});
 
         // Group revenue by ticket type
         const revenueByTicketType = reportsData.reduce((acc: Record<string, number>, report) => {
-          // Ensure ticket_type is a string and exists, convert to uppercase for consistent lookup
-          const ticketType = report.ticket_type && typeof report.ticket_type === 'string' ? report.ticket_type.toUpperCase() : 'UNKNOWN_TYPE';
-           const revenue = typeof report.total_revenue === 'number' ? report.total_revenue : 0; // Ensure revenue is a number
+          // Use ticket_type_name from the backend, and convert to uppercase for consistent lookup
+          const ticketTypeName = report.ticket_type_name && typeof report.ticket_type_name === 'string' ? report.ticket_type_name.toUpperCase() : 'UNKNOWN_TYPE';
+          const revenue = typeof report.total_revenue_summary === 'number' ? report.total_revenue_summary : 0;
 
-          acc[ticketType] = (acc[ticketType] || 0) + revenue;
+          acc[ticketTypeName] = (acc[ticketTypeName] || 0) + revenue;
           return acc;
         }, {});
 
@@ -102,11 +105,11 @@ const SystemReports = () => {
           totalRevenue,
           totalTickets,
           reportsByEvent: Object.entries(reportsByEvent).map(([name, count]) => ({
-            event_name: name, // Matches XAxis dataKey
-            count: Number(count) // Matches Bar dataKey
+            event_name: name,
+            count: Number(count)
           })),
           revenueByTicketType: Object.entries(revenueByTicketType).map(([type, amount]) => ({
-            ticket_type: type, // This will be used by nameKey in Pie chart
+            ticket_type_name: type, // Matches the new key name for Pie chart
             amount: Number(amount)
           }))
         });
@@ -153,13 +156,13 @@ const SystemReports = () => {
       return (
           <div className="space-y-6">
                <Card>
-                  <CardHeader>
-                     <CardTitle>System Reports</CardTitle>
-                     <CardDescription>No reports available yet.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-center text-muted-foreground">No system reports were found.</p>
-                  </CardContent>
+                   <CardHeader>
+                       <CardTitle>System Reports</CardTitle>
+                       <CardDescription>No reports available yet.</CardDescription>
+                   </CardHeader>
+                   <CardContent>
+                       <p className="text-center text-muted-foreground">No system reports were found.</p>
+                   </CardContent>
                </Card>
           </div>
       );
@@ -208,49 +211,44 @@ const SystemReports = () => {
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-               {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                       data={stats.reportsByEvent}
-                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }} // Added margin
-                    >
-                      {/* Subtle Grid Lines */}
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      {/* Styled X-Axis Ticks */}
-                      <XAxis
-                        dataKey="event_name"
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                        interval={0}
-                        style={{ fontSize: '12px' }}
-                        tick={{ fill: '#aaa', fontSize: 12 }} // Applied tick styling
-                      />
-                      {/* Styled Y-Axis Ticks */}
-                      <YAxis
-                         allowDecimals={false}
-                         tick={{ fill: '#aaa', fontSize: 12 }} // Applied tick styling
-                      />
-                      {/* Custom Tooltip */}
-                      <Tooltip
-                         contentStyle={{ backgroundColor: "#1a1a2e", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }} // Darker tooltip style
-                         formatter={(value: number) => [`${value.toLocaleString()} Reports`, 'Count']}
-                         labelFormatter={(label) => `Event: ${label}`}
-                      />
-                      <Bar
-                        dataKey="count"
-                        fill="#8884d8" // Solid purple color from example
-                        radius={[10, 10, 0, 0]} // Increased rounded top corners
-                        animationDuration={1500} // Animation
+                {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                          data={stats.reportsByEvent}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
-                         {/* LabelList to display count on bars */}
-                        <LabelList dataKey="count" position="top" fill="#fff" fontSize={12} /> {/* White labels from example */}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-               ) : (
-                   <div className="flex items-center justify-center h-full text-muted-foreground">No event report data available.</div>
-               )}
+                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                        <XAxis
+                          dataKey="event_name"
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                          interval={0}
+                          style={{ fontSize: '12px' }}
+                          tick={{ fill: '#aaa', fontSize: 12 }}
+                        />
+                        <YAxis
+                            allowDecimals={false}
+                            tick={{ fill: '#aaa', fontSize: 12 }}
+                        />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: "#1a1a2e", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                            formatter={(value: number) => [`${value.toLocaleString()} Reports`, 'Count']}
+                            labelFormatter={(label) => `Event: ${label}`}
+                        />
+                        <Bar
+                          dataKey="count"
+                          fill="#8884d8"
+                          radius={[10, 10, 0, 0]}
+                          animationDuration={1500}
+                        >
+                            <LabelList dataKey="count" position="top" fill="#fff" fontSize={12} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground">No event report data available.</div>
+                )}
             </div>
           </CardContent>
         </Card>
@@ -264,42 +262,44 @@ const SystemReports = () => {
           <CardContent>
             <div className="h-[300px] flex flex-col items-center justify-center">
               {stats.revenueByTicketType && stats.revenueByTicketType.length > 0 && stats.revenueByTicketType.some(data => data.amount > 0) ? (
-                 <ResponsiveContainer width="100%" height={250}>
-                   <PieChart>
-                     <Tooltip
-                       contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                       formatter={(value: number, name: string, entry: any) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, entry.payload.ticket_type]}
-                     />
-                     <Pie
-                       data={stats.revenueByTicketType}
-                       dataKey="amount"
-                       nameKey="ticket_type"
-                       cx="50%"
-                       cy="50%"
-                       innerRadius={60}
-                       outerRadius={90}
-                       paddingAngle={3}
-                       animationDuration={1500}
-                       labelLine={true}
-                       label={({ ticket_type, percent }) => `${ticket_type} ${(percent * 100).toFixed(0)}%`}
-                     >
-                       {stats.revenueByTicketType.map((entry, index) => (
-                         <Cell
-                           key={`cell-${index}`}
-                           fill={COLORS_BY_TICKET[entry.ticket_type] || FALLBACK_COLOR}
-                         />
-                       ))}
-                     </Pie>
-                     <Legend
-                        layout="horizontal"
-                        align="center"
-                        verticalAlign="bottom"
-                        wrapperStyle={{ paddingTop: '10px' }}
-                     />
-                   </PieChart>
-                 </ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                        // Updated formatter to use ticket_type_name
+                        formatter={(value: number, name: string, entry: any) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, entry.payload.ticket_type_name]}
+                      />
+                      <Pie
+                        data={stats.revenueByTicketType}
+                        dataKey="amount"
+                        nameKey="ticket_type_name" // Changed from ticket_type to ticket_type_name
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={3}
+                        animationDuration={1500}
+                        labelLine={true}
+                        // Updated label to use ticket_type_name
+                        label={({ ticket_type_name, percent }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {stats.revenueByTicketType.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS_BY_TICKET[entry.ticket_type_name as keyof typeof COLORS_BY_TICKET] || FALLBACK_COLOR} // Corrected type access
+                          />
+                        ))}
+                      </Pie>
+                      <Legend
+                         layout="horizontal"
+                         align="center"
+                         verticalAlign="bottom"
+                         wrapperStyle={{ paddingTop: '10px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
               ) : (
-                   <div className="flex items-center justify-center h-full text-muted-foreground">No revenue data by ticket type available for chart.</div>
+                  <div className="flex items-center justify-center h-full text-muted-foreground">No revenue data by ticket type available for chart.</div>
               )}
             </div>
           </CardContent>
@@ -321,13 +321,16 @@ const SystemReports = () => {
                       <div>
                         <p className="font-medium">{report.event_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Ticket Type: <Badge variant="outline">{report.ticket_type}</Badge>
+                          Ticket Type: <Badge variant="outline">{report.ticket_type_name || 'N/A'}</Badge> {/* Use ticket_type_name */}
+                        </p>
+                         <p className="text-xs text-muted-foreground">
+                            Generated: {new Date(report.timestamp).toLocaleString()} {/* Display timestamp */}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${report.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        <p className="font-medium">${report.total_revenue_summary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p> {/* Use total_revenue_summary */}
                         <p className="text-sm text-muted-foreground">
-                          {report.total_tickets_sold} tickets sold
+                          {report.total_tickets_sold_summary} tickets sold {/* Use total_tickets_sold_summary */}
                         </p>
                       </div>
                     </div>

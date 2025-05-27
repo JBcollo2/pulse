@@ -268,6 +268,7 @@ const AdminDashboard: React.FC = () => {
               onViewChange={handleViewChange}
               onLogout={handleLogout}
               isLoading={isLoading}
+              darkMode={false}
             />
           </div>
           <div className="flex-1">
