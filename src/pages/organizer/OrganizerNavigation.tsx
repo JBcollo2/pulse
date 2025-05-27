@@ -60,7 +60,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       color: "from-blue-500 to-cyan-600",
       bgColor: "hover:bg-blue-50 dark:hover:bg-blue-950/30",
       description: "Manage your events",
-      badge: "12",
+      badge: null, // Removed the badge
     },
     {
       id: "overallStats",
@@ -78,7 +78,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       color: "from-orange-500 to-red-600",
       bgColor: "hover:bg-orange-50 dark:hover:bg-orange-950/30",
       description: "Generate reports",
-      badge: "7",
+      badge: null, // Removed the badge
     },
   ];
 
@@ -148,12 +148,9 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200/60 dark:border-gray-800/60">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl
+            <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl
                               flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></div>
+              <Sparkles className="w-6 h-6 text-white" />
             </div>
             {(isExpanded || isMobileOpen) && (
               <div className="animate-fade-in">
@@ -239,14 +236,6 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                       <item.icon className={`h-5 w-5 transition-all duration-300
                                              ${isActive ? "text-white" : "text-gray-600 dark:text-gray-400"}
                                              ${isExpanded || isMobileOpen ? "" : "mx-auto"}`} />
-
-                      {/* Badge */}
-                      {item.badge && (isExpanded || isMobileOpen) && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5
-                                        flex items-center justify-center font-bold">
-                          {item.badge}
-                        </div>
-                      )}
                     </div>
 
                     {/* Label and Description */}
