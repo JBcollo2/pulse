@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Menu, X } from "lucide-react";
 
 interface AdminNavigationProps {
-  currentView: string;
-  onViewChange: (view: string) => void;
+  currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers';
+  onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers') => void;
   onLogout: () => void;
   isLoading: boolean;
 }
@@ -19,14 +19,17 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Define navigation items with IDs matching AdminDashboard's currentView states
   const navigationItems = [
-    { id: 'overview', label: 'Overview', icon: BarChart2, description: 'Dashboard overview' },
-    { id: 'users', label: 'Manage Users', icon: Users, description: 'Manage platform users' },
-    { id: 'events', label: 'Manage Events', icon: Calendar, description: 'Manage all events' },
-    { id: 'reports', label: 'Reports', icon: Shield, description: 'View reports' },
+    { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View system reports' },
+    { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor recent event activity' },
+    { id: 'viewAllUsers', label: 'View All Users', icon: Users, description: 'Manage all platform users' },
+    { id: 'nonAttendees', label: 'Non-Attendees', icon: Users, description: 'Identify non-attending users' },
+    { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create new admin accounts' },
+    { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create new security accounts' },
   ];
 
-  const handleViewChange = (view: string) => {
+  const handleViewChange = (view: typeof currentView) => {
     onViewChange(view);
     setIsMobileMenuOpen(false); // Close mobile menu on selection
   };
@@ -37,7 +40,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   return (
     <>
-      {/* Mobile Header */}
+      {/* Mobile Header - Visible only on small screens */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b border-[--border] p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -53,38 +56,40 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             size="sm"
             onClick={toggleMobileMenu}
             className="p-2"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay - Appears when menu is open on mobile */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Positioned fixed and responsive */}
       <Card className={cn(
         "fixed top-0 h-screen w-70 p-0 flex flex-col shadow-lg bg-background text-[--card-foreground] z-50 transition-transform duration-300 ease-in-out",
-        // Desktop positioning
-        "md:left-[-10px] md:translate-x-0",
-        // Mobile positioning and animation
-        "left-0 md:block",
-        isMobileMenuOpen 
-          ? "translate-x-0" 
-          : "-translate-x-full md:translate-x-0"
+        // Desktop positioning: always visible, slightly off-left
+        "md:left-[-10px] md:translate-x-0 md:block",
+        // Mobile positioning and animation: slides in from left
+        "left-0",
+        isMobileMenuOpen
+          ? "translate-x-0"
+          : "-translate-x-full"
       )}>
-        {/* Header */}
-        <div className="p-4 border-b border-[--border] mt-16 md:mt-0">
+        {/* Header/Logo section for the sidebar */}
+        <div className="p-4 border-b border-[--border] mt-16 md:mt-0"> {/* mt-16 for mobile to clear fixed header */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-[--primary] to-[--secondary] rounded-xl flex items-center justify-center shadow-lg">
               <Activity className="w-5 h-5 text-[--card-foreground]" />
             </div>
-            <div className="hidden md:block">
+            <div className="hidden md:block"> {/* Hidden on mobile, visible on desktop */}
               <h2 className="font-bold text-xl">Admins</h2>
               <p className="text-xs text-[--muted]">Manage platform activities</p>
             </div>
@@ -99,13 +104,14 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             return (
               <button
                 key={item.id}
-                onClick={() => handleViewChange(item.id)}
+                onClick={() => handleViewChange(item.id as typeof currentView)} // Type assertion for safety
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors w-full",
                   isActive
                     ? "bg-gradient-to-r from-[--primary] to-[--secondary] text-[--card-foreground] shadow-lg"
-                    : "hover:bg-[--muted]"
+                    : "hover:bg-[--muted] text-[--foreground]"
                 )}
+                disabled={isLoading}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
                 <div className="flex-1 text-left min-w-0">
@@ -116,7 +122,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             );
           })}
 
-          {/* Stats Card */}
+          {/* Quick Stats Card - Example/Placeholder */}
           <div className="mt-8 p-4 rounded-xl border bg-[--muted] border-[--border]">
             <div className="flex items-center gap-2 mb-3">
               <Activity className="w-4 h-4 text-[--primary] flex-shrink-0" />
@@ -124,22 +130,22 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             </div>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-[--muted]">Active Users</span>
+                <span className="text-[--muted-foreground]">Active Users</span>
                 <span className="font-bold text-[--primary]">120</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[--muted]">Total Events</span>
+                <span className="text-[--muted-foreground]">Total Events</span>
                 <span className="font-bold text-[--secondary]">45</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[--muted]">Reports</span>
+                <span className="text-[--muted-foreground]">Reports</span>
                 <span className="font-bold text-[--destructive]">7</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Logout */}
+        {/* Logout Button */}
         <div className="p-4 border-t border-[--border]">
           <Button
             onClick={onLogout}
@@ -151,35 +157,8 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
           </Button>
         </div>
       </Card>
-
-      
     </>
   );
 };
 
-// Demo wrapper to show the component in action
-const AdminNavigationDemo = () => {
-  const [currentView, setCurrentView] = React.useState('overview');
-  const [isLoading, setIsLoading] = React.useState(false);
-
-  const handleLogout = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Logged out successfully!');
-    }, 2000);
-  };
-
-  return (
-    <div className="min-h-screen bg-background">
-      <AdminNavigation
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        onLogout={handleLogout}
-        isLoading={isLoading}
-      />
-    </div>
-  );
-};
-
-export default AdminNavigationDemo;
+export default AdminNavigation;
