@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield } from 'lucide-react'; // Added more icons for dynamic header
+import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield } from 'lucide-react';
 import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
-// import AdminStats from './AdminStats'; // AdminStats component not provided, adding basic card structure
 import { debounce } from 'lodash';
-import { cn } from "@/lib/utils"; // Import cn utility for conditional classnames
+import { cn } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -27,7 +26,6 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
-  // Dynamic Header Content
   const getHeaderContent = () => {
     switch (currentView) {
       case 'reports':
@@ -318,12 +316,10 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-850 text-gray-800 dark:text-white overflow-hidden">
-      {/* Background Pattern Overlay for visual interest */}
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <div className="relative z-10 flex min-h-screen">
-        {/* Admin Navigation Sidebar (fixed position, takes up defined width) */}
-        <div className="fixed top-0 left-0 h-full w-70 md:w-70 flex-shrink-0 z-50">
+        <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50">
           <AdminNavigation
             currentView={currentView}
             onViewChange={handleViewChange}
@@ -332,9 +328,7 @@ const AdminDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Main Content Area (offset to the right by sidebar width) */}
-        <div className="flex-1 ml-70 md:ml-70 p-4 md:p-8"> {/* Adjusted margin-left to match sidebar width */}
-          {/* Dynamic Header System */}
+        <div className="flex-1 ml-72 p-4 md:p-8">
           <Card className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border-none overflow-hidden",
             "bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-60 dark:bg-opacity-40",
@@ -355,7 +349,6 @@ const AdminDashboard: React.FC = () => {
             </div>
           </Card>
 
-          {/* Enhanced Dashboard Stats - Placeholder (replace with actual AdminStats component if available) */}
           {currentView === 'reports' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
@@ -404,16 +397,13 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </div>
           )}
-          {/* End Dashboard Stats Placeholder */}
 
-
-          {/* Main content rendering based on currentView */}
           <div className="space-y-6">
             {currentView === 'reports' && (
               <SystemReports />
             )}
             {currentView === 'events' && (
-              <RecentEvents />
+              <RecentEvents darkMode={false} />
             )}
 
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
