@@ -23,13 +23,12 @@ interface EventReport {
     total_tickets_sold: number;
     number_of_attendees: number;
     total_revenue: number;
-    event_date: string; // ISO 8601 string, e.g., "2024-12-31"
+    event_date: string;
     event_location: string;
     tickets_sold_by_type: { [key: string]: number };
     revenue_by_ticket_type: { [key: string]: number };
     attendees_by_ticket_type: { [key: string]: number };
     payment_method_usage: { [key: string]: number };
-    // New fields from backend report
     filter_start_date?: string;
     filter_end_date?: string;
 }
@@ -37,8 +36,8 @@ interface EventReport {
 // Define the props interface for the OrganizerReports component
 interface OrganizerReportsProps {
     eventId: number;
-    eventReport?: EventReport | null; // Optional prop for initial data (e.g., if passed from a parent)
-    darkMode: boolean; // Add the darkMode prop
+    eventReport?: EventReport | null;
+    darkMode: boolean;
 }
 
 // Enhanced color palettes
@@ -51,9 +50,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     const [reportData, setReportData] = useState<EventReport | null>(initialReport);
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
-    const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false); // Specific for report fetch
-    const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false); // Specific for downloads
-    const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false); // Specific for email resend
+    const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
+    const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false);
+    const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [activeChart, setActiveChart] = useState<string>('bar');
     const [selectedView, setSelectedView] = useState<string>('overview');
@@ -62,7 +61,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     // Utility function for consistent error handling
     const handleOperationError = useCallback((message: string, err?: any) => {
         console.error('Operation error:', message, err);
-        setError(message); // Set the error for display in the component
+        setError(message);
         toast({
             title: "Error",
             description: err?.message || message,
@@ -75,7 +74,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         if (!startDate || !endDate) {
             return false;
         }
-        // Basic date validation
         const start = new Date(startDate);
         const end = new Date(endDate);
         return start <= end;
@@ -93,8 +91,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         }
 
         setIsLoadingReport(true);
-        setError(null); // Clear previous errors
-        setReportData(null); // Clear previous data
+        setError(null);
+        setReportData(null);
 
         try {
             const params = new URLSearchParams();
@@ -130,7 +128,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     useEffect(() => {
         if (initialReport) {
             setReportData(initialReport);
-            // If initial report has filter dates, pre-fill the date inputs
             if (initialReport.filter_start_date) setStartDate(initialReport.filter_start_date);
             if (initialReport.filter_end_date) setEndDate(initialReport.filter_end_date);
             setIsLoadingReport(false);
@@ -156,7 +153,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             params.append('start_date', startDate);
             params.append('end_date', endDate);
 
-            // Corrected URL structure based on your backend routes
             let url = '';
             if (format === 'pdf') {
                 url = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}/download/pdf?${params.toString()}`;
@@ -176,7 +172,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = `event_report_${eventId}.${format}`;
                 if (contentDisposition) {
-                    const filenameMatch = contentDisposition.match(/filename="([^"]+)"/); // Correct regex for quotes
+                    const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
                     if (filenameMatch && filenameMatch[1]) {
                         filename = filenameMatch[1];
                     }
@@ -261,7 +257,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             name: label,
             value,
             color: CHART_COLORS[index % CHART_COLORS.length],
-            percentage: 0 // Will be calculated
+            percentage: 0
         }));
     }, []);
 
@@ -323,7 +319,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
     // Custom pie chart label
     const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-        if (percent < 0.05) return null; // Hide labels for slices less than 5%
+        if (percent < 0.05) return null;
 
         const RADIAN = Math.PI / 180;
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -344,8 +340,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         );
     };
 
-    // --- Loading State for initial fetch ---
-    if (isLoadingReport && !reportData && !error) { // Only show full loading screen if no data/error is present
+    // Loading State for initial fetch
+    if (isLoadingReport && !reportData && !error) {
         return (
             <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
                 <CardHeader>

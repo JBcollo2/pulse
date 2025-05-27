@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button";
 interface OverallSummary {
     organizer_name: string;
     total_tickets_sold_across_all_events: number;
-    total_revenue_across_all_events: string; // Changed to string
-    events_summary: { // Changed from events_details
+    total_revenue_across_all_events: string;
+    events_summary: {
         event_id: number;
         event_name: string;
         date: string;
@@ -35,7 +35,7 @@ interface OrganizerStatsProps {
     overallSummary: OverallSummary | null;
     isLoading: boolean;
     error: string | undefined;
-    darkMode: boolean; // Add the darkMode prop
+    darkMode: boolean;
 }
 
 const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoading, error, darkMode }) => {
