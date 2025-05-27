@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MapPin, Star, Search, Globe, Calendar } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+
 interface Organizer {
   id: number;
   company_name: string;
@@ -47,19 +48,45 @@ interface GooglePlaceResult {
   rating: number;
 }
 
-const Venues = () => {
+// Add proper type for Nominatim API response
+interface NominatimPlace {
+  osm_id?: string;
+  place_id?: string;
+  display_name: string;
+  importance?: number;
+  address?: {
+    city?: string;
+    town?: string;
+    county?: string;
+    country?: string;
+    amenity?: string;
+    [key: string]: any;
+  };
+  extratags?: {
+    wikidata?: string;
+    [key: string]: any;
+  };
+}
+
+// Add proper type for API response
+interface EventsApiResponse {
+  events: Event[];
+  [key: string]: any;
+}
+
+const Venues: React.FC = () => {
   const [venues, setVenues] = useState<VenueGroup[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('all');
   const [selectedVenue, setSelectedVenue] = useState<VenueGroup | null>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   
-const fetchWikiImage = async (wikidataId) => {
+const fetchWikiImage = async (wikidataId: string): Promise<string | null> => {
   try {
     console.log(`[fetchWikiImage] Fetching image for Wikidata ID: ${wikidataId}`);
     const response = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
@@ -83,11 +110,13 @@ const fetchWikiImage = async (wikidataId) => {
   }
 };
 
-const searchGooglePlaces = async (query) => {
+const searchGooglePlaces = async (query: string, organizerId: number): Promise<GooglePlaceResult> => {
   try {
-    console.log(`[searchGooglePlaces] Starting search for: "${query}"`);
+    console.log(`[searchGooglePlaces] Starting search for: "${query}" (Organizer: ${organizerId})`);
     const formattedQuery = encodeURIComponent(query);
-    const url = `https://nominatim.openstreetmap.org/search?q=${formattedQuery}&format=json&addressdetails=1&limit=1&extratags=1`;
+    
+    // FIX 1: Increase limit to get more results and add more specific search parameters
+    const url = `https://nominatim.openstreetmap.org/search?q=${formattedQuery}&format=json&addressdetails=1&limit=5&extratags=1&bounded=0`;
 
     console.log(`[searchGooglePlaces] Fetching from: ${url}`);
 
@@ -101,20 +130,31 @@ const searchGooglePlaces = async (query) => {
 
     if (!response.ok) throw new Error('Failed to fetch location data');
 
-    const data = await response.json();
+    const data: NominatimPlace[] = await response.json();
     console.log(`[searchGooglePlaces] Response data:`, data);
 
     if (!data || data.length === 0) {
       console.warn(`[searchGooglePlaces] No results found`);
-      const fallbackPhoto = `https://placehold.co/400x300?text=${formattedQuery}`;
+      // FIX 2: Make fallback images unique per organizer
+      const fallbackPhoto = `https://placehold.co/400x300/6366f1/ffffff?text=${encodeURIComponent(query.substring(0, 20))}&font=Open+Sans`;
       return {
         description: `${query} is a venue where various events take place throughout the year.`,
         photos: [fallbackPhoto],
-        rating: 4.0 + Math.random() * 0.5
+        rating: 4.0 + (organizerId % 10) / 10 * 1.5 // Use organizerId for unique rating
       };
     }
 
-    const place = data[0];
+    // FIX 3: Better place selection logic - prefer more specific results
+    let place = data[0];
+    
+    // Try to find the most specific result (highest importance score or most detailed address)
+    const sortedResults = data.sort((a, b) => {
+      const aScore = (a.importance || 0) + (a.address ? Object.keys(a.address).length * 0.1 : 0);
+      const bScore = (b.importance || 0) + (b.address ? Object.keys(b.address).length * 0.1 : 0);
+      return bScore - aScore;
+    });
+    
+    place = sortedResults[0];
     console.log(`[searchGooglePlaces] Selected place:`, place);
 
     let description = `${query} is located at ${place.display_name}.`;
@@ -125,19 +165,27 @@ const searchGooglePlaces = async (query) => {
       if (city || country) {
         description += ` This venue is situated in ${city}${city && country ? ', ' : ''}${country}.`;
       }
+      
+      // FIX 4: Add more specific venue type information
+      if (place.address.amenity) {
+        description += ` This ${place.address.amenity} is`;
+      } else {
+        description += ' This venue is';
+      }
     }
 
-    description += ' Known for hosting various events and providing excellent service to attendees.';
-    console.log(`[searchGooglePlaces] Description: ${description}`);
+    description += ' known for hosting various events and providing excellent service to attendees.';
+    console.log(`[searchGooglePlares] Description: ${description}`);
 
-    const uniqueString = place.osm_id || place.place_id || query;
+    // FIX 5: Use combination of place-specific data and organizer ID for unique rating
+    const uniqueString = `${place.osm_id || place.place_id || query}_${organizerId}`;
     const charSum = uniqueString.toString().split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const rating = (charSum % 10) / 10 * 1.5 + 3.5;
+    const rating = (charSum % 15) / 10 * 1.5 + 3.5; // More variation in ratings
     console.log(`[searchGooglePlaces] Rating: ${rating.toFixed(2)}`);
 
     // Try fetching image from Wiki
     const wikidataId = place.extratags?.wikidata;
-    let photoUrl = `https://placehold.co/400x300?text=${formattedQuery}`;
+    let photoUrl = `https://placehold.co/400x300/6366f1/ffffff?text=${encodeURIComponent(query.substring(0, 20))}&font=Open+Sans`;
 
     if (wikidataId) {
       const wikiImage = await fetchWikiImage(wikidataId);
@@ -146,94 +194,110 @@ const searchGooglePlaces = async (query) => {
       }
     }
 
+    // FIX 6: If no wiki image, try to use place-specific placeholder with different colors
+    if (!wikidataId || photoUrl.includes('placehold.co')) {
+      const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+      const colorIndex = organizerId % colors.length;
+      photoUrl = `https://placehold.co/400x300/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(query.substring(0, 20))}&font=Open+Sans`;
+    }
+
     console.log(`[searchGooglePlaces] Final photo URL: ${photoUrl}`);
 
     return {
       description,
       photos: [photoUrl],
-      rating
+      rating: Math.round(rating * 10) / 10 // Round to 1 decimal place
     };
   } catch (error) {
     console.error('[searchGooglePlaces] Error:', error);
 
-    const fallbackPhoto = `https://placehold.co/400x300?text=${encodeURIComponent(query)}`;
+    // FIX 7: Unique fallback based on organizer
+    const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+    const colorIndex = organizerId % colors.length;
+    const fallbackPhoto = `https://placehold.co/400x300/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(query.substring(0, 20))}&font=Open+Sans`;
+    
     return {
       description: `${query} is a popular venue located in the heart of the city. Known for its unique atmosphere and excellent service.`,
       photos: [fallbackPhoto],
-      rating: 4.5 + Math.random() * 0.5
+      rating: 4.0 + (organizerId % 10) / 10 * 1.5
     };
   }
 };
 
-
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // API call to get events
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/events?page=1&per_page=50`, {
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+useEffect(() => {
+  const fetchEvents = async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      // API call to get events
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/events?page=1&per_page=50`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!res.ok) throw new Error('Failed to fetch events');
+      
+      const data: EventsApiResponse = await res.json();
+      const events = data.events;
+      
+      // Group by organizer.id
+      const venueMap: Record<number, VenueGroup> = {};
+      
+      events.forEach((event: Event) => {
+        if (!event.organizer) return;
+        const orgId = event.organizer.id;
         
-        if (!res.ok) throw new Error('Failed to fetch events');
-        
-        const data = await res.json();
-        const events: Event[] = data.events;
-        
-        // Group by organizer.id
-        const venueMap: { [id: number]: VenueGroup } = {};
-        
-        events.forEach(event => {
-          if (!event.organizer) return;
-          const orgId = event.organizer.id;
-          
-          if (!venueMap[orgId]) {
-            venueMap[orgId] = {
-              organizer: event.organizer,
-              events: [],
-            };
-          }
-          
-          venueMap[orgId].events.push(event);
-        });
-        
-        const venueGroups = Object.values(venueMap);
-        
-        // Fetch location details for each venue with an address
-        for (const venue of venueGroups) {
-          if (venue.organizer.address) {
-            try {
-              const placeDetails = await searchGooglePlaces(venue.organizer.address);
-              venue.locationDetails = {
-                description: placeDetails.description,
-                image: placeDetails.photos[0],
-                rating: placeDetails.rating
-              };
-            } catch (error) {
-              console.error(`Error fetching location details for ${venue.organizer.company_name}:`, error);
-            }
-          }
+        if (!venueMap[orgId]) {
+          venueMap[orgId] = {
+            organizer: event.organizer,
+            events: [],
+          };
         }
         
-        setVenues(venueGroups);
-        console.log('Fetched venues:', venueGroups);
-      } catch (err: any) {
-        setError(err.message || 'Unknown error');
-      } finally {
-        setLoading(false);
+        venueMap[orgId].events.push(event);
+      });
+      
+      const venueGroups: VenueGroup[] = Object.values(venueMap);
+      
+      // FIX 8: Pass organizer ID to search function and add delay between requests
+      for (let i = 0; i < venueGroups.length; i++) {
+        const venue = venueGroups[i];
+        if (venue.organizer.address) {
+          try {
+            // Add delay to avoid rate limiting
+            if (i > 0) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            const placeDetails = await searchGooglePlaces(venue.organizer.address, venue.organizer.id);
+            venue.locationDetails = {
+              description: placeDetails.description,
+              image: placeDetails.photos[0],
+              rating: placeDetails.rating
+            };
+          } catch (error) {
+            console.error(`Error fetching location details for ${venue.organizer.company_name}:`, error);
+          }
+        }
       }
-    };
-    
-    fetchEvents();
-  }, []);
+      
+      setVenues(venueGroups);
+      console.log('Fetched venues:', venueGroups);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchEvents();
+}, []);
 
   // Filter venues based on search query
-  const filteredVenues = venues.filter(venue => 
+  const filteredVenues = venues.filter((venue: VenueGroup) => 
     venue.organizer.company_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (venue.organizer.company_description && venue.organizer.company_description.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (venue.organizer.address && venue.organizer.address.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -243,48 +307,46 @@ const searchGooglePlaces = async (query) => {
   // Sort venues by number of events (for trending tab)
   const sortedVenues = [...filteredVenues].sort((a, b) => b.events.length - a.events.length);
 
-  const handleViewDetails = async (venue: VenueGroup) => {
-    setSelectedVenue(venue);
-    
-    // If we don't have location details yet and there's an address, fetch them
-    if (!venue.locationDetails && venue.organizer.address) {
-      setIsLoadingDetails(true);
-      try {
-        const placeDetails = await searchGooglePlaces(venue.organizer.address);
-        
-        // Update the venue with location details
-        const updatedVenues = venues.map(v => {
-          if (v.organizer.id === venue.organizer.id) {
-            return {
-              ...v,
-              locationDetails: {
-                description: placeDetails.description,
-                image: placeDetails.photos[0],
-                rating: placeDetails.rating
-              }
-            };
-          }
-          return v;
-        });
-        
-        setVenues(updatedVenues);
-        
-        // Update selected venue
-        setSelectedVenue({
-          ...venue,
-          locationDetails: {
-            description: placeDetails.description,
-            image: placeDetails.photos[0],
-            rating: placeDetails.rating
-          }
-        });
-      } catch (error) {
-        console.error('Error fetching place details:', error);
-      } finally {
-        setIsLoadingDetails(false);
-      }
+const handleViewDetails = async (venue: VenueGroup): Promise<void> => {
+  setSelectedVenue(venue);
+  
+  if (!venue.locationDetails && venue.organizer.address) {
+    setIsLoadingDetails(true);
+    try {
+      // FIX 9: Pass organizer ID here too
+      const placeDetails = await searchGooglePlaces(venue.organizer.address, venue.organizer.id);
+      
+      const updatedVenues = venues.map((v: VenueGroup) => {
+        if (v.organizer.id === venue.organizer.id) {
+          return {
+            ...v,
+            locationDetails: {
+              description: placeDetails.description,
+              image: placeDetails.photos[0],
+              rating: placeDetails.rating
+            }
+          };
+        }
+        return v;
+      });
+      
+      setVenues(updatedVenues);
+      
+      setSelectedVenue({
+        ...venue,
+        locationDetails: {
+          description: placeDetails.description,
+          image: placeDetails.photos[0],
+          rating: placeDetails.rating
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching place details:', error);
+    } finally {
+      setIsLoadingDetails(false);
     }
-  };
+  }
+};
 
   const handleViewEvents = (organizerId: number) => {
     navigate(`/events?organizer=${organizerId}`);
