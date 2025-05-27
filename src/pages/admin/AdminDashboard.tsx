@@ -259,7 +259,7 @@ const AdminDashboard: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white">
       <div className="container mx-auto py-6">
         <div className="flex gap-6">
           <div className="w-48 flex-shrink-0">
@@ -268,7 +268,6 @@ const AdminDashboard: React.FC = () => {
               onViewChange={handleViewChange}
               onLogout={handleLogout}
               isLoading={isLoading}
-              darkMode={false}
             />
           </div>
           <div className="flex-1">
