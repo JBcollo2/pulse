@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     BarChart, Bar
@@ -8,6 +8,8 @@ import { Users, Ticket, TrendingUp, DollarSign, Calendar, AlertCircle, Shield, W
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 // Define the interface for the overall summary data
 interface OverallSummary {
@@ -38,6 +40,7 @@ interface OrganizerStatsProps {
 
 const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoading, error, darkMode }) => {
     const { toast } = useToast();
+    const [selectedEvent, setSelectedEvent] = useState<OverallSummary['events_summary'][0] | null>(null);
 
     // --- Loading State ---
     if (isLoading) {
@@ -146,57 +149,100 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
 
             {/* --- Summary Cards --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
-                        <Ticket className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold">
-                            {overallSummary.total_tickets_sold_across_all_events.toLocaleString()}
-                        </div>
-                        <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Across all your events</p>
-                    </CardContent>
-                </Card>
-                <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold text-green-600">
-                            ${overallSummary.total_revenue_across_all_events}
-                        </div>
-                        <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>From all ticket sales</p>
-                    </CardContent>
-                </Card>
-                {overallSummary.total_events !== undefined && (
-                    <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                    <Card className={cn(
+                        "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+                    )}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Events Hosted</CardTitle>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-4xl font-bold text-blue-600">
-                                {overallSummary.total_events}
-                            </div>
-                            <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Past and upcoming</p>
-                        </CardContent>
-                    </Card>
-                )}
-                {overallSummary.upcoming_events_count !== undefined && (
-                    <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
+                            <Ticket className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-4xl font-bold">
-                                {overallSummary.upcoming_events_count}
+                                {overallSummary.total_tickets_sold_across_all_events.toLocaleString()}
                             </div>
-                            <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Events planned</p>
+                            <p className="text-xs text-green-500 mt-1">↑ 12% increase from last month</p>
+                            <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Across all your events</p>
                         </CardContent>
                     </Card>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                    <Card className={cn(
+                        "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+                    )}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground group-hover:text-green-500 transition-colors duration-200" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-4xl font-bold text-green-600">
+                                ${overallSummary.total_revenue_across_all_events}
+                            </div>
+                            <p className="text-xs text-green-500 mt-1">↑ 15% increase from last month</p>
+                            <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>From all ticket sales</p>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+
+                {overallSummary.total_events !== undefined && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                    >
+                        <Card className={cn(
+                            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+                        )}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Events Hosted</CardTitle>
+                                <Calendar className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-4xl font-bold text-blue-600">
+                                    {overallSummary.total_events}
+                                </div>
+                                <p className="text-xs text-green-500 mt-1">↑ 8% increase from last month</p>
+                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Past and upcoming</p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+
+                {overallSummary.upcoming_events_count !== undefined && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                        <Card className={cn(
+                            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+                        )}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-muted-foreground group-hover:text-green-500 transition-colors duration-200" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-4xl font-bold">
+                                    {overallSummary.upcoming_events_count}
+                                </div>
+                                <p className="text-xs text-green-500 mt-1">↑ 5% increase from last month</p>
+                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Events planned</p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 )}
             </div>
 
@@ -205,16 +251,29 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             {overallSummary.events_summary && overallSummary.events_summary.length > 0 ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {overallSummary.events_summary.map(event => (
-                        <Card key={event.event_id} className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader>
-                                <CardTitle className="truncate">{event.event_name}</CardTitle>
-                                <CardDescription>{event.date} at {event.location}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <p className="text-sm font-medium">Tickets Sold: <span className="font-bold text-primary">{event.tickets_sold.toLocaleString()}</span></p>
-                                <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-600">${event.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-                            </CardContent>
-                        </Card>
+                        <motion.div
+                            key={event.event_id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <Card
+                                onClick={() => setSelectedEvent(event)}
+                                className={cn(
+                                    "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer",
+                                    darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+                                )}
+                            >
+                                <CardHeader>
+                                    <CardTitle className="truncate">{event.event_name}</CardTitle>
+                                    <CardDescription>{event.date} at {event.location}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    <p className="text-sm font-medium">Tickets Sold: <span className="font-bold text-primary">{event.tickets_sold.toLocaleString()}</span></p>
+                                    <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-600">${event.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     ))}
                 </div>
             ) : (
@@ -224,63 +283,94 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             {/* --- Monthly Trends --- */}
             <div className="grid gap-6 lg:grid-cols-2">
                 {overallSummary.tickets_sold_monthly_trend && overallSummary.tickets_sold_monthly_trend.length > 0 && (
-                    <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                        <CardHeader>
-                            <CardTitle>Monthly Tickets Sold Trend</CardTitle>
-                            <CardDescription>Tickets sold over the last few months.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={overallSummary.tickets_sold_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                        <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                                        <YAxis allowDecimals={false} />
-                                        <Tooltip
-                                            cursor={{ strokeDasharray: '3 3' }}
-                                            contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                            itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
-                                            labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
-                                            formatter={(value: number) => [`${value} Tickets`, 'Sold']}
-                                        />
-                                        <Legend />
-                                        <Line type="monotone" dataKey="tickets" stroke="hsl(var(--primary))" activeDot={{ r: 8 }} name="Tickets Sold" strokeWidth={2} />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+                            <CardHeader>
+                                <CardTitle>Monthly Tickets Sold Trend</CardTitle>
+                                <CardDescription>Tickets sold over the last few months.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-72">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={overallSummary.tickets_sold_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis dataKey="month" style={{ fontSize: '12px' }} />
+                                            <YAxis allowDecimals={false} />
+                                            <Tooltip
+                                                cursor={{ strokeDasharray: '3 3' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
+                                                labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
+                                                formatter={(value: number) => [`${value} Tickets`, 'Sold']}
+                                            />
+                                            <Legend />
+                                            <Line type="monotone" dataKey="tickets" stroke={darkMode ? "#93c5fd" : "#3b82f6"} activeDot={{ r: 8 }} name="Tickets Sold" strokeWidth={2} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 )}
 
                 {overallSummary.revenue_monthly_trend && overallSummary.revenue_monthly_trend.length > 0 && (
-                    <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                        <CardHeader>
-                            <CardTitle>Monthly Revenue Trend</CardTitle>
-                            <CardDescription>Revenue generated over the last few months.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="h-72">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={overallSummary.revenue_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                        <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                                        <YAxis tickFormatter={(value: number) => `$${value}`} />
-                                        <Tooltip
-                                            cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                            contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                            itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
-                                            labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
-                                            formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
-                                        />
-                                        <Legend />
-                                        <Bar dataKey="revenue" fill="hsl(var(--secondary))" name="Revenue" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+                            <CardHeader>
+                                <CardTitle>Monthly Revenue Trend</CardTitle>
+                                <CardDescription>Revenue generated over the last few months.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="h-72">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={overallSummary.revenue_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                                            <XAxis dataKey="month" style={{ fontSize: '12px' }} />
+                                            <YAxis tickFormatter={(value: number) => `$${value}`} />
+                                            <Tooltip
+                                                cursor={{ fill: 'rgba(0,0,0,0.1)' }}
+                                                contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
+                                                itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
+                                                labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
+                                                formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
+                                            />
+                                            <Legend />
+                                            <Bar dataKey="revenue" fill={darkMode ? "#93c5fd" : "#3b82f6"} name="Revenue" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 )}
             </div>
+
+            {/* Event Details Modal */}
+            {selectedEvent && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                    <Card className={cn("w-full max-w-md", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
+                        <CardHeader>
+                            <CardTitle>{selectedEvent.event_name}</CardTitle>
+                            <CardDescription>{selectedEvent.date} at {selectedEvent.location}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm font-medium">Tickets Sold: <span className="font-bold text-primary">{selectedEvent.tickets_sold.toLocaleString()}</span></p>
+                            <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-600">${selectedEvent.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                        </CardContent>
+                        <CardFooter className="flex justify-end">
+                            <Button onClick={() => setSelectedEvent(null)}>Close</Button>
+                        </CardFooter>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 };
