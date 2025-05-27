@@ -356,10 +356,19 @@ const AdminDashboard: React.FC = () => {
                   <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Total Users
                   </CardTitle>
-                  <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:rotate-6 transition-transform duration-300" />
+                  <div className="relative group">
+                    <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:rotate-6 transition-transform duration-300" />
+                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Total users
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white">12,345</div>
+                  {isLoading ? (
+                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                  ) : (
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">12,345</div>
+                  )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +20.1% from last month
                   </p>
@@ -371,10 +380,19 @@ const AdminDashboard: React.FC = () => {
                   <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Events Held
                   </CardTitle>
-                  <CalendarDays className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+                  <div className="relative group">
+                    <CalendarDays className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Events held
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white">2,150</div>
+                  {isLoading ? (
+                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                  ) : (
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">2,150</div>
+                  )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +180 since last year
                   </p>
@@ -386,10 +404,19 @@ const AdminDashboard: React.FC = () => {
                   <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Total Revenue
                   </CardTitle>
-                  <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:animate-pulse transition-all duration-300" />
+                  <div className="relative group">
+                    <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:animate-pulse transition-all duration-300" />
+                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      Total revenue
+                    </span>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,231.89</div>
+                  {isLoading ? (
+                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                  ) : (
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,231.89</div>
+                  )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +19% from last month
                   </p>
@@ -403,7 +430,7 @@ const AdminDashboard: React.FC = () => {
               <SystemReports />
             )}
             {currentView === 'events' && (
-              <RecentEvents darkMode={false} />
+              <RecentEvents/>
             )}
 
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
