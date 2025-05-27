@@ -21,9 +21,9 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 }) => {
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: BarChart2, description: 'Dashboard overview' },
-    { id: 'events', label: 'My Events', icon: Calendar, description: 'Manage your events' },
-    { id: 'stats', label: 'Overall Stats', icon: Users, description: 'Analytics & insights' },
-    { id: 'reports', label: 'Reports', icon: Shield, description: 'Generate reports' },
+    { id: 'users', label: 'Manage Users', icon: Users, description: 'Manage platform users' },
+    { id: 'events', label: 'Manage Events', icon: Calendar, description: 'Manage all events' },
+    { id: 'reports', label: 'Reports', icon: Shield, description: 'View reports' },
   ];
 
   return (
@@ -38,8 +38,8 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             <Activity className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-xl">Organizers</h2>
-            <p className="text-xs text-gray-500">Manage team members</p>
+            <h2 className="font-bold text-xl">Admins</h2>
+            <p className="text-xs text-gray-500">Manage platform activities</p>
           </div>
         </div>
       </div>
@@ -77,16 +77,16 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Active Events</span>
-              <span className="font-bold text-indigo-600">12</span>
+              <span className="text-gray-600">Active Users</span>
+              <span className="font-bold text-indigo-600">120</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Total Tickets</span>
-              <span className="font-bold text-green-600">1,247</span>
+              <span className="text-gray-600">Total Events</span>
+              <span className="font-bold text-green-600">45</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Revenue</span>
-              <span className="font-bold text-purple-600">$24.5k</span>
+              <span className="text-gray-600">Reports</span>
+              <span className="font-bold text-purple-600">7</span>
             </div>
           </div>
         </div>
