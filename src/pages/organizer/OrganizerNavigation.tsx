@@ -96,7 +96,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       ) {
         setIsMobileOpen(false);
       }
-      
+
       if (
         userMenuRef.current &&
         !userMenuRef.current.contains(event.target as Node) &&
@@ -116,7 +116,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       <div className="fixed top-6 left-6 z-50 md:hidden">
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border border-gray-200/60 dark:border-gray-700/60 
+          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border border-gray-200/60 dark:border-gray-700/60
                      rounded-xl p-3 transition-all duration-200 hover:scale-105 hover:shadow-xl"
         >
           {isMobileOpen ? <X size={20} className="text-gray-700 dark:text-gray-300" /> : <Menu size={20} className="text-gray-700 dark:text-gray-300" />}
@@ -135,8 +135,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       <div
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-screen z-40 md:relative md:translate-x-0 md:shadow-none md:z-auto
-                    ${darkMode 
-                      ? "bg-gray-900/95 border-gray-800/60" 
+                    ${darkMode
+                      ? "bg-gray-900/95 border-gray-800/60"
                       : "bg-white/95 border-gray-200/60"
                     }
                     backdrop-blur-xl border-r shadow-2xl flex flex-col
@@ -185,8 +185,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 
-                          rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700
+                          rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50
                           focus:border-violet-500/50 transition-all duration-200"
               />
             </div>
@@ -239,10 +239,10 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                       <item.icon className={`h-5 w-5 transition-all duration-300
                                              ${isActive ? "text-white" : "text-gray-600 dark:text-gray-400"}
                                              ${isExpanded || isMobileOpen ? "" : "mx-auto"}`} />
-                      
+
                       {/* Badge */}
                       {item.badge && (isExpanded || isMobileOpen) && (
-                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5
                                         flex items-center justify-center font-bold">
                           {item.badge}
                         </div>
@@ -291,7 +291,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
           {/* Quick Stats Widget */}
           {(isExpanded || isMobileOpen) && (
-            <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 
+            <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30
                             border border-violet-200/60 dark:border-violet-800/60">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-violet-500 rounded-lg">
@@ -323,7 +323,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-3 p-4 rounded-2xl w-full bg-gray-50 dark:bg-gray-800/50 
+                className="flex items-center gap-3 p-4 rounded-2xl w-full bg-gray-50 dark:bg-gray-800/50
                           hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full
@@ -336,21 +336,21 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                  <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform duration-200 
+                  <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform duration-200
                                            ${showUserMenu ? 'rotate-90' : ''}`} />
                 </div>
               </button>
 
               {/* User Menu Dropdown */}
               {showUserMenu && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border 
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border
                                border-gray-200 dark:border-gray-700 py-2 animate-scale-in">
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 
+                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300
                                    hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 
+                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400
                                    hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors duration-200">
                     <LogOut className="w-4 h-4" />
                     Sign Out
@@ -363,7 +363,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           {/* Collapsed State Profile */}
           {!isExpanded && !isMobileOpen && (
             <div className="flex justify-center">
-              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 
+              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800
                                transition-all duration-200 group relative">
                 <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg
