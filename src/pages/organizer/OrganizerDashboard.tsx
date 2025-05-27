@@ -208,7 +208,7 @@ const OrganizerDashboard: React.FC = () => {
     const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
     return (
-        <div className={cn("min-h-screen flex", darkMode ? "bg-[--background] text-[--foreground]" : "bg-gradient-to-br from-slate-50 via-white to-slate-100 text-[--foreground]")}>
+        <div className={cn("min-h-screen flex bg-background text-foreground")}>
             {/* Organizer Navigation */}
             <OrganizerNavigation
                 currentView={currentView}
@@ -298,7 +298,7 @@ const OrganizerDashboard: React.FC = () => {
 
                     {currentView === 'overview' && (
                         <div className="space-y-8 animate-fade-in-up">
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl  font-extrabold mb-6", darkMode ? "text-[--foreground]" : " text-gradient")}>
                                 Organizer Dashboard Overview
                             </h1>
                             <p className={cn("text-lg max-w-2xl", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
