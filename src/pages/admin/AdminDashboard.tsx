@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Users, CalendarDays, DollarSign, CheckCircle } from 'lucide-react';
+import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield } from 'lucide-react'; // Added more icons for dynamic header
 import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
-import AdminStats from './AdminStats';
+// import AdminStats from './AdminStats'; // AdminStats component not provided, adding basic card structure
 import { debounce } from 'lodash';
+import { cn } from "@/lib/utils"; // Import cn utility for conditional classnames
 
 interface User {
   id: string;
@@ -25,6 +26,63 @@ const AdminDashboard: React.FC = () => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
+
+  // Dynamic Header Content
+  const getHeaderContent = () => {
+    switch (currentView) {
+      case 'reports':
+        return {
+          title: "System Reports",
+          description: "View analytics and insights into platform activity.",
+          icon: <BarChart2 className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-blue-500 to-blue-700"
+        };
+      case 'events':
+        return {
+          title: "Recent Events",
+          description: "Monitor and manage recent event activities.",
+          icon: <CalendarDays className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-purple-500 to-purple-700"
+        };
+      case 'viewAllUsers':
+        return {
+          title: "All Users",
+          description: "View and manage all registered users on the platform.",
+          icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-green-500 to-green-700"
+        };
+      case 'nonAttendees':
+        return {
+          title: "Non-Attendees",
+          description: "Track users who have not attended events.",
+          icon: <Users className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-orange-500 to-orange-700"
+        };
+      case 'registerAdmin':
+        return {
+          title: "Register New Admin",
+          description: "Create new administrative user accounts.",
+          icon: <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-indigo-500 to-indigo-700"
+        };
+      case 'registerSecurity':
+        return {
+          title: "Register Security User",
+          description: "Create new security personnel accounts.",
+          icon: <Shield className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-red-500 to-red-700"
+        };
+      default:
+        return {
+          title: "Dashboard Overview",
+          description: "Welcome to your admin control panel.",
+          icon: <Activity className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-gray-500 to-gray-700"
+        };
+    }
+  };
+
+  const headerContent = getHeaderContent();
 
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
@@ -143,13 +201,13 @@ const AdminDashboard: React.FC = () => {
 
       let flattenedUsers: User[] = [];
       if (data && typeof data === 'object') {
-          if (Array.isArray(data.admins)) flattenedUsers = flattenedUsers.concat(data.admins);
-          if (Array.isArray(data.organizers)) flattenedUsers = flattenedUsers.concat(data.organizers);
-          if (Array.isArray(data.security)) flattenedUsers = flattenedUsers.concat(data.security);
-          if (Array.isArray(data.attendees)) flattenedUsers = flattenedUsers.concat(data.attendees);
+        if (Array.isArray(data.admins)) flattenedUsers = flattenedUsers.concat(data.admins);
+        if (Array.isArray(data.organizers)) flattenedUsers = flattenedUsers.concat(data.organizers);
+        if (Array.isArray(data.security)) flattenedUsers = flattenedUsers.concat(data.security);
+        if (Array.isArray(data.attendees)) flattenedUsers = flattenedUsers.concat(data.attendees);
       } else {
-          console.warn("Unexpected data format from fetchAllUsers:", data);
-          flattenedUsers = [];
+        console.warn("Unexpected data format from fetchAllUsers:", data);
+        flattenedUsers = [];
       }
 
       setAllUsers(flattenedUsers);
@@ -188,10 +246,10 @@ const AdminDashboard: React.FC = () => {
       const data = await response.json();
 
       if (Array.isArray(data)) {
-          setAllUsers(data);
+        setAllUsers(data);
       } else {
-          console.warn("Unexpected data format from search endpoint:", data);
-          setAllUsers([]);
+        console.warn("Unexpected data format from search endpoint:", data);
+        setAllUsers([]);
       }
 
     } catch (err) {
@@ -226,8 +284,8 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleViewChange = (view: string) => {
-    setCurrentView(view as any);
+  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers') => {
+    setCurrentView(view);
     if (view !== 'viewAllUsers' && view !== 'nonAttendees') {
       setSearchTerm('');
       setAllUsers([]);
@@ -259,27 +317,103 @@ const AdminDashboard: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white">
-      <div className="container mx-auto py-6">
-        <div className="flex gap-6">
-          <div className="w-48 flex-shrink-0">
-            <AdminNavigation
-              currentView={currentView}
-              onViewChange={handleViewChange}
-              onLogout={handleLogout}
-              isLoading={isLoading}
-            />
-          </div>
-          <div className="flex-1">
-            {currentView === 'reports' && (
-              <div className="space-y-6">
-                <SystemReports />
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-850 text-gray-800 dark:text-white overflow-hidden">
+      {/* Background Pattern Overlay for visual interest */}
+      <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
+
+      <div className="relative z-10 flex min-h-screen">
+        {/* Admin Navigation Sidebar (fixed position, takes up defined width) */}
+        <div className="fixed top-0 left-0 h-full w-70 md:w-70 flex-shrink-0 z-50">
+          <AdminNavigation
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            onLogout={handleLogout}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Main Content Area (offset to the right by sidebar width) */}
+        <div className="flex-1 ml-70 md:ml-70 p-4 md:p-8"> {/* Adjusted margin-left to match sidebar width */}
+          {/* Dynamic Header System */}
+          <Card className={cn(
+            "mb-8 p-6 md:p-8 rounded-xl shadow-lg border-none overflow-hidden",
+            "bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-60 dark:bg-opacity-40",
+            `bg-gradient-to-r ${headerContent.gradient} text-white`
+          )}>
+            <div className="flex items-center gap-6">
+              <div className="p-4 rounded-full bg-white bg-opacity-20 dark:bg-opacity-10 shadow-inner transition-transform duration-300 hover:scale-105">
+                {headerContent.icon}
               </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1">
+                  {headerContent.title}
+                </h1>
+                <p className="text-lg md:text-xl font-light opacity-90">
+                  {headerContent.description}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Enhanced Dashboard Stats - Placeholder (replace with actual AdminStats component if available) */}
+          {currentView === 'reports' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Total Users
+                  </CardTitle>
+                  <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:rotate-6 transition-transform duration-300" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white">12,345</div>
+                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                    <CheckCircle className="w-3 h-3 mr-1" /> +20.1% from last month
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Events Held
+                  </CardTitle>
+                  <CalendarDays className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform duration-300" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white">2,150</div>
+                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                    <CheckCircle className="w-3 h-3 mr-1" /> +180 since last year
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Total Revenue
+                  </CardTitle>
+                  <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:animate-pulse transition-all duration-300" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,231.89</div>
+                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
+                    <CheckCircle className="w-3 h-3 mr-1" /> +19% from last month
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {/* End Dashboard Stats Placeholder */}
+
+
+          {/* Main content rendering based on currentView */}
+          <div className="space-y-6">
+            {currentView === 'reports' && (
+              <SystemReports />
             )}
             {currentView === 'events' && (
-              <div className="space-y-6">
-                <RecentEvents />
-              </div>
+              <RecentEvents />
             )}
 
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
@@ -321,5 +455,3 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
-
-

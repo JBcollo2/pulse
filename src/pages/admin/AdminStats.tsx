@@ -79,16 +79,22 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, index) => (
-          <Card key={index} className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+          <Card
+            key={index}
+            className={cn(
+              "animate-pulse rounded-lg border",
+              darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+            )}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24"></div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-8 bg-gray-200 rounded w-16"></div>
+              <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
             </CardContent>
           </Card>
         ))}
@@ -97,11 +103,11 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
   }
 
   return (
-    <div className={cn("space-y-8 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-white" : "text-foreground")}>
+    <div className={cn("space-y-8 p-6 lg:p-8", darkMode ? "text-white" : "text-foreground")}>
       <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Admin Statistics</h1>
-          <p className={cn("text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin Statistics</h1>
+          <p className={cn("text-sm md:text-lg text-muted-foreground")}>
             A comprehensive overview of your platform's performance.
           </p>
         </div>
@@ -115,19 +121,19 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <Card className={cn(
-            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
+              <Users className="h-5 w-5 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">
-                {stats.totalUsers}
-              </div>
-              <p className="text-xs text-green-500 mt-1">↑ 12% increase from last month</p>
-              <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Registered users</p>
+              <div className="text-3xl font-bold">{stats.totalUsers}</div>
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> 12% increase
+              </p>
+              <p className="text-xs text-muted-foreground">Registered users</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -138,19 +144,19 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Card className={cn(
-            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
+              <Calendar className="h-5 w-5 text-muted-foreground group-hover:text-purple-500 transition-colors duration-200" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">
-                {stats.totalEvents}
-              </div>
-              <p className="text-xs text-green-500 mt-1">↑ 8% increase from last month</p>
-              <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>All events</p>
+              <div className="text-3xl font-bold">{stats.totalEvents}</div>
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> 8% increase
+              </p>
+              <p className="text-xs text-muted-foreground">All events</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -161,19 +167,19 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <Card className={cn(
-            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-              <Ticket className="h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors duration-200" />
+              <Ticket className="h-5 w-5 text-muted-foreground group-hover:text-orange-500 transition-colors duration-200" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">
-                {stats.totalTickets}
-              </div>
-              <p className="text-xs text-green-500 mt-1">↑ 15% increase from last month</p>
-              <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>Tickets sold</p>
+              <div className="text-3xl font-bold">{stats.totalTickets}</div>
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> 15% increase
+              </p>
+              <p className="text-xs text-muted-foreground">Tickets sold</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -184,19 +190,79 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <Card className={cn(
-            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white"
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground group-hover:text-green-500 transition-colors duration-200" />
+              <DollarSign className="h-5 w-5 text-muted-foreground group-hover:text-green-500 transition-colors duration-200" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-green-600">
-                ${stats.totalRevenue}
-              </div>
-              <p className="text-xs text-green-500 mt-1">↑ 15% increase from last month</p>
-              <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>From all ticket sales</p>
+              <div className="text-3xl font-bold text-green-600">${stats.totalRevenue}</div>
+              <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> 15% increase
+              </p>
+              <p className="text-xs text-muted-foreground">From all ticket sales</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* --- Secondary Stats --- */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          <Card className={cn(
+            "border rounded-lg shadow-md",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          )}>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Active Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeEvents}</div>
+              <p className="text-sm text-muted-foreground">Currently running events</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <Card className={cn(
+            "border rounded-lg shadow-md",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          )}>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Total Reports</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalReports}</div>
+              <p className="text-sm text-muted-foreground">Total number of system reports</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          <Card className={cn(
+            "border rounded-lg shadow-md",
+            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+          )}>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Security Staff</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.securityStaff}</div>
+              <p className="text-sm text-muted-foreground">Number of registered security personnel</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -210,30 +276,26 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+            <Card className={cn("border rounded-lg shadow-md", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
               <CardHeader>
-                <CardTitle>Events by Month</CardTitle>
-                <CardDescription>Number of events created each month</CardDescription>
+                <CardTitle className="text-lg font-semibold">Events by Month</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">Number of events created each month</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.eventsByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                      <YAxis allowDecimals={false} />
-                      <Tooltip
-                        cursor={{ strokeDasharray: '3 3' }}
-                        contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                        itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
-                        labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
-                        formatter={(value: number) => [`${value} Events`, 'Created']}
-                      />
-                      <Legend />
-                      <Bar dataKey="count" fill={darkMode ? "#93c5fd" : "#3b82f6"} name="Events" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.eventsByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className={darkMode ? "stroke-gray-700" : "stroke-gray-200"} />
+                    <XAxis dataKey="month" style={{ fontSize: '12px', fill: darkMode ? "#f9fafb" : "#4b5563" }} tickLine={false} />
+                    <YAxis allowDecimals={false} style={{ fontSize: '12px', fill: darkMode ? "#f9fafb" : "#4b5563" }} tickLine={false} />
+                    <Tooltip
+                      wrapperClassName={darkMode ? "bg-gray-800 border-gray-700 shadow-md rounded-md p-2" : "bg-white border-gray-200 shadow-md rounded-md p-2"}
+                      itemStyle={darkMode ? { color: "#f9fafb" } : { color: "#1e293b" }}
+                      labelStyle={darkMode ? { color: "#9ca3af" } : { color: "#4b5563" }}
+                    />
+                    <Legend iconSize={12} wrapperStyle={{ bottom: 0 }} />
+                    <Bar dataKey="count" fill={darkMode ? "#60a5fa" : "#3b82f6"} name="Events" barSize={30} radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </motion.div>
@@ -245,30 +307,27 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
+            <Card className={cn("border rounded-lg shadow-md", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
               <CardHeader>
-                <CardTitle>Revenue by Month</CardTitle>
-                <CardDescription>Total revenue generated each month</CardDescription>
+                <CardTitle className="text-lg font-semibold">Revenue by Month</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">Total revenue generated each month</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats.revenueByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="month" style={{ fontSize: '12px' }} />
-                      <YAxis tickFormatter={(value: number) => `$${value}`} />
-                      <Tooltip
-                        cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                        contentStyle={{ backgroundColor: darkMode ? "#1f2937" : "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                        itemStyle={{ color: darkMode ? "#ffffff" : 'hsl(var(--foreground))' }}
-                        labelStyle={{ color: darkMode ? "#9ca3af" : 'hsl(var(--muted-foreground))' }}
-                        formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
-                      />
-                      <Legend />
-                      <Bar dataKey="amount" fill={darkMode ? "#93c5fd" : "#3b82f6"} name="Revenue" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <CardContent className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.revenueByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className={darkMode ? "stroke-gray-700" : "stroke-gray-200"} />
+                    <XAxis dataKey="month" style={{ fontSize: '12px', fill: darkMode ? "#f9fafb" : "#4b5563" }} tickLine={false} />
+                    <YAxis tickFormatter={(value: number) => `$${value}`} style={{ fontSize: '12px', fill: darkMode ? "#f9fafb" : "#4b5563" }} tickLine={false} />
+                    <Tooltip
+                      wrapperClassName={darkMode ? "bg-gray-800 border-gray-700 shadow-md rounded-md p-2" : "bg-white border-gray-200 shadow-md rounded-md p-2"}
+                      itemStyle={darkMode ? { color: "#f9fafb" } : { color: "#1e293b" }}
+                      labelStyle={darkMode ? { color: "#9ca3af" } : { color: "#4b5563" }}
+                      formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
+                    />
+                    <Legend iconSize={12} wrapperStyle={{ bottom: 0 }} />
+                    <Bar dataKey="amount" fill={darkMode ? "#86efac" : "#22c55e"} name="Revenue" barSize={30} radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           </motion.div>
