@@ -28,71 +28,77 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   return (
     <Card className={cn(
-      "fixed top-0 left-0 h-screen w-72 p-4",
-      darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800",
-      "flex flex-col shadow-lg"
+      "fixed top-0 left-0 h-screen w-72 p-4 flex flex-col shadow-lg",
+      darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
     )}>
-      <div className="p-4 border-b border-gray-200">
+      {/* Header */}
+      <div className={cn("p-4 border-b", darkMode ? "border-gray-700" : "border-gray-200")}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <Activity className="w-5 h-5 text-white" />
           </div>
           <div>
             <h2 className="font-bold text-xl">Admins</h2>
-            <p className="text-xs text-gray-500">Manage platform activities</p>
+            <p className={cn("text-xs", darkMode ? "text-gray-400" : "text-gray-500")}>Manage platform activities</p>
           </div>
         </div>
       </div>
 
+      {/* Navigation Items */}
       <div className="flex-1 p-4 space-y-2 overflow-y-auto">
-        <div className="space-y-1">
-          {navigationItems.map((item) => {
-            const isActive = currentView === item.id;
+        {navigationItems.map((item) => {
+          const isActive = currentView === item.id;
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => onViewChange(item.id)}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors w-full",
-                  isActive
-                    ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg"
-                    : darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">{item.label}</div>
-                  <div className="text-xs text-gray-500">{item.description}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange(item.id)}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors w-full",
+                isActive
+                  ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg"
+                  : darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <div className="flex-1 text-left">
+                <div className="font-semibold">{item.label}</div>
+                <div className={cn("text-xs", darkMode ? "text-gray-400" : "text-gray-500")}>{item.description}</div>
+              </div>
+            </button>
+          );
+        })}
 
-        <div className="mt-8 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+        {/* Stats Card */}
+        <div className={cn(
+          "mt-8 p-4 rounded-xl border",
+          darkMode
+            ? "bg-gray-800 border-gray-700"
+            : "bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100"
+        )}>
           <div className="flex items-center gap-2 mb-3">
-            <Activity className="w-4 h-4 text-indigo-600" />
-            <span className="text-sm font-semibold text-indigo-900">Quick Stats</span>
+            <Activity className={cn("w-4 h-4", darkMode ? "text-indigo-300" : "text-indigo-600")} />
+            <span className={cn("text-sm font-semibold", darkMode ? "text-indigo-100" : "text-indigo-900")}>Quick Stats</span>
           </div>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Active Users</span>
-              <span className="font-bold text-indigo-600">120</span>
+              <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Active Users</span>
+              <span className={darkMode ? "text-indigo-400" : "text-indigo-600 font-bold"}>120</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Total Events</span>
-              <span className="font-bold text-green-600">45</span>
+              <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Total Events</span>
+              <span className={darkMode ? "text-green-400" : "text-green-600 font-bold"}>45</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Reports</span>
-              <span className="font-bold text-purple-600">7</span>
+              <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Reports</span>
+              <span className={darkMode ? "text-purple-400" : "text-purple-600 font-bold"}>7</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-200">
+      {/* Logout */}
+      <div className={cn("p-4 border-t", darkMode ? "border-gray-700" : "border-gray-200")}>
         <Button
           onClick={onLogout}
           disabled={isLoading}
