@@ -258,7 +258,7 @@ const OrganizerDashboard: React.FC = () => {
     const headerContent = getHeaderContent();
 
     return (
-        <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-850 text-gray-800 dark:text-white overflow-hidden">
+        <div className={`relative min-h-screen ${darkMode ? "bg-gradient-to-br from-gray-950 via-gray-900 to-gray-850 text-white" : "bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 text-gray-800"} overflow-hidden`}>
             <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
             <div className="relative z-10 flex min-h-screen">
@@ -298,72 +298,72 @@ const OrganizerDashboard: React.FC = () => {
 
                     {currentView === 'overview' && (
                         <div className="space-y-8 animate-fade-in-up">
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gradient")}>
                                 Organizer Dashboard Overview
                             </h1>
-                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
+                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-300" : "text-gray-800")}>
                                 Welcome, {organizerName}! Here's a quick glance at your event management activities and key metrics.
                             </p>
 
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
+                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-[--primary]" : "bg-[--primary]")}>
-                                            <LayoutDashboard className={cn("w-5 h-5", darkMode ? "text-[--primary-foreground]" : "text-[--primary-foreground]")} />
+                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-blue-600" : "bg-blue-500")}>
+                                            <LayoutDashboard className="w-5 h-5 text-white" />
                                         </div>
-                                        <h2 className={cn("text-xl font-semibold", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Total Events</h2>
+                                        <h2 className="text-xl font-semibold">Total Events</h2>
                                     </div>
-                                    <p className={cn("text-4xl font-bold", darkMode ? "text-[--primary]" : "text-[--primary]")}>
+                                    <p className="text-4xl font-bold">
                                         {isLoading ? '...' : organizerEvents.length}
                                     </p>
-                                    <p className={cn("text-sm mt-1", darkMode ? "text-[--muted]" : "text-[--muted]")}>All events you've organized.</p>
+                                    <p className="text-sm mt-1 text-gray-500">All events you've organized.</p>
                                 </div>
 
-                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
+                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-[--secondary]" : "bg-[--secondary]")}>
-                                            <CalendarDays className="w-5 h-5 text-[--card-foreground]" />
+                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-purple-600" : "bg-purple-500")}>
+                                            <CalendarDays className="w-5 h-5 text-white" />
                                         </div>
-                                        <h2 className={cn("text-xl font-semibold", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Upcoming Events</h2>
+                                        <h2 className="text-xl font-semibold">Upcoming Events</h2>
                                     </div>
-                                    <p className={cn("text-4xl font-bold", darkMode ? "text-[--secondary]" : "text-[--secondary]")}>
+                                    <p className="text-4xl font-bold">
                                         {isLoading ? '...' : upcomingEvents.length}
                                     </p>
-                                    <p className={cn("text-sm mt-1", darkMode ? "text-[--muted]" : "text-[--muted]")}>Events scheduled for the future.</p>
+                                    <p className="text-sm mt-1 text-gray-500">Events scheduled for the future.</p>
                                 </div>
 
-                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
+                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-[--destructive]" : "bg-[--destructive]")}>
-                                            <CheckCircle className={cn("w-5 h-5", darkMode ? "text-[--destructive-foreground]" : "text-[--destructive-foreground]")} />
+                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-green-600" : "bg-green-500")}>
+                                            <CheckCircle className="w-5 h-5 text-white" />
                                         </div>
-                                        <h2 className={cn("text-xl font-semibold", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Past Events</h2>
+                                        <h2 className="text-xl font-semibold">Past Events</h2>
                                     </div>
-                                    <p className={cn("text-4xl font-bold", darkMode ? "text-[--destructive]" : "text-[--destructive]")}>
+                                    <p className="text-4xl font-bold">
                                         {isLoading ? '...' : pastEvents.length}
                                     </p>
-                                    <p className={cn("text-sm mt-1", darkMode ? "text-[--muted]" : "text-[--muted]")}>Events that have already concluded.</p>
+                                    <p className="text-sm mt-1 text-gray-500">Events that have already concluded.</p>
                                 </div>
                             </div>
 
-                            <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
-                                <h2 className={cn("text-xl font-semibold mb-4", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Quick Actions</h2>
+                            <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
+                                <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                                 <div className="flex flex-wrap gap-3">
                                     <button
                                         onClick={() => handleViewChange('myEvents')}
-                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90" : "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90")}
+                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600")}
                                     >
                                         View My Events
                                     </button>
                                     <button
                                         onClick={() => handleViewChange('overallStats')}
-                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-[--primary] text-[--primary-foreground] hover:bg-[--primary]/90" : "bg-[--primary] text-[--primary-foreground] hover:bg-[--primary]/90")}
+                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-500 text-white hover:bg-blue-600")}
                                     >
                                         View Overall Stats
                                     </button>
                                     <button
                                         onClick={() => handleViewChange('reports')}
-                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-[--accent] text-[--accent-foreground] hover:bg-[--accent]/90" : "bg-[--accent] text-[--accent-foreground] hover:bg-[--accent]/90")}
+                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-orange-500 text-white hover:bg-orange-600")}
                                     >
                                         Generate Reports
                                     </button>
@@ -371,27 +371,27 @@ const OrganizerDashboard: React.FC = () => {
                             </div>
 
                             {overallSummary && (
-                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
+                                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Activity className={cn("w-5 h-5", darkMode ? "text-[--secondary]" : "text-[--secondary]")} />
-                                        <span className={cn("text-lg font-semibold", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Summary Statistics</span>
+                                        <Activity className="w-5 h-5 text-blue-500" />
+                                        <span className="text-lg font-semibold">Summary Statistics</span>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
-                                        <div className={cn("flex justify-between items-center p-3 rounded-lg border", darkMode ? "bg-[--muted] border-[--border]" : "bg-[--muted] border-[--border]")}>
-                                            <span className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Total Tickets Sold</span>
-                                            <span className={cn("font-bold", darkMode ? "text-[--primary]" : "text-[--primary]")}>{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</span>
+                                        <div className="flex justify-between items-center p-3 rounded-lg border border-gray-200">
+                                            <span className="text-gray-500">Total Tickets Sold</span>
+                                            <span className="font-bold">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</span>
                                         </div>
-                                        <div className={cn("flex justify-between items-center p-3 rounded-lg border", darkMode ? "bg-[--muted] border-[--border]" : "bg-[--muted] border-[--border]")}>
-                                            <span className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Total Revenue</span>
-                                            <span className={cn("font-bold", darkMode ? "text-[--secondary]" : "text-[--secondary]")}>{overallSummary.total_revenue_across_all_events}</span>
+                                        <div className="flex justify-between items-center p-3 rounded-lg border border-gray-200">
+                                            <span className="text-gray-500">Total Revenue</span>
+                                            <span className="font-bold">{overallSummary.total_revenue_across_all_events}</span>
                                         </div>
-                                        <div className={cn("flex justify-between items-center p-3 rounded-lg border", darkMode ? "bg-[--muted] border-[--border]" : "bg-[--muted] border-[--border]")}>
-                                            <span className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Total Events Analyzed</span>
-                                            <span className={cn("font-bold", darkMode ? "text-[--primary]" : "text-[--primary]")}>{overallSummary.total_events || overallSummary.events_summary.length}</span>
+                                        <div className="flex justify-between items-center p-3 rounded-lg border border-gray-200">
+                                            <span className="text-gray-500">Total Events Analyzed</span>
+                                            <span className="font-bold">{overallSummary.total_events || overallSummary.events_summary.length}</span>
                                         </div>
-                                        <div className={cn("flex justify-between items-center p-3 rounded-lg border", darkMode ? "bg-[--muted] border-[--border]" : "bg-[--muted] border-[--border]")}>
-                                            <span className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Events with Data</span>
-                                            <span className={cn("font-bold", darkMode ? "text-[--secondary]" : "text-[--secondary]")}>{overallSummary.events_summary.length}</span>
+                                        <div className="flex justify-between items-center p-3 rounded-lg border border-gray-200">
+                                            <span className="text-gray-500">Events with Data</span>
+                                            <span className="font-bold">{overallSummary.events_summary.length}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -401,36 +401,36 @@ const OrganizerDashboard: React.FC = () => {
 
                     {currentView === 'myEvents' && (
                         <div className="space-y-8 animate-fade-in-up">
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gray-800")}>
                                 My Events
                             </h1>
-                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
+                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-300" : "text-gray-800")}>
                                 View all your past and upcoming events and access their individual reports.
                             </p>
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 {isLoading ? (
-                                    <p className={cn("col-span-full text-center", darkMode ? "text-[--muted]" : "text-[--muted]")}>Loading events...</p>
+                                    <p className={cn("col-span-full text-center", darkMode ? "text-gray-300" : "text-gray-500")}>Loading events...</p>
                                 ) : organizerEvents.length > 0 ? (
                                     organizerEvents.map(event => (
-                                        <div key={event.id} className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
-                                            <h3 className={cn("text-xl font-semibold mb-2", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>{event.name}</h3>
-                                            <p className={cn("text-sm mb-3", darkMode ? "text-[--muted]" : "text-[--muted]")}>{event.date} • {event.location}</p>
-                                            <p className={cn("text-xs mb-2", darkMode ? "text-[--muted]" : "text-[--muted]")}>Event ID: {event.id}</p>
+                                        <div key={event.id} className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
+                                            <h3 className="text-xl font-semibold mb-2">{event.name}</h3>
+                                            <p className="text-sm mb-3 text-gray-500">{event.date} • {event.location}</p>
+                                            <p className="text-xs mb-2 text-gray-500">Event ID: {event.id}</p>
                                             {event.description && (
-                                                <p className={cn("text-sm flex-grow mb-4", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>{event.description}</p>
+                                                <p className="text-sm flex-grow mb-4 text-gray-700">{event.description}</p>
                                             )}
                                             <div className="mt-auto pt-4 border-t flex items-center justify-between">
                                                 <span className={cn(
                                                     "inline-block px-3 py-1 text-xs font-medium rounded-full",
                                                     new Date(event.date) > new Date()
-                                                        ? (darkMode ? 'bg-[--secondary]/50 text-[--secondary-foreground]' : 'bg-[--secondary]/50 text-[--secondary-foreground]')
-                                                        : (darkMode ? 'bg-[--muted] text-[--muted-foreground]' : 'bg-[--muted] text-[--muted-foreground]')
+                                                        ? (darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white')
+                                                        : (darkMode ? 'bg-gray-600 text-white' : 'bg-gray-500 text-white')
                                                 )}>
                                                     {new Date(event.date) > new Date() ? 'Upcoming' : 'Past Event'}
                                                 </span>
                                                 <button
                                                     onClick={() => handleViewReport(event.id)}
-                                                    className={cn("px-4 py-2 rounded-lg hover:scale-105 shadow-sm text-sm transition-all duration-300", darkMode ? "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90" : "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90")}
+                                                    className={cn("px-4 py-2 rounded-lg hover:scale-105 shadow-sm text-sm transition-all duration-300", darkMode ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600")}
                                                 >
                                                     View Report
                                                 </button>
@@ -438,7 +438,7 @@ const OrganizerDashboard: React.FC = () => {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className={cn("col-span-full text-center p-8 border rounded-xl shadow-sm", darkMode ? "bg-[--card] text-[--muted] border-[--border]" : "bg-[--card] text-[--muted] border-[--border]")}>
+                                    <div className={cn("col-span-full text-center p-8 border rounded-xl shadow-sm", darkMode ? "bg-gray-800 text-gray-300 border-gray-700" : "bg-white text-gray-500 border-gray-200")}>
                                         <p className="mb-4">No events found.</p>
                                         <p className="text-sm">Events are managed through the main event management system. Once created, they will appear here.</p>
                                     </div>
@@ -449,10 +449,10 @@ const OrganizerDashboard: React.FC = () => {
 
                     {currentView === 'overallStats' && (
                         <div className="animate-fade-in-up">
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gray-800")}>
                                 Overall Statistics
                             </h1>
-                            <p className={cn("text-lg max-w-2xl mb-8", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
+                            <p className={cn("text-lg max-w-2xl mb-8", darkMode ? "text-gray-300" : "text-gray-800")}>
                                 Dive into the comprehensive performance metrics across all your events.
                             </p>
                             <OrganizerStats
@@ -466,41 +466,41 @@ const OrganizerDashboard: React.FC = () => {
 
                     {currentView === 'reports' && (
                         <div className="space-y-8 animate-fade-in-up">
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gray-800")}>
                                 Event Reports
                             </h1>
-                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
+                            <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-300" : "text-gray-800")}>
                                 Access detailed reports for individual events. Select an event from "My Events" to generate its report.
                             </p>
-                            <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
-                                <h2 className={cn("text-xl font-semibold mb-4", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>How to Access Reports</h2>
+                            <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
+                                <h2 className={cn("text-xl font-semibold mb-4", darkMode ? "text-white" : "text-gray-800")}>How to Access Reports</h2>
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-3">
-                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-[--secondary] text-[--secondary-foreground]" : "bg-[--secondary] text-[--secondary-foreground]")}>1</span>
+                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-purple-600 text-white" : "bg-purple-500 text-white")}>1</span>
                                         <div>
-                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Go to My Events</h4>
-                                            <p className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Navigate to the "My Events" section from the sidebar to see all your events.</p>
+                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-white" : "text-gray-800")}>Go to My Events</h4>
+                                            <p className={cn(darkMode ? "text-gray-300" : "text-gray-500")}>Navigate to the "My Events" section from the sidebar to see all your events.</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
-                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-[--secondary] text-[--secondary-foreground]" : "bg-[--secondary] text-[--secondary-foreground]")}>2</span>
+                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-purple-600 text-white" : "bg-purple-500 text-white")}>2</span>
                                         <div>
-                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Select an Event</h4>
-                                            <p className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
+                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-white" : "text-gray-800")}>Select an Event</h4>
+                                            <p className={cn(darkMode ? "text-gray-300" : "text-gray-500")}>Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
-                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-[--secondary] text-[--secondary-foreground]" : "bg-[--secondary] text-[--secondary-foreground]")}>3</span>
+                                        <span className={cn("rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0", darkMode ? "bg-purple-600 text-white" : "bg-purple-500 text-white")}>3</span>
                                         <div>
-                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>Analyze Performance</h4>
-                                            <p className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
+                                            <h4 className={cn("font-semibold text-lg", darkMode ? "text-white" : "text-gray-800")}>Analyze Performance</h4>
+                                            <p className={cn(darkMode ? "text-gray-300" : "text-gray-500")}>Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="mt-8 pt-6 border-t">
                                     <button
                                         onClick={() => handleViewChange('myEvents')}
-                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90" : "bg-[--secondary] text-[--secondary-foreground] hover:bg-[--secondary]/90")}
+                                        className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-500 text-white hover:bg-purple-600")}
                                     >
                                         Go to My Events
                                     </button>
@@ -513,11 +513,11 @@ const OrganizerDashboard: React.FC = () => {
                         <div className="space-y-8 animate-fade-in-up">
                             <button
                                 onClick={() => setCurrentView('myEvents')}
-                                className={cn("inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:scale-105 shadow-sm text-sm transition-all duration-300", darkMode ? "bg-[--muted] text-[--muted-foreground] hover:bg-[--muted]/80" : "bg-[--muted] text-[--muted-foreground] hover:bg-[--muted]/80")}
+                                className={cn("inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:scale-105 shadow-sm text-sm transition-all duration-300", darkMode ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
                             >
                                 <ChevronRight className="h-4 w-4 transform rotate-180" /> Back to My Events
                             </button>
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gray-800")}>
                                 Event Report: {organizerEvents.find(e => e.id === selectedEventId)?.name || `Event ID: ${selectedEventId}`}
                             </h1>
                             <OrganizerReports
@@ -528,12 +528,12 @@ const OrganizerDashboard: React.FC = () => {
                     )}
 
                     {currentView === 'settings' && (
-                        <div className={cn("border rounded-xl p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-[--card] text-[--card-foreground] border-[--border]" : "bg-[--card] text-[--card-foreground] border-[--border]")}>
-                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
+                        <div className={cn("border rounded-xl p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 text-white border-gray-700" : "bg-white text-gray-800 border-gray-200")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-white" : "text-gray-800")}>
                                 Settings
                             </h1>
-                            <p className={cn("text-lg", darkMode ? "text-[--muted]" : "text-[--foreground]")}>Manage your profile and dashboard preferences here.</p>
-                            <p className={cn(darkMode ? "text-[--muted]" : "text-[--muted]")}>
+                            <p className={cn("text-lg", darkMode ? "text-gray-300" : "text-gray-800")}>Manage your profile and dashboard preferences here.</p>
+                            <p className={cn(darkMode ? "text-gray-300" : "text-gray-500")}>
                                 This section is under development.
                             </p>
                         </div>

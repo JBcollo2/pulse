@@ -116,10 +116,10 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       <div className="fixed top-6 left-6 z-50 md:hidden">
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border border-gray-200/60 dark:border-gray-700/60
-                     rounded-xl p-3 transition-all duration-200 hover:scale-105 hover:shadow-xl"
+          className={`bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-lg border rounded-xl p-3 transition-all duration-200 hover:scale-105 hover:shadow-xl
+                      ${darkMode ? "border-gray-700/60" : "border-gray-200/60"}`}
         >
-          {isMobileOpen ? <X size={20} className="text-gray-700 dark:text-gray-300" /> : <Menu size={20} className="text-gray-700 dark:text-gray-300" />}
+          {isMobileOpen ? <X size={20} className={darkMode ? "text-gray-300" : "text-gray-700"} /> : <Menu size={20} className={darkMode ? "text-gray-300" : "text-gray-700"} />}
         </button>
       </div>
 
@@ -135,10 +135,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       <div
         ref={sidebarRef}
         className={`fixed top-0 left-0 h-screen z-40 md:relative md:translate-x-0 md:shadow-none md:z-auto
-                    ${darkMode
-                      ? "bg-gray-900/95 border-gray-800/60"
-                      : "bg-white/95 border-gray-200/60"
-                    }
+                    ${darkMode ? "bg-gray-900/95 border-gray-800/60" : "bg-white/95 border-gray-200/60"}
                     backdrop-blur-xl border-r shadow-2xl flex flex-col
                     transition-all duration-500 ease-in-out
                     ${isExpanded ? "md:w-80" : "md:w-20"}
@@ -146,7 +143,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     md:w-auto`}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-200/60 dark:border-gray-800/60">
+        <div className={`p-6 border-b ${darkMode ? "border-gray-800/60" : "border-gray-200/60"}`}>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl
                               flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
@@ -158,15 +155,15 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                                bg-clip-text text-transparent">
                   Pulse
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Event Organizer</p>
+                <p className={`text-sm font-medium ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Event Organizer</p>
               </div>
             )}
             {(isExpanded || isMobileOpen) && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="ml-auto p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 hidden md:block"
+                className={`ml-auto p-2 rounded-lg transition-colors duration-200 hidden md:block ${darkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"}`}
               >
-                <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${darkMode ? "text-gray-300" : "text-gray-500"}`} />
               </button>
             )}
           </div>
@@ -174,17 +171,16 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
         {/* Search Bar */}
         {(isExpanded || isMobileOpen) && (
-          <div className="p-4 border-b border-gray-200/60 dark:border-gray-800/60">
+          <div className={`p-4 border-b ${darkMode ? "border-gray-800/60" : "border-gray-200/60"}`}>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${darkMode ? "text-gray-400" : "text-gray-400"}`} />
               <input
                 type="text"
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700
-                          rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50
-                          focus:border-violet-500/50 transition-all duration-200"
+                className={`w-full pl-10 pr-4 py-3 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50
+                          focus:border-violet-500/50 transition-all duration-200 ${darkMode ? "bg-gray-800/50 border-gray-700" : "bg-gray-50 border-gray-200"}`}
               />
             </div>
           </div>
@@ -213,7 +209,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                                 transition-all duration-300 ease-out transform hover:scale-[1.02]
                                 ${isActive
                                   ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-violet-500/25`
-                                  : `${item.bgColor} text-gray-700 dark:text-gray-300 hover:shadow-md`
+                                  : `${item.bgColor} ${darkMode ? "text-gray-300" : "text-gray-700"} hover:shadow-md`
                                 }`}
                     style={{
                       animationDelay: `${index * 100}ms`
@@ -234,7 +230,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                                          : "bg-transparent"
                                      }`}>
                       <item.icon className={`h-5 w-5 transition-all duration-300
-                                             ${isActive ? "text-white" : "text-gray-600 dark:text-gray-400"}
+                                             ${isActive ? "text-white" : darkMode ? "text-gray-400" : "text-gray-600"}
                                              ${isExpanded || isMobileOpen ? "" : "mx-auto"}`} />
                     </div>
 
@@ -243,7 +239,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                       <div className="flex-1 ml-4 text-left">
                         <div className="font-semibold text-base">{item.label}</div>
                         <div className={`text-xs transition-colors duration-300
-                                        ${isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
+                                        ${isActive ? "text-white/80" : darkMode ? "text-gray-400" : "text-gray-500"}`}>
                           {item.description}
                         </div>
                       </div>
@@ -254,7 +250,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                       <ChevronRight className={`h-4 w-4 transition-all duration-300
                                                 ${isActive
                                                   ? "text-white opacity-100 transform rotate-90"
-                                                  : "text-gray-400 opacity-0 group-hover:opacity-50"
+                                                  : darkMode ? "text-gray-400 opacity-0 group-hover:opacity-50" : "text-gray-400 opacity-0 group-hover:opacity-50"
                                                 }`} />
                     )}
 
@@ -280,26 +276,25 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
           {/* Quick Stats Widget */}
           {(isExpanded || isMobileOpen) && (
-            <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30
-                            border border-violet-200/60 dark:border-violet-800/60">
+            <div className={`mt-8 p-5 rounded-2xl border ${darkMode ? "bg-gradient-to-br from-violet-950/30 to-purple-950/30 border-violet-800/60" : "bg-gradient-to-br from-violet-50 to-purple-50 border-violet-200/60"}`}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-violet-500 rounded-lg">
                   <Activity className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Quick Stats</span>
+                <span className={`text-sm font-bold ${darkMode ? "text-gray-100" : "text-gray-900"}`}>Quick Stats</span>
               </div>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Active Events</span>
-                  <span className="font-bold text-violet-600 dark:text-violet-400">12</span>
+                  <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Active Events</span>
+                  <span className={darkMode ? "font-bold text-violet-400" : "font-bold text-violet-600"}>12</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Total Tickets</span>
-                  <span className="font-bold text-blue-600 dark:text-blue-400">1,247</span>
+                  <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Total Tickets</span>
+                  <span className={darkMode ? "font-bold text-blue-400" : "font-bold text-blue-600"}>1,247</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">Reports</span>
-                  <span className="font-bold text-orange-600 dark:text-orange-400">7</span>
+                  <span className={darkMode ? "text-gray-400" : "text-gray-600"}>Reports</span>
+                  <span className={darkMode ? "font-bold text-orange-400" : "font-bold text-orange-600"}>7</span>
                 </div>
               </div>
             </div>
@@ -307,40 +302,35 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         </div>
 
         {/* User Profile Section */}
-        <div className="p-4 border-t border-gray-200/60 dark:border-gray-800/60">
+        <div className={`p-4 border-t ${darkMode ? "border-gray-800/60" : "border-gray-200/60"}`}>
           {(isExpanded || isMobileOpen) && (
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-3 p-4 rounded-2xl w-full bg-gray-50 dark:bg-gray-800/50
-                          hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                className={`flex items-center gap-3 p-4 rounded-2xl w-full transition-all duration-200 group ${darkMode ? "bg-gray-800/50 hover:bg-gray-800" : "bg-gray-50 hover:bg-gray-100"}`}
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full
                                flex items-center justify-center shadow-lg">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{organizerName}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Event Organizer</div>
+                  <div className={`text-sm font-semibold truncate ${darkMode ? "text-gray-100" : "text-gray-900"}`}>{organizerName}</div>
+                  <div className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Event Organizer</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-                  <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform duration-200
-                                           ${showUserMenu ? 'rotate-90' : ''}`} />
+                  <Bell className={`w-4 h-4 ${darkMode ? "text-gray-400 group-hover:text-gray-300" : "text-gray-400 group-hover:text-gray-600"}`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-90' : ''} ${darkMode ? "text-gray-400" : "text-gray-400"}`} />
                 </div>
               </button>
 
               {/* User Menu Dropdown */}
               {showUserMenu && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border
-                               border-gray-200 dark:border-gray-700 py-2 animate-scale-in">
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300
-                                   hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200">
+                <div className={`absolute bottom-full left-0 right-0 mb-2 rounded-2xl shadow-xl border py-2 animate-scale-in ${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"}`}>
+                  <button className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors duration-200 ${darkMode ? "text-gray-300 hover:bg-gray-700/50" : "text-gray-700 hover:bg-gray-50"}`}>
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
-                  <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400
-                                   hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors duration-200">
+                  <button className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors duration-200 ${darkMode ? "text-red-400 hover:bg-red-950/20" : "text-red-600 hover:bg-red-50"}`}>
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>
@@ -352,9 +342,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           {/* Collapsed State Profile */}
           {!isExpanded && !isMobileOpen && (
             <div className="flex justify-center">
-              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800
-                               transition-all duration-200 group relative">
-                <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <button className={`p-3 rounded-xl transition-all duration-200 group relative ${darkMode ? "bg-gray-800/50 hover:bg-gray-800" : "bg-gray-50 hover:bg-gray-100"}`}>
+                <User className={`w-5 h-5 ${darkMode ? "text-gray-400" : "text-gray-600"}`} />
                 <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg
                               opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none
                               whitespace-nowrap z-50 shadow-xl">
