@@ -4,8 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Loader2, AlertCircle, FileText, Download, Mail, PieChart } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+} from 'recharts';
+import {
+  Loader2, AlertCircle, FileText, Download, Mail, PieChart as PieChartIcon,
+  TrendingUp, Users, DollarSign, Calendar, MapPin, Filter, BarChart3,
+  Eye, EyeOff
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Define the interface for the event report data
@@ -33,6 +41,12 @@ interface OrganizerReportsProps {
     darkMode: boolean; // Add the darkMode prop
 }
 
+// Enhanced color palettes
+const CHART_COLORS = [
+  '#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6',
+  '#EC4899', '#10B981', '#F97316', '#6366F1', '#84CC16'
+];
+
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null, darkMode }) => {
     const [reportData, setReportData] = useState<EventReport | null>(initialReport);
     const [startDate, setStartDate] = useState<string>('');
@@ -41,6 +55,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false); // Specific for downloads
     const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false); // Specific for email resend
     const [error, setError] = useState<string | null>(null);
+    const [activeChart, setActiveChart] = useState<string>('bar');
+    const [selectedView, setSelectedView] = useState<string>('overview');
     const { toast } = useToast();
 
     // Utility function for consistent error handling
@@ -238,10 +254,94 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         }
     }, [eventId, startDate, endDate, canFetchReport, handleOperationError, toast]);
 
-    // Helper to format data for Recharts from object to array of { name: label, value: number }
-    const formatChartData = (data: { [key: string]: number } | undefined) => {
+    // Enhanced chart data formatting with color assignment
+    const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
         if (!data) return [];
-        return Object.entries(data).map(([label, value]) => ({ name: label, value }));
+        return Object.entries(data).map(([label, value], index) => ({
+            name: label,
+            value,
+            color: CHART_COLORS[index % CHART_COLORS.length],
+            percentage: 0 // Will be calculated
+        }));
+    }, []);
+
+    // Calculate percentages for pie charts
+    const calculatePercentages = useCallback((data: any[]) => {
+        const total = data.reduce((sum, item) => sum + item.value, 0);
+        return data.map(item => ({
+            ...item,
+            percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+        }));
+    }, []);
+
+    // Chart data with percentages
+    const ticketsSoldChartData = useMemo(() =>
+        calculatePercentages(formatChartData(reportData?.tickets_sold_by_type)),
+        [reportData, formatChartData, calculatePercentages]
+    );
+
+    const revenueChartData = useMemo(() =>
+        calculatePercentages(formatChartData(reportData?.revenue_by_ticket_type)),
+        [reportData, formatChartData, calculatePercentages]
+    );
+
+    const paymentMethodChartData = useMemo(() =>
+        calculatePercentages(formatChartData(reportData?.payment_method_usage)),
+        [reportData, formatChartData, calculatePercentages]
+    );
+
+    const attendeesByTicketTypeData = useMemo(() =>
+        calculatePercentages(formatChartData(reportData?.attendees_by_ticket_type)),
+        [reportData, formatChartData, calculatePercentages]
+    );
+
+    // Enhanced tooltip component
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className={cn(
+                    "p-4 rounded-lg shadow-lg border backdrop-blur-sm",
+                    darkMode ? "bg-gray-800/90 border-gray-600 text-white" : "bg-white/90 border-gray-200"
+                )}>
+                    <p className="font-semibold text-lg mb-2">{label}</p>
+                    {payload.map((entry: any, index: number) => (
+                        <div key={index} className="flex items-center gap-2 mb-1">
+                            <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="text-sm">
+                                {entry.name}: {entry.value}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // Custom pie chart label
+    const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+        if (percent < 0.05) return null; // Hide labels for slices less than 5%
+
+        const RADIAN = Math.PI / 180;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+        return (
+            <text
+                x={x}
+                y={y}
+                fill="white"
+                textAnchor={x > cx ? 'start' : 'end'}
+                dominantBaseline="central"
+                className="text-xs font-medium"
+            >
+                {`${(percent * 100).toFixed(0)}%`}
+            </text>
+        );
     };
 
     // --- Loading State for initial fetch ---
@@ -253,295 +353,502 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <CardDescription>Loading event report data...</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-64">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
                     <p className={cn("mt-4 text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>Fetching event insights...</p>
                 </CardContent>
             </Card>
         );
     }
 
-    // Prepare chart data (ensure default empty arrays if data is missing)
-    const ticketsSoldChartData = formatChartData(reportData?.tickets_sold_by_type);
-    const revenueChartData = formatChartData(reportData?.revenue_by_ticket_type);
-    const paymentMethodChartData = formatChartData(reportData?.payment_method_usage);
-    const attendeesByTicketTypeData = formatChartData(reportData?.attendees_by_ticket_type);
-
     return (
-        <div className={cn("space-y-8 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-white" : "text-foreground")}>
-            <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
-                <div>
-                    <h1 className="text-4xl font-bold tracking-tight">
-                        Event Report{reportData ? `: ${reportData.event_name}` : ''}
-                    </h1>
-                    <p className={cn("text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>
-                        Detailed analytics for your event.
-                    </p>
+        <div className={cn("min-h-screen p-6 lg:p-8", darkMode ? "bg-gray-900 text-white" : "bg-gray-50")}>
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Header Section */}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="space-y-2">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                            Event Analytics Dashboard
+                        </h1>
+                        {reportData && (
+                            <>
+                                <h2 className="text-2xl font-semibold">{reportData.event_name}</h2>
+                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="h-4 w-4" />
+                                        {reportData.event_date}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <MapPin className="h-4 w-4" />
+                                        {reportData.event_location}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
                     {reportData && (
-                        <p className={cn("text-sm mt-1", darkMode ? "text-gray-300" : "text-muted-foreground")}>
-                            Event Date: {reportData.event_date} | Location: {reportData.event_location}
-                        </p>
+                        <div className="flex flex-wrap gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => downloadReport('pdf')}
+                                disabled={isLoadingDownload || !canFetchReport}
+                                className="hover:scale-105 transition-transform"
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                {isLoadingDownload ? "Downloading..." : "PDF Report"}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => downloadReport('csv')}
+                                disabled={isLoadingDownload || !canFetchReport}
+                                className="hover:scale-105 transition-transform"
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                {isLoadingDownload ? "Downloading..." : "CSV Export"}
+                            </Button>
+                            <Button
+                                onClick={resendReportEmail}
+                                disabled={isLoadingEmail || !canFetchReport}
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 transition-all"
+                            >
+                                <Mail className="mr-2 h-4 w-4" />
+                                {isLoadingEmail ? "Sending..." : "Email Report"}
+                            </Button>
+                        </div>
                     )}
                 </div>
-                {reportData && ( // Only show download/email buttons if there's report data
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => downloadReport('pdf')}
-                            disabled={isLoadingDownload || !canFetchReport}
-                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
-                        >
-                            <Download className="mr-2 h-4 w-4" />
-                            {isLoadingDownload ? "Downloading..." : "Download PDF"}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => downloadReport('csv')}
-                            disabled={isLoadingDownload || !canFetchReport}
-                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
-                        >
-                            <Download className="mr-2 h-4 w-4" />
-                            {isLoadingDownload ? "Downloading..." : "Download CSV"}
-                        </Button>
-                        <Button
-                            onClick={resendReportEmail}
-                            disabled={isLoadingEmail || !canFetchReport}
-                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : ""}
-                        >
-                            <Mail className="mr-2 h-4 w-4" />
-                            {isLoadingEmail ? "Sending..." : "Resend Email"}
-                        </Button>
-                    </div>
-                )}
-            </div>
 
-            {/* --- Date Filters --- */}
-            <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                <CardHeader>
-                    <CardTitle>Filter Report by Date</CardTitle>
-                    <CardDescription>Adjust the time range for the report data.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row gap-4 items-end sm:items-center">
-                        <div className="flex-1 space-y-2">
-                            <Label htmlFor="startDate">Start Date</Label>
-                            <Input
-                                id="startDate"
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full"
-                                max={endDate || undefined} // Prevents selecting a start date after end date
-                            />
-                        </div>
-                        <div className="flex-1 space-y-2">
-                            <Label htmlFor="endDate">End Date</Label>
-                            <Input
-                                id="endDate"
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full"
-                                min={startDate || undefined} // Prevents selecting an end date before start date
-                            />
-                        </div>
-                        <Button onClick={fetchReport} className="sm:ml-4 min-w-[120px]" disabled={isLoadingReport || !canFetchReport}>
-                            <Loader2 className={isLoadingReport ? "mr-2 h-4 w-4 animate-spin" : "hidden"} />
-                            Apply Filter
-                        </Button>
-                    </div>
-                    {error && ( // Display error message below the date inputs
-                        <p className={cn("text-sm mt-4 flex items-center gap-2", darkMode ? "text-red-400" : "text-destructive")}>
-                            <AlertCircle className="h-4 w-4" /> {error}
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
-
-            {/* --- Content based on reportData presence --- */}
-            {reportData ? (
-                <>
-                    {/* --- Summary Cards --- */}
-                    <h2 className="text-2xl font-bold tracking-tight">Summary Overview</h2>
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">{reportData.total_tickets_sold}</div>
-                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+20.1% from last month</p> {/* Placeholder for dynamic data */}
-                            </CardContent>
-                        </Card>
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                                <PieChart className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">${reportData.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+15.5% from last month</p> {/* Placeholder for dynamic data */}
-                            </CardContent>
-                        </Card>
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Number of Attendees</CardTitle>
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    className="h-4 w-4 text-muted-foreground"
-                                >
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87L16 14a4 4 0 0 0-3 3.87v2" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                </svg>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">{reportData.number_of_attendees}</div>
-                                <p className={cn("text-xs", darkMode ? "text-gray-300" : "text-muted-foreground")}>+5.2% from last month</p> {/* Placeholder for dynamic data */}
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* --- Detailed Charts --- */}
-                    <h2 className="text-2xl font-bold tracking-tight">Detailed Breakdown</h2>
-                    <div className="grid gap-6 lg:grid-cols-2">
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader>
-                                <CardTitle>Tickets Sold by Type</CardTitle>
-                                <CardDescription>Distribution of tickets sold across different types.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {ticketsSoldChartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={ticketsSoldChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
-                                            <YAxis allowDecimals={false} />
-                                            <Tooltip
-                                                cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                                itemStyle={{ color: '#ffffff' }}
-                                                labelStyle={{ color: '#a0aec0' }}
-                                                formatter={(value: number) => [`${value} Tickets`, 'Count']}
-                                            />
-                                            <Legend />
-                                            <Bar dataKey="value" fill="hsl(var(--primary))" name="Tickets Sold" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">No ticket sales data available for this period.</div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader>
-                                <CardTitle>Revenue by Ticket Type</CardTitle>
-                                <CardDescription>Revenue generated from each ticket category.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {revenueChartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={revenueChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
-                                            <YAxis tickFormatter={(value: number) => `$${value.toFixed(2)}`} />
-                                            <Tooltip
-                                                cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                                itemStyle={{ color: '#ffffff' }}
-                                                labelStyle={{ color: '#a0aec0' }}
-                                                formatter={(value: number) => [`$${value.toFixed(2)} Revenue`, 'Amount']}
-                                            />
-                                            <Legend />
-                                            <Bar dataKey="value" fill="hsl(var(--secondary))" name="Revenue" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">No revenue data available for this period.</div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader>
-                                <CardTitle>Attendees by Ticket Type</CardTitle>
-                                <CardDescription>Number of attendees associated with each ticket type.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {attendeesByTicketTypeData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={attendeesByTicketTypeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
-                                            <YAxis allowDecimals={false} />
-                                            <Tooltip
-                                                cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                                itemStyle={{ color: '#ffffff' }}
-                                                labelStyle={{ color: '#a0aec0' }}
-                                                formatter={(value: number) => [`${value} Attendees`, 'Count']}
-                                            />
-                                            <Legend />
-                                            <Bar dataKey="value" fill="hsl(var(--accent))" name="Attendees" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">No attendee data available by ticket type for this period.</div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className={darkMode ? "bg-gray-800 border-gray-700" : ""}>
-                            <CardHeader>
-                                <CardTitle>Payment Method Usage</CardTitle>
-                                <CardDescription>Breakdown of transactions by payment method.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {paymentMethodChartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={paymentMethodChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                            <XAxis dataKey="name" angle={-30} textAnchor="end" height={60} style={{ fontSize: '12px' }} />
-                                            <YAxis allowDecimals={false} />
-                                            <Tooltip
-                                                cursor={{ fill: 'rgba(0,0,0,0.1)' }}
-                                                contentStyle={{ backgroundColor: darkMode ? "#1e2937" : "#1e2937", border: 'none', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
-                                                itemStyle={{ color: '#ffffff' }}
-                                                labelStyle={{ color: '#a0aec0' }}
-                                                formatter={(value: number) => [`${value} Transactions`, 'Count']}
-                                            />
-                                            <Legend />
-                                            <Bar dataKey="value" fill="hsl(var(--info))" name="Transactions" radius={[4, 4, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">No payment method usage data available for this period.</div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </>
-            ) : (
-                <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
+                {/* Date Filter Section */}
+                <Card className={cn("shadow-lg", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
                     <CardHeader>
-                        <CardTitle>No Report Data</CardTitle>
-                        <CardDescription>Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">
+                            <Filter className="h-5 w-5" />
+                            Date Range Filter
+                        </CardTitle>
+                        <CardDescription>Customize your report timeframe</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-300" : "text-muted-foreground")}>
-                            Once you select the dates and apply the filter, the report data and charts will appear here.
-                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 items-end">
+                            <div className="flex-1 space-y-2">
+                                <Label htmlFor="startDate">Start Date</Label>
+                                <Input
+                                    id="startDate"
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="transition-all hover:border-purple-400 focus:border-purple-500"
+                                    max={endDate || undefined}
+                                />
+                            </div>
+                            <div className="flex-1 space-y-2">
+                                <Label htmlFor="endDate">End Date</Label>
+                                <Input
+                                    id="endDate"
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="transition-all hover:border-purple-400 focus:border-purple-500"
+                                    min={startDate || undefined}
+                                />
+                            </div>
+                            <Button
+                                onClick={fetchReport}
+                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 min-w-[140px] hover:scale-105 transition-all"
+                                disabled={isLoadingReport || !canFetchReport}
+                            >
+                                {isLoadingReport ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                )}
+                                Apply Filter
+                            </Button>
+                        </div>
+                        {error && (
+                            <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" /> {error}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
-            )}
+
+                {reportData ? (
+                    <>
+                        {/* Summary Cards */}
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                            <Card className={cn(
+                                "hover:shadow-lg transition-all hover:scale-105",
+                                darkMode
+                                    ? "bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700"
+                                    : "bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+                            )}>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+                                    <FileText className="h-4 w-4 text-purple-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                                        {reportData.total_tickets_sold.toLocaleString()}
+                                    </div>
+                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        Tickets sold
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className={cn(
+                                "hover:shadow-lg transition-all hover:scale-105",
+                                darkMode
+                                    ? "bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700"
+                                    : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
+                            )}>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                                    <DollarSign className="h-4 w-4 text-blue-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                                        ${reportData.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        Revenue generated
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className={cn(
+                                "hover:shadow-lg transition-all hover:scale-105",
+                                darkMode
+                                    ? "bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700"
+                                    : "bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+                            )}>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Attendees</CardTitle>
+                                    <Users className="h-4 w-4 text-green-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+                                        {reportData.number_of_attendees.toLocaleString()}
+                                    </div>
+                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        {((reportData.number_of_attendees / reportData.total_tickets_sold) * 100).toFixed(1)}% attendance rate
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className={cn(
+                                "hover:shadow-lg transition-all hover:scale-105",
+                                darkMode
+                                    ? "bg-gradient-to-br from-orange-900/50 to-orange-800/30 border-orange-700"
+                                    : "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200"
+                            )}>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Avg. Ticket Price</CardTitle>
+                                    <PieChartIcon className="h-4 w-4 text-orange-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                                        ${(reportData.total_revenue / reportData.total_tickets_sold).toFixed(0)}
+                                    </div>
+                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        Average price per ticket
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Charts Section */}
+                        <Tabs defaultValue="overview" className="space-y-6">
+                            <TabsList className="grid w-full grid-cols-3">
+                                <TabsTrigger value="overview">Overview</TabsTrigger>
+                                <TabsTrigger value="tickets">Tickets & Attendees</TabsTrigger>
+                                <TabsTrigger value="revenue">Revenue & Payments</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="overview" className="space-y-6">
+                                <div className="grid gap-6 lg:grid-cols-2">
+                                    {/* Tickets Sold Pie Chart */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <PieChartIcon className="h-5 w-5 text-purple-600" />
+                                                Tickets Distribution
+                                            </CardTitle>
+                                            <CardDescription>Breakdown of tickets sold by type</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {ticketsSoldChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={ticketsSoldChartData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            labelLine={false}
+                                                            label={renderPieLabel}
+                                                            outerRadius={120}
+                                                            fill="#8884d8"
+                                                            dataKey="value"
+                                                            animationBegin={0}
+                                                            animationDuration={1000}
+                                                        >
+                                                            {ticketsSoldChartData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip content={<CustomTooltip />} />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No ticket sales data available for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Revenue Breakdown */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <CardTitle className="flex items-center gap-2">
+                                                        <DollarSign className="h-5 w-5 text-green-600" />
+                                                        Revenue by Type
+                                                    </CardTitle>
+                                                    <CardDescription>Revenue distribution across ticket categories</CardDescription>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant={activeChart === 'bar' ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={() => setActiveChart('bar')}
+                                                    >
+                                                        Bar
+                                                    </Button>
+                                                    <Button
+                                                        variant={activeChart === 'pie' ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={() => setActiveChart('pie')}
+                                                    >
+                                                        Pie
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {revenueChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    {activeChart === 'pie' ? (
+                                                        <PieChart>
+                                                            <Pie
+                                                                data={revenueChartData}
+                                                                cx="50%"
+                                                                cy="50%"
+                                                                labelLine={false}
+                                                                label={renderPieLabel}
+                                                                outerRadius={120}
+                                                                fill="#8884d8"
+                                                                dataKey="value"
+                                                                animationBegin={0}
+                                                                animationDuration={1000}
+                                                            >
+                                                                {revenueChartData.map((entry, index) => (
+                                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                                ))}
+                                                            </Pie>
+                                                            <Tooltip content={<CustomTooltip />} />
+                                                            <Legend />
+                                                        </PieChart>
+                                                    ) : (
+                                                        <BarChart data={revenueChartData}>
+                                                            <CartesianGrid strokeDasharray="3 3" />
+                                                            <XAxis dataKey="name" />
+                                                            <YAxis />
+                                                            <Tooltip content={<CustomTooltip />} />
+                                                            <Legend />
+                                                            <Bar dataKey="value" fill="#8884d8" />
+                                                        </BarChart>
+                                                    )}
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No revenue data available for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="tickets" className="space-y-6">
+                                <div className="grid gap-6 lg:grid-cols-2">
+                                    {/* Attendees by Ticket Type */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <Users className="h-5 w-5 text-green-600" />
+                                                Attendees by Ticket Type
+                                            </CardTitle>
+                                            <CardDescription>Number of attendees associated with each ticket type</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {attendeesByTicketTypeData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    <BarChart data={attendeesByTicketTypeData}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="name" />
+                                                        <YAxis />
+                                                        <Tooltip content={<CustomTooltip />} />
+                                                        <Legend />
+                                                        <Bar dataKey="value" fill="#8884d8" />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No attendee data available by ticket type for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Payment Method Usage */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <DollarSign className="h-5 w-5 text-blue-600" />
+                                                Payment Method Usage
+                                            </CardTitle>
+                                            <CardDescription>Breakdown of transactions by payment method</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {paymentMethodChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={paymentMethodChartData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            labelLine={false}
+                                                            label={renderPieLabel}
+                                                            outerRadius={120}
+                                                            fill="#8884d8"
+                                                            dataKey="value"
+                                                            animationBegin={0}
+                                                            animationDuration={1000}
+                                                        >
+                                                            {paymentMethodChartData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip content={<CustomTooltip />} />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No payment method usage data available for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </TabsContent>
+
+                            <TabsContent value="revenue" className="space-y-6">
+                                <div className="grid gap-6 lg:grid-cols-2">
+                                    {/* Revenue by Ticket Type */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <DollarSign className="h-5 w-5 text-green-600" />
+                                                Revenue by Ticket Type
+                                            </CardTitle>
+                                            <CardDescription>Revenue generated from each ticket category</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {revenueChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    <BarChart data={revenueChartData}>
+                                                        <CartesianGrid strokeDasharray="3 3" />
+                                                        <XAxis dataKey="name" />
+                                                        <YAxis />
+                                                        <Tooltip content={<CustomTooltip />} />
+                                                        <Legend />
+                                                        <Bar dataKey="value" fill="#8884d8" />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No revenue data available for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* Payment Method Usage */}
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <DollarSign className="h-5 w-5 text-blue-600" />
+                                                Payment Method Usage
+                                            </CardTitle>
+                                            <CardDescription>Breakdown of transactions by payment method</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            {paymentMethodChartData.length > 0 ? (
+                                                <ResponsiveContainer width="100%" height={350}>
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={paymentMethodChartData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            labelLine={false}
+                                                            label={renderPieLabel}
+                                                            outerRadius={120}
+                                                            fill="#8884d8"
+                                                            dataKey="value"
+                                                            animationBegin={0}
+                                                            animationDuration={1000}
+                                                        >
+                                                            {paymentMethodChartData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip content={<CustomTooltip />} />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            ) : (
+                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                    No payment method usage data available for this period.
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </>
+                ) : (
+                    <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
+                        <CardHeader>
+                            <CardTitle>No Report Data</CardTitle>
+                            <CardDescription>Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-300" : "text-muted-foreground")}>
+                                Once you select the dates and apply the filter, the report data and charts will appear here.
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </div>
     );
 };
