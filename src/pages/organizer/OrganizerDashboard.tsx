@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings, Moon, Sun
+  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings
 } from 'lucide-react';
 
 import OrganizerNavigation from './OrganizerNavigation';
@@ -65,10 +65,6 @@ const OrganizerDashboard: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('darkMode', JSON.stringify(darkMode));
     }, [darkMode]);
-
-    const toggleDarkMode = () => {
-        setDarkMode(!darkMode);
-    };
 
     const handleFetchError = useCallback(async (response: Response) => {
         let errorMessage = `HTTP error! status: ${response.status}`;
@@ -299,14 +295,6 @@ const OrganizerDashboard: React.FC = () => {
                             <p>{successMessage}</p>
                         </div>
                     )}
-
-                    {/* Add a toggle button for dark mode */}
-                    <button
-                        onClick={toggleDarkMode}
-                        className={cn("fixed bottom-4 right-4 p-3 rounded-full shadow-lg", darkMode ? "bg-gray-700 text-white" : "bg-white text-gray-700")}
-                    >
-                        {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                    </button>
 
                     {currentView === 'overview' && (
                         <div className="space-y-8 animate-fade-in-up">
