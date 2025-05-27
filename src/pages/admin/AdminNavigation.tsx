@@ -21,54 +21,12 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigationItems = [
-    {
-      id: 'reports',
-      label: 'System Reports',
-      icon: BarChart2,
-      description: 'View analytics & insights',
-      category: 'Analytics',
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      id: 'events',
-      label: 'Recent Events',
-      icon: Calendar,
-      description: 'Monitor event activity',
-      category: 'Events',
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      id: 'viewAllUsers',
-      label: 'All Users',
-      icon: Users,
-      description: 'Manage platform users',
-      category: 'User Management',
-      color: 'from-green-500 to-green-600'
-    },
-    {
-      id: 'nonAttendees',
-      label: 'Non-Attendees',
-      icon: Users,
-      description: 'Track absent users',
-      category: 'User Management',
-      color: 'from-orange-500 to-orange-600'
-    },
-    {
-      id: 'registerAdmin',
-      label: 'Register Admin',
-      icon: UserPlus,
-      description: 'Create admin accounts',
-      category: 'Administration',
-      color: 'from-indigo-500 to-indigo-600'
-    },
-    {
-      id: 'registerSecurity',
-      label: 'Register Security',
-      icon: Shield,
-      description: 'Create security accounts',
-      category: 'Administration',
-      color: 'from-red-500 to-red-600'
-    },
+    { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'from-blue-500 to-blue-600' },
+    { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor event activity', category: 'Events', color: 'from-purple-500 to-purple-600' },
+    { id: 'viewAllUsers', label: 'All Users', icon: Users, description: 'Manage platform users', category: 'User Management', color: 'from-green-500 to-green-600' },
+    { id: 'nonAttendees', label: 'Non-Attendees', icon: Users, description: 'Track absent users', category: 'User Management', color: 'from-orange-500 to-orange-600' },
+    { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create admin accounts', category: 'Administration', color: 'from-indigo-500 to-indigo-600' },
+    { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create security accounts', category: 'Administration', color: 'from-red-500 to-red-600' },
   ];
 
   const handleViewChange = (view: typeof currentView) => {
@@ -76,9 +34,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     setIsMobileMenuOpen(false);
   };
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const filteredItems = navigationItems.filter(item =>
     item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,7 +46,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
               <Activity className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -122,11 +78,10 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         "left-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-
         <div className="p-6 border-b border-border/50 mt-16 md:mt-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg ring-2 ring-purple-500/20">
-              <Activity className="w-6 h-6 text-white" />
+              <Activity className="w-6 h-6 text-white animate-bounce" />
             </div>
             <div className="hidden md:block">
               <h2 className="font-bold text-xl text-foreground">Pulse Admin</h2>
@@ -148,14 +103,13 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+        <div className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted">
           {filteredItems.map((item, index) => {
             const isActive = currentView === item.id;
-
             return (
               <div
                 key={item.id}
-                className="group"
+                className="group animate-fade-in-up"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <button
@@ -168,15 +122,11 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
                   )}
                   disabled={isLoading}
                 >
-                  {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
-                  )}
+                  {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />}
 
                   <div className={cn(
                     "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300",
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "bg-gradient-to-br " + item.color + " text-white group-hover:scale-110"
+                    isActive ? "bg-white/20 text-white" : `bg-gradient-to-br ${item.color} text-white group-hover:scale-110`
                   )}>
                     <item.icon className="h-5 w-5" />
                   </div>
@@ -186,9 +136,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
                     <div className={cn(
                       "text-xs truncate mt-0.5 transition-colors",
                       isActive ? "text-white/80" : "text-muted-foreground"
-                    )}>
-                      {item.description}
-                    </div>
+                    )}>{item.description}</div>
                   </div>
 
                   <div className={cn(
