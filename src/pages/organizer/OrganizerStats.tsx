@@ -45,53 +45,22 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
     // --- Loading State ---
     if (isLoading) {
         return (
-            <div className={cn("space-y-6 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>
-                <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
-                    <Skeleton className="h-10 w-96" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, index) => (
-                        <Card key={index} className={darkMode ? "bg-[--card] border-[--border]" : "bg-[--card] border-[--border]"}>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <Skeleton className="h-4 w-32" />
-                                <Skeleton className="h-4 w-4 rounded-full" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-8 w-24" />
-                                <Skeleton className="h-3 w-40 mt-2" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                <Skeleton className="h-8 w-64 mt-8" />
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {[...Array(3)].map((_, index) => (
-                        <Card key={index} className={darkMode ? "bg-[--card] border-[--border]" : "bg-[--card] border-[--border]"}>
-                            <CardHeader>
-                                <Skeleton className="h-6 w-48" />
-                                <Skeleton className="h-4 w-full" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-4 w-3/4 mb-2" />
-                                <Skeleton className="h-4 w-1/2" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-                <Skeleton className="h-8 w-64 mt-8" />
-                <div className="grid gap-4 md:grid-cols-2">
-                    {[...Array(2)].map((_, index) => (
-                        <Card key={index} className={darkMode ? "bg-[--card] border-[--border]" : "bg-[--card] border-[--border]"}>
-                            <CardHeader>
-                                <Skeleton className="h-6 w-48" />
-                                <Skeleton className="h-4 w-full" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-72 w-full" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, index) => (
+                    <Card key={index} className={cn(
+                        "animate-pulse rounded-lg border",
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                    )}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24"></div>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-16"></div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
         );
     }
@@ -138,7 +107,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
         <div className={cn("space-y-8 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>
             <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
                 <div>
-                    <h1 className="text-4xl font-bold tracking-tight">
+                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                         Overall Statistics for {overallSummary.organizer_name || "Your Organization"}
                     </h1>
                     <p className={cn("text-lg", darkMode ? "text-[--muted]" : "text-[--muted]")}>
@@ -153,21 +122,24 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
+                    whileHover={{ scale: 1.03 }}
                 >
                     <Card className={cn(
-                        "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-                        darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"
+                        "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                     )}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Tickets Sold</CardTitle>
-                            <Ticket className="h-4 w-4 text-[--muted] group-hover:text-[--primary] transition-colors duration-200" />
+                            <CardTitle className="text-base font-semibold tracking-wide">Total Tickets Sold</CardTitle>
+                            <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900 group-hover:scale-110 transition">
+                                <Ticket className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-4xl font-bold text-[--primary]">
-                                {overallSummary.total_tickets_sold_across_all_events.toLocaleString()}
-                            </div>
-                            <p className="text-xs text-[--secondary] mt-1">↑ 12% increase from last month</p>
-                            <p className={cn("text-xs", darkMode ? "text-[--muted]" : "text-[--muted]")}>Across all your events</p>
+                            <div className="text-3xl font-bold">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</div>
+                            <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3" /> 12% increase
+                            </p>
+                            <p className="text-xs text-muted-foreground">Across all your events</p>
                         </CardContent>
                     </Card>
                 </motion.div>
@@ -176,21 +148,24 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
+                    whileHover={{ scale: 1.03 }}
                 >
                     <Card className={cn(
-                        "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-                        darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"
+                        "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                        darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                     )}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-[--muted] group-hover:text-[--secondary] transition-colors duration-200" />
+                            <CardTitle className="text-base font-semibold tracking-wide">Total Revenue</CardTitle>
+                            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900 group-hover:scale-110 transition">
+                                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-300" />
+                            </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-4xl font-bold text-[--secondary]">
-                                ${overallSummary.total_revenue_across_all_events}
-                            </div>
-                            <p className="text-xs text-[--secondary] mt-1">↑ 15% increase from last month</p>
-                            <p className={cn("text-xs", darkMode ? "text-[--muted]" : "text-[--muted]")}>From all ticket sales</p>
+                            <div className="text-3xl font-bold text-green-600">${overallSummary.total_revenue_across_all_events}</div>
+                            <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3" /> 15% increase
+                            </p>
+                            <p className="text-xs text-muted-foreground">From all ticket sales</p>
                         </CardContent>
                     </Card>
                 </motion.div>
@@ -200,21 +175,24 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.3 }}
+                        whileHover={{ scale: 1.03 }}
                     >
                         <Card className={cn(
-                            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-                            darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"
+                            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                         )}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Events Hosted</CardTitle>
-                                <Calendar className="h-4 w-4 text-[--muted] group-hover:text-[--primary] transition-colors duration-200" />
+                                <CardTitle className="text-base font-semibold tracking-wide">Total Events Hosted</CardTitle>
+                                <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900 group-hover:scale-110 transition">
+                                    <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                                </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-4xl font-bold text-[--primary]">
-                                    {overallSummary.total_events}
-                                </div>
-                                <p className="text-xs text-[--secondary] mt-1">↑ 8% increase from last month</p>
-                                <p className={cn("text-xs", darkMode ? "text-[--muted]" : "text-[--muted]")}>Past and upcoming</p>
+                                <div className="text-3xl font-bold">{overallSummary.total_events}</div>
+                                <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3" /> 8% increase
+                                </p>
+                                <p className="text-xs text-muted-foreground">Past and upcoming</p>
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -225,21 +203,24 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.4 }}
+                        whileHover={{ scale: 1.03 }}
                     >
                         <Card className={cn(
-                            "transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
-                            darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"
+                            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
                         )}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                                <TrendingUp className="h-4 w-4 text-[--muted] group-hover:text-[--secondary] transition-colors duration-200" />
+                                <CardTitle className="text-base font-semibold tracking-wide">Upcoming Events</CardTitle>
+                                <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900 group-hover:scale-110 transition">
+                                    <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-300" />
+                                </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-4xl font-bold text-[--secondary]">
-                                    {overallSummary.upcoming_events_count}
-                                </div>
-                                <p className="text-xs text-[--secondary] mt-1">↑ 5% increase from last month</p>
-                                <p className={cn("text-xs", darkMode ? "text-[--muted]" : "text-[--muted]")}>Events planned</p>
+                                <div className="text-3xl font-bold">{overallSummary.upcoming_events_count}</div>
+                                <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3" /> 5% increase
+                                </p>
+                                <p className="text-xs text-muted-foreground">Events planned</p>
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -288,10 +269,13 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <Card className={darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"}>
+                        <Card className={cn(
+                            "border rounded-lg shadow-md",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                        )}>
                             <CardHeader>
-                                <CardTitle>Monthly Tickets Sold Trend</CardTitle>
-                                <CardDescription>Tickets sold over the last few months.</CardDescription>
+                                <CardTitle className="text-base font-semibold tracking-wide">Monthly Tickets Sold Trend</CardTitle>
+                                <CardDescription className="text-sm text-muted-foreground">Tickets sold over the last few months.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-72">
@@ -323,10 +307,13 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <Card className={darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]"}>
+                        <Card className={cn(
+                            "border rounded-lg shadow-md",
+                            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
+                        )}>
                             <CardHeader>
-                                <CardTitle>Monthly Revenue Trend</CardTitle>
-                                <CardDescription>Revenue generated over the last few months.</CardDescription>
+                                <CardTitle className="text-base font-semibold tracking-wide">Monthly Revenue Trend</CardTitle>
+                                <CardDescription className="text-sm text-muted-foreground">Revenue generated over the last few months.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="h-72">

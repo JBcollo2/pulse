@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  LogOut,
   LayoutDashboard,
   CalendarDays,
   BarChart2,
@@ -11,36 +10,37 @@ import {
   X,
   ChevronRight,
   Settings,
-  Bell,
   User,
   Sparkles,
   Activity,
+  Search,
 } from "lucide-react";
 
 interface OrganizerNavigationProps {
   currentView: string;
   onViewChange: (view: string) => void;
-  onLogout: () => void;
   isLoading: boolean;
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
   darkMode: boolean;
+  organizerName: string;
 }
 
 const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   currentView,
   onViewChange,
-  onLogout,
   isLoading,
   isExpanded,
   setIsExpanded,
   isMobileOpen,
   setIsMobileOpen,
   darkMode,
+  organizerName,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const navigationItems = [
@@ -50,7 +50,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       icon: LayoutDashboard,
       color: "from-[--primary] to-[--secondary]",
       bgColor: "hover:bg-[--muted]",
-      description: "Dashboard overview"
+      description: "Dashboard overview",
     },
     {
       id: "myEvents",
@@ -58,7 +58,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       icon: CalendarDays,
       color: "from-[--secondary] to-[--accent]",
       bgColor: "hover:bg-[--muted]",
-      description: "Manage your events"
+      description: "Manage your events",
     },
     {
       id: "overallStats",
@@ -66,7 +66,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       icon: BarChart2,
       color: "from-[--accent] to-[--muted]",
       bgColor: "hover:bg-[--muted]",
-      description: "Analytics & insights"
+      description: "Analytics & insights",
     },
     {
       id: "reports",
@@ -74,9 +74,14 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       icon: FileText,
       color: "from-[--destructive] to-[--foreground]",
       bgColor: "hover:bg-[--muted]",
-      description: "Generate reports"
+      description: "Generate reports",
     },
   ];
+
+  const filteredItems = navigationItems.filter((item) =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -154,9 +159,22 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           </div>
         </div>
 
+        <div className="p-4 border-b border-[--border]">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search menu..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-muted/50 border border-border/30 rounded-xl text-sm placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200"
+            />
+          </div>
+        </div>
+
         <div className="flex-1 p-4 space-y-2 overflow-y-auto">
           <div className="space-y-1">
-            {navigationItems.map((item, index) => {
+            {filteredItems.map((item, index) => {
               const isActive = currentView === item.id;
               const isHovered = hoveredItem === item.id;
 
@@ -281,7 +299,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 <User className="w-4 h-4 text-[--card-foreground]" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-[--foreground] truncate">John Doe</div>
+                <div className="text-sm font-semibold text-[--foreground] truncate">{organizerName}</div>
                 <div className="text-xs text-[--muted]">Event Organizer</div>
               </div>
               <Button
@@ -293,42 +311,6 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
               </Button>
             </div>
           )}
-
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start gap-3 p-3 transition-all duration-200 hover:shadow-sm",
-              darkMode ? "hover:bg-[--secondary]/10 text-[--muted] hover:text-[--secondary]" : "hover:bg-[--secondary]/10 text-[--foreground] hover:text-[--secondary]",
-              !isExpanded && "justify-center"
-            )}
-          >
-            <div className="relative">
-              <Bell className={cn("h-5 w-5", darkMode ? "text-[--muted]" : "text-[--foreground]")} />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-[--destructive] rounded-full animate-pulse" />
-            </div>
-            {isExpanded && <span className="font-medium">Notifications</span>}
-          </Button>
-
-          <Button
-            onClick={() => {
-              onLogout();
-              setIsMobileOpen(false);
-            }}
-            disabled={isLoading}
-            className={cn(
-              "w-full bg-gradient-to-r from-[--destructive] to-[--destructive] hover:from-[--destructive] hover:to-[--destructive]",
-              "text-[--card-foreground] shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-              !isExpanded && "aspect-square p-0"
-            )}
-          >
-            <LogOut className={cn("h-5 w-5", isExpanded && "mr-2")} />
-            {isExpanded && (
-              <span className="font-medium">
-                {isLoading ? "Logging out..." : "Logout"}
-              </span>
-            )}
-          </Button>
         </div>
 
         {isLoading && (

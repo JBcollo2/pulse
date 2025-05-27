@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings
+  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings, User
 } from 'lucide-react';
-
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
@@ -50,6 +49,7 @@ const OrganizerDashboard: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
+    const [organizerName, setOrganizerName] = useState('Organizer');
 
     const { toast } = useToast();
 
@@ -131,6 +131,7 @@ const OrganizerDashboard: React.FC = () => {
                 revenue_monthly_trend: data.revenue_monthly_trend || [],
             };
             setOverallSummary(processedData);
+            setOrganizerName(data.organizer_name || 'Organizer');
         } catch (err) {
             console.error('Fetch overall summary error:', err);
             setError('An unexpected error occurred while fetching the overall summary.');
@@ -207,102 +208,102 @@ const OrganizerDashboard: React.FC = () => {
     const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
     const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
+    const getHeaderContent = () => {
+        switch (currentView) {
+            case 'overview':
+                return {
+                    title: "Overview",
+                    description: "Dashboard analytics",
+                    icon: <LayoutDashboard className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-blue-500 to-blue-700"
+                };
+            case 'myEvents':
+                return {
+                    title: "My Events",
+                    description: "Manage your events",
+                    icon: <CalendarDays className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-purple-500 to-purple-700"
+                };
+            case 'overallStats':
+                return {
+                    title: "Overall Stats",
+                    description: "View aggregate data",
+                    icon: <BarChart2 className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-green-500 to-green-700"
+                };
+            case 'reports':
+                return {
+                    title: "Reports",
+                    description: "Generate and view reports",
+                    icon: <FileText className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-orange-500 to-orange-700"
+                };
+            case 'settings':
+                return {
+                    title: "Settings",
+                    description: "Account preferences",
+                    icon: <Settings className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-indigo-500 to-indigo-700"
+                };
+            default:
+                return {
+                    title: "Dashboard Overview",
+                    description: "Welcome to your organizer control panel.",
+                    icon: <Activity className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+                    gradient: "from-gray-500 to-gray-700"
+                };
+        }
+    };
+
+    const headerContent = getHeaderContent();
+
     return (
-        <div className={cn("min-h-screen flex bg-background text-foreground")}>
-            {/* Organizer Navigation */}
-            <OrganizerNavigation
-                currentView={currentView}
-                onViewChange={handleViewChange}
-                onLogout={handleLogout}
-                isLoading={isLoading}
-                isExpanded={isExpanded}
-                setIsExpanded={setIsExpanded}
-                isMobileOpen={isMobileOpen}
-                setIsMobileOpen={setIsMobileOpen}
-                darkMode={darkMode}
-            />
+        <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-850 text-gray-800 dark:text-white overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col">
-                <div className={cn("sticky top-0 z-10 px-8 py-6", darkMode ? "bg-[--card]/70" : "bg-[--card]/70 backdrop-blur-sm border-b border-[--border]")}>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold flex items-center gap-3">
-                                {currentView === 'overview' && (
-                                    <>
-                                        <LayoutDashboard className={cn("h-6 w-6", darkMode ? "text-[--primary]" : "text-[--primary]")} />
-                                        Overview
-                                    </>
-                                )}
-                                {currentView === 'myEvents' && (
-                                    <>
-                                        <CalendarDays className={cn("h-6 w-6", darkMode ? "text-[--secondary]" : "text-[--secondary]")} />
-                                        My Events
-                                    </>
-                                )}
-                                {currentView === 'overallStats' && (
-                                    <>
-                                        <BarChart2 className={cn("h-6 w-6", darkMode ? "text-[--accent]" : "text-[--accent]")} />
-                                        Overall Stats
-                                    </>
-                                )}
-                                {currentView === 'reports' && (
-                                    <>
-                                        <FileText className={cn("h-6 w-6", darkMode ? "text-[--muted]" : "text-[--muted]")} />
-                                        Reports
-                                    </>
-                                )}
-                                {currentView === 'settings' && (
-                                    <>
-                                        <Settings className={cn("h-6 w-6", darkMode ? "text-[--foreground]" : "text-[--foreground]")} />
-                                        Settings
-                                    </>
-                                )}
-                            </h1>
-                            <p className={cn("mt-1", darkMode ? "text-[--muted]" : "text-[--muted]")}>
-                                {currentView === 'overview' && 'Dashboard analytics'}
-                                {currentView === 'myEvents' && 'Manage your events'}
-                                {currentView === 'overallStats' && 'View aggregate data'}
-                                {currentView === 'reports' && 'Generate and view reports'}
-                                {currentView === 'settings' && 'Account preferences'}
-                            </p>
-                        </div>
-
-                        <div className="hidden md:flex items-center space-x-2 text-sm">
-                            <span className={darkMode ? "text-[--muted]" : "text-[--muted]"} >Dashboard</span>
-                            <ChevronRight className={cn("h-4 w-4", darkMode ? "text-[--muted]" : "text-[--muted]")} />
-                            <span className={cn("font-medium", darkMode ? "text-[--foreground]" : "text-[--foreground]")}>
-                                {currentView === 'overview' && 'Overview'}
-                                {currentView === 'myEvents' && 'My Events'}
-                                {currentView === 'overallStats' && 'Overall Stats'}
-                                {currentView === 'reports' && 'Reports'}
-                                {currentView === 'settings' && 'Settings'}
-                            </span>
-                        </div>
-                    </div>
+            <div className="relative z-10 flex min-h-screen">
+                <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50">
+                    <OrganizerNavigation
+                        currentView={currentView}
+                        onViewChange={handleViewChange}
+                        isLoading={isLoading}
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        isMobileOpen={isMobileOpen}
+                        setIsMobileOpen={setIsMobileOpen}
+                        darkMode={darkMode}
+                        organizerName={organizerName}
+                    />
                 </div>
 
-                <div className={cn("p-8 flex-1 min-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar", darkMode ? "bg-[--background]" : "bg-[--card]")}>
-                    {error && (
-                        <div className={cn("p-4 mb-4 rounded-lg shadow-sm animate-fade-in-up", darkMode ? "bg-[--destructive]/10 border-[--destructive]/20 text-[--destructive-foreground]" : "bg-[--destructive]/10 border border-[--destructive]/20 text-[--destructive-foreground]")}>
-                            <p className="font-semibold">Error:</p>
-                            <p className={darkMode ? "text-[--destructive-foreground]" : "text-[--destructive]"}>{error}</p>
+                <div className="flex-1 ml-72 p-4 md:p-8">
+                    <div className={cn(
+                        "mb-8 p-6 md:p-8 rounded-xl shadow-lg border-none overflow-hidden",
+                        "bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-60 dark:bg-opacity-40",
+                        `bg-gradient-to-r ${headerContent.gradient} text-white`
+                    )}>
+                        <div className="flex items-center gap-6">
+                            <div className="p-4 rounded-full bg-white bg-opacity-20 dark:bg-opacity-10 shadow-inner transition-transform duration-300 hover:scale-105">
+                                {headerContent.icon}
+                            </div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1">
+                                    {headerContent.title}
+                                </h1>
+                                <p className="text-lg md:text-xl font-light opacity-90">
+                                    {headerContent.description}
+                                </p>
+                            </div>
                         </div>
-                    )}
-                    {successMessage && (
-                        <div className={cn("p-4 mb-4 rounded-lg shadow-sm animate-fade-in-up", darkMode ? "bg-[--secondary]/10 border-[--secondary]/20 text-[--secondary-foreground]" : "bg-[--secondary]/10 border border-[--secondary]/20 text-[--secondary-foreground]")}>
-                            <p className="font-semibold">Success:</p>
-                            <p>{successMessage}</p>
-                        </div>
-                    )}
+                    </div>
 
                     {currentView === 'overview' && (
                         <div className="space-y-8 animate-fade-in-up">
-                            <h1 className={cn("text-4xl  font-extrabold mb-6", darkMode ? "text-[--foreground]" : " text-gradient")}>
+                            <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-[--foreground]" : "text-gradient")}>
                                 Organizer Dashboard Overview
                             </h1>
                             <p className={cn("text-lg max-w-2xl", darkMode ? "text-[--muted]" : "text-[--foreground]")}>
-                                Welcome, {overallSummary?.organizer_name || 'Organizer'}! Here's a quick glance at your event management activities and key metrics.
+                                Welcome, {organizerName}! Here's a quick glance at your event management activities and key metrics.
                             </p>
 
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -459,7 +460,7 @@ const OrganizerDashboard: React.FC = () => {
                                 overallSummary={overallSummary}
                                 isLoading={isLoading}
                                 error={error}
-                                darkMode={darkMode} // Pass the darkMode prop here
+                                darkMode={darkMode}
                             />
                         </div>
                     )}
