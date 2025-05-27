@@ -266,7 +266,6 @@ const OrganizerDashboard: React.FC = () => {
                     <OrganizerNavigation
                         currentView={currentView}
                         onViewChange={handleViewChange}
-                        isLoading={isLoading}
                         isExpanded={isExpanded}
                         setIsExpanded={setIsExpanded}
                         isMobileOpen={isMobileOpen}
