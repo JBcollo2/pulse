@@ -60,7 +60,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       color: "from-blue-500 to-cyan-600",
       bgColor: "hover:bg-blue-50 dark:hover:bg-blue-950/30",
       description: "Manage your events",
-      badge: null, // Removed the badge
+      badge: null,
     },
     {
       id: "overallStats",
@@ -78,7 +78,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       color: "from-orange-500 to-red-600",
       bgColor: "hover:bg-orange-50 dark:hover:bg-orange-950/30",
       description: "Generate reports",
-      badge: null, // Removed the badge
+      badge: null,
     },
   ];
 
