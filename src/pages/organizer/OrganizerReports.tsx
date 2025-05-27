@@ -297,7 +297,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             return (
                 <div className={cn(
                     "p-4 rounded-lg shadow-lg border backdrop-blur-sm",
-                    darkMode ? "bg-gray-800/90 border-gray-600 text-white" : "bg-white/90 border-gray-200"
+                    darkMode ? "bg-[--card]/90 border-[--border] text-[--card-foreground]" : "bg-[--card]/90 border-[--border]"
                 )}>
                     <p className="font-semibold text-lg mb-2">{label}</p>
                     {payload.map((entry: any, index: number) => (
@@ -343,32 +343,32 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     // Loading State for initial fetch
     if (isLoadingReport && !reportData && !error) {
         return (
-            <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
+            <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-[--card] border-[--border] text-[--card-foreground]" : "")}>
                 <CardHeader>
                     <CardTitle>Event Report</CardTitle>
                     <CardDescription>Loading event report data...</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center h-64">
-                    <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
-                    <p className={cn("mt-4 text-lg", darkMode ? "text-gray-300" : "text-muted-foreground")}>Fetching event insights...</p>
+                    <Loader2 className="h-12 w-12 animate-spin text-[--primary]" />
+                    <p className={cn("mt-4 text-lg", darkMode ? "text-[--muted]" : "text-[--muted]")}>Fetching event insights...</p>
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <div className={cn("min-h-screen p-6 lg:p-8", darkMode ? "bg-gray-900 text-white" : "bg-gray-50")}>
+        <div className={cn("min-h-screen p-6 lg:p-8", darkMode ? "bg-[--background] text-[--foreground]" : "bg-[--muted]")}>
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header Section */}
                 <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="space-y-2">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-[--primary] to-[--secondary] bg-clip-text text-transparent">
                             Event Analytics Dashboard
                         </h1>
                         {reportData && (
                             <>
                                 <h2 className="text-2xl font-semibold">{reportData.event_name}</h2>
-                                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="flex items-center gap-4 text-sm text-[--muted]">
                                     <div className="flex items-center gap-1">
                                         <Calendar className="h-4 w-4" />
                                         {reportData.event_date}
@@ -405,7 +405,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <Button
                                 onClick={resendReportEmail}
                                 disabled={isLoadingEmail || !canFetchReport}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:scale-105 transition-all"
+                                className="bg-gradient-to-r from-[--primary] to-[--secondary] hover:from-[--primary] hover:to-[--secondary] hover:scale-105 transition-all"
                             >
                                 <Mail className="mr-2 h-4 w-4" />
                                 {isLoadingEmail ? "Sending..." : "Email Report"}
@@ -415,7 +415,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
 
                 {/* Date Filter Section */}
-                <Card className={cn("shadow-lg", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                <Card className={cn("shadow-lg", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Filter className="h-5 w-5" />
@@ -432,7 +432,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="transition-all hover:border-purple-400 focus:border-purple-500"
+                                    className="transition-all hover:border-[--primary] focus:border-[--primary]"
                                     max={endDate || undefined}
                                 />
                             </div>
@@ -443,13 +443,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="transition-all hover:border-purple-400 focus:border-purple-500"
+                                    className="transition-all hover:border-[--primary] focus:border-[--primary]"
                                     min={startDate || undefined}
                                 />
                             </div>
                             <Button
                                 onClick={fetchReport}
-                                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 min-w-[140px] hover:scale-105 transition-all"
+                                className="bg-gradient-to-r from-[--primary] to-[--secondary] hover:from-[--primary] hover:to-[--secondary] min-w-[140px] hover:scale-105 transition-all"
                                 disabled={isLoadingReport || !canFetchReport}
                             >
                                 {isLoadingReport ? (
@@ -461,7 +461,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             </Button>
                         </div>
                         {error && (
-                            <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
+                            <p className="text-[--destructive] text-sm mt-4 flex items-center gap-2">
                                 <AlertCircle className="h-4 w-4" /> {error}
                             </p>
                         )}
@@ -475,18 +475,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <Card className={cn(
                                 "hover:shadow-lg transition-all hover:scale-105",
                                 darkMode
-                                    ? "bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-700"
-                                    : "bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
+                                    ? "bg-gradient-to-br from-[--primary]/50 to-[--primary]/30 border-[--primary]"
+                                    : "bg-gradient-to-br from-[--primary]/50 to-[--primary]/30 border-[--primary]"
                             )}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-                                    <FileText className="h-4 w-4 text-purple-600" />
+                                    <FileText className="h-4 w-4 text-[--primary]" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                                    <div className="text-3xl font-bold text-[--primary]">
                                         {reportData.total_tickets_sold.toLocaleString()}
                                     </div>
-                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                    <div className="flex items-center text-xs text-[--secondary] mt-1">
                                         <TrendingUp className="h-3 w-3 mr-1" />
                                         Tickets sold
                                     </div>
@@ -496,18 +496,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <Card className={cn(
                                 "hover:shadow-lg transition-all hover:scale-105",
                                 darkMode
-                                    ? "bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-700"
-                                    : "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
+                                    ? "bg-gradient-to-br from-[--secondary]/50 to-[--secondary]/30 border-[--secondary]"
+                                    : "bg-gradient-to-br from-[--secondary]/50 to-[--secondary]/30 border-[--secondary]"
                             )}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                                    <DollarSign className="h-4 w-4 text-blue-600" />
+                                    <DollarSign className="h-4 w-4 text-[--secondary]" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                                    <div className="text-3xl font-bold text-[--secondary]">
                                         ${reportData.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </div>
-                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                    <div className="flex items-center text-xs text-[--secondary] mt-1">
                                         <TrendingUp className="h-3 w-3 mr-1" />
                                         Revenue generated
                                     </div>
@@ -517,18 +517,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <Card className={cn(
                                 "hover:shadow-lg transition-all hover:scale-105",
                                 darkMode
-                                    ? "bg-gradient-to-br from-green-900/50 to-green-800/30 border-green-700"
-                                    : "bg-gradient-to-br from-green-50 to-green-100 border-green-200"
+                                    ? "bg-gradient-to-br from-[--accent]/50 to-[--accent]/30 border-[--accent]"
+                                    : "bg-gradient-to-br from-[--accent]/50 to-[--accent]/30 border-[--accent]"
                             )}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Attendees</CardTitle>
-                                    <Users className="h-4 w-4 text-green-600" />
+                                    <Users className="h-4 w-4 text-[--accent]" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+                                    <div className="text-3xl font-bold text-[--accent]">
                                         {reportData.number_of_attendees.toLocaleString()}
                                     </div>
-                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                    <div className="flex items-center text-xs text-[--secondary] mt-1">
                                         <TrendingUp className="h-3 w-3 mr-1" />
                                         {((reportData.number_of_attendees / reportData.total_tickets_sold) * 100).toFixed(1)}% attendance rate
                                     </div>
@@ -538,18 +538,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <Card className={cn(
                                 "hover:shadow-lg transition-all hover:scale-105",
                                 darkMode
-                                    ? "bg-gradient-to-br from-orange-900/50 to-orange-800/30 border-orange-700"
-                                    : "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200"
+                                    ? "bg-gradient-to-br from-[--destructive]/50 to-[--destructive]/30 border-[--destructive]"
+                                    : "bg-gradient-to-br from-[--destructive]/50 to-[--destructive]/30 border-[--destructive]"
                             )}>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Avg. Ticket Price</CardTitle>
-                                    <PieChartIcon className="h-4 w-4 text-orange-600" />
+                                    <PieChartIcon className="h-4 w-4 text-[--destructive]" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                                    <div className="text-3xl font-bold text-[--destructive]">
                                         ${(reportData.total_revenue / reportData.total_tickets_sold).toFixed(0)}
                                     </div>
-                                    <div className="flex items-center text-xs text-green-600 mt-1">
+                                    <div className="flex items-center text-xs text-[--secondary] mt-1">
                                         <TrendingUp className="h-3 w-3 mr-1" />
                                         Average price per ticket
                                     </div>
@@ -568,10 +568,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <TabsContent value="overview" className="space-y-6">
                                 <div className="grid gap-6 lg:grid-cols-2">
                                     {/* Tickets Sold Pie Chart */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <PieChartIcon className="h-5 w-5 text-purple-600" />
+                                                <PieChartIcon className="h-5 w-5 text-[--primary]" />
                                                 Tickets Distribution
                                             </CardTitle>
                                             <CardDescription>Breakdown of tickets sold by type</CardDescription>
@@ -601,7 +601,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No ticket sales data available for this period.
                                                 </div>
                                             )}
@@ -609,12 +609,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                     </Card>
 
                                     {/* Revenue Breakdown */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <CardTitle className="flex items-center gap-2">
-                                                        <DollarSign className="h-5 w-5 text-green-600" />
+                                                        <DollarSign className="h-5 w-5 text-[--secondary]" />
                                                         Revenue by Type
                                                     </CardTitle>
                                                     <CardDescription>Revenue distribution across ticket categories</CardDescription>
@@ -673,7 +673,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     )}
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No revenue data available for this period.
                                                 </div>
                                             )}
@@ -685,10 +685,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <TabsContent value="tickets" className="space-y-6">
                                 <div className="grid gap-6 lg:grid-cols-2">
                                     {/* Attendees by Ticket Type */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <Users className="h-5 w-5 text-green-600" />
+                                                <Users className="h-5 w-5 text-[--secondary]" />
                                                 Attendees by Ticket Type
                                             </CardTitle>
                                             <CardDescription>Number of attendees associated with each ticket type</CardDescription>
@@ -706,7 +706,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No attendee data available by ticket type for this period.
                                                 </div>
                                             )}
@@ -714,10 +714,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                     </Card>
 
                                     {/* Payment Method Usage */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <DollarSign className="h-5 w-5 text-blue-600" />
+                                                <DollarSign className="h-5 w-5 text-[--primary]" />
                                                 Payment Method Usage
                                             </CardTitle>
                                             <CardDescription>Breakdown of transactions by payment method</CardDescription>
@@ -747,7 +747,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No payment method usage data available for this period.
                                                 </div>
                                             )}
@@ -759,10 +759,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <TabsContent value="revenue" className="space-y-6">
                                 <div className="grid gap-6 lg:grid-cols-2">
                                     {/* Revenue by Ticket Type */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <DollarSign className="h-5 w-5 text-green-600" />
+                                                <DollarSign className="h-5 w-5 text-[--secondary]" />
                                                 Revenue by Ticket Type
                                             </CardTitle>
                                             <CardDescription>Revenue generated from each ticket category</CardDescription>
@@ -780,7 +780,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     </BarChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No revenue data available for this period.
                                                 </div>
                                             )}
@@ -788,10 +788,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                     </Card>
 
                                     {/* Payment Method Usage */}
-                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white")}>
+                                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-[--card] border-[--border]" : "bg-[--card]")}>
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2">
-                                                <DollarSign className="h-5 w-5 text-blue-600" />
+                                                <DollarSign className="h-5 w-5 text-[--primary]" />
                                                 Payment Method Usage
                                             </CardTitle>
                                             <CardDescription>Breakdown of transactions by payment method</CardDescription>
@@ -821,7 +821,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                                     </PieChart>
                                                 </ResponsiveContainer>
                                             ) : (
-                                                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
+                                                <div className="h-[350px] flex items-center justify-center text-[--muted]">
                                                     No payment method usage data available for this period.
                                                 </div>
                                             )}
@@ -832,13 +832,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </Tabs>
                     </>
                 ) : (
-                    <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-white" : "")}>
+                    <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-[--card] border-[--border] text-[--card-foreground]" : "")}>
                         <CardHeader>
                             <CardTitle>No Report Data</CardTitle>
                             <CardDescription>Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-300" : "text-muted-foreground")}>
+                            <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-[--muted]" : "text-[--muted]")}>
                                 Once you select the dates and apply the filter, the report data and charts will appear here.
                             </p>
                         </CardContent>
