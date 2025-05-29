@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/components/ui/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } from 'recharts';
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download, FileText, Loader2 } from "lucide-react";
 
 // Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
@@ -38,7 +40,7 @@ interface ReportStats {
   totalReports: number;
   totalRevenue: number;
   totalTickets: number;
-  reportsByEvent: { event_name: string; count: number }[];
+  reportsByEvent: { event_name: string; count: number; event_id: number }[];
   revenueByTicketType: { ticket_type_name: string; amount: number }[]; // Updated key name
 }
 
@@ -52,6 +54,7 @@ const SystemReports = () => {
     revenueByTicketType: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,10 +86,13 @@ const SystemReports = () => {
         const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
         const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
 
-        // Group reports by event
-        const reportsByEvent = reportsData.reduce((acc: Record<string, number>, report) => {
+        // Group reports by event - now also track event_id for PDF downloads
+        const reportsByEvent = reportsData.reduce((acc: Record<string, { count: number; event_id: number }>, report) => {
           const eventName = report.event_name && typeof report.event_name === 'string' ? report.event_name : 'N/A Event';
-          acc[eventName] = (acc[eventName] || 0) + 1;
+          if (!acc[eventName]) {
+            acc[eventName] = { count: 0, event_id: report.event_id };
+          }
+          acc[eventName].count += 1;
           return acc;
         }, {});
 
@@ -104,10 +110,14 @@ const SystemReports = () => {
           totalReports: reportsData.length,
           totalRevenue,
           totalTickets,
-          reportsByEvent: Object.entries(reportsByEvent).map(([name, count]) => ({
-            event_name: name,
-            count: Number(count)
-          })),
+          reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
+            const eventData = data as { count: number; event_id: number };
+            return {
+              event_name: name,
+              count: eventData.count,
+              event_id: eventData.event_id
+            };
+          }),
           revenueByTicketType: Object.entries(revenueByTicketType).map(([type, amount]) => ({
             ticket_type_name: type, // Matches the new key name for Pie chart
             amount: Number(amount)
@@ -128,6 +138,66 @@ const SystemReports = () => {
 
     fetchReports();
   }, [toast]);
+
+  const downloadPDF = async (eventId: number, eventName: string) => {
+    setDownloadingPdfs(prev => new Set([...prev, eventId]));
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        // Try to parse error message if it's JSON
+        let errorMessage = `Failed to download PDF (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Get the blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `event_report_${eventId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      toast({
+        title: "Success",
+        description: `PDF report for "${eventName}" downloaded successfully`,
+      });
+
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download PDF report",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingPdfs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(eventId);
+        return newSet;
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -306,6 +376,53 @@ const SystemReports = () => {
         </Card>
       </div>
 
+      {/* Events with PDF Download */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Event Reports</CardTitle>
+          <CardDescription>Download PDF reports for each event</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+                stats.reportsByEvent.map((event) => (
+                  <div key={event.event_id} className="flex justify-between items-center p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <p className="font-medium">{event.event_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {event.count} report{event.count !== 1 ? 's' : ''} available
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => downloadPDF(event.event_id, event.event_name)}
+                      disabled={downloadingPdfs.has(event.event_id)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {downloadingPdfs.has(event.event_id) ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4 mr-2" />
+                          Download PDF
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))
+            ) : (
+              <p className="text-center text-muted-foreground">No events with reports found</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent Reports Table/List */}
       <Card>
         <CardHeader>
@@ -327,11 +444,25 @@ const SystemReports = () => {
                             Generated: {new Date(report.timestamp).toLocaleString()} {/* Display timestamp */}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">${report.total_revenue_summary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p> {/* Use total_revenue_summary */}
-                        <p className="text-sm text-muted-foreground">
-                          {report.total_tickets_sold_summary} tickets sold {/* Use total_tickets_sold_summary */}
-                        </p>
+                      <div className="text-right flex flex-col items-end space-y-2">
+                        <div>
+                          <p className="font-medium">${report.total_revenue_summary.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p> {/* Use total_revenue_summary */}
+                          <p className="text-sm text-muted-foreground">
+                            {report.total_tickets_sold_summary} tickets sold {/* Use total_tickets_sold_summary */}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => downloadPDF(report.event_id, report.event_name)}
+                          disabled={downloadingPdfs.has(report.event_id)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {downloadingPdfs.has(report.event_id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   </div>
