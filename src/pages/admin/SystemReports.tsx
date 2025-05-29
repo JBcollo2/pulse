@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, Loader2, Users, BarChart3, Calendar, FileDown } from "lucide-react"; // Added FileDown icon
+import { Download, FileText, Loader2, Users, BarChart3, Calendar, FileDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -64,9 +64,11 @@ const SystemReports = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
   const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
-  const [isExportingAll, setIsExportingAll] = useState(false); // New state for all reports export
+  const [isExportingAll, setIsExportingAll] = useState(false);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
   const { toast } = useToast();
 
   // Helper to validate date format (YYYY-MM-DD)
@@ -96,7 +98,7 @@ const SystemReports = () => {
     fetchOrganizers();
   }, []);
 
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
       let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
@@ -106,7 +108,6 @@ const SystemReports = () => {
         params.append('organizer_id', selectedOrganizer);
       }
 
-      // Validate and append dates only if valid
       if (startDate && isValidDate(startDate)) {
         params.append('start_date', startDate);
       } else if (startDate && !isValidDate(startDate)) {
@@ -131,6 +132,14 @@ const SystemReports = () => {
         return;
       }
 
+      if (startTime) {
+        params.append('start_time', startTime);
+      }
+
+      if (endTime) {
+        params.append('end_time', endTime);
+      }
+
       if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
         toast({
           title: "Date Range Error",
@@ -141,6 +150,15 @@ const SystemReports = () => {
         return;
       }
 
+      if (startTime && endTime && startTime > endTime) {
+        toast({
+          title: "Time Range Error",
+          description: "Start time cannot be after end time.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       if (params.toString()) {
         url += `?${params.toString()}`;
@@ -215,12 +233,11 @@ const SystemReports = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedOrganizer, startDate, endDate, startTime, endTime, toast]);
 
   useEffect(() => {
-    // Initial fetch of reports when component mounts or filters change
     fetchReports();
-  }, [selectedOrganizer, toast]); // Removed startDate and endDate from dependency array to allow manual trigger by Apply Filter
+  }, [fetchReports]);
 
   const downloadPDF = async (eventId: number, eventName: string) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
@@ -280,9 +297,7 @@ const SystemReports = () => {
   const exportAllReports = async () => {
     setIsExportingAll(true);
     try {
-      // You would call an API endpoint that generates a consolidated report (e.g., CSV or a single PDF with all data)
-      // For demonstration, let's assume an endpoint that returns a CSV of all filtered reports.
-      let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`; // New API endpoint for exporting all reports
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`;
       const params = new URLSearchParams();
 
       if (selectedOrganizer !== 'all') {
@@ -294,6 +309,12 @@ const SystemReports = () => {
       if (endDate && isValidDate(endDate)) {
         params.append('end_date', endDate);
       }
+      if (startTime) {
+        params.append('start_time', startTime);
+      }
+      if (endTime) {
+        params.append('end_time', endTime);
+      }
 
       if (params.toString()) {
         url += `?${params.toString()}`;
@@ -303,7 +324,7 @@ const SystemReports = () => {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Accept': 'text/csv', // Example: for CSV, adjust based on your backend
+          'Accept': 'text/csv',
         },
       });
 
@@ -322,7 +343,7 @@ const SystemReports = () => {
       const urlBlob = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = urlBlob;
-      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`; // Dynamic filename
+      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
 
@@ -345,7 +366,6 @@ const SystemReports = () => {
       setIsExportingAll(false);
     }
   };
-
 
   if (isLoading) {
     return (
@@ -370,7 +390,7 @@ const SystemReports = () => {
     );
   }
 
-  if (!isLoading && reports.length === 0 && (startDate || endDate || selectedOrganizer !== 'all')) {
+  if (!isLoading && reports.length === 0 && (startDate || endDate || selectedOrganizer !== 'all' || startTime || endTime)) {
     return (
       <div className="space-y-6">
         <Card>
@@ -402,7 +422,7 @@ const SystemReports = () => {
                   : `Report summaries for selected organizer`}
               </CardDescription>
             </div>
-            <div className="flex flex-wrap items-center gap-4"> {/* Changed to flex-wrap for better responsiveness */}
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <Select
@@ -427,11 +447,11 @@ const SystemReports = () => {
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
                   id="startDate"
-                  type="text" // Changed to text
-                  placeholder="YYYY-MM-DD" // Added placeholder
+                  type="text"
+                  placeholder="YYYY-MM-DD"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  onBlur={() => { // Added onBlur validation
+                  onBlur={() => {
                     if (startDate && !isValidDate(startDate)) {
                       toast({
                         title: "Invalid Start Date Format",
@@ -441,18 +461,18 @@ const SystemReports = () => {
                     }
                   }}
                   className="border rounded p-2"
-                  maxLength={10} // Restrict length for YYYY-MM-DD
+                  maxLength={10}
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="endDate">End Date</Label>
                 <Input
                   id="endDate"
-                  type="text" // Changed to text
-                  placeholder="YYYY-MM-DD" // Added placeholder
+                  type="text"
+                  placeholder="YYYY-MM-DD"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  onBlur={() => { // Added onBlur validation
+                  onBlur={() => {
                     if (endDate && !isValidDate(endDate)) {
                       toast({
                         title: "Invalid End Date Format",
@@ -462,13 +482,33 @@ const SystemReports = () => {
                     }
                   }}
                   className="border rounded p-2"
-                  maxLength={10} // Restrict length for YYYY-MM-DD
+                  maxLength={10}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="startTime">Start Time</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="border rounded p-2"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="endTime">End Time</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="border rounded p-2"
                 />
               </div>
               <Button
                 onClick={fetchReports}
                 className="bg-gradient-to-r from-[--primary] to-[--secondary] hover:from-[--primary] hover:to-[--secondary] min-w-[140px] hover:scale-105 transition-all"
-                disabled={isLoading} // Disable only during fetching, not just for date presence
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -478,7 +518,7 @@ const SystemReports = () => {
                 Apply Filter
               </Button>
               <Button
-                onClick={exportAllReports} // New button for exporting all reports
+                onClick={exportAllReports}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 min-w-[140px] hover:scale-105 transition-all"
                 disabled={isExportingAll || reports.length === 0}
               >
