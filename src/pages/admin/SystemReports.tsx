@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } from 'recharts';
@@ -65,16 +67,11 @@ const SystemReports = () => {
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
   const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
   const [isExportingAll, setIsExportingAll] = useState(false);
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
   const { toast } = useToast();
-
-  // Helper to validate date format (YYYY-MM-DD)
-  const isValidDate = (dateString: string) => {
-    return /^\d{4}-\d{2}-\d{2}$/.test(dateString) && !isNaN(new Date(dateString).getTime());
-  };
 
   useEffect(() => {
     const fetchOrganizers = async () => {
@@ -108,28 +105,12 @@ const SystemReports = () => {
         params.append('organizer_id', selectedOrganizer);
       }
 
-      if (startDate && isValidDate(startDate)) {
-        params.append('start_date', startDate);
-      } else if (startDate && !isValidDate(startDate)) {
-        toast({
-          title: "Invalid Start Date",
-          description: "Please enter the start date in YYYY-MM-DD format.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (startDate) {
+        params.append('start_date', startDate.toISOString().split('T')[0]);
       }
 
-      if (endDate && isValidDate(endDate)) {
-        params.append('end_date', endDate);
-      } else if (endDate && !isValidDate(endDate)) {
-        toast({
-          title: "Invalid End Date",
-          description: "Please enter the end date in YYYY-MM-DD format.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      if (endDate) {
+        params.append('end_date', endDate.toISOString().split('T')[0]);
       }
 
       if (startTime) {
@@ -140,7 +121,7 @@ const SystemReports = () => {
         params.append('end_time', endTime);
       }
 
-      if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      if (startDate && endDate && startDate > endDate) {
         toast({
           title: "Date Range Error",
           description: "Start date cannot be after end date.",
@@ -303,11 +284,11 @@ const SystemReports = () => {
       if (selectedOrganizer !== 'all') {
         params.append('organizer_id', selectedOrganizer);
       }
-      if (startDate && isValidDate(startDate)) {
-        params.append('start_date', startDate);
+      if (startDate) {
+        params.append('start_date', startDate.toISOString().split('T')[0]);
       }
-      if (endDate && isValidDate(endDate)) {
-        params.append('end_date', endDate);
+      if (endDate) {
+        params.append('end_date', endDate.toISOString().split('T')[0]);
       }
       if (startTime) {
         params.append('start_time', startTime);
@@ -445,44 +426,27 @@ const SystemReports = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  onBlur={() => {
-                    if (startDate && !isValidDate(startDate)) {
-                      toast({
-                        title: "Invalid Start Date Format",
-                        description: "Please use YYYY-MM-DD format.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date) => setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  placeholderText="Select a start date"
                   className="border rounded p-2"
-                  maxLength={10}
                 />
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  onBlur={() => {
-                    if (endDate && !isValidDate(endDate)) {
-                      toast({
-                        title: "Invalid End Date Format",
-                        description: "Please use YYYY-MM-DD format.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date: Date) => setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate}
+                  placeholderText="Select an end date"
                   className="border rounded p-2"
-                  maxLength={10}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -714,3 +678,4 @@ const SystemReports = () => {
 };
 
 export default SystemReports;
+
