@@ -4,7 +4,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList } from 'recharts';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, FileText, Loader2, Users, BarChart3 } from "lucide-react";
 
 // Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
@@ -44,8 +45,16 @@ interface ReportStats {
   revenueByTicketType: { ticket_type_name: string; amount: number }[]; // Updated key name
 }
 
+interface Organizer {
+  id: number;
+  name: string;
+  email: string;
+}
+
 const SystemReports = () => {
   const [reports, setReports] = useState<Report[]>([]);
+  const [organizers, setOrganizers] = useState<Organizer[]>([]);
+  const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
   const [stats, setStats] = useState<ReportStats>({
     totalReports: 0,
     totalRevenue: 0,
@@ -54,13 +63,47 @@ const SystemReports = () => {
     revenueByTicketType: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
   const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
+  // Fetch organizers for the dropdown
+  useEffect(() => {
+    const fetchOrganizers = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Assuming the API returns an array of organizers or an object with organizers data
+          const organizersData = Array.isArray(data) ? data : (data.data || []);
+          setOrganizers(organizersData);
+        }
+      } catch (error) {
+        console.error('Error fetching organizers:', error);
+        // Don't show error toast for organizers as it's not critical
+      } finally {
+        setIsLoadingOrganizers(false);
+      }
+    };
+
+    fetchOrganizers();
+  }, []);
+
+  // Fetch reports based on selected organizer
   useEffect(() => {
     const fetchReports = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports`, {
+        // Build URL with optional organizer_id query parameter
+        let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
+        if (selectedOrganizer !== 'all') {
+          url += `?organizer_id=${selectedOrganizer}`;
+        }
+
+        const response = await fetch(url, {
           credentials: 'include'
         });
 
@@ -72,8 +115,13 @@ const SystemReports = () => {
         }
 
         const data = await response.json();
-        // The backend now always returns an array of reports directly, so no need for data.reports
-        const reportsData = Array.isArray(data) ? data : []; 
+        
+        // Handle the response structure from AdminReportResource
+        let reportsData = [];
+        if (data.status === 'success' && data.data) {
+          // data.data should be the summary object/array from the backend
+          reportsData = Array.isArray(data.data) ? data.data : [];
+        }
 
         if (!Array.isArray(reportsData)) {
           console.error('API response data is not an array:', reportsData);
@@ -110,14 +158,11 @@ const SystemReports = () => {
           totalReports: reportsData.length,
           totalRevenue,
           totalTickets,
-          reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
-            const eventData = data as { count: number; event_id: number };
-            return {
-              event_name: name,
-              count: eventData.count,
-              event_id: eventData.event_id
-            };
-          }),
+          reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
+            event_name: name,
+            count: (data as { count: number; event_id: number }).count,
+            event_id: (data as { count: number; event_id: number }).event_id
+          })),
           revenueByTicketType: Object.entries(revenueByTicketType).map(([type, amount]) => ({
             ticket_type_name: type, // Matches the new key name for Pie chart
             amount: Number(amount)
@@ -137,7 +182,7 @@ const SystemReports = () => {
     };
 
     fetchReports();
-  }, [toast]);
+  }, [selectedOrganizer, toast]); // Re-fetch when organizer selection changes
 
   const downloadPDF = async (eventId: number, eventName: string) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
@@ -240,6 +285,46 @@ const SystemReports = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Organizer Filter */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                System Reports
+              </CardTitle>
+              <CardDescription>
+                {selectedOrganizer === 'all' 
+                  ? 'All report summaries grouped by event' 
+                  : `Report summaries for selected organizer`
+                }
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <Select 
+                value={selectedOrganizer} 
+                onValueChange={setSelectedOrganizer}
+                disabled={isLoadingOrganizers}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select organizer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Organizers</SelectItem>
+                  {organizers.map((organizer) => (
+                    <SelectItem key={organizer.id} value={organizer.id.toString()}>
+                      {organizer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
