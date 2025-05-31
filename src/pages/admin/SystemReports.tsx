@@ -687,7 +687,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Download, FileText, Loader2, Users, BarChart3, Calendar, FileDown, Filter, RefreshCw, TrendingUp, Eye, Clock, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList, AreaChart, Area } from 'recharts';
 
 // Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
@@ -765,113 +765,113 @@ const SystemReports = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
 
-  // Mock toast function since useToast might not be available
-  const toast = (options: { title: string; description: string; variant?: string }) => {
-    console.log(`${options.title}: ${options.description}`);
+  const toast = ({ title, description, variant = "default" }) => {
+    console.log(`${title}: ${description}`);
   };
 
-  // Auto-refresh functionality
-  useEffect(() => {
-    if (refreshInterval) {
-      const interval = setInterval(fetchReports, refreshInterval * 1000);
-      return () => clearInterval(interval);
+  // Add clearFilters function to reset all filters
+  const clearFilters = () => {
+    setSelectedOrganizer('all');
+    setStartDate('');
+    setEndDate('');
+    setStartTime('');
+    setEndTime('');
+    setRefreshInterval(null);
+  };
+
+  // Add missing applyQuickFilter function
+  const applyQuickFilter = (days: number) => {
+    const today = new Date();
+    let start: Date;
+    let end: Date = new Date(today);
+
+    if (days === 0) {
+      // Today
+      start = new Date(today);
+    } else if (days === 365) {
+      // This year
+      start = new Date(today.getFullYear(), 0, 1);
+    } else {
+      start = new Date(today);
+      start.setDate(today.getDate() - days + 1);
     }
-  }, [refreshInterval]);
 
-  // Mock data for demonstration
-  const generateMockData = useCallback(() => {
-    const mockReports: Report[] = [
-      {
-        id: 1,
-        event_id: 101,
-        event_name: "Tech Conference 2024",
-        ticket_type_id: 1,
-        ticket_type_name: "REGULAR",
-        total_tickets_sold_summary: 250,
-        total_revenue_summary: 12500,
-        report_data: {},
-        timestamp: "2024-01-15T10:30:00Z"
-      },
-      {
-        id: 2,
-        event_id: 102,
-        event_name: "Music Festival",
-        ticket_type_id: 2,
-        ticket_type_name: "VIP",
-        total_tickets_sold_summary: 100,
-        total_revenue_summary: 8000,
-        report_data: {},
-        timestamp: "2024-01-20T14:15:00Z"
-      },
-      {
-        id: 3,
-        event_id: 103,
-        event_name: "Workshop Series",
-        ticket_type_id: 3,
-        ticket_type_name: "STUDENT",
-        total_tickets_sold_summary: 75,
-        total_revenue_summary: 2250,
-        report_data: {},
-        timestamp: "2024-01-25T09:00:00Z"
-      },
-      {
-        id: 4,
-        event_id: 101,
-        event_name: "Tech Conference 2024",
-        ticket_type_id: 4,
-        ticket_type_name: "EARLY_BIRD",
-        total_tickets_sold_summary: 150,
-        total_revenue_summary: 6000,
-        report_data: {},
-        timestamp: "2024-01-10T08:00:00Z"
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  useEffect(() => {
+    const fetchOrganizers = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const organizersData = Array.isArray(data) ? data : (data.data || []);
+          setOrganizers(organizersData);
+        }
+      } catch (error) {
+        console.error('Error fetching organizers:', error);
+      } finally {
+        setIsLoadingOrganizers(false);
       }
-    ];
+    };
 
-    const mockOrganizers: Organizer[] = [
-      { id: 1, name: "EventCorp", email: "contact@eventcorp.com" },
-      { id: 2, name: "MusicEvents Inc", email: "info@musicevents.com" },
-      { id: 3, name: "Education Hub", email: "admin@eduhub.com" }
-    ];
-
-    return { mockReports, mockOrganizers };
+    fetchOrganizers();
   }, []);
 
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const { mockReports } = generateMockData();
-      let filteredReports = [...mockReports];
-
-      if (startDate || endDate) {
-        filteredReports = filteredReports.filter(report => {
-          const reportDate = new Date(report.timestamp).toISOString().split('T')[0];
-          const start = startDate || '1900-01-01';
-          const end = endDate || '2100-12-31';
-          return reportDate >= start && reportDate <= end;
-        });
-      }
-
-      if (startTime || endTime) {
-        filteredReports = filteredReports.filter(report => {
-          const reportTime = new Date(report.timestamp).toTimeString().slice(0, 5);
-          const start = startTime || '00:00';
-          const end = endTime || '23:59';
-          return reportTime >= start && reportTime <= end;
-        });
-      }
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
+      const params = new URLSearchParams();
 
       if (selectedOrganizer !== 'all') {
-        // In real implementation, filter by organizer
+        params.append('organizer_id', selectedOrganizer);
       }
 
-      setReports(filteredReports);
+      if (startDate) {
+        params.append('start_date', startDate);
+      }
 
-      const totalRevenue = filteredReports.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
-      const totalTickets = filteredReports.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
+      if (endDate) {
+        params.append('end_date', endDate);
+      }
 
-      const reportsByEvent = filteredReports.reduce((acc: Record<string, { count: number; event_id: number; revenue: number }>, report) => {
+      if (startTime) {
+        params.append('start_time', startTime);
+      }
+
+      if (endTime) {
+        params.append('end_time', endTime);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
+        console.error('Error fetching reports:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      let reportsData = Array.isArray(data.data) ? data.data : [];
+
+      setReports(reportsData);
+
+      const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
+      const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
+
+      const reportsByEvent = reportsData.reduce((acc, report) => {
         const eventName = report.event_name || 'N/A Event';
         if (!acc[eventName]) {
           acc[eventName] = { count: 0, event_id: report.event_id, revenue: 0 };
@@ -881,7 +881,7 @@ const SystemReports = () => {
         return acc;
       }, {});
 
-      const revenueByTicketType = filteredReports.reduce((acc: Record<string, { amount: number; tickets: number }>, report) => {
+      const revenueByTicketType = reportsData.reduce((acc, report) => {
         const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
         const revenue = report.total_revenue_summary || 0;
         const tickets = report.total_tickets_sold_summary || 0;
@@ -894,7 +894,7 @@ const SystemReports = () => {
         return acc;
       }, {});
 
-      const timeSeriesData = filteredReports.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
+      const timeSeriesData = reportsData.reduce((acc, report) => {
         const date = new Date(report.timestamp).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { revenue: 0, tickets: 0 };
@@ -905,25 +905,34 @@ const SystemReports = () => {
       }, {});
 
       setStats({
-        totalReports: filteredReports.length,
+        totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
-          event_name: name,
-          count: data.count,
-          event_id: data.event_id,
-          revenue: data.revenue
-        })),
-        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => ({
-          ticket_type_name: type,
-          amount: data.amount,
-          tickets: data.tickets
-        })),
-        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
-          date,
-          revenue: data.revenue,
-          tickets: data.tickets
-        })).sort((a, b) => a.date.localeCompare(b.date))
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
+          const d = data as { count: number; event_id: number; revenue: number };
+          return {
+            event_name: name,
+            count: d.count,
+            event_id: d.event_id,
+            revenue: d.revenue
+          };
+        }),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => {
+          const d = data as { amount: number; tickets: number };
+          return {
+            ticket_type_name: type,
+            amount: d.amount,
+            tickets: d.tickets
+          };
+        }),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => {
+          const d = data as { revenue: number; tickets: number };
+          return {
+            date,
+            revenue: d.revenue,
+            tickets: d.tickets
+          };
+        }).sort((a, b) => a.date.localeCompare(b.date))
       });
 
     } catch (error) {
@@ -936,83 +945,156 @@ const SystemReports = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganizer, startDate, endDate, startTime, endTime, generateMockData]);
+  }, [selectedOrganizer, startDate, endDate, startTime, endTime]);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      const { mockOrganizers } = generateMockData();
-      setOrganizers(mockOrganizers);
-      setIsLoadingOrganizers(false);
-      await fetchReports();
-    };
-    loadInitialData();
-  }, [fetchReports, generateMockData]);
-
-  const applyQuickFilter = (days: number) => {
-    const end = new Date();
-    const start = new Date();
-    if (days === 0) {
-      setStartDate(end.toISOString().split('T')[0]);
-      setEndDate(end.toISOString().split('T')[0]);
-    } else {
-      start.setDate(end.getDate() - days);
-      setStartDate(start.toISOString().split('T')[0]);
-      setEndDate(end.toISOString().split('T')[0]);
-    }
-    setStartTime('');
-    setEndTime('');
-  };
-
-  const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setStartTime('');
-    setEndTime('');
-    setSelectedOrganizer('all');
-  };
+    fetchReports();
+  }, [fetchReports]);
 
   const downloadPDF = async (eventId: number, eventName: string) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to download PDF (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `event_report_${eventId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
       toast({
         title: "Success",
         description: `PDF report for "${eventName}" downloaded successfully`,
       });
+
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download PDF report",
+        variant: "destructive",
+      });
+    } finally {
       setDownloadingPdfs(prev => {
         const newSet = new Set(prev);
         newSet.delete(eventId);
         return newSet;
       });
-    }, 2000);
+    }
   };
 
   const exportAllReports = async () => {
     setIsExportingAll(true);
-    setTimeout(() => {
+    try {
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`;
+      const params = new URLSearchParams();
+
+      if (selectedOrganizer !== 'all') {
+        params.append('organizer_id', selectedOrganizer);
+      }
+      if (startDate) {
+        params.append('start_date', startDate);
+      }
+      if (endDate) {
+        params.append('end_date', endDate);
+      }
+      if (startTime) {
+        params.append('start_time', startTime);
+      }
+      if (endTime) {
+        params.append('end_time', endTime);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/csv',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to export all reports (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+
+      window.URL.revokeObjectURL(urlBlob);
+      document.body.removeChild(link);
+
       toast({
         title: "Success",
         description: "All filtered reports exported successfully.",
       });
+
+    } catch (error) {
+      console.error('Error exporting all reports:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to export all reports.",
+        variant: "destructive",
+      });
+    } finally {
       setIsExportingAll(false);
-    }, 3000);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Card>
+      <div className="space-y-6 bg-gray-900 text-white p-4">
+        <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
+            <CardTitle className="flex items-center gap-2 text-white">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
               Loading System Reports...
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div key={index} className="animate-pulse bg-gray-700 rounded p-2">
+                  <div className="h-4 bg-gray-600 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
                 </div>
               ))}
             </div>
@@ -1023,17 +1105,17 @@ const SystemReports = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-2 border-gradient-to-r from-blue-500 to-purple-600">
+    <div className="space-y-6 bg-gray-900 text-white p-4">
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <BarChart3 className="h-6 w-6 text-blue-500" />
+                <CardTitle className="flex items-center gap-2 text-2xl text-white">
+                  <BarChart3 className="h-6 w-6 text-blue-400" />
                   System Reports Dashboard
                 </CardTitle>
-                <CardDescription className="text-lg">
+                <CardDescription className="text-lg text-gray-400">
                   {selectedOrganizer === 'all'
                     ? 'Comprehensive analytics across all organizers'
                     : `Analytics for selected organizer`}
@@ -1042,16 +1124,14 @@ const SystemReports = () => {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
-                  variant="outline"
-                  className="transition-all hover:scale-105 bg-gray-800 text-white"
+                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   {showFilters ? 'Hide' : 'Show'} Filters
                 </Button>
                 <Button
                   onClick={() => setViewMode(viewMode === 'overview' ? 'detailed' : 'overview')}
-                  variant="outline"
-                  className="transition-all hover:scale-105 bg-gray-800 text-white"
+                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   {viewMode === 'overview' ? 'Detailed' : 'Overview'} View
@@ -1064,9 +1144,7 @@ const SystemReports = () => {
                 <Button
                   key={filter.label}
                   onClick={() => applyQuickFilter(filter.days)}
-                  variant="outline"
-                  size="sm"
-                  className="transition-all hover:scale-105 bg-gray-800 text-white hover:bg-gray-700"
+                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
                 >
                   <Clock className="h-3 w-3 mr-1" />
                   {filter.label}
@@ -1175,8 +1253,7 @@ const SystemReports = () => {
                   </Button>
                   <Button
                     onClick={clearFilters}
-                    variant="outline"
-                    className="transition-all hover:scale-105 bg-gray-800 text-white hover:bg-gray-700"
+                    className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
                   >
                     <X className="mr-2 h-4 w-4" />
                     Clear
@@ -1203,22 +1280,249 @@ const SystemReports = () => {
         </CardHeader>
       </Card>
 
-      {/* Rest of your component remains unchanged */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-white">Total Reports</CardTitle>
+            <FileText className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReports}</div>
-            <p className="text-xs text-muted-foreground">
-              Generated reports
-            </p>
+            <div className="text-2xl font-bold text-blue-400">{stats.totalReports}</div>
+            <p className="text-xs text-gray-400">Generated reports</p>
           </CardContent>
         </Card>
-        {/* Other cards and components */}
+
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-400">
+              ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-400">Across all events</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-white">Total Tickets</CardTitle>
+            <Users className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-400">{stats.totalTickets}</div>
+            <p className="text-xs text-gray-400">Tickets sold</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-white">Avg Revenue/Event</CardTitle>
+            <BarChart3 className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-400">
+              ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+            </div>
+            <p className="text-xs text-gray-400">Per event average</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Revenue & Tickets Over Time</CardTitle>
+            <CardDescription className="text-gray-400">Daily trends in revenue and ticket sales</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="date" stroke="#ccc" />
+                  <YAxis yAxisId="left" stroke="#ccc" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#ccc" />
+                  <Tooltip contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }} />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="revenue"
+                    stackId="1"
+                    stroke="#8884d8"
+                    fill="#8884d8"
+                    fillOpacity={0.6}
+                  />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="tickets"
+                    stackId="2"
+                    stroke="#82ca9d"
+                    fill="#82ca9d"
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-white">Reports by Event</CardTitle>
+            <CardDescription className="text-gray-400">Number of reports and revenue per event</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.reportsByEvent}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis
+                      dataKey="event_name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      stroke="#ccc"
+                      fontSize={12}
+                    />
+                    <YAxis stroke="#ccc" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value, name) => [
+                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
+                        name === 'count' ? 'Reports' : 'Revenue'
+                      ]}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="#8884d8"
+                      name="count"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    {viewMode === 'detailed' && (
+                      <Bar
+                        dataKey="revenue"
+                        fill="#82ca9d"
+                        name="revenue"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No event data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-white">Revenue by Ticket Type</CardTitle>
+            <CardDescription className="text-gray-400">Revenue distribution across ticket types</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.revenueByTicketType && stats.revenueByTicketType.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.revenueByTicketType}
+                      dataKey="amount"
+                      nameKey="ticket_type_name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      label={({ ticket_type_name, percent }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.revenueByTicketType.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS_BY_TICKET[entry.ticket_type_name as keyof typeof COLORS_BY_TICKET] || FALLBACK_COLOR}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No revenue data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white">Event Reports</CardTitle>
+          <CardDescription className="text-gray-400">Download PDF reports for each event</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+              stats.reportsByEvent.map((event) => (
+                <div
+                  key={event.event_id}
+                  className={`flex justify-between items-center p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
+                    selectedEvent === event.event_id ? 'border-blue-400 bg-gray-700' : 'bg-gray-700 border-gray-600'
+                  }`}
+                  onClick={() => setSelectedEvent(event.event_id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-blue-400" />
+                    <div>
+                      <p className="font-medium text-white">{event.event_name}</p>
+                      <p className="text-sm text-gray-400">
+                        {event.count} report{event.count !== 1 ? 's' : ''} available
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadPDF(event.event_id, event.event_name);
+                    }}
+                    disabled={downloadingPdfs.has(event.event_id)}
+                    className="bg-gray-600 hover:bg-gray-500 text-white"
+                    size="sm"
+                  >
+                    {downloadingPdfs.has(event.event_id) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-400">No events with reports found for the current filters.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
