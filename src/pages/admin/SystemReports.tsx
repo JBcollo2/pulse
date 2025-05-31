@@ -679,27 +679,20 @@
 
 // export default SystemReports;
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, FileText, Loader2, Users, BarChart3, Calendar, FileDown, Filter, RefreshCw, TrendingUp, Eye, Clock, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LabelList, LineChart, Line, Area, AreaChart } from 'recharts';
-import { Download, FileText, Loader2, Users, BarChart3, Calendar, FileDown, Filter, RefreshCw, TrendingUp, Clock, Search, Eye, EyeOff } from "lucide-react";
-
-// Mock toast hook for demonstration
-const useToast = () => ({
-  toast: ({ title, description, variant }: any) => {
-    console.log(`${variant || 'info'}: ${title} - ${description}`);
-  }
-});
 
 // Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
   REGULAR: '#FF8042',
-  VIP: '#FFBB28', 
+  VIP: '#FFBB28',
   STUDENT: '#0088FE',
   GROUP_OF_5: '#00C49F',
   COUPLES: '#FF6699',
@@ -711,14 +704,13 @@ const COLORS_BY_TICKET = {
 
 const FALLBACK_COLOR = COLORS_BY_TICKET.UNKNOWN_TYPE;
 
-// Time filter presets
-const TIME_PRESETS = [
-  { label: 'Last 7 days', value: '7d' },
-  { label: 'Last 30 days', value: '30d' },
-  { label: 'Last 3 months', value: '3m' },
-  { label: 'Last 6 months', value: '6m' },
-  { label: 'This year', value: 'year' },
-  { label: 'Custom', value: 'custom' }
+// Quick filter presets
+const QUICK_FILTERS = [
+  { label: 'Today', days: 0 },
+  { label: 'Last 7 days', days: 7 },
+  { label: 'Last 30 days', days: 30 },
+  { label: 'Last 90 days', days: 90 },
+  { label: 'This Year', days: 365 },
 ];
 
 interface Report {
@@ -737,10 +729,9 @@ interface ReportStats {
   totalReports: number;
   totalRevenue: number;
   totalTickets: number;
-  reportsByEvent: { event_name: string; count: number; event_id: number; revenue: number; tickets: number }[];
-  revenueByTicketType: { ticket_type_name: string; amount: number }[];
-  revenueByDate: { date: string; revenue: number; tickets: number }[];
-  topEvents: { event_name: string; revenue: number; tickets: number }[];
+  reportsByEvent: { event_name: string; count: number; event_id: number; revenue: number }[];
+  revenueByTicketType: { ticket_type_name: string; amount: number; tickets: number }[];
+  timeSeriesData: { date: string; revenue: number; tickets: number }[];
 }
 
 interface Organizer {
@@ -753,269 +744,268 @@ const SystemReports = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('all');
-  const [timePreset, setTimePreset] = useState<string>('30d');
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
-  const [startTime, setStartTime] = useState<string>('00:00');
-  const [endTime, setEndTime] = useState<string>('23:59');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [sortBy, setSortBy] = useState<'revenue' | 'tickets' | 'reports'>('revenue');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [showFilters, setShowFilters] = useState<boolean>(false);
   const [stats, setStats] = useState<ReportStats>({
     totalReports: 0,
     totalRevenue: 0,
     totalTickets: 0,
     reportsByEvent: [],
     revenueByTicketType: [],
-    revenueByDate: [],
-    topEvents: []
+    timeSeriesData: []
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
   const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
   const [isExportingAll, setIsExportingAll] = useState(false);
-  const { toast } = useToast();
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [startTime, setStartTime] = useState<string>('');
+  const [endTime, setEndTime] = useState<string>('');
+  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
+  const [showFilters, setShowFilters] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
 
-  // Generate mock data for demonstration
+  // Mock toast function since useToast might not be available
+  const toast = (options: { title: string; description: string; variant?: string }) => {
+    console.log(`${options.title}: ${options.description}`);
+    // You can replace this with actual toast implementation
+  };
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    if (refreshInterval) {
+      const interval = setInterval(fetchReports, refreshInterval * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [refreshInterval]);
+
+  // Mock data for demonstration
   const generateMockData = useCallback(() => {
-    const mockOrganizers = [
-      { id: 1, name: 'EventPro Organizers', email: 'contact@eventpro.com' },
-      { id: 2, name: 'Elite Events Co.', email: 'info@eliteevents.com' },
-      { id: 3, name: 'Premier Productions', email: 'hello@premierprod.com' }
+    const mockReports: Report[] = [
+      {
+        id: 1,
+        event_id: 101,
+        event_name: "Tech Conference 2024",
+        ticket_type_id: 1,
+        ticket_type_name: "REGULAR",
+        total_tickets_sold_summary: 250,
+        total_revenue_summary: 12500,
+        report_data: {},
+        timestamp: "2024-01-15T10:30:00Z"
+      },
+      {
+        id: 2,
+        event_id: 102,
+        event_name: "Music Festival",
+        ticket_type_id: 2,
+        ticket_type_name: "VIP",
+        total_tickets_sold_summary: 100,
+        total_revenue_summary: 8000,
+        report_data: {},
+        timestamp: "2024-01-20T14:15:00Z"
+      },
+      {
+        id: 3,
+        event_id: 103,
+        event_name: "Workshop Series",
+        ticket_type_id: 3,
+        ticket_type_name: "STUDENT",
+        total_tickets_sold_summary: 75,
+        total_revenue_summary: 2250,
+        report_data: {},
+        timestamp: "2024-01-25T09:00:00Z"
+      },
+      {
+        id: 4,
+        event_id: 101,
+        event_name: "Tech Conference 2024",
+        ticket_type_id: 4,
+        ticket_type_name: "EARLY_BIRD",
+        total_tickets_sold_summary: 150,
+        total_revenue_summary: 6000,
+        report_data: {},
+        timestamp: "2024-01-10T08:00:00Z"
+      }
     ];
 
-    const mockReports = Array.from({ length: 50 }, (_, i) => ({
-      id: i + 1,
-      event_id: Math.floor(Math.random() * 15) + 1,
-      event_name: [
-        'Tech Conference 2024', 'Music Festival Summer', 'Corporate Gala Night',
-        'Charity Fundraiser', 'Art Exhibition Opening', 'Food & Wine Festival',
-        'Business Summit', 'Concert Series', 'Fashion Week Event',
-        'Sports Championship', 'Cultural Festival', 'Trade Show Expo',
-        'Academic Conference', 'Startup Pitch Night', 'Community Celebration'
-      ][Math.floor(Math.random() * 15)],
-      ticket_type_id: Math.floor(Math.random() * 8) + 1,
-      ticket_type_name: ['REGULAR', 'VIP', 'STUDENT', 'GROUP_OF_5', 'COUPLES', 'EARLY_BIRD', 'VVIP', 'GIVEAWAY'][Math.floor(Math.random() * 8)],
-      total_tickets_sold_summary: Math.floor(Math.random() * 500) + 50,
-      total_revenue_summary: Math.floor(Math.random() * 50000) + 1000,
-      report_data: {},
-      timestamp: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString()
-    }));
+    const mockOrganizers: Organizer[] = [
+      { id: 1, name: "EventCorp", email: "contact@eventcorp.com" },
+      { id: 2, name: "MusicEvents Inc", email: "info@musicevents.com" },
+      { id: 3, name: "Education Hub", email: "admin@eduhub.com" }
+    ];
 
-    setOrganizers(mockOrganizers);
-    return mockReports;
+    return { mockReports, mockOrganizers };
   }, []);
-
-  // Calculate date range based on preset
-  const getDateRange = useCallback(() => {
-    const now = new Date();
-    let startDate: Date;
-    
-    switch (timePreset) {
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '3m':
-        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case '6m':
-        startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: new Date(`${customStartDate}T${startTime}`),
-            end: new Date(`${customEndDate}T${endTime}`)
-          };
-        }
-        return null;
-      default:
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    }
-    
-    return {
-      start: startDate,
-      end: now
-    };
-  }, [timePreset, customStartDate, customEndDate, startTime, endTime]);
 
   const fetchReports = useCallback(async () => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     try {
-      const mockReports = generateMockData();
-      const dateRange = getDateRange();
-      
-      let filteredReports = mockReports;
-      
-      // Apply date/time filters
-      if (dateRange) {
-        filteredReports = mockReports.filter(report => {
-          const reportDate = new Date(report.timestamp);
-          return reportDate >= dateRange.start && reportDate <= dateRange.end;
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const { mockReports } = generateMockData();
+      let filteredReports = [...mockReports];
+
+      // Apply date filters
+      if (startDate || endDate) {
+        filteredReports = filteredReports.filter(report => {
+          const reportDate = new Date(report.timestamp).toISOString().split('T')[0];
+          const start = startDate || '1900-01-01';
+          const end = endDate || '2100-12-31';
+          return reportDate >= start && reportDate <= end;
         });
       }
-      
-      // Apply search filter
-      if (searchTerm) {
-        filteredReports = filteredReports.filter(report =>
-          report.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          report.ticket_type_name?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+
+      // Apply time filters
+      if (startTime || endTime) {
+        filteredReports = filteredReports.filter(report => {
+          const reportTime = new Date(report.timestamp).toTimeString().slice(0, 5);
+          const start = startTime || '00:00';
+          const end = endTime || '23:59';
+          return reportTime >= start && reportTime <= end;
+        });
       }
-      
+
+      // Apply organizer filter (mock implementation)
+      if (selectedOrganizer !== 'all') {
+        // In real implementation, filter by organizer
+      }
+
       setReports(filteredReports);
-      
-      // Calculate comprehensive stats
-      const totalRevenue = filteredReports.reduce((sum, report) => sum + report.total_revenue_summary, 0);
-      const totalTickets = filteredReports.reduce((sum, report) => sum + report.total_tickets_sold_summary, 0);
-      
-      // Group by event with revenue data
-      const eventGroups = filteredReports.reduce((acc: Record<string, any>, report) => {
-        const key = `${report.event_name}-${report.event_id}`;
-        if (!acc[key]) {
-          acc[key] = {
-            event_name: report.event_name,
-            event_id: report.event_id,
-            count: 0,
-            revenue: 0,
-            tickets: 0
-          };
+
+      // Calculate statistics
+      const totalRevenue = filteredReports.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
+      const totalTickets = filteredReports.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
+
+      const reportsByEvent = filteredReports.reduce((acc: Record<string, { count: number; event_id: number; revenue: number }>, report) => {
+        const eventName = report.event_name || 'N/A Event';
+        if (!acc[eventName]) {
+          acc[eventName] = { count: 0, event_id: report.event_id, revenue: 0 };
         }
-        acc[key].count += 1;
-        acc[key].revenue += report.total_revenue_summary;
-        acc[key].tickets += report.total_tickets_sold_summary;
+        acc[eventName].count += 1;
+        acc[eventName].revenue += report.total_revenue_summary || 0;
         return acc;
       }, {});
-      
-      const reportsByEvent = Object.values(eventGroups) as any[];
-      
-      // Revenue by ticket type
-      const ticketTypeGroups = filteredReports.reduce((acc: Record<string, number>, report) => {
-        const type = report.ticket_type_name?.toUpperCase() || 'UNKNOWN_TYPE';
-        acc[type] = (acc[type] || 0) + report.total_revenue_summary;
+
+      const revenueByTicketType = filteredReports.reduce((acc: Record<string, { amount: number; tickets: number }>, report) => {
+        const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
+        const revenue = report.total_revenue_summary || 0;
+        const tickets = report.total_tickets_sold_summary || 0;
+
+        if (!acc[ticketTypeName]) {
+          acc[ticketTypeName] = { amount: 0, tickets: 0 };
+        }
+        acc[ticketTypeName].amount += revenue;
+        acc[ticketTypeName].tickets += tickets;
         return acc;
       }, {});
-      
-      const revenueByTicketType = Object.entries(ticketTypeGroups).map(([type, amount]) => ({
-        ticket_type_name: type,
-        amount: Number(amount)
-      }));
-      
-      // Revenue by date for trend analysis
-      const dateGroups = filteredReports.reduce((acc: Record<string, any>, report) => {
+
+      // Generate time series data
+      const timeSeriesData = filteredReports.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
         const date = new Date(report.timestamp).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { revenue: 0, tickets: 0 };
         }
-        acc[date].revenue += report.total_revenue_summary;
-        acc[date].tickets += report.total_tickets_sold_summary;
+        acc[date].revenue += report.total_revenue_summary || 0;
+        acc[date].tickets += report.total_tickets_sold_summary || 0;
         return acc;
       }, {});
-      
-      const revenueByDate = Object.entries(dateGroups)
-        .map(([date, data]: [string, any]) => ({
-          date,
-          revenue: data.revenue,
-          tickets: data.tickets
-        }))
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      
-      // Top events by revenue
-      const topEvents = reportsByEvent
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5);
-      
+
       setStats({
         totalReports: filteredReports.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent,
-        revenueByTicketType,
-        revenueByDate,
-        topEvents
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
+          event_name: name,
+          count: data.count,
+          event_id: data.event_id,
+          revenue: data.revenue
+        })),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => ({
+          ticket_type_name: type,
+          amount: data.amount,
+          tickets: data.tickets
+        })),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
+          date,
+          revenue: data.revenue,
+          tickets: data.tickets
+        })).sort((a, b) => a.date.localeCompare(b.date))
       });
-      
+
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch system reports",
+        description: error instanceof Error ? error.message : "Failed to fetch system reports",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganizer, timePreset, customStartDate, customEndDate, startTime, endTime, searchTerm, generateMockData, getDateRange, toast]);
+  }, [selectedOrganizer, startDate, endDate, startTime, endTime, generateMockData]);
 
   useEffect(() => {
-    fetchReports();
-  }, [fetchReports]);
+    const loadInitialData = async () => {
+      const { mockOrganizers } = generateMockData();
+      setOrganizers(mockOrganizers);
+      setIsLoadingOrganizers(false);
+      await fetchReports();
+    };
+    loadInitialData();
+  }, [fetchReports, generateMockData]);
 
-  // Filtered and sorted events for display
-  const sortedEvents = useMemo(() => {
-    let sorted = [...stats.reportsByEvent];
-    
-    sorted.sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case 'revenue':
-          comparison = a.revenue - b.revenue;
-          break;
-        case 'tickets':
-          comparison = a.tickets - b.tickets;
-          break;
-        case 'reports':
-          comparison = a.count - b.count;
-          break;
-      }
-      return sortOrder === 'desc' ? -comparison : comparison;
-    });
-    
-    return sorted;
-  }, [stats.reportsByEvent, sortBy, sortOrder]);
+  const applyQuickFilter = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    if (days === 0) {
+      // Today
+      setStartDate(end.toISOString().split('T')[0]);
+      setEndDate(end.toISOString().split('T')[0]);
+    } else {
+      start.setDate(end.getDate() - days);
+      setStartDate(start.toISOString().split('T')[0]);
+      setEndDate(end.toISOString().split('T')[0]);
+    }
+    setStartTime('');
+    setEndTime('');
+  };
+
+  const clearFilters = () => {
+    setStartDate('');
+    setEndDate('');
+    setStartTime('');
+    setEndTime('');
+    setSelectedOrganizer('all');
+  };
 
   const downloadPDF = async (eventId: number, eventName: string) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
-    
-    // Simulate download delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast({
-      title: "Success",
-      description: `PDF report for "${eventName}" downloaded successfully`,
-    });
-    
-    setDownloadingPdfs(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(eventId);
-      return newSet;
-    });
+
+    // Simulate PDF generation
+    setTimeout(() => {
+      toast({
+        title: "Success",
+        description: `PDF report for "${eventName}" downloaded successfully`,
+      });
+      setDownloadingPdfs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(eventId);
+        return newSet;
+      });
+    }, 2000);
   };
 
   const exportAllReports = async () => {
     setIsExportingAll(true);
-    
-    // Simulate export delay
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    toast({
-      title: "Success",
-      description: "All filtered reports exported successfully.",
-    });
-    
-    setIsExportingAll(false);
+    // Simulate export
+    setTimeout(() => {
+      toast({
+        title: "Success",
+        description: "All filtered reports exported successfully.",
+      });
+      setIsExportingAll(false);
+    }, 3000);
   };
 
   if (isLoading) {
@@ -1023,8 +1013,10 @@ const SystemReports = () => {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>System Reports</CardTitle>
-            <CardDescription>Loading reports...</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Loading System Reports...
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -1043,66 +1035,70 @@ const SystemReports = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Card with Enhanced Filters */}
-      <Card>
+      {/* Header with Controls */}
+      <Card className="border-2 border-gradient-to-r from-blue-500 to-purple-600">
         <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  System Reports
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <BarChart3 className="h-6 w-6 text-blue-500" />
+                  System Reports Dashboard
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-lg">
                   {selectedOrganizer === 'all'
-                    ? 'Comprehensive report analytics across all organizers'
+                    ? 'Comprehensive analytics across all organizers'
                     : `Analytics for selected organizer`}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setShowFilters(!showFilters)}
+                  variant="outline"
+                  className="transition-all hover:scale-105"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   {showFilters ? 'Hide' : 'Show'} Filters
                 </Button>
                 <Button
-                  onClick={fetchReports}
-                  disabled={isLoading}
-                  size="sm"
+                  onClick={() => setViewMode(viewMode === 'overview' ? 'detailed' : 'overview')}
+                  variant="outline"
+                  className="transition-all hover:scale-105"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                  Refresh
+                  <Eye className="h-4 w-4 mr-2" />
+                  {viewMode === 'overview' ? 'Detailed' : 'Overview'} View
                 </Button>
               </div>
             </div>
-            
-            {/* Search Bar */}
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search events or ticket types..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Badge variant="secondary" className="px-3 py-1">
-                {stats.totalReports} reports found
-              </Badge>
+
+            {/* Quick Filters */}
+            <div className="flex flex-wrap gap-2">
+              {QUICK_FILTERS.map((filter) => (
+                <Button
+                  key={filter.label}
+                  onClick={() => applyQuickFilter(filter.days)}
+                  variant="outline"
+                  size="sm"
+                  className="transition-all hover:scale-105 hover:bg-blue-50"
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  {filter.label}
+                </Button>
+              ))}
             </div>
-            
-            {/* Enhanced Filter Panel */}
+
+            {/* Advanced Filters */}
             {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div className="space-y-2">
-                  <Label>Organizer</Label>
-                  <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
+                  <Label htmlFor="organizer">Organizer</Label>
+                  <Select
+                    value={selectedOrganizer}
+                    onValueChange={setSelectedOrganizer}
+                    disabled={isLoadingOrganizers}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select organizer" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Organizers</SelectItem>
@@ -1114,123 +1110,160 @@ const SystemReports = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label>Time Period</Label>
-                  <Select value={timePreset} onValueChange={setTimePreset}>
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="refreshInterval">Auto Refresh (seconds)</Label>
+                  <Select
+                    value={refreshInterval?.toString() || 'off'}
+                    onValueChange={(value) => setRefreshInterval(value === 'off' ? null : parseInt(value))}
+                  >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Auto refresh" />
                     </SelectTrigger>
                     <SelectContent>
-                      {TIME_PRESETS.map((preset) => (
-                        <SelectItem key={preset.value} value={preset.value}>
-                          {preset.label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="off">Off</SelectItem>
+                      <SelectItem value="30">30s</SelectItem>
+                      <SelectItem value="60">1m</SelectItem>
+                      <SelectItem value="300">5m</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {timePreset === 'custom' && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Start Date & Time</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="date"
-                          value={customStartDate}
-                          onChange={(e) => setCustomStartDate(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Input
-                          type="time"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                          className="w-24"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>End Date & Time</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="date"
-                          value={customEndDate}
-                          onChange={(e) => setCustomEndDate(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Input
-                          type="time"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                          className="w-24"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="startTime">Start Time</Label>
+                  <Input
+                    id="startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="endTime">End Time</Label>
+                  <Input
+                    id="endTime"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-end gap-2">
+                  <Button
+                    onClick={fetchReports}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all hover:scale-105"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Apply Filters
+                  </Button>
+                  <Button
+                    onClick={clearFilters}
+                    variant="outline"
+                    className="transition-all hover:scale-105"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
+
+                <div className="flex items-end">
+                  <Button
+                    onClick={exportAllReports}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-all hover:scale-105"
+                    disabled={isExportingAll || reports.length === 0}
+                  >
+                    {isExportingAll ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileDown className="mr-2 h-4 w-4" />
+                    )}
+                    Export All
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         </CardHeader>
       </Card>
 
-      {/* Enhanced Stats Cards */}
+      {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
+        <Card className="transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReports}</div>
+            <div className="text-2xl font-bold text-blue-600">{stats.totalReports}</div>
             <p className="text-xs text-muted-foreground">
               Generated reports
             </p>
           </CardContent>
         </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
+
+        <Card className="transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ${stats.totalRevenue.toLocaleString(undefined, { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-              })}
+              ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">
               Across all events
             </p>
           </CardContent>
         </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
+
+        <Card className="transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.totalTickets.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-purple-600">{stats.totalTickets}</div>
             <p className="text-xs text-muted-foreground">
               Tickets sold
             </p>
           </CardContent>
         </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-2">
+
+        <Card className="transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Revenue/Event</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              ${stats.reportsByEvent.length > 0 
-                ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { 
-                    minimumFractionDigits: 2, 
-                    maximumFractionDigits: 2 
-                  })
-                : '0.00'}
+            <div className="text-2xl font-bold text-orange-600">
+              ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </div>
             <p className="text-xs text-muted-foreground">
               Per event average
@@ -1239,36 +1272,24 @@ const SystemReports = () => {
         </Card>
       </div>
 
-      {/* Revenue Trend Chart */}
-      {stats.revenueByDate.length > 0 && (
+      {/* Time Series Chart */}
+      {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Revenue Trends
-            </CardTitle>
-            <CardDescription>Daily revenue and ticket sales over time</CardDescription>
+            <CardTitle>Revenue & Tickets Over Time</CardTitle>
+            <CardDescription>Daily trends in revenue and ticket sales</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.revenueByDate}>
+                <AreaChart data={stats.timeSeriesData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(date) => new Date(date).toLocaleDateString()}
-                  />
-                  <YAxis yAxisId="revenue" orientation="left" />
-                  <YAxis yAxisId="tickets" orientation="right" />
-                  <Tooltip 
-                    labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                    formatter={(value: number, name: string) => [
-                      name === 'revenue' ? `$${value.toLocaleString()}` : value.toLocaleString(),
-                      name === 'revenue' ? 'Revenue' : 'Tickets'
-                    ]}
-                  />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
                   <Area
-                    yAxisId="revenue"
+                    yAxisId="left"
                     type="monotone"
                     dataKey="revenue"
                     stackId="1"
@@ -1277,7 +1298,7 @@ const SystemReports = () => {
                     fillOpacity={0.6}
                   />
                   <Area
-                    yAxisId="tickets"
+                    yAxisId="right"
                     type="monotone"
                     dataKey="tickets"
                     stackId="2"
@@ -1292,41 +1313,18 @@ const SystemReports = () => {
         </Card>
       )}
 
-      {/* Charts Row */}
+      {/* Charts Grid */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="transition-all hover:shadow-lg">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Top Events by Revenue</CardTitle>
-                <CardDescription>Highest performing events</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="revenue">Revenue</SelectItem>
-                    <SelectItem value="tickets">Tickets</SelectItem>
-                    <SelectItem value="reports">Reports</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                >
-                  {sortOrder === 'desc' ? '↓' : '↑'}
-                </Button>
-              </div>
-            </div>
+            <CardTitle>Reports by Event</CardTitle>
+            <CardDescription>Number of reports and revenue per event</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              {sortedEvents.length > 0 ? (
+              {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sortedEvents.slice(0, 10)}>
+                  <BarChart data={stats.reportsByEvent}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="event_name"
@@ -1334,28 +1332,29 @@ const SystemReports = () => {
                       textAnchor="end"
                       height={80}
                       interval={0}
-                      style={{ fontSize: '12px' }}
+                      fontSize={12}
                     />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value: number, name: string) => [
-                        name === 'revenue' ? `$${value.toLocaleString()}` : value.toLocaleString(),
-                        name.charAt(0).toUpperCase() + name.slice(1)
+                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
+                        name === 'count' ? 'Reports' : 'Revenue'
                       ]}
                     />
                     <Bar
-                      dataKey={sortBy}
+                      dataKey="count"
                       fill="#8884d8"
+                      name="count"
                       radius={[4, 4, 0, 0]}
-                    >
-                      <LabelList 
-                        dataKey={sortBy} 
-                        position="top" 
-                        formatter={(value: number) => 
-                          sortBy === 'revenue' ? `$${(value / 1000).toFixed(0)}k` : value.toString()
-                        }
+                    />
+                    {viewMode === 'detailed' && (
+                      <Bar
+                        dataKey="revenue"
+                        fill="#82ca9d"
+                        name="revenue"
+                        radius={[4, 4, 0, 0]}
                       />
-                    </Bar>
+                    )}
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -1367,19 +1366,16 @@ const SystemReports = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all hover:shadow-lg">
           <CardHeader>
             <CardTitle>Revenue by Ticket Type</CardTitle>
-            <CardDescription>Distribution across ticket categories</CardDescription>
+            <CardDescription>Revenue distribution across ticket types</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
-              {stats.revenueByTicketType.length > 0 ? (
+              {stats.revenueByTicketType && stats.revenueByTicketType.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Tooltip
-                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
-                    />
                     <Pie
                       data={stats.revenueByTicketType}
                       dataKey="amount"
@@ -1389,7 +1385,7 @@ const SystemReports = () => {
                       innerRadius={60}
                       outerRadius={90}
                       paddingAngle={3}
-                      label={({ ticket_type_name, percent }) => 
+                      label={({ ticket_type_name, percent }) =>
                         `${ticket_type_name} ${(percent * 100).toFixed(0)}%`
                       }
                     >
@@ -1400,12 +1396,15 @@ const SystemReports = () => {
                         />
                       ))}
                     </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  No ticket type data available
+                  No revenue data available
                 </div>
               )}
             </div>
@@ -1413,239 +1412,61 @@ const SystemReports = () => {
         </Card>
       </div>
 
-      {/* Enhanced Event Reports Section */}
+      {/* Event Reports */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Event Reports
-              </CardTitle>
-              <CardDescription>Download individual or bulk reports</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode(viewMode === 'cards' ? 'table' : 'cards')}
-              >
-                {viewMode === 'cards' ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                {viewMode === 'cards' ? 'Table View' : 'Card View'}
-              </Button>
-              <Button
-                onClick={exportAllReports}
-                disabled={isExportingAll || reports.length === 0}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isExportingAll ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileDown className="h-4 w-4 mr-2" />
-                )}
-                Export All ({stats.totalReports})
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Event Reports</CardTitle>
+          <CardDescription>Download PDF reports for each event</CardDescription>
         </CardHeader>
         <CardContent>
-          {viewMode === 'cards' ? (
-            <div className="space-y-4">
-              {sortedEvents.length > 0 ? (
-                sortedEvents.map((event) => (
-                  <div key={event.event_id} className="flex justify-between items-center p-4 border rounded-lg hover:shadow-md transition-shadow bg-gradient-to-r from-background to-muted/20">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <FileText className="h-6 w-6 text-primary" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-lg">{event.event_name}</p>
-                        <div className="flex items-center gap-4 mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {event.count} report{event.count !== 1 ? 's' : ''}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            ${event.revenue.toLocaleString()} revenue
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {event.tickets.toLocaleString()} tickets
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-right mr-4">
-                        <div className="text-sm font-medium text-green-600">
-                          ${(event.revenue / event.tickets || 0).toFixed(2)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">avg per ticket</div>
-                      </div>
-                      <Button
-                        onClick={() => downloadPDF(event.event_id, event.event_name)}
-                        disabled={downloadingPdfs.has(event.event_id)}
-                        variant="outline"
-                        size="sm"
-                        className="min-w-[120px]"
-                      >
-                        {downloadingPdfs.has(event.event_id) ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Download className="h-4 w-4 mr-2" />
-                            Download PDF
-                          </>
-                        )}
-                      </Button>
+          <div className="space-y-4">
+            {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+              stats.reportsByEvent.map((event) => (
+                <div
+                  key={event.event_id}
+                  className={`flex justify-between items-center p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
+                    selectedEvent === event.event_id ? 'border-blue-500 bg-blue-50' : ''
+                  }`}
+                  onClick={() => setSelectedEvent(event.event_id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="font-medium">{event.event_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.count} report{event.count !== 1 ? 's' : ''} available
+                      </p>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No events found for the current filters.</p>
-                  <Button variant="outline" onClick={() => setShowFilters(true)} className="mt-4">
-                    Adjust Filters
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadPDF(event.event_id, event.event_name);
+                    }}
+                    disabled={downloadingPdfs.has(event.event_id)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {downloadingPdfs.has(event.event_id) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </>
+                    )}
                   </Button>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="text-left p-4 font-medium">Event Name</th>
-                      <th className="text-left p-4 font-medium">Reports</th>
-                      <th className="text-left p-4 font-medium">Revenue</th>
-                      <th className="text-left p-4 font-medium">Tickets</th>
-                      <th className="text-left p-4 font-medium">Avg/Ticket</th>
-                      <th className="text-center p-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedEvents.length > 0 ? (
-                      sortedEvents.map((event) => (
-                        <tr key={event.event_id} className="border-b hover:bg-muted/20 transition-colors">
-                          <td className="p-4">
-                            <div className="font-medium">{event.event_name}</div>
-                            <div className="text-sm text-muted-foreground">ID: {event.event_id}</div>
-                          </td>
-                          <td className="p-4">
-                            <Badge variant="secondary">{event.count}</Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-medium text-green-600">
-                              ${event.revenue.toLocaleString()}
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-medium">{event.tickets.toLocaleString()}</div>
-                          </td>
-                          <td className="p-4">
-                            <div className="font-medium">
-                              ${(event.revenue / event.tickets || 0).toFixed(2)}
-                            </div>
-                          </td>
-                          <td className="p-4 text-center">
-                            <Button
-                              onClick={() => downloadPDF(event.event_id, event.event_name)}
-                              disabled={downloadingPdfs.has(event.event_id)}
-                              variant="outline"
-                              size="sm"
-                            >
-                              {downloadingPdfs.has(event.event_id) ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Download className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                          No events found for the current filters.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground">No events with reports found for the current filters.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
-
-      {/* Quick Insights Card */}
-      {stats.topEvents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Quick Insights
-            </CardTitle>
-            <CardDescription>Key performance metrics at a glance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm text-muted-foreground">TOP PERFORMER</h4>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <div>
-                    <p className="font-semibold">{stats.topEvents[0]?.event_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      ${stats.topEvents[0]?.revenue.toLocaleString()} revenue
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm text-muted-foreground">MOST POPULAR TICKET</h4>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <p className="font-semibold">
-                      {stats.revenueByTicketType.reduce((max, current) => 
-                        current.amount > max.amount ? current : max, stats.revenueByTicketType[0]
-                      )?.ticket_type_name || 'N/A'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Highest revenue contribution
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm text-muted-foreground">PERFORMANCE TREND</h4>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <div>
-                    <p className="font-semibold">
-                      {stats.revenueByDate.length > 1 && 
-                       stats.revenueByDate[stats.revenueByDate.length - 1]?.revenue > 
-                       stats.revenueByDate[stats.revenueByDate.length - 2]?.revenue 
-                        ? 'Trending Up' : 'Stable'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Recent performance
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
