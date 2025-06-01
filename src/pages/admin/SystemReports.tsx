@@ -256,22 +256,27 @@ const SystemReports = () => {
         totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
-          event_name: name,
-          count: (data as { count: number; event_id: number; revenue: number }).count,
-          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
-          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
-        })),
-        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
+          const eventData = data as { count: number; event_id: string | number; revenue: number };
+          return {
+            event_name: name,
+            count: eventData.count,
+            event_id: eventData.event_id,
+            revenue: eventData.revenue
+          };
+        }),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => ({
           ticket_type_name: type,
-          amount: data.amount,
-          tickets: data.tickets
+          amount: (data as { amount: number; tickets: number }).amount,
+          tickets: (data as { amount: number; tickets: number }).tickets
         })),
-        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
-          date,
-          revenue: (data as { revenue: number; tickets: number }).revenue,
-          tickets: (data as { revenue: number; tickets: number }).tickets
-        })).sort((a, b) => a.date.localeCompare(b.date))
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => {
+          return {
+            date,
+            revenue: (data as { revenue: number; tickets: number }).revenue,
+            tickets: (data as { revenue: number; tickets: number }).tickets
+          };
+        }).sort((a, b) => a.date.localeCompare(b.date))
       });
 
     } catch (error) {
@@ -513,6 +518,7 @@ const SystemReports = () => {
                   <Input
                     id="startDate"
                     type="date"
+                    value={startDate}
                     onChange={(e) => handleStartDateChange(e.target.value)}
                     className="bg-gray-700 text-white border-gray-600"
                   />
@@ -523,6 +529,7 @@ const SystemReports = () => {
                   <Input
                     id="endDate"
                     type="date"
+                    value={endDate}
                     onChange={(e) => handleEndDateChange(e.target.value)}
                     min={startDate}
                     className="bg-gray-700 text-white border-gray-600"
