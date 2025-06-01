@@ -29,13 +29,9 @@ import {
   Eye,
   Clock,
   X,
-  AlertCircle,
-  CheckCircle,
-  Activity,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   BarChart,
   Bar,
@@ -97,29 +93,15 @@ const SystemReports = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState('overview');
   const [showFilters, setShowFilters] = useState(false);
-  const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-
-  // Toast notification system
-  const [notifications, setNotifications] = useState([]);
-
-  const addNotification = (notification) => {
-    const id = Date.now();
-    setNotifications(prev => [...prev, { ...notification, id }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  };
 
   const toast = ({ title, description, variant = "default" }) => {
-    addNotification({ title, description, variant });
+    console.log(`${title}: ${description}`);
   };
 
   const clearFilters = () => {
     setSelectedOrganizer('all');
     setStartDate('');
     setEndDate('');
-    setError(null);
   };
 
   const applyQuickFilter = (days) => {
@@ -137,11 +119,9 @@ const SystemReports = () => {
 
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(end.toISOString().split('T')[0]);
-    setError(null);
   };
 
   const isValidDate = (dateString) => {
-    if (!dateString) return true;
     const date = new Date(dateString);
     return date instanceof Date && !isNaN(date.getTime());
   };
@@ -158,9 +138,8 @@ const SystemReports = () => {
     return debounce((date) => {
       if (isValidDate(date)) {
         setDate(date);
-        setError(null);
       } else {
-        setError('Invalid date format');
+        console.error('Invalid date');
       }
     }, 500);
   };
@@ -171,45 +150,17 @@ const SystemReports = () => {
   useEffect(() => {
     const fetchOrganizers = async () => {
       try {
-        setIsLoadingOrganizers(true);
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
         const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` })
-          }
+          credentials: 'include'
         });
 
-        if (!response.ok) {
-          if (response.status === 403) {
-            throw new Error('Access denied. Admin privileges required.');
-          }
-          if (response.status === 401) {
-            throw new Error('Authentication failed. Please log in again.');
-          }
-          throw new Error(`Failed to fetch organizers: ${response.status}`);
+        if (response.ok) {
+          const data = await response.json();
+          const organizersData = Array.isArray(data) ? data : (data.data || []);
+          setOrganizers(organizersData);
         }
-
-        const data = await response.json();
-        const organizersData = Array.isArray(data) ? data : (data.data || []);
-        setOrganizers(organizersData);
-
-        toast({
-          title: "Success",
-          description: `Loaded ${organizersData.length} organizers`,
-        });
-
       } catch (error) {
         console.error('Error fetching organizers:', error);
-        setError(`Failed to load organizers: ${error.message}`);
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
       } finally {
         setIsLoadingOrganizers(false);
       }
@@ -220,7 +171,6 @@ const SystemReports = () => {
 
   const fetchReports = useCallback(async () => {
     if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
-      setError("Please enter valid dates");
       toast({
         title: "Error",
         description: "Please enter valid dates.",
@@ -229,19 +179,7 @@ const SystemReports = () => {
       return;
     }
 
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      setError("Start date cannot be after end date");
-      toast({
-        title: "Error",
-        description: "Start date cannot be after end date.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
-    setError(null);
-
     try {
       let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
       const params = new URLSearchParams();
@@ -262,76 +200,39 @@ const SystemReports = () => {
         url += `?${params.toString()}`;
       }
 
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
       const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error('Access denied. Admin privileges required.');
-        }
-        if (response.status === 401) {
-          throw new Error('Authentication failed. Please log in again.');
-        }
-
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || errorData.error || `Request failed with status: ${response.status}`;
+        const errorData = await response.json();
+        const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
+        console.error('Error fetching reports:', errorMessage);
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-
-      if (data.status === 'error') {
-        throw new Error(data.message || 'Unknown error occurred');
-      }
-
       let reportsData = Array.isArray(data.data) ? data.data : [];
 
       setReports(reportsData);
 
-      const totalRevenue = reportsData.reduce((sum, report) => {
-        const revenue = parseFloat(report.total_revenue_summary) || parseFloat(report.amount) || 0;
-        return sum + revenue;
-      }, 0);
+      const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
+      const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
 
-      const totalTickets = reportsData.reduce((sum, report) => {
-        const tickets = parseInt(report.total_tickets_sold_summary) || parseInt(report.tickets) || 0;
-        return sum + tickets;
-      }, 0);
-
-      type ReportsByEventAccumulator = Record<string, { count: number; event_id: string; revenue: number; tickets: number }>;
-      const reportsByEvent = reportsData.reduce((acc: ReportsByEventAccumulator, report) => {
-        const eventName = report.event_name || 'Unknown Event';
-        const eventId = report.event_id || Math.random().toString();
-
+      const reportsByEvent = reportsData.reduce((acc, report) => {
+        const eventName = report.event_name || 'N/A Event';
         if (!acc[eventName]) {
-          acc[eventName] = {
-            count: 0,
-            event_id: eventId,
-            revenue: 0,
-            tickets: 0
-          };
+          acc[eventName] = { count: 0, event_id: report.event_id, revenue: 0 };
         }
-
         acc[eventName].count += 1;
-        acc[eventName].revenue += parseFloat(report.total_revenue_summary) || parseFloat(report.amount) || 0;
-        acc[eventName].tickets += parseInt(report.total_tickets_sold_summary) || parseInt(report.tickets) || 0;
-
+        acc[eventName].revenue += report.total_revenue_summary || 0;
         return acc;
-      }, {} as ReportsByEventAccumulator);
+      }, {});
 
-      type RevenueByTicketTypeAccumulator = Record<string, { amount: number; tickets: number }>;
-      const revenueByTicketType = reportsData.reduce((acc: RevenueByTicketTypeAccumulator, report) => {
-        const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toString().toUpperCase();
-        const revenue = parseFloat(report.total_revenue_summary) || parseFloat(report.amount) || 0;
-        const tickets = parseInt(report.total_tickets_sold_summary) || parseInt(report.tickets) || 0;
+      const revenueByTicketType = reportsData.reduce((acc, report) => {
+        const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
+        const revenue = report.total_revenue_summary || 0;
+        const tickets = report.total_tickets_sold_summary || 0;
 
         if (!acc[ticketTypeName]) {
           acc[ticketTypeName] = { amount: 0, tickets: 0 };
@@ -339,66 +240,45 @@ const SystemReports = () => {
         acc[ticketTypeName].amount += revenue;
         acc[ticketTypeName].tickets += tickets;
         return acc;
-      }, {} as RevenueByTicketTypeAccumulator);
+      }, {});
 
-      const timeSeriesData = reportsData.reduce((acc, report) => {
-        const timestamp = report.timestamp || report.created_at || new Date().toISOString();
-        const date = new Date(timestamp).toISOString().split('T')[0];
-        const revenue = parseFloat(report.total_revenue_summary) || parseFloat(report.amount) || 0;
-        const tickets = parseInt(report.total_tickets_sold_summary) || parseInt(report.tickets) || 0;
-
+      const timeSeriesData = reportsData.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
+        const date = new Date(report.timestamp).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { revenue: 0, tickets: 0 };
         }
-        acc[date].revenue += revenue;
-        acc[date].tickets += tickets;
+        acc[date].revenue += report.total_revenue_summary || 0;
+        acc[date].tickets += report.total_tickets_sold_summary || 0;
         return acc;
-      }, {});
+      }, {} as Record<string, { revenue: number; tickets: number }>);
 
       setStats({
         totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
-          const eventData = data as { count: number; event_id: string; revenue: number; tickets: number };
-          return {
-            event_name: name,
-            count: eventData.count,
-            event_id: eventData.event_id,
-            revenue: eventData.revenue,
-            tickets: eventData.tickets
-          };
-        }).sort((a, b) => b.revenue - a.revenue),
-        revenueByTicketType: Object.entries(revenueByTicketType)
-          .map(([type, data]) => ({
-            ticket_type_name: type,
-            amount: (data as { amount: number }).amount,
-            tickets: (data as { tickets: number }).tickets
-          }))
-          .filter(item => item.amount > 0)
-          .sort((a, b) => b.amount - a.amount),
-        timeSeriesData: Object.entries(timeSeriesData)
-          .map(([date, data]) => ({
-            date,
-            revenue: (data as { revenue: number; tickets: number }).revenue,
-            tickets: (data as { revenue: number; tickets: number }).tickets
-          }))
-          .sort((a, b) => a.date.localeCompare(b.date))
-      });
-
-      setLastUpdated(new Date());
-
-      toast({
-        title: "Success",
-        description: `Loaded ${reportsData.length} reports successfully`,
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
+          event_name: name,
+          count: (data as { count: number; event_id: number; revenue: number }).count,
+          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
+          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
+        })),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
+          ticket_type_name: type,
+          amount: data.amount,
+          tickets: data.tickets
+        })),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
+          date,
+          revenue: (data as { revenue: number; tickets: number }).revenue,
+          tickets: (data as { revenue: number; tickets: number }).tickets
+        })).sort((a, b) => a.date.localeCompare(b.date))
       });
 
     } catch (error) {
       console.error('Error fetching reports:', error);
-      setError(error.message);
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to fetch system reports",
         variant: "destructive",
       });
     } finally {
@@ -414,30 +294,22 @@ const SystemReports = () => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
 
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Accept': 'application/pdf',
-          ...(token && { 'Authorization': `Bearer ${token}` })
         },
       });
 
       if (!response.ok) {
         let errorMessage = `Failed to download PDF (${response.status})`;
-
         try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          }
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
           // If response is not JSON, use default error message
         }
-
         throw new Error(errorMessage);
       }
 
@@ -445,7 +317,7 @@ const SystemReports = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `event_report_${eventId}_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `event_report_${eventId}.pdf`;
       document.body.appendChild(link);
       link.click();
 
@@ -461,7 +333,7 @@ const SystemReports = () => {
       console.error('Error downloading PDF:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to download PDF report",
         variant: "destructive",
       });
     } finally {
@@ -493,30 +365,22 @@ const SystemReports = () => {
         url += `?${params.toString()}`;
       }
 
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Accept': 'text/csv',
-          ...(token && { 'Authorization': `Bearer ${token}` })
         },
       });
 
       if (!response.ok) {
         let errorMessage = `Failed to export all reports (${response.status})`;
-
         try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
-          }
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
           // If response is not JSON, use default error message
         }
-
         throw new Error(errorMessage);
       }
 
@@ -524,10 +388,7 @@ const SystemReports = () => {
       const urlBlob = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = urlBlob;
-
-      const filename = `system_reports_${selectedOrganizer !== 'all' ? `organizer_${selectedOrganizer}_` : ''}${new Date().toISOString().split('T')[0]}.csv`;
-      link.download = filename;
-
+      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
 
@@ -536,14 +397,14 @@ const SystemReports = () => {
 
       toast({
         title: "Success",
-        description: `All filtered reports exported successfully as ${filename}`,
+        description: "All filtered reports exported successfully.",
       });
 
     } catch (error) {
       console.error('Error exporting all reports:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to export all reports.",
         variant: "destructive",
       });
     } finally {
@@ -551,20 +412,20 @@ const SystemReports = () => {
     }
   };
 
-  if (isLoading && !reports.length) {
+  if (isLoading) {
     return (
       <div className="space-y-6 bg-gray-900 text-white p-4">
         <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
               Loading System Reports...
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="animate-pulse bg-gray-700 rounded p-4">
+                <div key={index} className="animate-pulse bg-gray-700 rounded p-2">
                   <div className="h-4 bg-gray-600 rounded w-3/4 mb-2"></div>
                   <div className="h-3 bg-gray-600 rounded w-1/2"></div>
                 </div>
@@ -577,24 +438,7 @@ const SystemReports = () => {
   }
 
   return (
-    <div className="space-y-6 bg-gray-900 text-white p-4 min-h-screen">
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map((notification) => (
-          <Alert
-            key={notification.id}
-            className={`w-96 ${notification.variant === 'destructive' ? 'border-red-500 bg-red-900/50' : 'border-green-500 bg-green-900/50'}`}
-          >
-            {notification.variant === 'destructive' ?
-              <AlertCircle className="h-4 w-4" /> :
-              <CheckCircle className="h-4 w-4" />
-            }
-            <AlertDescription>
-              <strong>{notification.title}:</strong> {notification.description}
-            </AlertDescription>
-          </Alert>
-        ))}
-      </div>
-
+    <div className="space-y-6 bg-gray-900 text-white p-4">
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <div className="flex flex-col space-y-4">
@@ -608,11 +452,6 @@ const SystemReports = () => {
                   {selectedOrganizer === 'all'
                     ? 'Comprehensive analytics across all organizers'
                     : `Analytics for selected organizer`}
-                  {lastUpdated && (
-                    <span className="ml-2 text-sm">
-                      • Last updated: {lastUpdated.toLocaleTimeString()}
-                    </span>
-                  )}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -639,7 +478,6 @@ const SystemReports = () => {
                   key={filter.label}
                   onClick={() => applyQuickFilter(filter.days)}
                   className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
-                  size="sm"
                 >
                   <Clock className="h-3 w-3 mr-1" />
                   {filter.label}
@@ -648,7 +486,7 @@ const SystemReports = () => {
             </div>
 
             {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-800 rounded-lg border border-gray-600">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-800 rounded-lg">
                 <div className="space-y-2">
                   <Label htmlFor="organizer" className="text-white">Organizer</Label>
                   <Select
@@ -656,14 +494,14 @@ const SystemReports = () => {
                     onValueChange={setSelectedOrganizer}
                     disabled={isLoadingOrganizers}
                   >
-                    <SelectTrigger className="bg-gray-700 text-white border-gray-600">
+                    <SelectTrigger className="bg-gray-700 text-white">
                       <SelectValue placeholder="Select organizer" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 text-white border-gray-600">
+                    <SelectContent className="bg-gray-700 text-white">
                       <SelectItem value="all">All Organizers</SelectItem>
                       {organizers.map((organizer) => (
                         <SelectItem key={organizer.id} value={organizer.id.toString()}>
-                          {organizer.name || organizer.email || `Organizer ${organizer.id}`}
+                          {organizer.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -675,7 +513,6 @@ const SystemReports = () => {
                   <Input
                     id="startDate"
                     type="date"
-                    value={startDate}
                     onChange={(e) => handleStartDateChange(e.target.value)}
                     className="bg-gray-700 text-white border-gray-600"
                   />
@@ -686,7 +523,6 @@ const SystemReports = () => {
                   <Input
                     id="endDate"
                     type="date"
-                    value={endDate}
                     onChange={(e) => handleEndDateChange(e.target.value)}
                     min={startDate}
                     className="bg-gray-700 text-white border-gray-600"
@@ -726,17 +562,10 @@ const SystemReports = () => {
                     ) : (
                       <FileDown className="mr-2 h-4 w-4" />
                     )}
-                    Export All ({reports.length})
+                    Export All
                   </Button>
                 </div>
               </div>
-            )}
-
-            {error && (
-              <Alert className="border-red-500 bg-red-900/50">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
             )}
           </div>
         </CardHeader>
@@ -749,7 +578,7 @@ const SystemReports = () => {
             <FileText className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-400">{stats.totalReports.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-blue-400">{stats.totalReports}</div>
             <p className="text-xs text-gray-400">Generated reports</p>
           </CardContent>
         </Card>
@@ -773,7 +602,7 @@ const SystemReports = () => {
             <Users className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-400">{stats.totalTickets.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-purple-400">{stats.totalTickets}</div>
             <p className="text-xs text-gray-400">Tickets sold</p>
           </CardContent>
         </Card>
@@ -787,136 +616,201 @@ const SystemReports = () => {
             <div className="text-2xl font-bold text-orange-400">
               ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </div>
-            <p className="text-xs text-gray-400">Average revenue per event</p>
+            <p className="text-xs text-gray-400">Per event average</p>
           </CardContent>
         </Card>
       </div>
 
-      {viewMode === 'overview' ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Revenue by Ticket Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.revenueByTicketType}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="amount"
-                      label={({ ticket_type_name, percent }) => `${ticket_type_name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {stats.revenueByTicketType.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS_BY_TICKET[entry.ticket_type_name] || FALLBACK_COLOR} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Reports by Event</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.reportsByEvent}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
-                    <XAxis dataKey="event_name" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
-                    <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
-                    <Bar dataKey="revenue" fill="#3B82F6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
+      {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
         <Card className="bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle className="text-white">Detailed Reports</CardTitle>
+            <CardTitle className="text-white">Revenue & Tickets Over Time</CardTitle>
+            <CardDescription className="text-gray-400">Daily trends in revenue and ticket sales</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-700">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Event Name
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Revenue
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Tickets Sold
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-gray-800 divide-y divide-gray-700">
-                  {reports.map((report) => (
-                    <tr key={report.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {report.event_name || 'Unnamed Event'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        ${(parseFloat(report.total_revenue_summary) || parseFloat(report.amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                        {parseInt(report.total_tickets_sold_summary) || parseInt(report.tickets) || 0}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Button
-                          onClick={() => downloadPDF(report.event_id, report.event_name)}
-                          disabled={downloadingPdfs.has(report.event_id)}
-                          className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
-                        >
-                          {downloadingPdfs.has(report.event_id) ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="mr-2 h-4 w-4" />
-                          )}
-                          PDF
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="date" stroke="#ccc" />
+                  <YAxis yAxisId="left" stroke="#ccc" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#ccc" />
+                  <Tooltip contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }} />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="revenue"
+                    stackId="1"
+                    stroke="#8884d8"
+                    fill="#8884d8"
+                    fillOpacity={0.6}
+                  />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="tickets"
+                    stackId="2"
+                    stroke="#82ca9d"
+                    fill="#82ca9d"
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       )}
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-white">Reports by Event</CardTitle>
+            <CardDescription className="text-gray-400">Number of reports and revenue per event</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.reportsByEvent}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis
+                      dataKey="event_name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      stroke="#ccc"
+                      fontSize={12}
+                    />
+                    <YAxis stroke="#ccc" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value, name) => [
+                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
+                        name === 'count' ? 'Reports' : 'Revenue'
+                      ]}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="#8884d8"
+                      name="count"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    {viewMode === 'detailed' && (
+                      <Bar
+                        dataKey="revenue"
+                        fill="#82ca9d"
+                        name="revenue"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No event data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-white">Revenue by Ticket Type</CardTitle>
+            <CardDescription className="text-gray-400">Revenue distribution across ticket types</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.revenueByTicketType && stats.revenueByTicketType.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.revenueByTicketType}
+                      dataKey="amount"
+                      nameKey="ticket_type_name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      label={({ ticket_type_name, percent }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.revenueByTicketType.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS_BY_TICKET[entry.ticket_type_name] || FALLBACK_COLOR}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No revenue data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Revenue Over Time</CardTitle>
+          <CardTitle className="text-white">Event Reports</CardTitle>
+          <CardDescription className="text-gray-400">Download PDF reports for each event</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.timeSeriesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" />
-                <XAxis dataKey="date" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
-                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+              stats.reportsByEvent.map((event) => (
+                <div
+                  key={event.event_id}
+                  className={`flex justify-between items-center p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
+                    selectedEvent === event.event_id ? 'border-blue-400 bg-gray-700' : 'bg-gray-700 border-gray-600'
+                  }`}
+                  onClick={() => setSelectedEvent(event.event_id)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-blue-400" />
+                    <div>
+                      <p className="font-medium text-white">{event.event_name}</p>
+                      <p className="text-sm text-gray-400">
+                        {event.count} report{event.count !== 1 ? 's' : ''} available
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadPDF(event.event_id, event.event_name);
+                    }}
+                    disabled={downloadingPdfs.has(event.event_id)}
+                    className="bg-gray-600 hover:bg-gray-500 text-white"
+                    size="sm"
+                  >
+                    {downloadingPdfs.has(event.event_id) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-400">No events with reports found for the current filters.</p>
+            )}
           </div>
         </CardContent>
       </Card>
