@@ -90,12 +90,9 @@ const SystemReports = () => {
   const [isExportingAll, setIsExportingAll] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState('overview');
   const [showFilters, setShowFilters] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(null);
 
   const toast = ({ title, description, variant = "default" }) => {
     console.log(`${title}: ${description}`);
@@ -105,9 +102,6 @@ const SystemReports = () => {
     setSelectedOrganizer('all');
     setStartDate('');
     setEndDate('');
-    setStartTime('');
-    setEndTime('');
-    setRefreshInterval(null);
   };
 
   const applyQuickFilter = (days) => {
@@ -116,10 +110,8 @@ const SystemReports = () => {
     let end = new Date(today);
 
     if (days === 0) {
-      // Today
       start = new Date(today);
     } else if (days === 365) {
-      // This year
       start = new Date(today.getFullYear(), 0, 1);
     } else {
       start.setDate(today.getDate() - days + 1);
@@ -128,6 +120,32 @@ const SystemReports = () => {
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(end.toISOString().split('T')[0]);
   };
+
+  const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date.getTime());
+  };
+
+  const debounce = (func, delay) => {
+    let debounceTimer;
+    return function(...args) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => func.apply(this, args), delay);
+    };
+  };
+
+  const handleDateChange = (setDate) => {
+    return debounce((date) => {
+      if (isValidDate(date)) {
+        setDate(date);
+      } else {
+        console.error('Invalid date');
+      }
+    }, 500);
+  };
+
+  const handleStartDateChange = handleDateChange(setStartDate);
+  const handleEndDateChange = handleDateChange(setEndDate);
 
   useEffect(() => {
     const fetchOrganizers = async () => {
@@ -152,6 +170,15 @@ const SystemReports = () => {
   }, []);
 
   const fetchReports = useCallback(async () => {
+    if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
+      toast({
+        title: "Error",
+        description: "Please enter valid dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
@@ -167,14 +194,6 @@ const SystemReports = () => {
 
       if (endDate) {
         params.append('end_date', endDate);
-      }
-
-      if (startTime) {
-        params.append('start_time', startTime);
-      }
-
-      if (endTime) {
-        params.append('end_time', endTime);
       }
 
       if (params.toString()) {
@@ -223,7 +242,7 @@ const SystemReports = () => {
         return acc;
       }, {});
 
-      const timeSeriesData = reportsData.reduce((acc, report) => {
+      const timeSeriesData = reportsData.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
         const date = new Date(report.timestamp).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { revenue: 0, tickets: 0 };
@@ -231,37 +250,28 @@ const SystemReports = () => {
         acc[date].revenue += report.total_revenue_summary || 0;
         acc[date].tickets += report.total_tickets_sold_summary || 0;
         return acc;
-      }, {});
+      }, {} as Record<string, { revenue: number; tickets: number }>);
 
       setStats({
         totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
-          const eventData = data as { count: number; event_id: number; revenue: number };
-          return {
-            event_name: name,
-            count: eventData.count,
-            event_id: eventData.event_id,
-            revenue: eventData.revenue
-          };
-        }),
-        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => {
-          const ticketData = data as { amount: number; tickets: number };
-          return {
-            ticket_type_name: type,
-            amount: ticketData.amount,
-            tickets: ticketData.tickets
-          };
-        }),
-        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => {
-          const tsData = data as { revenue: number; tickets: number };
-          return {
-            date,
-            revenue: tsData.revenue,
-            tickets: tsData.tickets
-          };
-        }).sort((a, b) => a.date.localeCompare(b.date))
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
+          event_name: name,
+          count: (data as { count: number; event_id: number; revenue: number }).count,
+          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
+          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
+        })),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
+          ticket_type_name: type,
+          amount: data.amount,
+          tickets: data.tickets
+        })),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
+          date,
+          revenue: (data as { revenue: number; tickets: number }).revenue,
+          tickets: (data as { revenue: number; tickets: number }).tickets
+        })).sort((a, b) => a.date.localeCompare(b.date))
       });
 
     } catch (error) {
@@ -274,7 +284,7 @@ const SystemReports = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganizer, startDate, endDate, startTime, endTime]);
+  }, [selectedOrganizer, startDate, endDate]);
 
   useEffect(() => {
     fetchReports();
@@ -349,12 +359,6 @@ const SystemReports = () => {
       }
       if (endDate) {
         params.append('end_date', endDate);
-      }
-      if (startTime) {
-        params.append('start_time', startTime);
-      }
-      if (endTime) {
-        params.append('end_time', endTime);
       }
 
       if (params.toString()) {
@@ -509,8 +513,7 @@ const SystemReports = () => {
                   <Input
                     id="startDate"
                     type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => handleStartDateChange(e.target.value)}
                     className="bg-gray-700 text-white border-gray-600"
                   />
                 </div>
@@ -520,49 +523,8 @@ const SystemReports = () => {
                   <Input
                     id="endDate"
                     type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
                     min={startDate}
-                    className="bg-gray-700 text-white border-gray-600"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="refreshInterval" className="text-white">Auto Refresh (seconds)</Label>
-                  <Select
-                    value={refreshInterval?.toString() || 'off'}
-                    onValueChange={(value) => setRefreshInterval(value === 'off' ? null : parseInt(value))}
-                  >
-                    <SelectTrigger className="bg-gray-700 text-white">
-                      <SelectValue placeholder="Auto refresh" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 text-white">
-                      <SelectItem value="off">Off</SelectItem>
-                      <SelectItem value="30">30s</SelectItem>
-                      <SelectItem value="60">1m</SelectItem>
-                      <SelectItem value="300">5m</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="startTime" className="text-white">Start Time</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="bg-gray-700 text-white border-gray-600"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="endTime" className="text-white">End Time</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
                     className="bg-gray-700 text-white border-gray-600"
                   />
                 </div>
