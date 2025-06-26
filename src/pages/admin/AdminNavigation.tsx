@@ -21,12 +21,12 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const navigationItems = [
-    { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'from-blue-500 to-blue-600' },
-    { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor event activity', category: 'Events', color: 'from-purple-500 to-purple-600' },
-    { id: 'viewAllUsers', label: 'All Users', icon: Users, description: 'Manage platform users', category: 'User Management', color: 'from-green-500 to-green-600' },
-    { id: 'nonAttendees', label: 'Non-Attendees', icon: Users, description: 'Track absent users', category: 'User Management', color: 'from-orange-500 to-orange-600' },
-    { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create admin accounts', category: 'Administration', color: 'from-indigo-500 to-indigo-600' },
-    { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create security accounts', category: 'Administration', color: 'from-red-500 to-red-600' },
+    { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'text-blue-500' },
+    { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor event activity', category: 'Events', color: 'text-purple-500' },
+    { id: 'viewAllUsers', label: 'All Users', icon: Users, description: 'Manage platform users', category: 'User Management', color: 'text-green-500' },
+    { id: 'nonAttendees', label: 'Non-Attendees', icon: Users, description: 'Track absent users', category: 'User Management', color: 'text-orange-500' },
+    { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create admin accounts', category: 'Administration', color: 'text-indigo-500' },
+    { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create security accounts', category: 'Administration', color: 'text-red-500' },
   ];
 
   const handleViewChange = (view: typeof currentView) => {
@@ -43,28 +43,30 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   return (
     <>
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 dark:bg-gray-900 backdrop-blur-md border-b border-border/50 dark:border-gray-800 p-4 shadow-sm">
+      {/* Mobile Header - Following Dashboard patterns */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <Activity className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-lg text-foreground dark:text-white">Pulse Admin</h2>
-              <p className="text-xs text-muted-foreground dark:text-gray-400">Management Dashboard</p>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-200">Pulse Admin</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Management Dashboard</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleMobileMenu}
-            className="p-2 hover:bg-muted/80 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-colors"
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
+      {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
@@ -72,85 +74,148 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         />
       )}
 
-      <Card className={cn(
-        "fixed top-0 h-screen w-80 p-0 flex flex-col shadow-2xl bg-background/95 dark:bg-gray-900 backdrop-blur-md border-r border-border/50 dark:border-gray-800 z-50 transition-all duration-300 ease-in-out",
-        "md:left-[-10px] md:translate-x-0 md:block",
+      {/* Main Sidebar - Following Dashboard patterns */}
+      <div className={cn(
+        "fixed top-0 h-screen w-80 flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ease-in-out",
+        "md:left-0 md:translate-x-0 md:block",
         "left-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-6 border-b border-border/50 dark:border-gray-800 mt-16 md:mt-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 dark:from-purple-900/10 dark:to-blue-900/10">
+        
+        {/* Sidebar Header - Following Dashboard patterns */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg ring-2 ring-purple-500/20">
-              <Activity className="w-6 h-6 text-white animate-bounce" />
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Activity className="w-6 h-6 text-white" />
             </div>
             <div className="hidden md:block">
-              <h2 className="font-bold text-xl text-foreground dark:text-white">Pulse Admin</h2>
-              <p className="text-sm text-muted-foreground dark:text-gray-400">Management Center</p>
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse Admin</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Management Center</p>
             </div>
           </div>
-        </div>
 
-        <div className="p-4 border-b border-border/30 dark:border-gray-800">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-gray-400" />
+          {/* Search Bar - Following Dashboard patterns */}
+          <div className="mt-4 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-muted/50 dark:bg-gray-800 border border-border/30 dark:border-gray-700 rounded-xl text-sm placeholder-muted-foreground dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 text-foreground dark:text-white"
+              className="w-full pl-10 pr-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+                       focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                       transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
         </div>
 
-        <div className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted dark:scrollbar-thumb-gray-700">
+        {/* Navigation Menu - Following Dashboard patterns */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {filteredItems.map((item, index) => {
             const isActive = currentView === item.id;
             return (
-              <div
+              <button
                 key={item.id}
-                className="group animate-fade-in-up"
+                onClick={() => handleViewChange(item.id as typeof currentView)}
+                className={cn(
+                  "group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl",
+                  "transition-all duration-300 ease-out transform hover:scale-[1.02]",
+                  isActive
+                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                    : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
+                )}
                 style={{ animationDelay: `${index * 50}ms` }}
+                disabled={isLoading}
               >
-                <button
-                  onClick={() => handleViewChange(item.id as typeof currentView)}
-                  className={cn(
-                    "relative flex items-center gap-4 p-4 rounded-2xl text-sm font-medium transition-all duration-300 w-full overflow-hidden group-hover:scale-[1.02] transform",
-                    isActive
-                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25 ring-1 ring-purple-500/50"
-                      : "hover:bg-muted/80 dark:hover:bg-gray-800 text-foreground dark:text-white hover:shadow-md hover:shadow-black/5 border border-transparent hover:border-border/50"
-                  )}
-                  disabled={isLoading}
-                >
-                  {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />}
+                {/* Icon - Following Dashboard patterns */}
+                <item.icon className={cn(
+                  "h-5 w-5 transition-all duration-300",
+                  isActive ? "text-white" : item.color
+                )} />
 
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{item.label}</div>
                   <div className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300",
-                    isActive ? "bg-white/20 text-white" : `bg-gradient-to-br ${item.color} text-white group-hover:scale-110`
+                    "text-xs truncate transition-colors duration-300",
+                    isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"
                   )}>
-                    <item.icon className="h-5 w-5" />
+                    {item.description}
                   </div>
+                </div>
 
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-semibold truncate">{item.label}</div>
-                    <div className={cn(
-                      "text-xs truncate mt-0.5 transition-colors",
-                      isActive ? "text-white/80" : "text-muted-foreground dark:text-gray-400"
-                    )}>{item.description}</div>
-                  </div>
-
-                  <div className={cn(
-                    "opacity-0 transform translate-x-2 transition-all duration-200",
-                    !isActive && "group-hover:opacity-100 group-hover:translate-x-0"
-                  )}>
-                    <div className="w-2 h-2 bg-current rounded-full" />
-                  </div>
-                </button>
-              </div>
+                {/* Active indicator - Following Dashboard patterns */}
+                {isActive && (
+                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8
+                                 bg-white rounded-l-full opacity-80"></div>
+                )}
+              </button>
             );
           })}
+        </nav>
+
+        {/* Quick Actions Section - Following Dashboard patterns */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            Quick Actions
+          </h3>
+          <div className="space-y-2">
+            <button 
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200
+                       hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 
+                       rounded-lg transition-all duration-200 group"
+              disabled={isLoading}
+            >
+              <LogOut className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              Sign Out
+            </button>
+          </div>
         </div>
-      </Card>
+      </div>
+
+      {/* Custom CSS for animations - Following Dashboard patterns */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+
+        /* Smooth scrollbar - Following Dashboard patterns */
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: rgb(203 213 225);
+          border-radius: 2px;
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+          background: rgb(100 116 139);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgb(148 163 184);
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+          background: rgb(71 85 105);
+        }
+      `}</style>
     </>
   );
 };
