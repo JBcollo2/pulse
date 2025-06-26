@@ -77,7 +77,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
       {/* Main Sidebar - Following Dashboard patterns */}
       <div className={cn(
         "fixed top-0 h-screen w-80 flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ease-in-out",
-        "md:left-0 md:translate-x-0 md:block",
+        "md:left-6 md:translate-x-0 md:block md:mr-6",
         "left-0",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
