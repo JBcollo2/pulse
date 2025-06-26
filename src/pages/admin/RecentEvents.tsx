@@ -197,8 +197,8 @@ const RecentEvents = () => {
 
   return (
     <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Total Events
@@ -206,13 +206,13 @@ const RecentEvents = () => {
             <Calendar className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.totalEvents}</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalEvents}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               All events created
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Active Events
@@ -220,46 +220,46 @@ const RecentEvents = () => {
             <TrendingUp className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.activeEvents}</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.activeEvents}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Currently upcoming events
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Tickets Sold</CardTitle>
             <Ticket className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.totalTickets}</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{stats.totalTickets}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Tickets across all events
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</CardTitle>
             <Users className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">${stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">${stats.totalRevenue.toLocaleString()}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Revenue from completed sales
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="text-gray-800 dark:text-gray-200">Events by Month</CardTitle>
             <CardDescription className="text-gray-500 dark:text-gray-400">Number of events created each month</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
+            <div className="h-[300px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.eventsByMonth}>
                   <defs>
@@ -284,13 +284,13 @@ const RecentEvents = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+        <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="text-gray-800 dark:text-gray-200">Revenue by Event</CardTitle>
             <CardDescription className="text-gray-500 dark:text-gray-400">Revenue generated per event (Top 10)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
+            <div className="h-[300px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.revenueByEvent.slice(0, 10)}>
                   <defs>
@@ -316,13 +316,13 @@ const RecentEvents = () => {
         </Card>
       </div>
 
-      <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <Card className="rounded-xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="text-gray-800 dark:text-gray-200">Recent Events</CardTitle>
           <CardDescription className="text-gray-500 dark:text-gray-400">Latest events across all organizers</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {events.slice(0, 5).map((event) => {
               const ticketsSold = (event.tickets || []).reduce((sum, ticket) =>
                 ticket.payment_status === 'completed' ? sum + (ticket.quantity || 0) : sum, 0);

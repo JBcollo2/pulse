@@ -536,11 +536,16 @@ const SystemReports = () => {
                     disabled={isLoading}
                   >
                     {isLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
                     ) : (
-                      <RefreshCw className="mr-2 h-4 w-4" />
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Apply Filters
+                      </>
                     )}
-                    Apply Filters
                   </Button>
                   <Button
                     onClick={clearFilters}
@@ -558,11 +563,16 @@ const SystemReports = () => {
                     disabled={isExportingAll || reports.length === 0}
                   >
                     {isExportingAll ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Exporting...
+                      </>
                     ) : (
-                      <FileDown className="mr-2 h-4 w-4" />
+                      <>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export All
+                      </>
                     )}
-                    Export All
                   </Button>
                 </div>
               </div>
@@ -571,7 +581,7 @@ const SystemReports = () => {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-white">Total Reports</CardTitle>
@@ -661,7 +671,7 @@ const SystemReports = () => {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
             <CardTitle className="text-white">Reports by Event</CardTitle>

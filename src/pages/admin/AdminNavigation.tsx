@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { cn } from "@/lib/utils";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Menu, X, Search } from "lucide-react";
+import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Search, X, Menu } from "lucide-react";
 
 interface AdminNavigationProps {
   currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers';
   onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers') => void;
   onLogout: () => void;
   isLoading: boolean;
+  toggleMobileMenu: () => void;
+  isMobileMenuOpen: boolean; // Added missing prop
 }
 
 const AdminNavigation: React.FC<AdminNavigationProps> = ({
@@ -16,10 +17,9 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
   onViewChange,
   onLogout,
   isLoading,
+  toggleMobileMenu,
+  isMobileMenuOpen, // Added missing prop
 }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
   const navigationItems = [
     { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'text-blue-500' },
     { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor event activity', category: 'Events', color: 'text-purple-500' },
@@ -31,19 +31,12 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   const handleViewChange = (view: typeof currentView) => {
     onViewChange(view);
-    setIsMobileMenuOpen(false);
+    toggleMobileMenu();
   };
-
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
-
-  const filteredItems = navigationItems.filter(item =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
-      {/* Mobile Header - Following Dashboard patterns */}
+      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -66,23 +59,12 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         </div>
       </div>
 
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Main Sidebar - Following Dashboard patterns */}
+      {/* Sidebar Navigation */}
       <div className={cn(
-        "fixed top-0 h-screen w-80 flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 ease-in-out",
-        "md:left-6 md:translate-x-0 md:block md:mr-6",
-        "left-0",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed top-0 h-screen w-72 flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out",
+        // Mobile menu visibility
+        isMobileMenuOpen ? "left-0" : "-left-72 md:left-0"
       )}>
-        
-        {/* Sidebar Header - Following Dashboard patterns */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg">
@@ -94,24 +76,20 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             </div>
           </div>
 
-          {/* Search Bar - Following Dashboard patterns */}
           <div className="mt-4 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
             <input
               type="text"
               placeholder="Search menu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                       transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
         </div>
 
-        {/* Navigation Menu - Following Dashboard patterns */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {filteredItems.map((item, index) => {
+          {navigationItems.map((item, index) => {
             const isActive = currentView === item.id;
             return (
               <button
@@ -127,7 +105,6 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
                 style={{ animationDelay: `${index * 50}ms` }}
                 disabled={isLoading}
               >
-                {/* Icon - Following Dashboard patterns */}
                 <item.icon className={cn(
                   "h-5 w-5 transition-all duration-300",
                   isActive ? "text-white" : item.color
@@ -143,27 +120,24 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
                   </div>
                 </div>
 
-                {/* Active indicator - Following Dashboard patterns */}
                 {isActive && (
-                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8
-                                 bg-white rounded-l-full opacity-80"></div>
+                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80"></div>
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* Quick Actions Section - Following Dashboard patterns */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
             Quick Actions
           </h3>
           <div className="space-y-2">
-            <button 
+            <button
               onClick={onLogout}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200
-                       hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 
-                       rounded-lg transition-all duration-200 group"
+                hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400
+                rounded-lg transition-all duration-200 group"
               disabled={isLoading}
             >
               <LogOut className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
@@ -173,49 +147,13 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         </div>
       </div>
 
-      {/* Custom CSS for animations - Following Dashboard patterns */}
-      <style>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out forwards;
-        }
-
-        /* Smooth scrollbar - Following Dashboard patterns */
-        ::-webkit-scrollbar {
-          width: 4px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: rgb(203 213 225);
-          border-radius: 2px;
-        }
-
-        .dark ::-webkit-scrollbar-thumb {
-          background: rgb(100 116 139);
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgb(148 163 184);
-        }
-
-        .dark ::-webkit-scrollbar-thumb:hover {
-          background: rgb(71 85 105);
-        }
-      `}</style>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={toggleMobileMenu}
+        />
+      )}
     </>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield } from 'lucide-react';
+import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield, Menu, X } from 'lucide-react';
 import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
@@ -23,7 +23,10 @@ const AdminDashboard: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const getHeaderContent = () => {
     switch (currentView) {
@@ -318,16 +321,16 @@ const AdminDashboard: React.FC = () => {
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <div className="relative z-10 flex min-h-screen">
-        <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-          <AdminNavigation
-            currentView={currentView}
-            onViewChange={handleViewChange}
-            onLogout={handleLogout}
-            isLoading={isLoading}
-          />
-        </div>
+        <AdminNavigation
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onLogout={handleLogout}
+          isLoading={isLoading}
+          toggleMobileMenu={toggleMobileMenu}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
 
-        <div className="flex-1 ml-72 p-4 md:p-8">
+        <div className="flex-1 ml-0 md:ml-72 p-4 md:p-8">
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden",
             "bg-white dark:bg-gray-800",

@@ -87,7 +87,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
 
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, index) => (
           <div
             key={index}
@@ -109,25 +109,26 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
   }
 
   return (
-    <div className={cn("space-y-8 p-6 lg:p-8", darkMode ? "text-white" : "text-gray-800")}>
-      <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
+    <div className={cn("space-y-6 p-4 md:p-6 lg:p-8", darkMode ? "text-white" : "text-gray-800")}>
+      <div className="flex flex-col space-y-2 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin Statistics</h1>
-          <p className={cn("text-sm md:text-lg text-gray-500 dark:text-gray-400")}>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">Admin Statistics</h1>
+          <p className={cn("text-sm md:text-base lg:text-lg", darkMode ? "text-gray-400" : "text-gray-500")}>
             A comprehensive overview of your platform's performance.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           whileHover={{ scale: 1.03 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-6",
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -136,7 +137,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
                 <Users className="h-5 w-5 text-blue-600 dark:text-blue-300" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{stats.totalUsers}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.totalUsers}</div>
             <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> 12% increase
             </p>
@@ -149,9 +150,10 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
           whileHover={{ scale: 1.03 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-6",
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -160,7 +162,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
                 <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-300" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{stats.totalEvents}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.totalEvents}</div>
             <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> 8% increase
             </p>
@@ -173,9 +175,10 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           whileHover={{ scale: 1.03 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-6",
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -184,7 +187,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
                 <Ticket className="h-5 w-5 text-orange-600 dark:text-orange-300" />
               </div>
             </div>
-            <div className="text-3xl font-bold">{stats.totalTickets}</div>
+            <div className="text-2xl md:text-3xl font-bold">{stats.totalTickets}</div>
             <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> 15% increase
             </p>
@@ -197,9 +200,10 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
           whileHover={{ scale: 1.03 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-6",
+            "border rounded-lg shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer group p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -208,7 +212,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
                 <DollarSign className="h-5 w-5 text-green-600 dark:text-green-300" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-green-600">${stats.totalRevenue}</div>
+            <div className="text-2xl md:text-3xl font-bold text-green-600">${stats.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> 15% increase
             </p>
@@ -217,18 +221,19 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
         </motion.div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md p-6",
+            "border rounded-lg shadow-md p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <h3 className="text-base font-semibold tracking-wide">Active Events</h3>
-            <div className="text-2xl font-bold">{stats.activeEvents}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.activeEvents}</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Currently running events</p>
           </div>
         </motion.div>
@@ -237,13 +242,14 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md p-6",
+            "border rounded-lg shadow-md p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <h3 className="text-base font-semibold tracking-wide">Total Reports</h3>
-            <div className="text-2xl font-bold">{stats.totalReports}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.totalReports}</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Total number of system reports</p>
           </div>
         </motion.div>
@@ -252,31 +258,33 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.7 }}
+          className="w-full"
         >
           <div className={cn(
-            "border rounded-lg shadow-md p-6",
+            "border rounded-lg shadow-md p-4 md:p-6",
             darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           )}>
             <h3 className="text-base font-semibold tracking-wide">Security Staff</h3>
-            <div className="text-2xl font-bold">{stats.securityStaff}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.securityStaff}</div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Number of registered security personnel</p>
           </div>
         </motion.div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {stats.eventsByMonth && stats.eventsByMonth.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
+            className="w-full"
           >
             <div className={cn("border rounded-lg shadow-md", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <h3 className="text-base font-semibold tracking-wide">Events by Month</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Number of events created each month</p>
               </div>
-              <div className="h-[300px] p-6">
+              <div className="h-[300px] p-4 md:p-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.eventsByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className={darkMode ? "stroke-gray-700" : "stroke-gray-200"} />
@@ -301,13 +309,14 @@ const AdminStats: React.FC<AdminStatsProps> = ({ darkMode }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
+            className="w-full"
           >
             <div className={cn("border rounded-lg shadow-md", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <h3 className="text-base font-semibold tracking-wide">Revenue by Month</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Total revenue generated each month</p>
               </div>
-              <div className="h-[300px] p-6">
+              <div className="h-[300px] p-4 md:p-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.revenueByMonth} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" className={darkMode ? "stroke-gray-700" : "stroke-gray-200"} />
