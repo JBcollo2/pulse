@@ -47,7 +47,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
               <Activity className="w-4 h-4 text-white" />
             </div>
             <div>
@@ -85,7 +85,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         {/* Sidebar Header - Following Dashboard patterns */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg">
               <Activity className="w-6 h-6 text-white" />
             </div>
             <div className="hidden md:block">
@@ -103,7 +103,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
-                       focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                        transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             />
           </div>
@@ -121,7 +121,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
                   "group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl",
                   "transition-all duration-300 ease-out transform hover:scale-[1.02]",
                   isActive
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
                     : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}

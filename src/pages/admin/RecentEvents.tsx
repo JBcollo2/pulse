@@ -44,12 +44,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const dataItem = payload[0];
     return (
-      <div className="bg-white p-3 border rounded shadow-md">
-        <p className="font-semibold text-gray-800">{label}</p>
+      <div className="bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded shadow-md">
+        <p className="font-semibold text-gray-800 dark:text-gray-200">{label}</p>
         {dataItem.dataKey === 'amount' ? (
-           <p className="text-sm text-gray-600">{`Revenue: $${Number(dataItem.value).toLocaleString()}`}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{`Revenue: $${Number(dataItem.value).toLocaleString()}`}</p>
         ) : (
-           <p className="text-sm text-gray-600">{`${dataItem.dataKey}: ${dataItem.value}`}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{`${dataItem.dataKey}: ${dataItem.value}`}</p>
         )}
       </div>
     );
@@ -174,20 +174,20 @@ const RecentEvents = () => {
   if (isLoading) {
     return (
       <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Dashboard Loading</CardTitle>
-            <CardDescription>Fetching event data...</CardDescription>
+            <CardTitle className="text-gray-800 dark:text-gray-200">Dashboard Loading</CardTitle>
+            <CardDescription className="text-gray-500 dark:text-gray-400">Fetching event data...</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(4)].map((_, index) => (
                 <div key={index} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                 </div>
               ))}
-               <div className="h-[300px] bg-gray-200 rounded"></div>
+              <div className="h-[300px] bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
           </CardContent>
         </Card>
@@ -198,54 +198,54 @@ const RecentEvents = () => {
   return (
     <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Total Events
             </CardTitle>
             <Calendar className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800">{stats.totalEvents}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.totalEvents}</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               All events created
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
               Active Events
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800">{stats.activeEvents}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.activeEvents}</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Currently upcoming events
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Tickets Sold</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Tickets Sold</CardTitle>
             <Ticket className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800">{stats.totalTickets}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">{stats.totalTickets}</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Tickets across all events
             </p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</CardTitle>
             <Users className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-gray-800">${stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="text-3xl font-semibold text-gray-800 dark:text-gray-200">${stats.totalRevenue.toLocaleString()}</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Revenue from completed sales
             </p>
           </CardContent>
@@ -253,22 +253,22 @@ const RecentEvents = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Events by Month</CardTitle>
-            <CardDescription>Number of events created each month</CardDescription>
+            <CardTitle className="text-gray-800 dark:text-gray-200">Events by Month</CardTitle>
+            <CardDescription className="text-gray-500 dark:text-gray-400">Number of events created each month</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] rounded-xl bg-muted p-2 shadow-inner">
+            <div className="h-[350px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.eventsByMonth}>
                   <defs>
                     <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0.3}/>
+                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis dataKey="month" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
@@ -284,22 +284,22 @@ const RecentEvents = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+        <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Revenue by Event</CardTitle>
-            <CardDescription>Revenue generated per event (Top 10)</CardDescription>
+            <CardTitle className="text-gray-800 dark:text-gray-200">Revenue by Event</CardTitle>
+            <CardDescription className="text-gray-500 dark:text-gray-400">Revenue generated per event (Top 10)</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[350px] rounded-xl bg-muted p-2 shadow-inner">
+            <div className="h-[350px] rounded-xl bg-gray-100 dark:bg-gray-700 p-2 shadow-inner">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.revenueByEvent.slice(0, 10)}>
                   <defs>
                     <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.3}/>
+                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.3} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
                   <XAxis dataKey="event_name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
@@ -316,10 +316,10 @@ const RecentEvents = () => {
         </Card>
       </div>
 
-      <Card className="rounded-2xl shadow-md hover:shadow-lg transition">
+      <Card className="rounded-2xl shadow-md hover:shadow-lg transition bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Recent Events</CardTitle>
-          <CardDescription>Latest events across all organizers</CardDescription>
+          <CardTitle className="text-gray-800 dark:text-gray-200">Recent Events</CardTitle>
+          <CardDescription className="text-gray-500 dark:text-gray-400">Latest events across all organizers</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
@@ -338,14 +338,14 @@ const RecentEvents = () => {
               }, 0);
 
               return (
-                <div key={event.id} className="rounded-lg border p-4 shadow-sm bg-white">
+                <div key={event.id} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm bg-white dark:bg-gray-800">
                   <div className="flex flex-col sm:flex-row justify-between gap-4">
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">{event.name || 'Unnamed Event'}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-200">{event.name || 'Unnamed Event'}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         Organizer: {event.organizer?.company_name || 'Unknown Organizer'}
                       </p>
-                      <div className="mt-2 flex gap-3 flex-wrap text-sm text-muted-foreground">
+                      <div className="mt-2 flex gap-3 flex-wrap text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {new Date(event.date).toLocaleDateString()}
@@ -363,7 +363,7 @@ const RecentEvents = () => {
               );
             })}
             {events.length === 0 && !isLoading && (
-              <p className="text-center text-muted-foreground py-8">No events found</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">No events found</p>
             )}
           </div>
         </CardContent>

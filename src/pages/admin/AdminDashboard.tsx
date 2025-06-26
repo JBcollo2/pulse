@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield } from 'lucide-react';
 import AdminNavigation from './AdminNavigation';
@@ -315,11 +314,11 @@ const AdminDashboard: React.FC = () => {
   );
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-850 text-gray-800 dark:text-white overflow-hidden">
+    <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <div className="relative z-10 flex min-h-screen">
-        <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50">
+        <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
           <AdminNavigation
             currentView={currentView}
             onViewChange={handleViewChange}
@@ -329,9 +328,9 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="flex-1 ml-72 p-4 md:p-8">
-          <Card className={cn(
-            "mb-8 p-6 md:p-8 rounded-xl shadow-lg border-none overflow-hidden",
-            "bg-clip-padding backdrop-filter backdrop-blur-md bg-opacity-60 dark:bg-opacity-40",
+          <div className={cn(
+            "mb-8 p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden",
+            "bg-white dark:bg-gray-800",
             `bg-gradient-to-r ${headerContent.gradient} text-white`
           )}>
             <div className="flex items-center gap-6">
@@ -347,81 +346,72 @@ const AdminDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-          </Card>
+          </div>
 
           {currentView === 'reports' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Total Users
-                  </CardTitle>
+                  </h3>
                   <div className="relative group">
                     <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:rotate-6 transition-transform duration-300" />
-                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Total users
-                    </span>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-6">
                   {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
                   ) : (
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">12,345</div>
                   )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +20.1% from last month
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Events Held
-                  </CardTitle>
+                  </h3>
                   <div className="relative group">
                     <CalendarDays className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Events held
-                    </span>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-6">
                   {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
                   ) : (
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">2,150</div>
                   )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +180 since last year
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card className="bg-white/70 dark:bg-gray-800/70 border-none rounded-xl shadow-md backdrop-blur-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
+                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
+                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
                     Total Revenue
-                  </CardTitle>
+                  </h3>
                   <div className="relative group">
                     <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:animate-pulse transition-all duration-300" />
-                    <span className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-max text-xs bg-black text-white rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Total revenue
-                    </span>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div className="p-6">
                   {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 rounded-md" />
+                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
                   ) : (
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,231.89</div>
                   )}
                   <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1" /> +19% from last month
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           )}
 
