@@ -85,7 +85,7 @@ const Dashboard = () => {
       icon: Users,
       description: "Manage team members",
       color: "text-gray-500",
-      roles: ["ADMIN"]
+      roles: ["ADMIN", "ORGANIZER"]
     },
     {
       id: "profile",
