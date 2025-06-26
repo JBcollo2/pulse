@@ -414,20 +414,20 @@ const SystemReports = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 bg-gray-900 text-white p-4">
-        <Card className="bg-gray-800 border-gray-700">
+      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+              <Loader2 className="h-5 w-5 animate-spin text-gray-600 dark:text-white" />
               Loading System Reports...
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="animate-pulse bg-gray-700 rounded p-2">
-                  <div className="h-4 bg-gray-600 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
+                <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded p-2">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
                 </div>
               ))}
             </div>
@@ -438,17 +438,17 @@ const SystemReports = () => {
   }
 
   return (
-    <div className="space-y-6 bg-gray-900 text-white p-4">
-      <Card className="bg-gray-800 border-gray-700">
+    <div className="space-y-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <div className="flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <CardTitle className="flex items-center gap-2 text-2xl text-white">
-                  <BarChart3 className="h-6 w-6 text-blue-400" />
+                <CardTitle className="flex items-center gap-2 text-2xl text-gray-900 dark:text-white">
+                  <BarChart3 className="h-6 w-6 text-blue-500 dark:text-blue-400" />
                   System Reports Dashboard
                 </CardTitle>
-                <CardDescription className="text-lg text-gray-400">
+                <CardDescription className="text-lg text-gray-600 dark:text-gray-400">
                   {selectedOrganizer === 'all'
                     ? 'Comprehensive analytics across all organizers'
                     : `Analytics for selected organizer`}
@@ -457,47 +457,45 @@ const SystemReports = () => {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
-                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   {showFilters ? 'Hide' : 'Show'} Filters
                 </Button>
                 <Button
                   onClick={() => setViewMode(viewMode === 'overview' ? 'detailed' : 'overview')}
-                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
                 >
                   <Eye className="h-4 w-4 mr-2" />
                   {viewMode === 'overview' ? 'Detailed' : 'Overview'} View
                 </Button>
               </div>
             </div>
-
             <div className="flex flex-wrap gap-2">
               {QUICK_FILTERS.map((filter) => (
                 <Button
                   key={filter.label}
                   onClick={() => applyQuickFilter(filter.days)}
-                  className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
                 >
                   <Clock className="h-3 w-3 mr-1" />
                   {filter.label}
                 </Button>
               ))}
             </div>
-
             {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-800 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="space-y-2">
-                  <Label htmlFor="organizer" className="text-white">Organizer</Label>
+                  <Label htmlFor="organizer" className="text-gray-900 dark:text-white">Organizer</Label>
                   <Select
                     value={selectedOrganizer}
                     onValueChange={setSelectedOrganizer}
                     disabled={isLoadingOrganizers}
                   >
-                    <SelectTrigger className="bg-gray-700 text-white">
+                    <SelectTrigger className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
                       <SelectValue placeholder="Select organizer" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-700 text-white">
+                    <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
                       <SelectItem value="all">All Organizers</SelectItem>
                       {organizers.map((organizer) => (
                         <SelectItem key={organizer.id} value={organizer.id.toString()}>
@@ -507,32 +505,29 @@ const SystemReports = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="startDate" className="text-white">Start Date</Label>
+                  <Label htmlFor="startDate" className="text-gray-900 dark:text-white">Start Date</Label>
                   <Input
                     id="startDate"
                     type="date"
                     onChange={(e) => handleStartDateChange(e.target.value)}
-                    className="bg-gray-700 text-white border-gray-600"
+                    className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                   />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="endDate" className="text-white">End Date</Label>
+                  <Label htmlFor="endDate" className="text-gray-900 dark:text-white">End Date</Label>
                   <Input
                     id="endDate"
                     type="date"
                     onChange={(e) => handleEndDateChange(e.target.value)}
                     min={startDate}
-                    className="bg-gray-700 text-white border-gray-600"
+                    className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                   />
                 </div>
-
                 <div className="flex items-end gap-2">
                   <Button
                     onClick={fetchReports}
-                    className="bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800 text-white transition-all hover:scale-105"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 dark:from-blue-600 dark:to-purple-700 dark:hover:from-blue-700 dark:hover:to-purple-800 text-white transition-all hover:scale-105"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -549,17 +544,16 @@ const SystemReports = () => {
                   </Button>
                   <Button
                     onClick={clearFilters}
-                    className="bg-gray-700 hover:bg-gray-600 text-white transition-all hover:scale-105"
+                    className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
                   >
                     <X className="mr-2 h-4 w-4" />
                     Clear
                   </Button>
                 </div>
-
                 <div className="flex items-end">
                   <Button
                     onClick={exportAllReports}
-                    className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white transition-all hover:scale-105"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 dark:from-green-600 dark:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800 text-white transition-all hover:scale-105"
                     disabled={isExportingAll || reports.length === 0}
                   >
                     {isExportingAll ? (
@@ -582,70 +576,77 @@ const SystemReports = () => {
       </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Total Reports</CardTitle>
-            <FileText className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Reports</CardTitle>
+            <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-400">{stats.totalReports}</div>
-            <p className="text-xs text-gray-400">Generated reports</p>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalReports}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Generated reports</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Total Revenue</CardTitle>
-            <TrendingUp className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-400">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
               ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-400">Across all events</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Across all events</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Total Tickets</CardTitle>
-            <Users className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Tickets</CardTitle>
+            <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-400">{stats.totalTickets}</div>
-            <p className="text-xs text-gray-400">Tickets sold</p>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalTickets}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tickets sold</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-white">Avg Revenue/Event</CardTitle>
-            <BarChart3 className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue/Event</CardTitle>
+            <BarChart3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-400">
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
               ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </div>
-            <p className="text-xs text-gray-400">Per event average</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Per event average</p>
           </CardContent>
         </Card>
       </div>
 
       {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="text-white">Revenue & Tickets Over Time</CardTitle>
-            <CardDescription className="text-gray-400">Daily trends in revenue and ticket sales</CardDescription>
+            <CardTitle className="text-gray-900 dark:text-white">Revenue & Tickets Over Time</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Daily trends in revenue and ticket sales</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.timeSeriesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="date" stroke="#ccc" />
-                  <YAxis yAxisId="left" stroke="#ccc" />
-                  <YAxis yAxisId="right" orientation="right" stroke="#ccc" />
-                  <Tooltip contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-gray-600" />
+                  <XAxis dataKey="date" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <YAxis yAxisId="left" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: '1px solid #e2e8f0',
+                      color: '#1f2937',
+                      borderRadius: '8px'
+                    }}
+                  />
                   <Area
                     yAxisId="left"
                     type="monotone"
@@ -672,10 +673,10 @@ const SystemReports = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white">Reports by Event</CardTitle>
-            <CardDescription className="text-gray-400">Number of reports and revenue per event</CardDescription>
+            <CardTitle className="text-gray-900 dark:text-white">Reports by Event</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Number of reports and revenue per event</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -725,10 +726,10 @@ const SystemReports = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700 transition-all hover:shadow-lg">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
-            <CardTitle className="text-white">Revenue by Ticket Type</CardTitle>
-            <CardDescription className="text-gray-400">Revenue distribution across ticket types</CardDescription>
+            <CardTitle className="text-gray-900 dark:text-white">Revenue by Ticket Type</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Revenue distribution across ticket types</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -770,10 +771,10 @@ const SystemReports = () => {
         </Card>
       </div>
 
-      <Card className="bg-gray-800 border-gray-700">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Event Reports</CardTitle>
-          <CardDescription className="text-gray-400">Download PDF reports for each event</CardDescription>
+          <CardTitle className="text-gray-900 dark:text-white">Event Reports</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">Download PDF reports for each event</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
