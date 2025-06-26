@@ -17,7 +17,7 @@ interface User {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers'>('reports');
+  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer'>('reports');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
@@ -25,7 +25,6 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
-
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const getHeaderContent = () => {
@@ -72,6 +71,13 @@ const AdminDashboard: React.FC = () => {
           icon: <Shield className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-red-500 to-red-700"
         };
+      case 'registerOrganizer':
+        return {
+          title: "Register Organizer",
+          description: "Create new organizer accounts.",
+          icon: <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-yellow-500 to-yellow-700"
+        };
       default:
         return {
           title: "Dashboard Overview",
@@ -106,29 +112,35 @@ const AdminDashboard: React.FC = () => {
     setError(undefined);
     setSuccessMessage('');
     try {
-      const endpoint = currentView === 'registerAdmin'
-        ? '/auth/admin/register-admin'
-        : '/auth/admin/register-security';
+      let endpoint = '';
+      if (currentView === 'registerAdmin') {
+        endpoint = '/auth/admin/register-admin';
+      } else if (currentView === 'registerSecurity') {
+        endpoint = '/auth/admin/register-security';
+      } else if (currentView === 'registerOrganizer') {
+        endpoint = '/auth/admin/register-organizer';
+      }
+
+      const formData = new FormData();
+      Object.keys(data).forEach(key => {
+        formData.append(key, data[key]);
+      });
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+        body: formData
       });
 
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
-
       const result = await response.json();
-      setSuccessMessage(result.msg || `${currentView === 'registerAdmin' ? 'Admin' : 'Security user'} registered successfully.`);
+      setSuccessMessage(result.msg || `${currentView === 'registerAdmin' ? 'Admin' : currentView === 'registerSecurity' ? 'Security user' : 'Organizer'} registered successfully.`);
       toast({
         title: "Success",
-        description: result.msg || `${currentView === 'registerAdmin' ? 'Admin' : 'Security user'} registered successfully.`,
+        description: result.msg || `${currentView === 'registerAdmin' ? 'Admin' : currentView === 'registerSecurity' ? 'Security user' : 'Organizer'} registered successfully.`,
         variant: "default",
       });
     } catch (err) {
@@ -153,12 +165,10 @@ const AdminDashboard: React.FC = () => {
         method: 'POST',
         credentials: 'include'
       });
-
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
-
       setSuccessMessage('Logout successful.');
       toast({
         title: "Success",
@@ -187,18 +197,14 @@ const AdminDashboard: React.FC = () => {
       const endpoint = currentView === 'nonAttendees'
         ? '/admin/users/non-attendees'
         : '/admin/users';
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
-
       const data = await response.json();
-
       let flattenedUsers: User[] = [];
       if (data && typeof data === 'object') {
         if (Array.isArray(data.admins)) flattenedUsers = flattenedUsers.concat(data.admins);
@@ -209,9 +215,7 @@ const AdminDashboard: React.FC = () => {
         console.warn("Unexpected data format from fetchAllUsers:", data);
         flattenedUsers = [];
       }
-
       setAllUsers(flattenedUsers);
-
     } catch (err) {
       console.error('Fetch users error:', err);
       setError('An unexpected error occurred while fetching users.');
@@ -233,25 +237,20 @@ const AdminDashboard: React.FC = () => {
     setSuccessMessage('');
     try {
       const endpoint = `/admin/users/search?email=${encodeURIComponent(email)}`;
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
-
       const data = await response.json();
-
       if (Array.isArray(data)) {
         setAllUsers(data);
       } else {
         console.warn("Unexpected data format from search endpoint:", data);
         setAllUsers([]);
       }
-
     } catch (err) {
       console.error('Search error:', err);
       setError('An unexpected error occurred while searching.');
@@ -277,14 +276,13 @@ const AdminDashboard: React.FC = () => {
   const handleUserManagementSearchChange = (term: string) => {
     setSearchTerm(term);
     debouncedSearch(term);
-
     if (term === '') {
       console.log("Search term cleared, clearing users state.");
       setAllUsers([]);
     }
   };
 
-  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers') => {
+  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer') => {
     setCurrentView(view);
     if (view !== 'viewAllUsers' && view !== 'nonAttendees') {
       setSearchTerm('');
@@ -305,7 +303,6 @@ const AdminDashboard: React.FC = () => {
         handleSearchUsers(searchTerm);
       }
     }
-
     return () => {
       console.log("useEffect cleanup: Canceling debounced search.");
       debouncedSearch.cancel();
@@ -319,7 +316,6 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-
       <div className="relative z-10 flex min-h-screen">
         <AdminNavigation
           currentView={currentView}
@@ -329,7 +325,6 @@ const AdminDashboard: React.FC = () => {
           toggleMobileMenu={toggleMobileMenu}
           isMobileMenuOpen={isMobileMenuOpen}
         />
-
         <div className="flex-1 ml-0 md:ml-72 p-4 md:p-8">
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden",
@@ -350,74 +345,6 @@ const AdminDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {currentView === 'reports' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Total Users
-                  </h3>
-                  <div className="relative group">
-                    <Users className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:rotate-6 transition-transform duration-300" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
-                  ) : (
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">12,345</div>
-                  )}
-                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" /> +20.1% from last month
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Events Held
-                  </h3>
-                  <div className="relative group">
-                    <CalendarDays className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform duration-300" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
-                  ) : (
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">2,150</div>
-                  )}
-                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" /> +180 since last year
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md transform hover:scale-[1.02] transition-all duration-300 cursor-pointer group">
-                <div className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
-                  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Total Revenue
-                  </h3>
-                  <div className="relative group">
-                    <DollarSign className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:animate-pulse transition-all duration-300" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  {isLoading ? (
-                    <div className="animate-pulse h-8 bg-gray-300 dark:bg-gray-700 rounded-md" />
-                  ) : (
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">$45,231.89</div>
-                  )}
-                  <p className="text-xs text-green-600 dark:text-green-400 flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1" /> +19% from last month
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-6">
             {currentView === 'reports' && (
               <SystemReports />
@@ -425,7 +352,6 @@ const AdminDashboard: React.FC = () => {
             {currentView === 'events' && (
               <RecentEvents/>
             )}
-
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
               <UserManagement
                 view={currentView}
@@ -438,7 +364,6 @@ const AdminDashboard: React.FC = () => {
                 onSearchTermChange={handleUserManagementSearchChange}
               />
             )}
-
             {currentView === 'registerAdmin' && (
               <UserManagement
                 view="registerAdmin"
@@ -451,6 +376,15 @@ const AdminDashboard: React.FC = () => {
             {currentView === 'registerSecurity' && (
               <UserManagement
                 view="registerSecurity"
+                onRegister={handleRegister}
+                isLoading={isLoading}
+                error={error}
+                successMessage={successMessage}
+              />
+            )}
+            {currentView === 'registerOrganizer' && (
+              <UserManagement
+                view="registerOrganizer"
                 onRegister={handleRegister}
                 isLoading={isLoading}
                 error={error}

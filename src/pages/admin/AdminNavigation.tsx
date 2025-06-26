@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Search, X, Menu } from "lucide-react";
 
 interface AdminNavigationProps {
-  currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers';
-  onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers') => void;
+  currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer';
+  onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer') => void;
   onLogout: () => void;
   isLoading: boolean;
   toggleMobileMenu: () => void;
-  isMobileMenuOpen: boolean; // Added missing prop
+  isMobileMenuOpen: boolean;
 }
 
 const AdminNavigation: React.FC<AdminNavigationProps> = ({
@@ -18,7 +18,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
   onLogout,
   isLoading,
   toggleMobileMenu,
-  isMobileMenuOpen, // Added missing prop
+  isMobileMenuOpen,
 }) => {
   const navigationItems = [
     { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'text-blue-500' },
@@ -27,6 +27,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     { id: 'nonAttendees', label: 'Non-Attendees', icon: Users, description: 'Track absent users', category: 'User Management', color: 'text-orange-500' },
     { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create admin accounts', category: 'Administration', color: 'text-indigo-500' },
     { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create security accounts', category: 'Administration', color: 'text-red-500' },
+    { id: 'registerOrganizer', label: 'Register Organizer', icon: UserPlus, description: 'Create organizer accounts', category: 'Administration', color: 'text-yellow-500' },
   ];
 
   const handleViewChange = (view: typeof currentView) => {
@@ -36,7 +37,6 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   return (
     <>
-      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -59,10 +59,8 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         </div>
       </div>
 
-      {/* Sidebar Navigation */}
       <div className={cn(
         "fixed top-0 h-screen w-72 flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out",
-        // Mobile menu visibility
         isMobileMenuOpen ? "left-0" : "-left-72 md:left-0"
       )}>
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
@@ -147,9 +145,8 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
         </div>
       </div>
 
-      {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={toggleMobileMenu}
         />
