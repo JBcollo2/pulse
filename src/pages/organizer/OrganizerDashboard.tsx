@@ -1,14 +1,16 @@
+// src/components/OrganizerDashboard.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast"; // Assuming this path is correct
 import {
   CalendarDays, DollarSign, CheckCircle,
   LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu // Import Menu for mobile toggle
 } from 'lucide-react';
-import OrganizerNavigation from './OrganizerNavigation'; // Ensure correct path
-import OrganizerReports from './OrganizerReports';     // Ensure correct path
-import OrganizerStats from './OrganizerStats';       // Ensure correct path
-import { cn } from "@/lib/utils";
+import OrganizerNavigation from './OrganizerNavigation'; // Adjust path as needed
+import OrganizerReports from './OrganizerReports';     // Adjust path as needed
+import OrganizerStats from './OrganizerStats';       // Adjust path as needed
+import { cn } from "@/lib/utils"; // Assuming this path is correct
 
+// --- Interfaces ---
 interface Event {
   id: number;
   name: string;
@@ -38,11 +40,12 @@ interface OverallSummary {
 
 type ViewType = 'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport';
 
+// --- OrganizerDashboard Component ---
 const OrganizerDashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [successMessage, setSuccessMessage] = useState<string | undefined>();
+  const [successMessage, setSuccessMessage] = useState<string | undefined>(); // Kept for consistency, though currently unused for display
   const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
   const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
@@ -52,6 +55,7 @@ const OrganizerDashboard: React.FC = () => {
 
   const { toast } = useToast();
 
+  // --- Helper for API Error Handling ---
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
@@ -68,6 +72,7 @@ const OrganizerDashboard: React.FC = () => {
     });
   }, [toast]);
 
+  // --- Fetch Organizer Events ---
   const fetchOrganizerEvents = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -96,6 +101,7 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
+  // --- Fetch Overall Summary ---
   const fetchOverallSummary = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -110,6 +116,7 @@ const OrganizerDashboard: React.FC = () => {
       }
 
       const data: OverallSummary = await response.json();
+      // Ensure arrays are initialized if they come back null/undefined from API
       const processedData: OverallSummary = {
         ...data,
         events_summary: data.events_summary || [],
@@ -131,6 +138,7 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
+  // --- Logout Handler ---
   const handleLogout = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -151,6 +159,7 @@ const OrganizerDashboard: React.FC = () => {
         description: "Logout successful.",
         variant: "default",
       });
+      // Redirect to homepage or login after successful logout
       window.location.href = '/';
     } catch (err) {
       console.error('Logout error:', err);
@@ -165,35 +174,41 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
+  // --- View Change Handler ---
   const handleViewChange = useCallback((view: string) => {
     if (['overview', 'myEvents', 'overallStats', 'reports', 'settings', 'viewReport'].includes(view)) {
       setCurrentView(view as ViewType);
-      setError(undefined);
-      setSuccessMessage(undefined);
+      setError(undefined);       // Clear previous errors when changing view
+      setSuccessMessage(undefined); // Clear previous success messages
     } else {
       console.warn(`Invalid view: ${view}`);
     }
   }, []);
 
+  // --- Handle Viewing Individual Event Report ---
   const handleViewReport = useCallback((eventId: number) => {
     setSelectedEventId(eventId);
     setCurrentView('viewReport');
   }, []);
 
+  // --- Data Fetching Effect ---
   useEffect(() => {
     if (currentView === 'myEvents') {
       fetchOrganizerEvents();
     } else if (currentView === 'overallStats') {
       fetchOverallSummary();
     } else if (currentView === 'overview') {
+      // Fetch both for overview to populate quick stats
       fetchOrganizerEvents();
       fetchOverallSummary();
     }
   }, [currentView, fetchOrganizerEvents, fetchOverallSummary]);
 
+  // --- Derived State for Event Filtering ---
   const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
   const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
+  // --- Header Content Logic ---
   const getHeaderContent = () => {
     switch (currentView) {
       case 'overview':
@@ -253,6 +268,7 @@ const OrganizerDashboard: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
+      {/* Background pattern */}
       <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10"
         style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
       ></div>
@@ -272,10 +288,19 @@ const OrganizerDashboard: React.FC = () => {
 
         {/* Main content area */}
         <div className={cn(
-          "flex-1 ml-0 p-4", // Default for mobile and general padding. Removed pt-20.
+          "flex-1 ml-0 p-4", // Default for mobile and general padding.
           isExpanded ? 'md:ml-72' : 'md:ml-20', // Dynamic margin based on sidebar expansion
           "transition-all duration-300 ease-in-out" // Smooth transition for margin changes
         )}>
+          {/* Mobile menu toggle (outside main content for proper positioning relative to header) */}
+          <button
+            className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 shadow-sm mb-4"
+            onClick={() => setIsMobileOpen(!isMobileOpen)}
+            aria-label="Toggle navigation"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+
           {/* Header Section */}
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
@@ -297,6 +322,21 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Displaying Errors or Success Messages */}
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
+              <strong className="font-bold">Error!</strong>
+              <span className="block sm:inline ml-2">{error}</span>
+            </div>
+          )}
+          {successMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-green-900 dark:border-green-700 dark:text-green-200" role="alert">
+              <strong className="font-bold">Success!</strong>
+              <span className="block sm:inline ml-2">{successMessage}</span>
+            </div>
+          )}
+
+
           {/* Content based on current view */}
           {currentView === 'overview' && (
             <div className="space-y-8 animate-fade-in-up">
@@ -304,7 +344,7 @@ const OrganizerDashboard: React.FC = () => {
                 Organizer Dashboard Overview
               </h1>
               <p className="text-lg max-w-2xl text-gray-600 dark:text-gray-300">
-                Welcome, {organizerName}! Here's a quick glance at your event management activities and key metrics.
+                Welcome, **{organizerName}**! Here's a quick glance at your event management activities and key metrics.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -553,11 +593,13 @@ const OrganizerDashboard: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-300">
                 This section is under development.
               </p>
+              {/* Future settings options here */}
             </div>
           )}
         </div>
       </div>
 
+      {/* Inline styles for animations (can be moved to a CSS file) */}
       <style>{`
         @keyframes fade-in-up {
           from {
@@ -578,4 +620,4 @@ const OrganizerDashboard: React.FC = () => {
   );
 };
 
-export default OrganizerDashboard;
+export default OrganizerDashboard
