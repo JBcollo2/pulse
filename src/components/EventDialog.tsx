@@ -285,13 +285,21 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent
-                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700"
+                // MODIFIED: Ensure dropdown content is clearly visible and above other elements
+                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200
+                           border border-gray-200 dark:border-gray-700
+                           shadow-lg z-50 rounded-md py-1"
               >
                 {categories.map((category) => (
                   <SelectItem
                     key={category.id}
                     value={category.id.toString()}
-                    className="hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700"
+                    // MODIFIED: Ensure select items are interactive and visible on hover/focus
+                    className="relative flex w-full cursor-default select-none items-center rounded-sm
+                               py-1.5 pl-8 pr-2 text-sm outline-none
+                               focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100
+                               data-[disabled]:pointer-events-none data-[disabled]:opacity-50
+                               hover:bg-gray-100 dark:hover:bg-gray-700" // Explicit hover for better visual feedback
                   >
                     {category.name}
                   </SelectItem>
@@ -396,17 +404,16 @@ export const EventDialog: React.FC<EventDialogProps> = ({ open, onOpenChange }) 
                   setNewEvent({...newEvent, image: file});
                 }
               }}
-              // Tailwind classes for file input styling are tricky to apply directly to the native input element.
-              // This primarily affects the text color of the file name once selected.
-              // A common approach is to wrap it and style the wrapper or use a custom file input.
-              className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                         text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                         focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800
+              className="block w-full text-sm text-gray-800 dark:text-gray-200
                          file:mr-4 file:py-2 file:px-4
-                         file:rounded-full file:border-0
+                         file:rounded-md file:border-0
                          file:text-sm file:font-semibold
                          file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-200
-                         hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
+                         hover:file:bg-blue-100 dark:hover:file:bg-blue-800
+                         file:cursor-pointer
+                         bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
+                         focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800
+                         overflow-hidden"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
           </div>
