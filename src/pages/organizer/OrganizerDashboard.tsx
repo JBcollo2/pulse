@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Menu, X, Search, Plus, Bell, Settings, User
+  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Moon, Sun, Settings
 } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
@@ -49,8 +49,33 @@ const OrganizerDashboard: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [organizerName, setOrganizerName] = useState('Organizer');
+  
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prevMode => !prevMode);
+  }, []);
 
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
@@ -244,12 +269,12 @@ const OrganizerDashboard: React.FC = () => {
   const headerContent = getHeaderContent();
 
   return (
-    <div className="relative min-h-screen bg-gray-50 text-gray-800 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 z-0 opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
+    <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
+      <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
+      ></div>
 
       <div className="relative z-10 flex min-h-screen">
-        {/* Navigation Sidebar */}
         <div className={`fixed top-0 left-0 h-full z-50 ${isExpanded ? 'w-72' : 'w-20'} transition-all duration-300 ease-in-out`}>
           <OrganizerNavigation
             currentView={currentView}
@@ -262,12 +287,20 @@ const OrganizerDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Main Content */}
         <div className={`flex-1 ${isExpanded ? 'md:ml-72' : 'md:ml-20'} p-4 pt-20 md:pt-4 transition-all duration-300 ease-in-out`}>
-          {/* Header Section */}
+          <div className="absolute top-4 right-4 z-50">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 shadow-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              aria-label="Toggle dark mode"
+            >
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+          </div>
+
           <div className={cn(
-            "mb-8 p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 overflow-hidden",
-            "bg-white",
+            "mb-8 p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
+            "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
             `bg-gradient-to-r ${headerContent.gradient} text-white`
           )}>
             <div className="flex items-center gap-6">
@@ -285,106 +318,110 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Overview Section */}
           {currentView === 'overview' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Organizer Dashboard Overview
               </h1>
-              <p className="text-lg max-w-2xl text-gray-600">
+              <p className="text-lg max-w-2xl text-gray-600 dark:text-gray-300">
                 Welcome, {organizerName}! Here's a quick glance at your event management activities and key metrics.
               </p>
 
-              {/* Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                                dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md">
-                      <LayoutDashboard className="w-5 h-5 text-gray-600" />
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
+                      <LayoutDashboard className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-800">Total Events</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Total Events</h2>
                   </div>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-800">
+                  <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
                     {isLoading ? '...' : organizerEvents.length}
                   </p>
-                  <p className="text-sm mt-1 text-gray-600">All events you've organized.</p>
+                  <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">All events you've organized.</p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                                dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md">
-                      <CalendarDays className="w-5 h-5 text-gray-600" />
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
+                      <CalendarDays className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-800">Upcoming Events</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Upcoming Events</h2>
                   </div>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-800">
+                  <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
                     {isLoading ? '...' : upcomingEvents.length}
                   </p>
-                  <p className="text-sm mt-1 text-gray-600">Events scheduled for the future.</p>
+                  <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">Events scheduled for the future.</p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                                dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md">
-                      <CheckCircle className="w-5 h-5 text-gray-600" />
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
+                      <CheckCircle className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                     </div>
-                    <h2 className="text-xl font-semibold text-gray-800">Past Events</h2>
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Past Events</h2>
                   </div>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-800">
+                  <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
                     {isLoading ? '...' : pastEvents.length}
                   </p>
-                  <p className="text-sm mt-1 text-gray-600">Events that have already concluded.</p>
+                  <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">Events that have already concluded.</p>
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h2>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                              dark:bg-gray-800 dark:border-gray-700">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleViewChange('myEvents')}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300"
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
+                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     View My Events
                   </button>
                   <button
                     onClick={() => handleViewChange('overallStats')}
-                    className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300"
+                    className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300
+                              dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
                   >
                     View Overall Stats
                   </button>
                   <button
                     onClick={() => handleViewChange('reports')}
-                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300"
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
+                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     Generate Reports
                   </button>
                 </div>
               </div>
 
-              {/* Summary Statistics */}
               {overallSummary && (
-                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
+                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                                dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-4">
-                    <Activity className="w-5 h-5 text-gray-600" />
-                    <span className="text-lg font-semibold text-gray-800">Summary Statistics</span>
+                    <Activity className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                    <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">Summary Statistics</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base">
-                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg">
-                      <span className="text-gray-600">Total Tickets Sold</span>
-                      <span className="font-bold text-blue-600">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">Total Tickets Sold</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg">
-                      <span className="text-gray-600">Total Revenue</span>
-                      <span className="font-bold text-green-600">{overallSummary.total_revenue_across_all_events}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">Total Revenue</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{overallSummary.total_revenue_across_all_events}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg">
-                      <span className="text-gray-600">Total Events Analyzed</span>
-                      <span className="font-bold text-blue-600">{overallSummary.total_events || overallSummary.events_summary.length}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">Total Events Analyzed</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">{overallSummary.total_events || overallSummary.events_summary.length}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg">
-                      <span className="text-gray-600">Events with Data</span>
-                      <span className="font-bold text-green-600">{overallSummary.events_summary.length}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600">
+                      <span className="text-gray-600 dark:text-gray-300">Events with Data</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{overallSummary.events_summary.length}</span>
                     </div>
                   </div>
                 </div>
@@ -392,38 +429,39 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* My Events Section */}
           {currentView === 'myEvents' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 My Events
               </h1>
-              <p className="text-lg max-w-2xl text-gray-600">
+              <p className="text-lg max-w-2xl text-gray-600 dark:text-gray-300">
                 View all your past and upcoming events and access their individual reports.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isLoading ? (
-                  <p className="col-span-full text-center text-gray-600">Loading events...</p>
+                  <p className="col-span-full text-center text-gray-600 dark:text-gray-300">Loading events...</p>
                 ) : organizerEvents.length > 0 ? (
                   organizerEvents.map(event => (
-                    <div key={event.id} className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full">
-                      <h3 className="text-xl font-semibold mb-2 text-gray-800">{event.name}</h3>
-                      <p className="text-sm mb-3 text-gray-600">{event.date} • {event.location}</p>
+                    <div key={event.id} className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full
+                                    dark:bg-gray-800 dark:border-gray-700">
+                      <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">{event.name}</h3>
+                      <p className="text-sm mb-3 text-gray-600 dark:text-gray-300">{event.date} • {event.location}</p>
                       {event.description && (
-                        <p className="text-sm flex-grow mb-4 text-gray-800">{event.description}</p>
+                        <p className="text-sm flex-grow mb-4 text-gray-800 dark:text-gray-200">{event.description}</p>
                       )}
-                      <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
+                      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <span className={cn(
                           "inline-block px-3 py-1 text-xs font-medium rounded-full",
                           new Date(event.date) > new Date()
-                            ? 'bg-gray-200 text-gray-800'
-                            : 'bg-gray-300 text-gray-600'
+                            ? 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            : 'bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
                         )}>
                           {new Date(event.date) > new Date() ? 'Upcoming' : 'Past Event'}
                         </span>
                         <button
                           onClick={() => handleViewReport(event.id)}
-                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300"
+                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300
+                                    dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                         >
                           View Report
                         </button>
@@ -431,7 +469,8 @@ const OrganizerDashboard: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-full text-center p-8 bg-white text-gray-600 border border-gray-200 rounded-xl shadow-sm">
+                  <div className="col-span-full text-center p-8 bg-white text-gray-600 border border-gray-200 rounded-xl shadow-sm
+                                  dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
                     <p className="mb-4">No events found.</p>
                     <p className="text-sm">Events are managed through the main event management system. Once created, they will appear here.</p>
                   </div>
@@ -440,62 +479,64 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Overall Stats Section */}
           {currentView === 'overallStats' && (
             <div className="animate-fade-in-up">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Overall Statistics
               </h1>
-              <p className="text-lg max-w-2xl mb-8 text-gray-600">
+              <p className="text-lg max-w-2xl mb-8 text-gray-600 dark:text-gray-300">
                 Dive into the comprehensive performance metrics across all your events.
               </p>
               <OrganizerStats
                 overallSummary={overallSummary}
                 isLoading={isLoading}
                 error={error}
-                darkMode={false}
               />
             </div>
           )}
 
-          {/* Reports Section */}
           {currentView === 'reports' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Event Reports
               </h1>
-              <p className="text-lg max-w-2xl text-gray-600">
+              <p className="text-lg max-w-2xl text-gray-600 dark:text-gray-300">
                 Access detailed reports for individual events. Select an event from "My Events" to generate its report.
               </p>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800">How to Access Reports</h2>
+              <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                              dark:bg-gray-800 dark:border-gray-700">
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">How to Access Reports</h2>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
+                                  dark:bg-gray-700 dark:text-gray-300">1</span>
                     <div>
-                      <h4 className="font-semibold text-lg text-gray-800">Go to My Events</h4>
-                      <p className="text-gray-600">Navigate to the "My Events" section from the sidebar to see all your events.</p>
+                      <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Go to My Events</h4>
+                      <p className="text-gray-600 dark:text-gray-300">Navigate to the "My Events" section from the sidebar to see all your events.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
+                                  dark:bg-gray-700 dark:text-gray-300">2</span>
                     <div>
-                      <h4 className="font-semibold text-lg text-gray-800">Select an Event</h4>
-                      <p className="text-gray-600">Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
+                      <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Select an Event</h4>
+                      <p className="text-gray-600 dark:text-gray-300">Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                    <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
+                                  dark:bg-gray-700 dark:text-gray-300">3</span>
                     <div>
-                      <h4 className="font-semibold text-lg text-gray-800">Analyze Performance</h4>
-                      <p className="text-gray-600">Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
+                      <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Analyze Performance</h4>
+                      <p className="text-gray-600 dark:text-gray-300">Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
                     </div>
                   </div>
                 </div>
-                <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <button
                     onClick={() => handleViewChange('myEvents')}
-                    className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300"
+                    className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
+                                dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     Go to My Events
                   </button>
@@ -504,35 +545,46 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* View Report Section */}
           {currentView === 'viewReport' && selectedEventId !== null && (
             <div className="space-y-8 animate-fade-in-up">
               <button
                 onClick={() => setCurrentView('myEvents')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300
+                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
                 <ChevronRight className="h-4 w-4 transform rotate-180" /> Back to My Events
               </button>
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Event Report: {organizerEvents.find(e => e.id === selectedEventId)?.name || `Event ID: ${selectedEventId}`}
               </h1>
               <OrganizerReports
                 eventId={selectedEventId}
-                darkMode={false}
+                // Removed darkMode prop
               />
             </div>
           )}
 
-          {/* Settings Section */}
           {currentView === 'settings' && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl">
-              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
+                            dark:bg-gray-800 dark:border-gray-700">
+              <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Settings
               </h1>
-              <p className="text-lg text-gray-600">Manage your profile and dashboard preferences here.</p>
-              <p className="text-gray-600">
+              <p className="text-lg text-gray-600 dark:text-gray-300">Manage your profile and dashboard preferences here.</p>
+              <p className="text-gray-600 dark:text-gray-300">
                 This section is under development.
               </p>
+              <div className="flex items-center gap-4">
+                <span className="text-gray-800 dark:text-gray-100">Dark Mode:</span>
+                <button
+                  onClick={toggleDarkMode}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
+                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center gap-2"
+                >
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                </button>
+              </div>
             </div>
           )}
         </div>

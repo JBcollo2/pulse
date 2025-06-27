@@ -35,7 +35,6 @@ interface EventReport {
 interface OrganizerReportsProps {
   eventId: number;
   eventReport?: EventReport | null;
-  darkMode: boolean;
 }
 
 const CHART_COLORS = [
@@ -43,7 +42,7 @@ const CHART_COLORS = [
   '#EC4899', '#10B981', '#F97316', '#6366F1', '#84CC16'
 ];
 
-const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null, darkMode }) => {
+const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
   const [reportData, setReportData] = useState<EventReport | null>(initialReport);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -278,16 +277,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       return (
         <div className={cn(
           "p-4 rounded-lg shadow-lg border backdrop-blur-sm",
-          darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
+          "dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800"
         )}>
-          <p className="font-semibold text-lg mb-2">{label}</p>
+          <p className="font-semibold text-lg mb-2 dark:text-gray-200 text-gray-800">{label}</p>
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center gap-2 mb-1">
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm">
+              <span className="text-sm dark:text-gray-200 text-gray-800">
                 {entry.name}: {entry.value}
               </span>
             </div>
@@ -310,7 +309,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       <text
         x={x}
         y={y}
-        fill={darkMode ? "#ffffff" : "#000000"}
+        fill={"#ffffff"}
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         className="text-xs font-medium"
@@ -322,21 +321,21 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
   if (isLoadingReport && !reportData && !error) {
     return (
-      <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+      <Card className={cn("max-w-3xl mx-auto my-8 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
         <CardHeader>
-          <CardTitle className={darkMode ? "text-gray-200" : "text-gray-800"}>Event Report</CardTitle>
-          <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Loading event report data...</CardDescription>
+          <CardTitle className="dark:text-gray-200 text-gray-800">Event Report</CardTitle>
+          <CardDescription className="dark:text-gray-400 text-gray-600">Loading event report data...</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-64">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-          <p className={cn("mt-4 text-lg", darkMode ? "text-gray-400" : "text-gray-600")}>Fetching event insights...</p>
+          <p className={cn("mt-4 text-lg dark:text-gray-400 text-gray-600")}>Fetching event insights...</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className={cn("min-h-screen p-4 md:p-6 lg:p-8", darkMode ? "bg-gray-900 text-gray-200" : "bg-gray-50 text-gray-800")}>
+    <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -346,8 +345,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </h1>
             {reportData && (
               <>
-                <h2 className={cn("text-xl md:text-2xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>{reportData.event_name}</h2>
-                <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                <h2 className={cn("text-xl md:text-2xl font-semibold dark:text-gray-200 text-gray-800")}>{reportData.event_name}</h2>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm dark:text-gray-400 text-gray-500">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {reportData.event_date}
@@ -367,7 +366,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 variant="outline"
                 onClick={() => downloadReport('pdf')}
                 disabled={isLoadingDownload || !canFetchReport}
-                className="hover:scale-105 transition-transform"
+                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
                 <Download className="mr-2 h-4 w-4" />
                 {isLoadingDownload ? "Downloading..." : "PDF Report"}
@@ -376,7 +375,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 variant="outline"
                 onClick={() => downloadReport('csv')}
                 disabled={isLoadingDownload || !canFetchReport}
-                className="hover:scale-105 transition-transform"
+                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
                 <Download className="mr-2 h-4 w-4" />
                 {isLoadingDownload ? "Downloading..." : "CSV Export"}
@@ -394,35 +393,35 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         </div>
 
         {/* Date Filter Section */}
-        <Card className={cn("shadow-lg", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
               <Filter className="h-5 w-5" />
               Date Range Filter
             </CardTitle>
-            <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Customize your report timeframe</CardDescription>
+            <CardDescription className="dark:text-gray-400 text-gray-600">Customize your report timeframe</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1 space-y-2 w-full">
-                <Label htmlFor="startDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>Start Date</Label>
+                <Label htmlFor="startDate" className="dark:text-gray-200 text-gray-800">Start Date</Label>
                 <Input
                   id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   max={endDate || undefined}
                 />
               </div>
               <div className="flex-1 space-y-2 w-full">
-                <Label htmlFor="endDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>End Date</Label>
+                <Label htmlFor="endDate" className="dark:text-gray-200 text-gray-800">End Date</Label>
                 <Input
                   id="endDate"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   min={startDate || undefined}
                 />
               </div>
@@ -452,11 +451,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className={cn(
-                "hover:shadow-lg transition-all hover:scale-105",
-                darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                "hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800"
               )}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
                   <FileText className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
@@ -471,11 +469,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </Card>
 
               <Card className={cn(
-                "hover:shadow-lg transition-all hover:scale-105",
-                darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                "hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800"
               )}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
@@ -490,11 +487,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </Card>
 
               <Card className={cn(
-                "hover:shadow-lg transition-all hover:scale-105",
-                darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                "hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800"
               )}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Attendees</CardTitle>
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
                   <Users className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
@@ -509,11 +505,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </Card>
 
               <Card className={cn(
-                "hover:shadow-lg transition-all hover:scale-105",
-                darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                "hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800"
               )}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Avg. Ticket Price</CardTitle>
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Avg. Ticket Price</CardTitle>
                   <PieChartIcon className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
@@ -539,13 +534,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               <TabsContent value="overview" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Tickets Sold Pie Chart */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                         <PieChartIcon className="h-5 w-5 text-blue-500" />
                         Tickets Distribution
                       </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Breakdown of tickets sold by type</CardDescription>
+                      <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of tickets sold by type</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {ticketsSoldChartData.length > 0 ? (
@@ -572,7 +567,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           </PieChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No ticket sales data available for this period.
                         </div>
                       )}
@@ -580,22 +575,22 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </Card>
 
                   {/* Revenue Breakdown */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle className="flex items-center gap-2">
+                          <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                             <DollarSign className="h-5 w-5 text-green-500" />
                             Revenue by Type
                           </CardTitle>
-                          <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Revenue distribution across ticket categories</CardDescription>
+                          <CardDescription className="dark:text-gray-400 text-gray-600">Revenue distribution across ticket categories</CardDescription>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             variant={activeChart === 'bar' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveChart('bar')}
-                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
+                            className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                           >
                             Bar
                           </Button>
@@ -603,7 +598,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             variant={activeChart === 'pie' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setActiveChart('pie')}
-                            className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
+                            className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                           >
                             Pie
                           </Button>
@@ -646,7 +641,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           )}
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No revenue data available for this period.
                         </div>
                       )}
@@ -658,13 +653,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               <TabsContent value="tickets" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Attendees by Ticket Type */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                         <Users className="h-5 w-5 text-green-500" />
                         Attendees by Ticket Type
                       </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Number of attendees associated with each ticket type</CardDescription>
+                      <CardDescription className="dark:text-gray-400 text-gray-600">Number of attendees associated with each ticket type</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {attendeesByTicketTypeData.length > 0 ? (
@@ -679,7 +674,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No attendee data available by ticket type for this period.
                         </div>
                       )}
@@ -687,13 +682,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </Card>
 
                   {/* Payment Method Usage */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                         <DollarSign className="h-5 w-5 text-blue-500" />
                         Payment Method Usage
                       </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Breakdown of transactions by payment method</CardDescription>
+                      <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {paymentMethodChartData.length > 0 ? (
@@ -720,7 +715,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           </PieChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No payment method usage data available for this period.
                         </div>
                       )}
@@ -732,13 +727,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               <TabsContent value="revenue" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Revenue by Ticket Type */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                         <DollarSign className="h-5 w-5 text-green-500" />
                         Revenue by Ticket Type
                       </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Revenue generated from each ticket category</CardDescription>
+                      <CardDescription className="dark:text-gray-400 text-gray-600">Revenue generated from each ticket category</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {revenueChartData.length > 0 ? (
@@ -753,7 +748,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           </BarChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No revenue data available for this period.
                         </div>
                       )}
@@ -761,13 +756,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </Card>
 
                   {/* Payment Method Usage */}
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
                         <DollarSign className="h-5 w-5 text-blue-500" />
                         Payment Method Usage
                       </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Breakdown of transactions by payment method</CardDescription>
+                      <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {paymentMethodChartData.length > 0 ? (
@@ -794,7 +789,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           </PieChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
                           No payment method usage data available for this period.
                         </div>
                       )}
@@ -805,13 +800,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </Tabs>
           </>
         ) : (
-          <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+          <Card className={cn("max-w-3xl mx-auto my-8 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
             <CardHeader>
-              <CardTitle className={darkMode ? "text-gray-200" : "text-gray-800"}>No Report Data</CardTitle>
-              <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
+              <CardTitle className="dark:text-gray-200 text-gray-800">No Report Data</CardTitle>
+              <CardDescription className="dark:text-gray-400 text-gray-600">Please select a date range and click "Apply Filter" to generate the report.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-400" : "text-gray-600")}>
+              <p className={cn("text-center h-32 flex items-center justify-center dark:text-gray-400 text-gray-600")}>
                 Once you select the dates and apply the filter, the report data and charts will appear here.
               </p>
             </CardContent>
