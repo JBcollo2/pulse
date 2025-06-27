@@ -43,6 +43,12 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
+  // Add a placeholder logout handler
+  const handleLogout = () => {
+    // TODO: Implement actual logout logic
+    alert("Logged out!");
+  };
+
   const navigationItems = [
     {
       id: "overview",
@@ -289,7 +295,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
-                  <button className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors duration-200 ${darkMode ? "text-red-400 hover:bg-red-950/20" : "text-red-600 hover:bg-red-50"}`}>
+                  <button onClick={handleLogout} className={`flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors duration-200 ${darkMode ? "text-red-400 hover:bg-red-950/20" : "text-red-600 hover:bg-red-50"}`}>
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </button>

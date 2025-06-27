@@ -137,7 +137,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</div>
               <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> 12% increase
+                <TrendingUp className="h-3 w-3 mr-1" />
+                12% increase
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Across all your events</p>
             </CardContent>
@@ -163,7 +164,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             <CardContent>
               <div className="text-2xl md:text-3xl font-bold text-green-600">${overallSummary.total_revenue_across_all_events}</div>
               <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> 15% increase
+                <TrendingUp className="h-3 w-3 mr-1" />
+                15% increase
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">From all ticket sales</p>
             </CardContent>
@@ -190,7 +192,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
               <CardContent>
                 <div className="text-2xl md:text-3xl font-bold">{overallSummary.total_events}</div>
                 <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" /> 8% increase
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  8% increase
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Past and upcoming</p>
               </CardContent>
@@ -218,7 +221,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
               <CardContent>
                 <div className="text-2xl md:text-3xl font-bold">{overallSummary.upcoming_events_count}</div>
                 <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" /> 5% increase
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  5% increase
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Events planned</p>
               </CardContent>

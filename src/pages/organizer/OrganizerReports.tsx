@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
+  PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import {
   Loader2, AlertCircle, FileText, Download, Mail, PieChart as PieChartIcon,
@@ -15,7 +15,6 @@ import {
   Eye, EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 // Define the interface for the event report data
 interface EventReport {
@@ -124,16 +123,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       setIsLoadingReport(false);
     }
   }, [eventId, startDate, endDate, canFetchReport, handleOperationError, toast]);
-
-  // Initial load: Only load if an initial report is provided. Otherwise, wait for user input.
-  useEffect(() => {
-    if (initialReport) {
-      setReportData(initialReport);
-      if (initialReport.filter_start_date) setStartDate(initialReport.filter_start_date);
-      if (initialReport.filter_end_date) setEndDate(initialReport.filter_end_date);
-      setIsLoadingReport(false);
-    }
-  }, [initialReport]);
 
   const downloadReport = useCallback(async (format: 'pdf' | 'csv') => {
     if (!canFetchReport) {
@@ -433,7 +422,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
                   max={endDate || undefined}
                 />
               </div>
@@ -444,7 +433,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
                   min={startDate || undefined}
                 />
               </div>
