@@ -15,6 +15,7 @@ import {
   Eye, EyeOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 // Define the interface for the event report data
 interface EventReport {
@@ -357,18 +358,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   }
 
   return (
-    <div className={cn("min-h-screen p-6 lg:p-8", darkMode ? "bg-gray-900 text-gray-200" : "bg-gray-50 text-gray-800")}>
+    <div className={cn("min-h-screen p-4 md:p-6 lg:p-8", darkMode ? "bg-gray-900 text-gray-200" : "bg-gray-50 text-gray-800")}>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header Section */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="space-y-2 text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
               Event Analytics Dashboard
             </h1>
             {reportData && (
               <>
-                <h2 className={cn("text-2xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>{reportData.event_name}</h2>
-                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                <h2 className={cn("text-xl md:text-2xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>{reportData.event_name}</h2>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {reportData.event_date}
@@ -383,7 +384,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           </div>
 
           {reportData && (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center md:justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => downloadReport('pdf')}
@@ -425,31 +426,31 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4 items-end">
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-2 w-full">
                 <Label htmlFor="startDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>Start Date</Label>
                 <Input
                   id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
                   max={endDate || undefined}
                 />
               </div>
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-2 w-full">
                 <Label htmlFor="endDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>End Date</Label>
                 <Input
                   id="endDate"
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
+                  className={cn("transition-all hover:border-blue-500 focus:border-blue-500 w-full", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-white border-gray-300 text-gray-800")}
                   min={startDate || undefined}
                 />
               </div>
               <Button
                 onClick={fetchReport}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-500 hover:to-purple-600 min-w-[140px] hover:scale-105 transition-all"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-500 hover:to-purple-600 w-full sm:w-auto hover:scale-105 transition-all"
                 disabled={isLoadingReport || !canFetchReport}
               >
                 {isLoadingReport ? (
@@ -471,7 +472,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         {reportData ? (
           <>
             {/* Summary Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className={cn(
                 "hover:shadow-lg transition-all hover:scale-105",
                 darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800"
@@ -481,7 +482,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <FileText className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-blue-500">
+                  <div className="text-2xl md:text-3xl font-bold text-blue-500">
                     {reportData.total_tickets_sold.toLocaleString()}
                   </div>
                   <div className="flex items-center text-xs text-green-500 mt-1">
@@ -500,7 +501,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <DollarSign className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-500">
+                  <div className="text-2xl md:text-3xl font-bold text-green-500">
                     ${reportData.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className="flex items-center text-xs text-green-500 mt-1">
@@ -519,7 +520,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <Users className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-purple-500">
+                  <div className="text-2xl md:text-3xl font-bold text-purple-500">
                     {reportData.number_of_attendees.toLocaleString()}
                   </div>
                   <div className="flex items-center text-xs text-green-500 mt-1">
@@ -538,7 +539,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <PieChartIcon className="h-4 w-4 text-red-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-red-500">
+                  <div className="text-2xl md:text-3xl font-bold text-red-500">
                     ${(reportData.total_revenue / reportData.total_tickets_sold).toFixed(0)}
                   </div>
                   <div className="flex items-center text-xs text-green-500 mt-1">
@@ -551,14 +552,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
             {/* Charts Section */}
             <Tabs defaultValue="overview" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="tickets">Tickets & Attendees</TabsTrigger>
                 <TabsTrigger value="revenue">Revenue & Payments</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Tickets Sold Pie Chart */}
                   <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>
@@ -677,7 +678,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </TabsContent>
 
               <TabsContent value="tickets" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Attendees by Ticket Type */}
                   <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>
@@ -751,7 +752,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </TabsContent>
 
               <TabsContent value="revenue" className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Revenue by Ticket Type */}
                   <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>

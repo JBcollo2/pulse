@@ -45,7 +45,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
   // --- Loading State ---
   if (isLoading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, index) => (
           <Card key={index} className={cn(
             "animate-pulse rounded-lg border",
@@ -104,8 +104,8 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
   }
 
   return (
-    <div className={cn("space-y-8 p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-gray-200" : "text-gray-800")}>
-      <div className="flex items-center justify-between space-y-2 flex-wrap gap-4">
+    <div className={cn("space-y-8 p-4 md:p-6 lg:p-8 max-w-6xl mx-auto", darkMode ? "text-gray-200" : "text-gray-800")}>
+      <div className="flex flex-col md:flex-row items-center justify-between space-y-2 flex-wrap gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
             Overall Statistics for {overallSummary.organizer_name || "Your Organization"}
@@ -117,7 +117,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
       </div>
 
       {/* --- Summary Cards --- */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -135,7 +135,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</div>
+              <div className="text-2xl md:text-3xl font-bold">{overallSummary.total_tickets_sold_across_all_events.toLocaleString()}</div>
               <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" /> 12% increase
               </p>
@@ -161,7 +161,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-green-600">${overallSummary.total_revenue_across_all_events}</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-600">${overallSummary.total_revenue_across_all_events}</div>
               <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" /> 15% increase
               </p>
@@ -188,7 +188,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{overallSummary.total_events}</div>
+                <div className="text-2xl md:text-3xl font-bold">{overallSummary.total_events}</div>
                 <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" /> 8% increase
                 </p>
@@ -216,7 +216,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{overallSummary.upcoming_events_count}</div>
+                <div className="text-2xl md:text-3xl font-bold">{overallSummary.upcoming_events_count}</div>
                 <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" /> 5% increase
                 </p>
@@ -230,7 +230,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
       {/* --- Event Breakdowns --- */}
       <h2 className="text-2xl font-bold tracking-tight mt-8">Individual Event Performance</h2>
       {overallSummary.events_summary && overallSummary.events_summary.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {overallSummary.events_summary.map(event => (
             <motion.div
               key={event.event_id}
@@ -262,7 +262,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
       )}
 
       {/* --- Monthly Trends --- */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {overallSummary.tickets_sold_monthly_trend && overallSummary.tickets_sold_monthly_trend.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

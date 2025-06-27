@@ -260,7 +260,7 @@ const OrganizerDashboard: React.FC = () => {
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <div className="relative z-10 flex min-h-screen">
-        <div className="fixed top-0 left-0 h-full w-72 flex-shrink-0 z-50">
+        <div className={`fixed top-0 left-0 h-full z-50 ${isExpanded ? 'w-72' : 'w-20'} transition-all duration-300 ease-in-out`}>
           <OrganizerNavigation
             currentView={currentView}
             onViewChange={handleViewChange}
@@ -273,7 +273,7 @@ const OrganizerDashboard: React.FC = () => {
           />
         </div>
 
-        <div className="flex-1 ml-72 p-4 md:p-8">
+        <div className={`flex-1 ${isExpanded ? 'md:ml-72' : 'md:ml-20'} p-4 transition-all duration-300 ease-in-out`}>
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden",
             "bg-white dark:bg-gray-800",
@@ -296,72 +296,72 @@ const OrganizerDashboard: React.FC = () => {
 
           {currentView === 'overview' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 Organizer Dashboard Overview
               </h1>
               <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-400" : "text-gray-600")}>
                 Welcome, {organizerName}! Here's a quick glance at your event management activities and key metrics.
               </p>
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-gray-700" : "bg-gray-200")}>
                       <LayoutDashboard className={cn("w-5 h-5", darkMode ? "text-gray-200" : "text-gray-600")} />
                     </div>
                     <h2 className={cn("text-xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>Total Events</h2>
                   </div>
-                  <p className={cn("text-4xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
+                  <p className={cn("text-2xl md:text-3xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
                     {isLoading ? '...' : organizerEvents.length}
                   </p>
                   <p className={cn("text-sm mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>All events you've organized.</p>
                 </div>
 
-                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+                <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-gray-700" : "bg-gray-200")}>
                       <CalendarDays className="w-5 h-5 text-gray-600 dark:text-gray-200" />
                     </div>
                     <h2 className={cn("text-xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>Upcoming Events</h2>
                   </div>
-                  <p className={cn("text-4xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
+                  <p className={cn("text-2xl md:text-3xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
                     {isLoading ? '...' : upcomingEvents.length}
                   </p>
                   <p className={cn("text-sm mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>Events scheduled for the future.</p>
                 </div>
 
-                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+                <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", darkMode ? "bg-gray-700" : "bg-gray-200")}>
                       <CheckCircle className={cn("w-5 h-5", darkMode ? "text-gray-200" : "text-gray-600")} />
                     </div>
                     <h2 className={cn("text-xl font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>Past Events</h2>
                   </div>
-                  <p className={cn("text-4xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
+                  <p className={cn("text-2xl md:text-3xl font-bold", darkMode ? "text-gray-200" : "text-gray-800")}>
                     {isLoading ? '...' : pastEvents.length}
                   </p>
                   <p className={cn("text-sm mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>Events that have already concluded.</p>
                 </div>
               </div>
 
-              <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+              <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                 <h2 className={cn("text-xl font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>Quick Actions</h2>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleViewChange('myEvents')}
-                    className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+                    className={cn("px-4 py-2 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
                   >
                     View My Events
                   </button>
                   <button
                     onClick={() => handleViewChange('overallStats')}
-                    className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-blue-700 text-gray-200 hover:bg-blue-600" : "bg-blue-200 text-gray-800 hover:bg-blue-300")}
+                    className={cn("px-4 py-2 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-blue-700 text-gray-200 hover:bg-blue-600" : "bg-blue-200 text-gray-800 hover:bg-blue-300")}
                   >
                     View Overall Stats
                   </button>
                   <button
                     onClick={() => handleViewChange('reports')}
-                    className={cn("px-5 py-2.5 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+                    className={cn("px-4 py-2 rounded-lg hover:scale-105 shadow-md text-sm font-medium transition-all duration-300", darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
                   >
                     Generate Reports
                   </button>
@@ -369,7 +369,7 @@ const OrganizerDashboard: React.FC = () => {
               </div>
 
               {overallSummary && (
-                <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+                <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                   <div className="flex items-center gap-2 mb-4">
                     <Activity className={cn("w-5 h-5", darkMode ? "text-gray-400" : "text-gray-600")} />
                     <span className={cn("text-lg font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>Summary Statistics</span>
@@ -399,21 +399,20 @@ const OrganizerDashboard: React.FC = () => {
 
           {currentView === 'myEvents' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 My Events
               </h1>
               <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-400" : "text-gray-600")}>
                 View all your past and upcoming events and access their individual reports.
               </p>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isLoading ? (
                   <p className={cn("col-span-full text-center", darkMode ? "text-gray-400" : "text-gray-600")}>Loading events...</p>
                 ) : organizerEvents.length > 0 ? (
                   organizerEvents.map(event => (
-                    <div key={event.id} className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+                    <div key={event.id} className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                       <h3 className={cn("text-xl font-semibold mb-2", darkMode ? "text-gray-200" : "text-gray-800")}>{event.name}</h3>
                       <p className={cn("text-sm mb-3", darkMode ? "text-gray-400" : "text-gray-600")}>{event.date} • {event.location}</p>
-                      <p className={cn("text-xs mb-2", darkMode ? "text-gray-400" : "text-gray-600")}>Event ID: {event.id}</p>
                       {event.description && (
                         <p className={cn("text-sm flex-grow mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>{event.description}</p>
                       )}
@@ -447,7 +446,7 @@ const OrganizerDashboard: React.FC = () => {
 
           {currentView === 'overallStats' && (
             <div className="animate-fade-in-up">
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 Overall Statistics
               </h1>
               <p className={cn("text-lg max-w-2xl mb-8", darkMode ? "text-gray-400" : "text-gray-600")}>
@@ -464,13 +463,13 @@ const OrganizerDashboard: React.FC = () => {
 
           {currentView === 'reports' && (
             <div className="space-y-8 animate-fade-in-up">
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 Event Reports
               </h1>
               <p className={cn("text-lg max-w-2xl", darkMode ? "text-gray-400" : "text-gray-600")}>
                 Access detailed reports for individual events. Select an event from "My Events" to generate its report.
               </p>
-              <div className={cn("border rounded-xl p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+              <div className={cn("border rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
                 <h2 className={cn("text-xl font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>How to Access Reports</h2>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
@@ -515,7 +514,7 @@ const OrganizerDashboard: React.FC = () => {
               >
                 <ChevronRight className="h-4 w-4 transform rotate-180" /> Back to My Events
               </button>
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 Event Report: {organizerEvents.find(e => e.id === selectedEventId)?.name || `Event ID: ${selectedEventId}`}
               </h1>
               <OrganizerReports
@@ -526,8 +525,8 @@ const OrganizerDashboard: React.FC = () => {
           )}
 
           {currentView === 'settings' && (
-            <div className={cn("border rounded-xl p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
-              <h1 className={cn("text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
+            <div className={cn("border rounded-xl p-4 md:p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+              <h1 className={cn("text-3xl md:text-4xl font-extrabold mb-6", darkMode ? "text-gray-200" : "text-gray-800")}>
                 Settings
               </h1>
               <p className={cn("text-lg", darkMode ? "text-gray-400" : "text-gray-600")}>Manage your profile and dashboard preferences here.</p>
