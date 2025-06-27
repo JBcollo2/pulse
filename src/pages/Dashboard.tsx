@@ -302,7 +302,7 @@ const Dashboard = () => {
                                    opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none
                                    whitespace-nowrap z-50">
                         {item.name}
-                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1
+                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1a
                                        border-4 border-transparent border-r-gray-800"></div>
                       </div>
                     )}
