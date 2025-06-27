@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BadgeCheck, X, RefreshCw, QrCode, Camera, CheckCircle2 } from 'lucide-react';
+import { BadgeCheck, X, RefreshCw, QrCode, Camera, CheckCircle2, Hash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 declare global {
@@ -33,6 +33,120 @@ interface ScanHistoryItem {
   details: TicketData | { error: string };
 }
 
+// Styled Manual Entry Dialog Component
+const ManualEntryDialog = ({ isOpen, onClose, onSubmit }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (ticketId: string) => void;
+}) => {
+  const [ticketId, setTicketId] = useState('');
+
+  const handleOk = () => {
+    if (ticketId.trim()) {
+      onSubmit(ticketId);
+      setTicketId('');
+      onClose();
+    }
+  };
+
+  const handleCancel = () => {
+    setTicketId('');
+    onClose();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleOk();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md mx-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-2xl">
+          <CardHeader className="relative pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Hash className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Enter Ticket ID
+                  </CardTitle>
+                  <CardDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Please provide the ticket identification number
+                  </CardDescription>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancel}
+                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label 
+                htmlFor="ticketId" 
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Ticket ID:
+              </label>
+              <div className="relative">
+                <input
+                  id="ticketId"
+                  type="text"
+                  value={ticketId}
+                  onChange={(e) => setTicketId(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="e.g., TKT-2024-001234"
+                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-base"
+                  autoFocus
+                />
+                {ticketId && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Enter the complete ticket ID as shown on your ticket
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 space-y-3 space-y-reverse sm:space-y-0">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 px-6 py-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleOk}
+                disabled={!ticketId.trim()}
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 px-6 py-2 font-medium"
+              >
+                Verify Ticket
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
 const QRScanner = () => {
   const { toast } = useToast();
   const [scanning, setScanning] = useState(false);
@@ -46,6 +160,7 @@ const QRScanner = () => {
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('scanner');
   const [loading, setLoading] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scannerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -270,12 +385,10 @@ const QRScanner = () => {
     setScanning(true);
   };
 
-  const manualEntry = () => {
-    const ticketId = prompt('Enter ticket ID:');
-    if (ticketId) {
-      setScannedCode(ticketId);
-      verifyTicket(ticketId);
-    }
+  // Updated manual entry function to use styled dialog
+  const handleManualEntry = (ticketId: string) => {
+    setScannedCode(ticketId);
+    verifyTicket(ticketId);
   };
 
   const formatDateTime = (dateString?: string) => {
@@ -293,6 +406,13 @@ const QRScanner = () => {
 
   return (
     <div className="max-w-md mx-auto bg-white dark:bg-gray-900 min-h-screen">
+      {/* Manual Entry Dialog */}
+      <ManualEntryDialog 
+        isOpen={showManualEntry}
+        onClose={() => setShowManualEntry(false)}
+        onSubmit={handleManualEntry}
+      />
+
       <Tabs defaultValue="scanner" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <TabsTrigger 
@@ -416,7 +536,7 @@ const QRScanner = () => {
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline" 
-                onClick={manualEntry}
+                onClick={() => setShowManualEntry(true)}
                 className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
                 Manual Entry
