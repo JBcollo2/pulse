@@ -54,6 +54,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
+  const [isMobile, setIsMobile] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -137,6 +138,21 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   };
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         sidebarRef.current &&
@@ -160,22 +176,6 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
   return (
     <>
-      {/* This mobile header and toggle button should ideally be placed within the
-        main content area, not inside the OrganizerNavigation.
-        This allows it to respect the main content's padding/margin and avoid
-        layout issues when the sidebar slides out.
-        
-        Example of how it might look in your parent layout component:
-        <div className="flex min-h-screen">
-          <OrganizerNavigation ... />
-          <div className="flex-1 p-4 md:ml-72 transition-all duration-300"> {/* Apply flex-1 and dynamic margin here * /
-            <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 ...">
-                {/* Mobile header and toggle button * /}
-            </div>
-            {/* Main content goes here * /}
-          </div>
-        </div>
-      */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -203,11 +203,10 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         />
       )}
 
-      {/* Organizer Navigation Sidebar */}
       <aside
         ref={sidebarRef}
         className={`fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out
-          ${isExpanded ? "md:w-72" : "md:w-20"} 
+          ${isExpanded ? "md:w-72" : "md:w-20"}
           ${isMobileOpen ? "left-0 w-72" : "-left-72 md:left-0"}
           md:relative md:translate-x-0 md:shadow-none md:z-auto`}
       >
@@ -216,15 +215,15 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
               <Ticket className="w-6 h-6 text-white" />
             </div>
-            {(isExpanded || isMobileOpen) && (
-              <div className="animate-fade-in hidden md:block"> {/* Hidden on mobile when not expanded to avoid jarring */}
+            {(isExpanded || isMobile) && (
+              <div className="animate-fade-in hidden md:block">
                 <h2 className="font-bold text-2xl bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
                   Pulse
                 </h2>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Event Organizer</p>
               </div>
             )}
-            {(isExpanded || isMobileOpen) && (
+            {(isExpanded || isMobile) && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="ml-auto p-2 rounded-lg transition-colors duration-200 hidden md:block hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -234,7 +233,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             )}
           </div>
 
-          {(isExpanded || isMobileOpen) && (
+          {(isExpanded || isMobile) && (
             <div className="mt-4 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <input
@@ -269,9 +268,9 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 >
                   <item.icon className={`h-5 w-5 transition-all duration-300
                     ${isActive ? "text-white" : item.color}
-                    ${isExpanded || isMobileOpen ? "" : "mx-auto"}`} />
+                    ${isExpanded || isMobile ? "" : "mx-auto"}`} />
 
-                  {(isExpanded || isMobileOpen) && (
+                  {(isExpanded || isMobile) && (
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.label}</div>
                       <div className={`text-xs truncate transition-colors duration-300
@@ -281,7 +280,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     </div>
                   )}
 
-                  {hasSubItems && (isExpanded || isMobileOpen) && (
+                  {hasSubItems && (isExpanded || isMobile) && (
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200
                       ${isCategoryOpen ? 'rotate-180' : ''} ${isActive ? "text-white" : "text-gray-500 dark:text-gray-400"}`} />
                   )}
@@ -290,15 +289,15 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80" />
                   )}
 
-                  {!isExpanded && !isMobileOpen && (
+                  {!isExpanded && !isMobile && (
                     <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl">
                       {item.label}
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900 dark:border-r-700"></div>
+                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
                     </div>
                   )}
                 </button>
 
-                {hasSubItems && (isExpanded || isMobileOpen) && isCategoryOpen && (
+                {hasSubItems && (isExpanded || isMobile) && isCategoryOpen && (
                   <div className="ml-8 mt-1 space-y-1 border-l border-gray-300 dark:border-gray-600 pl-4 py-1 animate-fade-in-down">
                     {item.subItems?.map((subItem) => {
                       const isSubActive = currentView === subItem.id;
@@ -324,7 +323,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           })}
         </nav>
 
-        {(isExpanded || isMobileOpen) && (
+        {(isExpanded || isMobile) && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
               Quick Actions
@@ -366,7 +365,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           </div>
         )}
 
-        {!isExpanded && !isMobileOpen && (
+        {!isExpanded && !isMobile && (
           <div className="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
             <button className="p-3 rounded-lg transition-all duration-200 group relative bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700">
               <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />

@@ -51,6 +51,7 @@ const OrganizerDashboard: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [organizerName, setOrganizerName] = useState('Organizer');
+  const [isMobile, setIsMobile] = useState(false);
 
   const { toast } = useToast();
 
@@ -200,6 +201,22 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [currentView, fetchOrganizerEvents, fetchOverallSummary]);
 
+  // Check screen size and update state
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // Initial check
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Derived State for Event Filtering
   const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
   const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
@@ -281,24 +298,25 @@ const OrganizerDashboard: React.FC = () => {
         />
 
         <div className={cn(
-          "flex-1 transition-all duration-300 ease-in-out", // Removed p-4 from here
+          "flex-1 transition-all duration-300 ease-in-out",
           isExpanded ? 'md:ml-72' : 'md:ml-20',
           "ml-0"
         )}>
-          {/* Mobile menu button should probably be at the top left, consider adjusting its position */}
-          <button
-            className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 shadow-sm mt-4 ml-4" // Added mt-4 and ml-4 for mobile button
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            aria-label="Toggle navigation"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+          {isMobile && (
+            <button
+              className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 shadow-sm mt-4 ml-4"
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              aria-label="Toggle navigation"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          )}
 
           <div className={cn(
-            "p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden", // Removed mb-8 from here
+            "p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
             "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
             `bg-gradient-to-r ${headerContent.gradient} text-white`
-          )} style={{ marginTop: '0' /* Ensure no default margin from parent */ }}> {/* Explicitly set margin-top to 0 */}
+          )} style={{ marginTop: '0' }}>
             <div className="flex items-center gap-6">
               <div className="p-4 rounded-full bg-white bg-opacity-20 shadow-inner transition-transform duration-300 hover:scale-105">
                 {headerContent.icon}
@@ -314,8 +332,7 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Add padding to the content area below the header, but only on the sides and bottom */}
-          <div className="p-4 pt-0 md:p-8 md:pt-0"> {/* Added padding to the content area itself, but removed top padding */}
+          <div className="p-4 pt-0 md:p-8 md:pt-0">
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
                 <strong className="font-bold">Error!</strong>
@@ -377,29 +394,29 @@ const OrganizerDashboard: React.FC = () => {
                     </p>
                     <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">Events that have already concluded.</p>
                   </div>
-                </div>
 
-                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
-                  <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => handleViewChange('myEvents')}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                    >
-                      View My Events
-                    </button>
-                    <button
-                      onClick={() => handleViewChange('overallStats')}
-                      className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
-                    >
-                      View Overall Stats
-                    </button>
-                    <button
-                      onClick={() => handleViewChange('reports')}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                    >
-                      Generate Reports
-                    </button>
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleViewChange('myEvents')}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                      >
+                        View My Events
+                      </button>
+                      <button
+                        onClick={() => handleViewChange('overallStats')}
+                        className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
+                      >
+                        View Overall Stats
+                      </button>
+                      <button
+                        onClick={() => handleViewChange('reports')}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                      >
+                        Generate Reports
+                      </button>
+                    </div>
                   </div>
                 </div>
 
