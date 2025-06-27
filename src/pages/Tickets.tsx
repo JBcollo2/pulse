@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Calendar, MapPin, Clock, CreditCard } from 'lucide-react';
+import { Search, Calendar, MapPin, Clock, CreditCard, Filter } from 'lucide-react';
 
 interface Ticket {
   ticket_id: number;
@@ -19,6 +19,7 @@ const Tickets = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -39,33 +40,20 @@ const Tickets = () => {
     fetchTickets();
   }, []);
 
-  const handleRefund = async (ticketId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/tickets/${ticketId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to process refund');
-      }
-
-      setTickets(tickets.filter(ticket => ticket.ticket_id !== ticketId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    }
-  };
-
   const handleExport = () => {
     // Export functionality
     console.log('Exporting tickets...');
   };
 
-  const filteredTickets = tickets.filter(ticket =>
-    ticket.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = tickets.filter(ticket => {
+    const matchesSearch = ticket.event.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.ticket_type.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || ticket.status.toLowerCase() === statusFilter.toLowerCase();
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -124,19 +112,31 @@ const Tickets = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search tickets..."
+                placeholder="Search by event, location, or ticket type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full sm:w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-colors duration-200"
+                className="pl-10 pr-4 py-2 w-full sm:w-80 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-colors duration-200"
               />
             </div>
-            <button
-              onClick={handleExport}
-              className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 font-medium"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </button>
+            
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="pl-10 pr-8 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:outline-none transition-colors duration-200 appearance-none cursor-pointer min-w-32"
+              >
+                <option value="all">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -191,6 +191,11 @@ const Tickets = () => {
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {filteredTickets.length} of {tickets.length} tickets shown
+              {statusFilter !== 'all' && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-full text-xs">
+                  {statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} only
+                </span>
+              )}
             </p>
           </div>
           
@@ -207,7 +212,6 @@ const Tickets = () => {
                   <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700 dark:text-gray-300">Price</th>
                   <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700 dark:text-gray-300">Status</th>
                   <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700 dark:text-gray-300">Purchased</th>
-                  <th className="text-left py-3 px-6 text-sm font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -256,16 +260,6 @@ const Tickets = () => {
                     </td>
                     <td className="py-4 px-6 text-gray-600 dark:text-gray-400 text-sm">
                       {ticket.purchase_date ? new Date(ticket.purchase_date).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="py-4 px-6">
-                      {ticket.status === 'paid' && (
-                        <button
-                          onClick={() => handleRefund(ticket.ticket_id)}
-                          className="px-3 py-1 text-sm text-red-600 border border-red-300 rounded-md hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-900/20 transition-colors duration-200"
-                        >
-                          Refund
-                        </button>
-                      )}
                     </td>
                   </tr>
                 ))}
