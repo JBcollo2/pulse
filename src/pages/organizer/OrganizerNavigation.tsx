@@ -9,7 +9,7 @@ import {
   ChevronRight,
   Settings,
   User,
-  Activity,
+  Ticket, // Changed from Activity to Ticket for Organizer context
   Search,
   Bell,
   LogOut,
@@ -44,6 +44,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   const handleLogout = () => {
     // TODO: Implement actual logout logic
     alert("Logged out!");
+    // You would typically redirect to a login page or clear user session here
   };
 
   const navigationItems = [
@@ -51,7 +52,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       id: "overview",
       label: "Overview",
       icon: LayoutDashboard,
-      color: "text-blue-400",
+      color: "text-blue-500", // Adjusted for better light/dark contrast
       description: "Dashboard overview",
       badge: null,
     },
@@ -59,7 +60,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       id: "myEvents",
       label: "My Events",
       icon: CalendarDays,
-      color: "text-purple-400",
+      color: "text-purple-500", // Adjusted
       description: "Manage your events",
       badge: null,
     },
@@ -67,7 +68,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       id: "overallStats",
       label: "Overall Stats",
       icon: BarChart2,
-      color: "text-green-400",
+      color: "text-green-500", // Adjusted
       description: "Analytics & insights",
       badge: null,
     },
@@ -75,7 +76,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       id: "reports",
       label: "Reports",
       icon: FileText,
-      color: "text-orange-400",
+      color: "text-orange-500", // Adjusted
       description: "Generate reports",
       badge: null,
     },
@@ -88,11 +89,12 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
   const handleViewChange = (view: string) => {
     onViewChange(view);
-    setIsMobileOpen(false);
+    setIsMobileOpen(false); // Close mobile menu on navigation
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Close mobile sidebar if clicked outside
       if (
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target as Node) &&
@@ -101,6 +103,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         setIsMobileOpen(false);
       }
 
+      // Close user menu if clicked outside
       if (
         userMenuRef.current &&
         !userMenuRef.current.contains(event.target as Node) &&
@@ -117,20 +120,20 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gray-800 backdrop-blur-sm border-b border-gray-700 p-4 shadow-sm">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Activity className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Ticket className="w-4 h-4 text-white" /> {/* Changed icon to Ticket */}
             </div>
             <div>
-              <h2 className="font-bold text-lg text-gray-200">Pulse</h2>
-              <p className="text-xs text-gray-400">Event Organizer</p>
+              <h2 className="font-bold text-lg text-gray-800 dark:text-gray-200">Pulse</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Event Organizer</p>
             </div>
           </div>
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="p-2 hover:bg-gray-700 text-gray-200 transition-colors rounded-lg"
+            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-colors rounded-lg"
           >
             {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -148,33 +151,33 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       {/* Sidebar */}
       <div
         ref={sidebarRef}
-        className={`fixed top-0 h-screen flex flex-col shadow-xl bg-gray-800 border-r border-gray-700 z-40 transition-all duration-300 ease-in-out
+        className={`fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out
         ${isExpanded ? "md:w-80" : "md:w-20"}
         ${isMobileOpen ? "left-0 w-72" : "-left-72 md:left-0"}
         md:relative md:translate-x-0 md:shadow-none md:z-auto`}
       >
         {/* Desktop Header */}
-        <div className="p-6 border-b border-gray-700 mt-16 md:mt-0">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl
             flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-              <Activity className="w-6 h-6 text-white" />
+              <Ticket className="w-6 h-6 text-white" /> {/* Changed icon to Ticket */}
             </div>
             {(isExpanded || isMobileOpen) && (
               <div className="animate-fade-in hidden md:block">
-                <h2 className="font-bold text-2xl bg-gradient-to-r from-blue-400 to-green-400
+                <h2 className="font-bold text-2xl bg-gradient-to-r from-purple-400 to-pink-400 {/* Adjusted gradient for organizer */}
                 bg-clip-text text-transparent">
                   Pulse
                 </h2>
-                <p className="text-sm font-medium text-gray-400">Event Organizer</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Event Organizer</p>
               </div>
             )}
             {(isExpanded || isMobileOpen) && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="ml-auto p-2 rounded-lg transition-colors duration-200 hidden md:block hover:bg-gray-700"
+                className="ml-auto p-2 rounded-lg transition-colors duration-200 hidden md:block hover:bg-gray-200 dark:hover:bg-gray-700"
               >
-                <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} text-gray-300`} />
+                <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} text-gray-500 dark:text-gray-300`} />
               </button>
             )}
           </div>
@@ -182,15 +185,15 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           {/* Search Bar */}
           {(isExpanded || isMobileOpen) && (
             <div className="mt-4 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <input
                 type="text"
                 placeholder="Search menu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg
-                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                transition-all duration-200 text-gray-200 placeholder-gray-400"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent {/* Adjusted focus ring color */}
+                transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
           )}
@@ -200,7 +203,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           {filteredItems.map((item, index) => {
             const isActive = currentView === item.id;
-            const isHovered = hoveredItem === item.id;
+            const isHovered = hoveredItem === item.id; // This is not directly used in the current button styles, but kept for context
 
             return (
               <div
@@ -214,8 +217,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                   className={`group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl
                   transition-all duration-300 ease-out transform hover:scale-[1.02]
                   ${isActive
-                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
-                    : "hover:bg-gray-700 text-gray-200"
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25" // Adjusted gradient for organizer
+                    : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
                   }`}
                   style={{
                     animationDelay: `${index * 50}ms`
@@ -229,7 +232,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.label}</div>
                       <div className={`text-xs truncate transition-colors duration-300
-                      ${isActive ? "text-white/80" : "text-gray-400"}`}>
+                      ${isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"}`}>
                         {item.description}
                       </div>
                     </div>
@@ -257,41 +260,41 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
         {/* User Menu */}
         {(isExpanded || isMobileOpen) && (
-          <div className="p-4 border-t border-gray-700">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
               Quick Actions
             </h3>
             <div className="space-y-2">
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-3 p-3 rounded-lg w-full transition-all duration-200 group bg-gray-700/50 hover:bg-gray-700"
+                  className="flex items-center gap-3 p-3 rounded-lg w-full transition-all duration-200 group bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full
                   flex items-center justify-center shadow-lg">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="text-sm font-medium truncate text-gray-200">{organizerName}</div>
-                    <div className="text-xs text-gray-400">Event Organizer</div>
+                    <div className="text-sm font-medium truncate text-gray-800 dark:text-gray-200">{organizerName}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Event Organizer</div>
                   </div>
-                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-90' : ''} text-gray-400`} />
+                  <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${showUserMenu ? 'rotate-90' : ''} text-gray-500 dark:text-gray-400`} />
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-xl border border-gray-600 py-2 animate-scale-in bg-gray-700">
-                    <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors duration-200 text-gray-200 hover:bg-gray-600">
+                  <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 py-2 animate-scale-in bg-white dark:bg-gray-700">
+                    <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors duration-200 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
                       <Settings className="w-4 h-4" />
                       Settings
                     </button>
                   </div>
                 )}
               </div>
-              
-              <button 
+
+              <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-200
-                hover:bg-red-900/20 hover:text-red-400
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200
+                hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400
                 rounded-lg transition-all duration-200 group"
               >
                 <LogOut className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
@@ -303,21 +306,22 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
         {/* Collapsed User Icon */}
         {!isExpanded && !isMobileOpen && (
-          <div className="flex justify-center p-4 border-t border-gray-700">
-            <button className="p-3 rounded-lg transition-all duration-200 group relative bg-gray-700/50 hover:bg-gray-700">
-              <User className="w-5 h-5 text-gray-400" />
-              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg
+          <div className="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
+            <button className="p-3 rounded-lg transition-all duration-200 group relative bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700">
+              <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg
               opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none
               whitespace-nowrap z-50 shadow-xl">
                 {organizerName}
                 <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1
-                border-4 border-transparent border-r-gray-900"></div>
+                border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
               </div>
             </button>
           </div>
         )}
       </div>
       <style>{`
+        /* Keyframe animations remain the same, they don't directly interact with dark/light mode classes */
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -348,6 +352,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           animation: scale-in 0.2s ease-out forwards;
         }
 
+        /* Custom Scrollbar Styles for light mode */
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
@@ -357,15 +362,20 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgb(203 213 225);
-        }
-
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgb(100 116 139);
+          background: rgb(203 213 225); /* slate-300 */
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgb(148 163 184);
+          background: rgb(148 163 184); /* slate-400 */
+        }
+
+        /* Custom Scrollbar Styles for dark mode */
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgb(100 116 139); /* slate-500 */
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgb(71 85 105); /* slate-600 */
         }
       `}</style>
     </>
