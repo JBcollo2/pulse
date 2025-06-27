@@ -1,4 +1,4 @@
-// frontend/pulse/src/pages/Dashboard.tsx - Enhanced Responsive Version
+// frontend/pulse/src/pages/Dashboard.tsx - Enhanced Responsive Version with Organizer Access
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -18,7 +18,8 @@ import {
   Menu,
   X,
   UserCheck,
-  ChevronLeft
+  ChevronLeft,
+  Building2
 } from 'lucide-react';
 
 // Import your main page-level components
@@ -80,10 +81,18 @@ const Dashboard = () => {
       roles: ["ADMIN", "ORGANIZER", "SECURITY"]
     },
     {
+      id: "events",
+      name: "My Events",
+      icon: Calendar,
+      description: "Manage your events",
+      color: "text-orange-500",
+      roles: ["ADMIN", "ORGANIZER"]
+    },
+    {
       id: "organizers",
-      name: "Organizers",
-      icon: Users,
-      description: "Manage team members",
+      name: user?.role === "ADMIN" ? "All Organizers" : "My Team",
+      icon: user?.role === "ADMIN" ? Users : Building2,
+      description: user?.role === "ADMIN" ? "Manage all organizers" : "Manage your team",
       color: "text-gray-500",
       roles: ["ADMIN", "ORGANIZER"]
     },
@@ -170,6 +179,157 @@ const Dashboard = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Component for Organizer's Event Management
+  const MyEventsComponent = () => (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
+          <p className="text-gray-600 dark:text-gray-400">Manage and organize your events</p>
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200">
+          <Plus className="h-4 w-4" />
+          Create New Event
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Example Event Cards */}
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Tech Conference 2024</CardTitle>
+              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+            </div>
+            <CardDescription>Annual technology conference</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between">
+                <span>Date:</span>
+                <span>Dec 15, 2024</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tickets Sold:</span>
+                <span>250/500</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Revenue:</span>
+                <span>$12,500</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors duration-200">
+                Manage
+              </button>
+              <button className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                View Details
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Music Festival</CardTitle>
+              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Draft</span>
+            </div>
+            <CardDescription>Summer music festival</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between">
+                <span>Date:</span>
+                <span>Jun 20, 2025</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tickets Sold:</span>
+                <span>0/1000</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Revenue:</span>
+                <span>$0</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors duration-200">
+                Publish
+              </button>
+              <button className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                Edit
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Add Event Card */}
+        <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-200 cursor-pointer group">
+          <CardContent className="flex flex-col items-center justify-center h-full py-12">
+            <Plus className="h-12 w-12 text-gray-400 group-hover:text-blue-500 transition-colors duration-200 mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-500 transition-colors duration-200">
+              Create New Event
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+              Start organizing your next event
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Events</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">12</p>
+              </div>
+              <Calendar className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Active Events</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">3</p>
+              </div>
+              <BarChart className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">1,250</p>
+              </div>
+              <Ticket className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-800 dark:text-gray-200">$45K</p>
+              </div>
+              <Building2 className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <Navbar />
@@ -216,7 +376,11 @@ const Dashboard = () => {
                     <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
                       Dashboard
                     </h2>
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your events</p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {user?.role === "ADMIN" ? "System Administration" : 
+                       user?.role === "ORGANIZER" ? "Event Management" : 
+                       "Manage your events"}
+                    </p>
                   </div>
                 )}
                 
@@ -373,7 +537,8 @@ const Dashboard = () => {
                     {activeTab === "overview" && <Overview />}
                     {activeTab === "tickets" && (user.role === "ADMIN" || user.role === "ORGANIZER") && <Tickets />}
                     {activeTab === "scanner" && (user.role === "ADMIN" || user.role === "ORGANIZER" || user.role === "SECURITY") && <QRScanner />}
-                    {activeTab === "organizers" && user.role === "ADMIN" && <ManageOrganizersPage />}
+                    {activeTab === "events" && (user.role === "ADMIN" || user.role === "ORGANIZER") && <MyEventsComponent />}
+                    {activeTab === "organizers" && (user.role === "ADMIN" || user.role === "ORGANIZER") && <ManageOrganizersPage />}
                     {activeTab === "profile" && <UserProfile />}
                     {activeTab === "admin" && user.role === "ADMIN" && <Admin />}
                   </>
