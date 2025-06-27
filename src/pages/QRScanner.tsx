@@ -5,7 +5,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BadgeCheck, X, RefreshCw, QrCode, Camera, CheckCircle2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import axios from 'axios';
 
 declare global {
   interface Window {
@@ -181,23 +180,26 @@ const QRScanner = () => {
     
     try {
       // Option 1: Send the QR code content to validate_ticket endpoint
-      const response = await axios.post(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/tickets/${ticketCode}/verify`,
-        {},
         {
-          withCredentials: true,
+          method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          body: JSON.stringify({})
         }
       );
       
-      if (response.status === 200) {
-        console.log("Ticket verified successfully:", response.data);
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log("Ticket verified successfully:", data);
         setVerification({
           status: 'success',
-          message: response.data.message || 'Ticket verified successfully!',
-          ticketData: response.data.data
+          message: data.message || 'Ticket verified successfully!',
+          ticketData: data.data
         });
         
         // Add to history
@@ -205,7 +207,7 @@ const QRScanner = () => {
           id: ticketCode,
           timestamp: new Date().toISOString(),
           status: 'success',
-          details: response.data.data
+          details: data.data
         }, ...prev.slice(0, 19)]);
         
         toast({
@@ -214,10 +216,10 @@ const QRScanner = () => {
           variant: "default"
         });
       } else {
-        console.error("Ticket verification failed:", response.data);
+        console.error("Ticket verification failed:", data);
         setVerification({
           status: 'error',
-          message: response.data.message || 'Invalid ticket',
+          message: data.message || 'Invalid ticket',
           ticketData: null
         });
         
@@ -226,12 +228,12 @@ const QRScanner = () => {
           id: ticketCode,
           timestamp: new Date().toISOString(),
           status: 'error',
-          details: { error: response.data.message }
+          details: { error: data.message }
         }, ...prev.slice(0, 19)]);
         
         toast({
           title: "Error",
-          description: response.data.message || 'Failed to verify ticket',
+          description: data.message || 'Failed to verify ticket',
           variant: "destructive"
         });
       }
@@ -240,7 +242,7 @@ const QRScanner = () => {
       
       setVerification({
         status: 'error',
-        message: error.response?.data?.message || 'Network error. Please try again.',
+        message: error.message || 'Network error. Please try again.',
         ticketData: null
       });
       
@@ -249,12 +251,12 @@ const QRScanner = () => {
         id: ticketCode,
         timestamp: new Date().toISOString(),
         status: 'error',
-        details: { error: error.response?.data?.message || 'Network error' }
+        details: { error: error.message || 'Network error' }
       }, ...prev.slice(0, 19)]);
       
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Network error. Please try again.",
+        description: error.message || "Network error. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -290,36 +292,49 @@ const QRScanner = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto">
+    <div className="max-w-md mx-auto bg-white dark:bg-gray-900 min-h-screen">
       <Tabs defaultValue="scanner" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="scanner">Scanner</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <TabsTrigger 
+            value="scanner" 
+            className="text-gray-900 dark:text-gray-200 data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700"
+          >
+            Scanner
+          </TabsTrigger>
+          <TabsTrigger 
+            value="history" 
+            className="text-gray-900 dark:text-gray-200 data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700"
+          >
+            History
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="scanner" className="space-y-4">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Ticket Scanner</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-200">Ticket Scanner</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Scan QR codes to verify tickets
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {!scanning && !scannedCode ? (
-                <div className="flex flex-col items-center justify-center p-8 space-y-4 border-2 border-dashed rounded-lg">
-                  <QrCode className="w-16 h-16 text-muted-foreground" />
-                  <p className="text-center text-muted-foreground">
+                <div className="flex flex-col items-center justify-center p-8 space-y-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                  <QrCode className="w-16 h-16 text-gray-400 dark:text-gray-500" />
+                  <p className="text-center text-gray-500 dark:text-gray-400">
                     Ready to scan tickets
                   </p>
-                  <Button onClick={() => setScanning(true)}>
+                  <Button 
+                    onClick={() => setScanning(true)}
+                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
+                  >
                     <Camera className="w-4 h-4 mr-2" />
                     Start Scanning
                   </Button>
                 </div>
               ) : scanning ? (
                 <div className="relative">
-                  <div className="aspect-square overflow-hidden rounded-lg border">
+                  <div className="aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                     <video 
                       ref={videoRef} 
                       className="w-full h-full object-cover"
@@ -327,11 +342,11 @@ const QRScanner = () => {
                       playsInline
                     />
                   </div>
-                  <div className="absolute inset-0 border-4 border-primary/50 rounded-lg pointer-events-none" />
+                  <div className="absolute inset-0 border-4 border-blue-500/50 dark:border-blue-400/50 rounded-lg pointer-events-none" />
                   
                   <Button 
                     variant="outline" 
-                    className="absolute bottom-4 right-4"
+                    className="absolute bottom-4 right-4 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
                     onClick={() => setScanning(false)}
                   >
                     <X className="w-4 h-4 mr-2" />
@@ -342,55 +357,55 @@ const QRScanner = () => {
                 <div className="space-y-4">
                   {loading ? (
                     <div className="flex justify-center p-4">
-                      <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                      <RefreshCw className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
                     </div>
                   ) : verification.status === 'success' ? (
-                    <Alert variant="default" className="bg-green-50 border-green-200">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-800">Valid Ticket</AlertTitle>
-                      <AlertDescription className="text-green-700">
+                    <Alert variant="default" className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <AlertTitle className="text-green-800 dark:text-green-300">Valid Ticket</AlertTitle>
+                      <AlertDescription className="text-green-700 dark:text-green-400">
                         {verification.message}
                       </AlertDescription>
                     </Alert>
                   ) : verification.status === 'error' ? (
-                    <Alert variant="destructive">
-                      <X className="h-4 w-4" />
-                      <AlertTitle>Invalid Ticket</AlertTitle>
-                      <AlertDescription>
+                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                      <X className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      <AlertTitle className="text-red-800 dark:text-red-300">Invalid Ticket</AlertTitle>
+                      <AlertDescription className="text-red-700 dark:text-red-400">
                         {verification.message}
                       </AlertDescription>
                     </Alert>
                   ) : null}
                   
                   {verification.ticketData && (
-                    <Card className="border-green-200">
+                    <Card className="border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/10">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base text-green-700">
+                        <CardTitle className="text-base text-green-700 dark:text-green-300">
                           Ticket Information
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="text-sm space-y-2">
                         <div className="grid grid-cols-2 gap-2">
-                          <p className="font-medium">Event:</p>
-                          <p>{verification.ticketData.event?.title || 'N/A'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Event:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.event?.title || 'N/A'}</p>
                           
-                          <p className="font-medium">Date:</p>
-                          <p>{verification.ticketData.event?.start_time ? formatDateTime(verification.ticketData.event.start_time) : 'N/A'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Date:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.event?.start_time ? formatDateTime(verification.ticketData.event.start_time) : 'N/A'}</p>
                           
-                          <p className="font-medium">Location:</p>
-                          <p>{verification.ticketData.event?.location || 'N/A'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Location:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.event?.location || 'N/A'}</p>
                           
-                          <p className="font-medium">Ticket ID:</p>
-                          <p className="font-mono">{verification.ticketData.id}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Ticket ID:</p>
+                          <p className="font-mono text-gray-700 dark:text-gray-300">{verification.ticketData.id}</p>
                           
-                          <p className="font-medium">Attendee:</p>
-                          <p>{verification.ticketData.attendee_name || 'N/A'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Attendee:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.attendee_name || 'N/A'}</p>
                           
-                          <p className="font-medium">Ticket Type:</p>
-                          <p>{verification.ticketData.ticket_type || 'Standard'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Ticket Type:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.ticket_type || 'Standard'}</p>
                           
-                          <p className="font-medium">Scanned:</p>
-                          <p>{verification.ticketData.scanned_at ? formatDateTime(verification.ticketData.scanned_at) : 'Just now'}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-200">Scanned:</p>
+                          <p className="text-gray-700 dark:text-gray-300">{verification.ticketData.scanned_at ? formatDateTime(verification.ticketData.scanned_at) : 'Just now'}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -399,12 +414,19 @@ const QRScanner = () => {
               ) : null}
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={manualEntry}>
+              <Button 
+                variant="outline" 
+                onClick={manualEntry}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              >
                 Manual Entry
               </Button>
               
               {scannedCode && (
-                <Button onClick={resetScanner}>
+                <Button 
+                  onClick={resetScanner}
+                  className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
+                >
                   <Camera className="w-4 h-4 mr-2" />
                   Scan Another
                 </Button>
@@ -414,38 +436,37 @@ const QRScanner = () => {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Scan History</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-200">Scan History</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Recent ticket scans
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {history.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground">
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">
                   No scan history yet
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {history.map((item, index) => (
-                    <div key={index} className="p-4 flex items-start space-x-3">
+                    <div key={index} className="p-4 flex items-start space-x-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       {item.status === 'success' ? (
-                        <BadgeCheck className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <BadgeCheck className="h-5 w-5 text-green-500 dark:text-green-400 flex-shrink-0 mt-0.5" />
                       ) : (
-                        <X className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                        <X className="h-5 w-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
-                          <p className="font-mono text-sm truncate">
+                          <p className="font-mono text-sm truncate text-gray-900 dark:text-gray-200">
                             {item.id}
                           </p>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
                             {new Date(item.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        <p className="text-sm mt-1">
-                          
+                        <p className="text-sm mt-1 text-gray-700 dark:text-gray-300">
                           {item.status === 'success'
                             ? 'event' in item.details && item.details.event?.title
                               ? item.details.event.title
@@ -466,6 +487,7 @@ const QRScanner = () => {
                 size="sm"
                 onClick={() => setHistory([])}
                 disabled={history.length === 0}
+                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
                 Clear History
               </Button>
@@ -477,4 +499,4 @@ const QRScanner = () => {
   );
 };
 
-export default QRScanner; 
+export default QRScanner;
