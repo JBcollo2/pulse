@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Moon, Sun, Settings
+  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings // Removed Moon, Sun icons
 } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
@@ -50,32 +50,11 @@ const OrganizerDashboard: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [organizerName, setOrganizerName] = useState('Organizer');
   
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        return savedTheme === 'dark';
-      }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
+  // Removed isDarkMode state and useEffect that applied 'dark' class
+  // This responsibility should now be handled by a higher-level component
+  // or a global theme provider (e.g., in App.tsx or similar).
 
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prevMode => !prevMode);
-  }, []);
 
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
@@ -284,20 +263,11 @@ const OrganizerDashboard: React.FC = () => {
             isMobileOpen={isMobileOpen}
             setIsMobileOpen={setIsMobileOpen}
             organizerName={organizerName}
+            // Removed onToggleDarkMode and isDarkMode props
           />
         </div>
 
         <div className={`flex-1 ${isExpanded ? 'md:ml-72' : 'md:ml-20'} p-4 pt-20 md:pt-4 transition-all duration-300 ease-in-out`}>
-          <div className="absolute top-4 right-4 z-50">
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 shadow-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-          </div>
-
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
             "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
@@ -559,7 +529,6 @@ const OrganizerDashboard: React.FC = () => {
               </h1>
               <OrganizerReports
                 eventId={selectedEventId}
-                // Removed darkMode prop
               />
             </div>
           )}
@@ -574,17 +543,7 @@ const OrganizerDashboard: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-300">
                 This section is under development.
               </p>
-              <div className="flex items-center gap-4">
-                <span className="text-gray-800 dark:text-gray-100">Dark Mode:</span>
-                <button
-                  onClick={toggleDarkMode}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
-                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center gap-2"
-                >
-                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                </button>
-              </div>
+              {/* Removed the dark mode toggle from here as well */}
             </div>
           )}
         </div>
