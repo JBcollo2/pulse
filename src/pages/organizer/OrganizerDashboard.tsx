@@ -1,4 +1,3 @@
-// src/pages/OrganizerDashboard.tsx (Modify your existing file)
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -272,15 +271,8 @@ const OrganizerDashboard: React.FC = () => {
         />
 
         {/* Main content area */}
-        {/* Adjusted margin-left for responsiveness: */}
-        {/* On small screens, ml-0 (no margin, content covers sidebar when closed or mobile menu is open) */}
-        {/* On medium screens and up: */}
-        {/* md:ml-72 when sidebar is expanded (w-72) */}
-        {/* md:ml-20 when sidebar is collapsed (w-20) */}
-        {/* Added pt-20 for small screens to account for fixed mobile menu button, reset to pt-4 for md screens */}
         <div className={cn(
-          "flex-1 ml-0 p-4 pt-20", // Default for mobile
-          "md:pt-4", // Reset padding top for desktop
+          "flex-1 ml-0 p-4", // Default for mobile and general padding. Removed pt-20.
           isExpanded ? 'md:ml-72' : 'md:ml-20', // Dynamic margin based on sidebar expansion
           "transition-all duration-300 ease-in-out" // Smooth transition for margin changes
         )}>
@@ -449,7 +441,7 @@ const OrganizerDashboard: React.FC = () => {
                         <button
                           onClick={() => handleViewReport(event.id)}
                           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300
-                                      dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                          dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                         >
                           View Report
                         </button>
@@ -497,7 +489,7 @@ const OrganizerDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                    dark:bg-gray-700 dark:text-gray-300">1</span>
+                                          dark:bg-gray-700 dark:text-gray-300">1</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Go to My Events</h4>
                       <p className="text-gray-600 dark:text-gray-300">Navigate to the "My Events" section from the sidebar to see all your events.</p>
@@ -505,7 +497,7 @@ const OrganizerDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                    dark:bg-gray-700 dark:text-gray-300">2</span>
+                                          dark:bg-gray-700 dark:text-gray-300">2</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Select an Event</h4>
                       <p className="text-gray-600 dark:text-gray-300">Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
@@ -513,7 +505,7 @@ const OrganizerDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                    dark:bg-gray-700 dark:text-gray-300">3</span>
+                                          dark:bg-gray-700 dark:text-gray-300">3</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Analyze Performance</h4>
                       <p className="text-gray-600 dark:text-gray-300">Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
