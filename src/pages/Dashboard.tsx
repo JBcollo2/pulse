@@ -323,14 +323,14 @@ const Dashboard = () => {
 
       <div className="flex flex-1">
         {/* Sidebar for desktop */}
-        <div className={`hidden md:flex flex-col w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${sidebarCollapsed ? 'w-20 overflow-hidden' : ''}`}>
+        <div className={`hidden md:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${sidebarCollapsed ? 'w-20 overflow-hidden' : 'w-64'}`}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h1 className={`text-xl font-bold ${sidebarCollapsed ? 'hidden' : 'block'} text-gray-800 dark:text-gray-200`}>
               Pulse Dashboard
             </h1>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 flex-1">
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
