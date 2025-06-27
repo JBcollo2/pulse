@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Dispatch, SetStateAction } from "react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -17,6 +17,9 @@ import {
   LogOut,
 } from "lucide-react";
 
+// Assuming ViewType is defined elsewhere, or you can define it here if it's a simple string literal type
+type ViewType = string;
+
 interface NavigationItem {
   id: string;
   label: string;
@@ -28,18 +31,20 @@ interface NavigationItem {
 }
 
 interface OrganizerNavigationProps {
-  currentView: string;
+  currentView: ViewType; // Use ViewType here as well
   onViewChange: (view: string) => void;
+  onLogout: () => Promise<void>; // Added onLogout prop here
   isExpanded: boolean;
-  setIsExpanded: (expanded: boolean) => void;
+  setIsExpanded: Dispatch<SetStateAction<boolean>>;
   isMobileOpen: boolean;
-  setIsMobileOpen: (open: boolean) => void;
+  setIsMobileOpen: Dispatch<SetStateAction<boolean>>;
   organizerName: string;
 }
 
 const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   currentView,
   onViewChange,
+  onLogout, // Destructure onLogout from props
   isExpanded,
   setIsExpanded,
   isMobileOpen,
@@ -53,9 +58,13 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => {
-    alert("Logged out!");
-    // TODO: Implement actual logout logic
+  // The handleLogout function now correctly matches the onLogout prop type
+  const handleLogout = async () => {
+    // In a real application, you'd typically dispatch a Redux action,
+    // call an API, or perform other async cleanup here.
+    console.log("Attempting to log out...");
+    await onLogout(); // Call the onLogout prop
+    alert("Logged out!"); // This alert will appear after the promise resolves
   };
 
   const navigationItems: NavigationItem[] = [
@@ -250,9 +259,9 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                   className={`group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl
                   transition-all duration-300 ease-out transform hover:scale-[1.02]
                   ${isActive
-                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
-                    : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
-                  }`}
+                      ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
+                    }`}
                   style={{ animationDelay: `${index * 50}ms` }}
                   onMouseEnter={() => setHoveredItem(item.id)}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -304,9 +313,9 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                           className={`group w-full flex items-center gap-3 px-3 py-2 text-left text-sm rounded-md
                           transition-all duration-200
                           ${isSubActive
-                            ? "text-blue-600 dark:text-blue-400 font-semibold"
-                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                          }`}
+                              ? "text-blue-600 dark:text-blue-400 font-semibold"
+                              : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                            }`}
                         >
                           <subItem.icon className={`h-4 w-4 ${isSubActive ? "text-blue-600 dark:text-blue-400" : subItem.color}`} />
                           <span className="truncate">{subItem.label}</span>

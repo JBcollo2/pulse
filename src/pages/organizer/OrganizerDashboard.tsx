@@ -1,12 +1,13 @@
+// src/pages/OrganizerDashboard.tsx (Modify your existing file)
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import {
   CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings // Removed Moon, Sun icons
+  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu // Import Menu for mobile toggle
 } from 'lucide-react';
-import OrganizerNavigation from './OrganizerNavigation';
-import OrganizerReports from './OrganizerReports';
-import OrganizerStats from './OrganizerStats';
+import OrganizerNavigation from './OrganizerNavigation'; // Ensure correct path
+import OrganizerReports from './OrganizerReports';     // Ensure correct path
+import OrganizerStats from './OrganizerStats';       // Ensure correct path
 import { cn } from "@/lib/utils";
 
 interface Event {
@@ -46,13 +47,9 @@ const OrganizerDashboard: React.FC = () => {
   const [organizerEvents, setOrganizerEvents] = useState<Event[]>([]);
   const [overallSummary, setOverallSummary] = useState<OverallSummary | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true); // State for sidebar expansion (desktop)
+  const [isMobileOpen, setIsMobileOpen] = useState(false); // State for mobile menu open/close
   const [organizerName, setOrganizerName] = useState('Organizer');
-  
-  // Removed isDarkMode state and useEffect that applied 'dark' class
-  // This responsibility should now be handled by a higher-level component
-  // or a global theme provider (e.g., in App.tsx or similar).
 
   const { toast } = useToast();
 
@@ -203,37 +200,45 @@ const OrganizerDashboard: React.FC = () => {
       case 'overview':
         return {
           title: "Overview",
-          description: "Dashboard analytics",
+          description: "Dashboard analytics for your events.",
           icon: <LayoutDashboard className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-blue-500 to-blue-700"
         };
       case 'myEvents':
         return {
           title: "My Events",
-          description: "Manage your events",
+          description: "Manage your organized events.",
           icon: <CalendarDays className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-purple-500 to-purple-700"
         };
       case 'overallStats':
         return {
-          title: "Overall Stats",
-          description: "View aggregate data",
+          title: "Overall Statistics",
+          description: "View aggregate data for all your events.",
           icon: <BarChart2 className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-green-500 to-green-700"
         };
       case 'reports':
         return {
           title: "Reports",
-          description: "Generate and view reports",
+          description: "Generate and view detailed event reports.",
           icon: <FileText className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-orange-500 to-orange-700"
         };
       case 'settings':
         return {
           title: "Settings",
-          description: "Account preferences",
+          description: "Manage your account preferences.",
           icon: <Settings className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-indigo-500 to-indigo-700"
+        };
+      case 'viewReport':
+        const eventName = organizerEvents.find(e => e.id === selectedEventId)?.name || `Event ID: ${selectedEventId}`;
+        return {
+          title: `Report: ${eventName}`,
+          description: "Detailed analytics for this event.",
+          icon: <FileText className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-red-500 to-red-700"
         };
       default:
         return {
@@ -249,25 +254,37 @@ const OrganizerDashboard: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
-      <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10" 
-           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
+      <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10"
+        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
       ></div>
 
       <div className="relative z-10 flex min-h-screen">
-        <div className={`fixed top-0 left-0 h-full z-50 ${isExpanded ? 'w-72' : 'w-20'} transition-all duration-300 ease-in-out`}>
-          <OrganizerNavigation
-            currentView={currentView}
-            onViewChange={handleViewChange}
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-            isMobileOpen={isMobileOpen}
-            setIsMobileOpen={setIsMobileOpen}
-            organizerName={organizerName}
-            // Removed onToggleDarkMode and isDarkMode props
-          />
-        </div>
+        {/* Organizer Navigation */}
+        <OrganizerNavigation
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onLogout={handleLogout}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+          organizerName={organizerName}
+        />
 
-        <div className={`flex-1 ${isExpanded ? 'md:ml-72' : 'md:ml-20'} p-4 pt-20 md:pt-4 transition-all duration-300 ease-in-out`}>
+        {/* Main content area */}
+        {/* Adjusted margin-left for responsiveness: */}
+        {/* On small screens, ml-0 (no margin, content covers sidebar when closed or mobile menu is open) */}
+        {/* On medium screens and up: */}
+        {/* md:ml-72 when sidebar is expanded (w-72) */}
+        {/* md:ml-20 when sidebar is collapsed (w-20) */}
+        {/* Added pt-20 for small screens to account for fixed mobile menu button, reset to pt-4 for md screens */}
+        <div className={cn(
+          "flex-1 ml-0 p-4 pt-20", // Default for mobile
+          "md:pt-4", // Reset padding top for desktop
+          isExpanded ? 'md:ml-72' : 'md:ml-20', // Dynamic margin based on sidebar expansion
+          "transition-all duration-300 ease-in-out" // Smooth transition for margin changes
+        )}>
+          {/* Header Section */}
           <div className={cn(
             "mb-8 p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
             "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
@@ -288,6 +305,7 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
+          {/* Content based on current view */}
           {currentView === 'overview' && (
             <div className="space-y-8 animate-fade-in-up">
               <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
@@ -342,27 +360,27 @@ const OrganizerDashboard: React.FC = () => {
               </div>
 
               <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
-                              dark:bg-gray-800 dark:border-gray-700">
+                               dark:bg-gray-800 dark:border-gray-700">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleViewChange('myEvents')}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
-                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                  dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     View My Events
                   </button>
                   <button
                     onClick={() => handleViewChange('overallStats')}
                     className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300
-                              dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
+                                  dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
                   >
                     View Overall Stats
                   </button>
                   <button
                     onClick={() => handleViewChange('reports')}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
-                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                  dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     Generate Reports
                   </button>
@@ -413,7 +431,7 @@ const OrganizerDashboard: React.FC = () => {
                 ) : organizerEvents.length > 0 ? (
                   organizerEvents.map(event => (
                     <div key={event.id} className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl flex flex-col h-full
-                                    dark:bg-gray-800 dark:border-gray-700">
+                                          dark:bg-gray-800 dark:border-gray-700">
                       <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-100">{event.name}</h3>
                       <p className="text-sm mb-3 text-gray-600 dark:text-gray-300">{event.date} • {event.location}</p>
                       {event.description && (
@@ -431,7 +449,7 @@ const OrganizerDashboard: React.FC = () => {
                         <button
                           onClick={() => handleViewReport(event.id)}
                           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300
-                                    dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                      dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                         >
                           View Report
                         </button>
@@ -474,12 +492,12 @@ const OrganizerDashboard: React.FC = () => {
                 Access detailed reports for individual events. Select an event from "My Events" to generate its report.
               </p>
               <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
-                              dark:bg-gray-800 dark:border-gray-700">
+                                dark:bg-gray-800 dark:border-gray-700">
                 <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">How to Access Reports</h2>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                  dark:bg-gray-700 dark:text-gray-300">1</span>
+                                    dark:bg-gray-700 dark:text-gray-300">1</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Go to My Events</h4>
                       <p className="text-gray-600 dark:text-gray-300">Navigate to the "My Events" section from the sidebar to see all your events.</p>
@@ -487,7 +505,7 @@ const OrganizerDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                  dark:bg-gray-700 dark:text-gray-300">2</span>
+                                    dark:bg-gray-700 dark:text-gray-300">2</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Select an Event</h4>
                       <p className="text-gray-600 dark:text-gray-300">Click the "View Report" button on any event card to access detailed analytics for that specific event.</p>
@@ -495,7 +513,7 @@ const OrganizerDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="bg-gray-200 text-gray-600 rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold flex-shrink-0
-                                  dark:bg-gray-700 dark:text-gray-300">3</span>
+                                    dark:bg-gray-700 dark:text-gray-300">3</span>
                     <div>
                       <h4 className="font-semibold text-lg text-gray-800 dark:text-gray-100">Analyze Performance</h4>
                       <p className="text-gray-600 dark:text-gray-300">Review ticket sales, revenue, attendee demographics, and other important metrics to gain insights.</p>
@@ -506,7 +524,7 @@ const OrganizerDashboard: React.FC = () => {
                   <button
                     onClick={() => handleViewChange('myEvents')}
                     className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300
-                                dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                  dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
                   >
                     Go to My Events
                   </button>
@@ -520,7 +538,7 @@ const OrganizerDashboard: React.FC = () => {
               <button
                 onClick={() => setCurrentView('myEvents')}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-sm text-sm transition-all duration-300
-                              dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                                dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
                 <ChevronRight className="h-4 w-4 transform rotate-180" /> Back to My Events
               </button>
@@ -535,7 +553,7 @@ const OrganizerDashboard: React.FC = () => {
 
           {currentView === 'settings' && (
             <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 space-y-6 animate-fade-in-up transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl
-                            dark:bg-gray-800 dark:border-gray-700">
+                                dark:bg-gray-800 dark:border-gray-700">
               <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                 Settings
               </h1>
@@ -543,7 +561,6 @@ const OrganizerDashboard: React.FC = () => {
               <p className="text-gray-600 dark:text-gray-300">
                 This section is under development.
               </p>
-              {/* Removed the dark mode toggle from here as well */}
             </div>
           )}
         </div>
