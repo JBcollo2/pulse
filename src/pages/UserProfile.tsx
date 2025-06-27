@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { EventDialog } from "@/components/EventDialog";
 import { 
   User, 
   Mail, 
@@ -17,7 +16,6 @@ import {
   Hash,
   CreditCard,
   Save,
-  Plus,
   Loader2
 } from 'lucide-react';
 
@@ -63,7 +61,6 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-  const [showEventDialog, setShowEventDialog] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -155,25 +152,7 @@ const UserProfile = () => {
             </p>
           </div>
         </div>
-        
-        {profile.role === 'ORGANIZER' && (
-          <Button 
-            variant="outline" 
-            onClick={() => setShowEventDialog(true)}
-            className="flex items-center gap-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 
-                     hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200
-                     transition-colors duration-200"
-          >
-            <Plus className="h-4 w-4" />
-            Add Event
-          </Button>
-        )}
       </div>
-
-      <EventDialog 
-        open={showEventDialog} 
-        onOpenChange={setShowEventDialog} 
-      />
       
       {/* Main Profile Card */}
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
