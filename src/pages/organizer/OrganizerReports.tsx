@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Define the interface for the event report data
 interface EventReport {
   event_id: number;
   event_name: string;
@@ -33,14 +32,12 @@ interface EventReport {
   filter_end_date?: string;
 }
 
-// Define the props interface for the OrganizerReports component
 interface OrganizerReportsProps {
   eventId: number;
   eventReport?: EventReport | null;
   darkMode: boolean;
 }
 
-// Enhanced color palettes
 const CHART_COLORS = [
   '#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6',
   '#EC4899', '#10B981', '#F97316', '#6366F1', '#84CC16'
@@ -58,7 +55,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [selectedView, setSelectedView] = useState<string>('overview');
   const { toast } = useToast();
 
-  // Utility function for consistent error handling
   const handleOperationError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -69,7 +65,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     });
   }, [toast]);
 
-  // Derived state to determine if a report can be fetched/downloaded/emailed
   const canFetchReport = useMemo(() => {
     if (!startDate || !endDate) {
       return false;
@@ -240,7 +235,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [eventId, startDate, endDate, canFetchReport, handleOperationError, toast]);
 
-  // Enhanced chart data formatting with color assignment
   const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
     if (!data) return [];
     return Object.entries(data).map(([label, value], index) => ({
@@ -251,7 +245,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }));
   }, []);
 
-  // Calculate percentages for pie charts
   const calculatePercentages = useCallback((data: any[]) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     return data.map(item => ({
@@ -260,7 +253,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }));
   }, []);
 
-  // Chart data with percentages
   const ticketsSoldChartData = useMemo(() =>
     calculatePercentages(formatChartData(reportData?.tickets_sold_by_type)),
     [reportData, formatChartData, calculatePercentages]
@@ -281,7 +273,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     [reportData, formatChartData, calculatePercentages]
   );
 
-  // Enhanced tooltip component
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -307,7 +298,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     return null;
   };
 
-  // Custom pie chart label
   const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
     if (percent < 0.05) return null;
 
@@ -330,7 +320,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     );
   };
 
-  // Loading State for initial fetch
   if (isLoadingReport && !reportData && !error) {
     return (
       <Card className={cn("max-w-3xl mx-auto my-8", darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
