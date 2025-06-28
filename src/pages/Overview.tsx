@@ -38,24 +38,20 @@ const Dashboard = () => {
   };
 
   // Enhanced API fetch utility
-  const apiRequest = useCallback(
-    async (
-      endpoint: string,
-      options: { headers?: Record<string, string>; [key: string]: any } = {}
-    ) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+  const apiRequest = useCallback(async (endpoint, options = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
 
-      try {
-        const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, {
-          ...options,
-          headers: {
-            ...API_CONFIG.headers,
-            ...options.headers
-          },
-          credentials: 'include',
-          signal: controller.signal
-        });
+    try {
+      const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, {
+        ...options,
+        headers: {
+          ...API_CONFIG.headers,
+          ...(options && 'headers' in options ? (options as any).headers : {})
+        },
+        credentials: 'include',
+        signal: controller.signal
+      });
 
       clearTimeout(timeoutId);
 
@@ -106,7 +102,7 @@ const Dashboard = () => {
       // Normalize profile data structure
       const normalizedProfile = {
         id: profileData.id || profileData.userId || null,
-        name: profileData.name || profileData.fullName || profileData.displayName || 'Unknown User',
+        name: profileData.full_name || profileData.fullName || profileData.name || profileData.displayName || 'Unknown User',
         email: profileData.email || profileData.emailAddress || null,
         role: profileData.role || profileData.userRole || profileData.permissions?.[0] || 'User',
         avatar: profileData.avatar || profileData.profilePicture || profileData.image || null,
@@ -114,7 +110,8 @@ const Dashboard = () => {
         isActive: profileData.isActive !== undefined ? profileData.isActive : true,
         permissions: profileData.permissions || [],
         department: profileData.department || null,
-        joinDate: profileData.joinDate || profileData.createdAt || null
+        joinDate: profileData.joinDate || profileData.created_at || profileData.createdAt || null,
+        phoneNumber: profileData.phone_number || profileData.phoneNumber || null
       };
 
       setProfile(normalizedProfile);
@@ -353,6 +350,12 @@ const Dashboard = () => {
                   <span className="font-medium text-gray-700 dark:text-gray-300">Email:</span>
                   <span className="text-gray-900 dark:text-gray-100">{profile?.email}</span>
                 </div>
+                {profile?.phoneNumber && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Phone:</span>
+                    <span className="text-gray-900 dark:text-gray-100">{profile.phoneNumber}</span>
+                  </div>
+                )}
                 {profile?.department && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-700 dark:text-gray-300">Department:</span>
