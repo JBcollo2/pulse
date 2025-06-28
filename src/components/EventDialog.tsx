@@ -21,15 +21,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-// Date formatting utility function
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 const formatDate = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
-import { Plus, Trash2, AlertTriangle } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Category {
   id: number;
@@ -40,7 +40,7 @@ interface Category {
 interface Event {
   id: number;
   name: string;
-  description: string;
+  description?: string; // Make it optional
   date: string;
   end_date?: string;
   start_time: string;
@@ -80,9 +80,9 @@ interface EventFormData {
 
 const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
 
-export const EventDialog: React.FC<EventDialogProps> = ({ 
-  open, 
-  onOpenChange, 
+export const EventDialog: React.FC<EventDialogProps> = ({
+  open,
+  onOpenChange,
   editingEvent = null,
   onEventDeleted,
   onEventCreated
@@ -132,7 +132,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     fetchCategories();
   }, []);
 
-  // Populate form when editing an event
   useEffect(() => {
     if (editingEvent) {
       setNewEvent({
@@ -143,12 +142,11 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         start_time: editingEvent.start_time,
         end_time: editingEvent.end_time || '',
         location: editingEvent.location,
-        image: null, // Reset image for editing
-        ticket_types: [], // You might want to fetch existing ticket types here
+        image: null,
+        ticket_types: [],
         category_id: editingEvent.category_id || null
       });
     } else {
-      // Reset form for new event
       setNewEvent({
         name: '',
         description: '',
@@ -226,7 +224,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   const handleAddEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // First get the user's profile to get the organizer_id
       const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         credentials: 'include'
       });
@@ -243,15 +240,10 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       }
 
       const formData = new FormData();
-
-      // Add organizer_id first
       formData.append('organizer_id', organizer_id.toString());
-      console.log("Added organizer_id to form data:", organizer_id);
 
-      // Add category_id if selected
       if (newEvent.category_id) {
         formData.append('category_id', newEvent.category_id.toString());
-        console.log("Added category_id to form data:", newEvent.category_id);
       }
 
       Object.entries(newEvent).forEach(([key, value]) => {
@@ -265,18 +257,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           }
         } else if (key !== 'ticket_types' && typeof value === 'string' && value !== '') {
           formData.append(key, value);
-          console.log(`Added ${key} to form data:`, value);
         }
       });
 
-      // Debug: Log all form data entries
-      console.log("Final FormData contents:");
-      for(let pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-
-      // First create the event
-      console.log("Submitting event creation request...");
       const eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
         method: 'POST',
         credentials: 'include',
@@ -285,15 +268,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
-        console.error('Error response:', errorData);
         throw new Error(errorData.message || 'Failed to create event');
       }
 
       const eventData = await eventResponse.json();
-      console.log("Event created successfully:", eventData);
       const eventId = eventData.id;
 
-      // Then create ticket types for the event
       if (newEvent.ticket_types.length > 0) {
         for (const ticketType of newEvent.ticket_types) {
           const ticketTypeResponse = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
@@ -312,13 +292,11 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
           if (!ticketTypeResponse.ok) {
             const errorData = await ticketTypeResponse.json();
-            console.error('Error creating ticket type:', errorData);
             throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
           }
         }
       }
 
-      console.log("Event creation process completed successfully");
       toast({
         title: "Success",
         description: "Event and ticket types created successfully",
@@ -352,8 +330,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto
-          bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
           <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -365,10 +342,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => setDeleteDialogOpen(true)}
-                  className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600
-                             text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20
-                             hover:border-red-300 dark:hover:border-red-500
-                             focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Event
@@ -384,9 +358,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 value={newEvent.name}
                 onChange={(e) => setNewEvent({...newEvent, name: e.target.value})}
                 required
-                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                           text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                           focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               />
             </div>
 
@@ -397,9 +369,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 value={newEvent.description}
                 onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
                 required
-                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                           text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                           focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               />
             </div>
 
@@ -410,26 +380,18 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 onValueChange={(value) => setNewEvent({...newEvent, category_id: value ? parseInt(value) : null})}
               >
                 <SelectTrigger
-                  className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                             text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                             focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                  className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                 >
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent
-                  className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200
-                             border border-gray-200 dark:border-gray-700
-                             shadow-lg z-50 rounded-md py-1"
+                  className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-lg z-50 rounded-md py-1"
                 >
                   {categories.map((category) => (
                     <SelectItem
                       key={category.id}
                       value={category.id.toString()}
-                      className="relative flex w-full cursor-default select-none items-center rounded-sm
-                                 py-1.5 pl-8 pr-2 text-sm outline-none
-                                 focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100
-                                 data-[disabled]:pointer-events-none data-[disabled]:opacity-50
-                                 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       {category.name}
                     </SelectItem>
@@ -447,14 +409,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                     selected={newEvent.date}
                     onSelect={(date) => date && setNewEvent({...newEvent, date})}
                     required
-                    className="w-full text-gray-800 dark:text-gray-200
-                               [&_td]:text-gray-800 dark:[&_td]:text-gray-200
-                               [&_th]:text-gray-500 dark:[&_th]:text-gray-400
-                               [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white
-                               [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600
-                               [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800
-                               [&_div.rdp-nav_button]:dark:text-gray-200
-                               [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
+                    className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                   />
                 </div>
                 <div className="mt-2">
@@ -468,8 +423,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                       setNewEvent({...newEvent, start_time: time});
                     }}
                     required
-                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                               text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                   />
                 </div>
               </div>
@@ -480,14 +434,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                     mode="single"
                     selected={newEvent.end_date}
                     onSelect={(date) => date && setNewEvent({...newEvent, end_date: date})}
-                    className="w-full text-gray-800 dark:text-gray-200
-                               [&_td]:text-gray-800 dark:[&_td]:text-gray-200
-                               [&_th]:text-gray-500 dark:[&_th]:text-gray-400
-                               [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white
-                               [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600
-                               [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800
-                               [&_div.rdp-nav_button]:dark:text-gray-200
-                               [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
+                    className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                   />
                 </div>
                 <div className="mt-2">
@@ -500,8 +447,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                       const time = e.target.value;
                       setNewEvent({...newEvent, end_time: time});
                     }}
-                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                               text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                   />
                 </div>
               </div>
@@ -514,9 +460,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 value={newEvent.location}
                 onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
                 required
-                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                           text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                           focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               />
             </div>
 
@@ -532,16 +476,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                     setNewEvent({...newEvent, image: file});
                   }
                 }}
-                className="block w-full text-sm text-gray-800 dark:text-gray-200
-                           file:mr-4 file:py-2 file:px-4
-                           file:rounded-md file:border-0
-                           file:text-sm file:font-semibold
-                           file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-200
-                           hover:file:bg-blue-100 dark:hover:file:bg-blue-800
-                           file:cursor-pointer
-                           bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600
-                           focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800
-                           overflow-hidden"
+                className="block w-full text-sm text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 file:cursor-pointer bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 overflow-hidden"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
             </div>
@@ -554,9 +489,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleAddTicketType}
-                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600
-                             text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600
-                             focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Ticket Type
@@ -564,14 +497,11 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               </div>
 
               {newEvent.ticket_types.map((ticket, index) => (
-                <div key={index} className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg
-                                            bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                <div key={index} className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-gray-300">Type</Label>
                     <select
-                      className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2
-                                 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600
-                                 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                      className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                       value={ticket.type_name}
                       onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
                     >
@@ -589,8 +519,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                       value={ticket.price}
                       onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value))}
                       required
-                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600
-                                 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                     />
                   </div>
                   <div className="space-y-2">
@@ -602,8 +531,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                         value={ticket.quantity}
                         onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value))}
                         required
-                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600
-                                   text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                       />
                       <Button
                         type="button"
@@ -625,20 +553,14 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600
-                           text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600
-                           focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 onClick={handleAddEvent}
-                className="bg-gradient-to-r from-blue-500 to-green-500
-                           hover:from-blue-600 hover:to-green-600 text-white font-medium
-                           transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                           dark:focus:ring-offset-gray-800"
+                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 {isEditing ? 'Update Event' : 'Create Event'}
               </Button>
@@ -647,7 +569,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
@@ -660,17 +581,15 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
-              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600
-                         text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+            <AlertDialogCancel
+              className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEvent}
               disabled={deletingEvent}
-              className="bg-red-600 hover:bg-red-700 text-white
-                         focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              className="bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
               {deletingEvent ? 'Deleting...' : 'Delete Event'}
             </AlertDialogAction>

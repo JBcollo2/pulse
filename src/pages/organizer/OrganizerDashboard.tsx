@@ -8,14 +8,16 @@ import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
 import { cn } from "@/lib/utils";
+import { EventDialog } from '@/components/EventDialog';
 
-// Interfaces
 interface Event {
   id: number;
   name: string;
   date: string;
   location: string;
   description?: string;
+  start_time: string;
+  organizer_id: number;
 }
 
 interface OverallSummary {
@@ -39,7 +41,6 @@ interface OverallSummary {
 
 type ViewType = 'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport';
 
-// OrganizerDashboard Component
 const OrganizerDashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,10 +53,11 @@ const OrganizerDashboard: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [organizerName, setOrganizerName] = useState('Organizer');
   const [isMobile, setIsMobile] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const { toast } = useToast();
 
-  // Helper for API Error Handling
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
@@ -72,7 +74,6 @@ const OrganizerDashboard: React.FC = () => {
     });
   }, [toast]);
 
-  // Fetch Organizer Events
   const fetchOrganizerEvents = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -101,7 +102,6 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
-  // Fetch Overall Summary
   const fetchOverallSummary = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -137,7 +137,6 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
-  // Logout Handler
   const handleLogout = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
@@ -172,7 +171,6 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [handleFetchError, toast]);
 
-  // View Change Handler
   const handleViewChange = useCallback((view: string) => {
     if (['overview', 'myEvents', 'overallStats', 'reports', 'settings', 'viewReport'].includes(view)) {
       setCurrentView(view as ViewType);
@@ -183,13 +181,19 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, []);
 
-  // Handle Viewing Individual Event Report
   const handleViewReport = useCallback((eventId: number) => {
     setSelectedEventId(eventId);
     setCurrentView('viewReport');
   }, []);
 
-  // Data Fetching Effect
+  const handleEventCreated = useCallback(() => {
+    fetchOrganizerEvents();
+  }, [fetchOrganizerEvents]);
+
+  const handleEventDeleted = useCallback(() => {
+    fetchOrganizerEvents();
+  }, [fetchOrganizerEvents]);
+
   useEffect(() => {
     if (currentView === 'myEvents') {
       fetchOrganizerEvents();
@@ -201,27 +205,19 @@ const OrganizerDashboard: React.FC = () => {
     }
   }, [currentView, fetchOrganizerEvents, fetchOverallSummary]);
 
-  // Check screen size and update state
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
-    // Initial check
     handleResize();
-
-    // Add event listener
     window.addEventListener('resize', handleResize);
-
-    // Cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Derived State for Event Filtering
   const upcomingEvents = organizerEvents.filter(e => new Date(e.date) > new Date());
   const pastEvents = organizerEvents.filter(e => new Date(e.date) <= new Date());
 
-  // Header Content Logic
   const getHeaderContent = () => {
     switch (currentView) {
       case 'overview':
@@ -316,9 +312,7 @@ const OrganizerDashboard: React.FC = () => {
             "p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
             "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
             `bg-gradient-to-r ${headerContent.gradient} text-white`,
-            // Removed inline style 'marginTop: 0' and instead rely on the margin/padding of the parent/sibling elements
-            // and adjust the top padding of the content div for spacing.
-            "mb-6 md:mb-8" // Added bottom margin for spacing between header and content
+            "mb-6 md:mb-8"
           )}>
             <div className="flex items-center gap-6">
               <div className="p-4 rounded-full bg-white bg-opacity-20 shadow-inner transition-transform duration-300 hover:scale-105">
@@ -335,8 +329,7 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Adjusted padding for the main content area */}
-          <div className="p-4 md:p-8 pt-0 md:pt-0"> {/* Kept pt-0 to prevent double padding if header already has mb- */}
+          <div className="p-4 md:p-8 pt-0 md:pt-0">
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
                 <strong className="font-bold">Error!</strong>
@@ -592,6 +585,14 @@ const OrganizerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+     " <EventDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        editingEvent={editingEvent}
+        onEventDeleted={handleEventDeleted}
+        onEventCreated={handleEventCreated}
+      />"
 
       <style>{`
         @keyframes fade-in-up {
