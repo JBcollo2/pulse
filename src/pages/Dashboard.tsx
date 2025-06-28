@@ -238,10 +238,32 @@ const Dashboard = () => {
     setEditingEvent(null);
   };
 
-  const handleEventDelete = (eventId) => {
-    setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
-    setShowEventDialog(false);
-    setEditingEvent(null);
+  const handleEventDelete = async (eventId) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete event');
+      }
+
+      // Remove the deleted event from the state
+      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive"
+      });
+    }
   };
 
   const MyEventsComponent = () => (
@@ -253,7 +275,6 @@ const Dashboard = () => {
         onEventCreated={handleEventSave}
         onEventDeleted={handleEventDelete}
       />
-
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -410,7 +431,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
       <Navbar />
-
       <main className="pt-16">
         <div className="flex relative">
           {isMobile && (
@@ -422,11 +442,9 @@ const Dashboard = () => {
               <Menu className="h-5 w-5" />
             </button>
           )}
-
           {isMobile && mobileMenuOpen && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" />
           )}
-
           <div
             className={`
               ${isMobile
@@ -453,7 +471,6 @@ const Dashboard = () => {
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your events</p>
                   </div>
                 )}
-
                 {isMobile ? (
                   <button
                     onClick={() => setMobileMenuOpen(false)}
@@ -470,7 +487,6 @@ const Dashboard = () => {
                   </button>
                 )}
               </div>
-
               {(!sidebarCollapsed || isMobile) && (
                 <div className="mt-4 relative animate-fade-in">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -484,7 +500,6 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-
             <nav className="p-2 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto h-full pb-20">
               {filteredMenuItems.map((item, index) => {
                 const isActive = activeTab === item.id;
@@ -506,7 +521,6 @@ const Dashboard = () => {
                       ${isActive ? "text-white" : item.color}
                       ${sidebarCollapsed && !isMobile ? "mx-auto" : ""}
                     `} />
-
                     {(!sidebarCollapsed || isMobile) && (
                       <>
                         <div className="flex-1 min-w-0">
@@ -517,14 +531,12 @@ const Dashboard = () => {
                             {item.description}
                           </div>
                         </div>
-
                         <ChevronRight className={`
                           h-4 w-4 transition-all duration-300 flex-shrink-0
                           ${isActive ? "text-white opacity-100 transform rotate-90" : "text-gray-500 dark:text-gray-400 opacity-0 group-hover:opacity-50"}
                         `} />
                       </>
                     )}
-
                     {sidebarCollapsed && !isMobile && (
                       <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                         {item.name}
@@ -535,7 +547,6 @@ const Dashboard = () => {
                 );
               })}
             </nav>
-
             {(!sidebarCollapsed || isMobile) && (user?.role === "ADMIN" || user?.role === "ORGANIZER" || user?.role === "SECURITY" || user?.role === "ATTENDEE") && (
               <div className="pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-3 sm:px-4">
@@ -559,11 +570,8 @@ const Dashboard = () => {
               </div>
             )}
           </div>
-
           <div className={`flex-1 transition-all duration-300 ${
-            isMobile
-              ? 'w-full'
-              : sidebarCollapsed ? 'ml-0' : 'ml-0'
+            isMobile ? 'w-full' : sidebarCollapsed ? 'ml-0' : 'ml-0'
           }`}>
             <div className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
               <div className="flex items-center justify-between">
@@ -576,7 +584,6 @@ const Dashboard = () => {
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{activeMenuItem?.description}</p>
                 </div>
-
                 <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                   <span>Dashboard</span>
                   <ChevronRight className="h-4 w-4" />
@@ -584,7 +591,6 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
             <div className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-12rem)]">
               <div className="animate-fade-in">
                 {user ? (
@@ -599,9 +605,7 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
-
       <Footer />
-
       <style>{`
         @keyframes fade-in {
           from {
@@ -613,51 +617,40 @@ const Dashboard = () => {
             transform: translateY(0);
           }
         }
-
         .animate-fade-in {
           animation: fade-in 0.3s ease-out forwards;
         }
-
         ::-webkit-scrollbar {
           width: 4px;
         }
-
         ::-webkit-scrollbar-track {
           background: transparent;
         }
-
         ::-webkit-scrollbar-thumb {
           background: rgb(203 213 225);
           border-radius: 2px;
         }
-
         ::-webkit-scrollbar-thumb:hover {
           background: rgb(148 163 184);
         }
-
         .dark ::-webkit-scrollbar-thumb {
           background: rgb(75 85 99);
         }
-
         .dark ::-webkit-scrollbar-thumb:hover {
           background: rgb(107 114 128);
         }
-
         body {
           overflow-x: hidden;
         }
-
         @media (max-width: 768px) {
           .transition-transform {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
         }
-
         @media (hover: none) and (pointer: coarse) {
           button:hover {
             transform: none !important;
           }
-
           .group:hover .group-hover\\:scale-110 {
             transform: none !important;
           }
@@ -668,4 +661,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
