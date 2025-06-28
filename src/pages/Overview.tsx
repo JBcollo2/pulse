@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, User, Shield } from 'lucide-react';
+import { Clock, User, Shield, BarChart } from 'lucide-react';
 
-const Overview = () => {
+const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   // Update time every second
@@ -60,33 +60,31 @@ const Overview = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Information
+              <BarChart className="h-5 w-5" />
+              System Status
             </CardTitle>
-            <CardDescription>Your account details</CardDescription>
+            <CardDescription>Current system information</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="font-medium">Name:</span>
-                <span>{user.name}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Role:</span>
-                <div className="flex items-center gap-1">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  <span>{user.role}</span>
+                <span className="font-medium">Server Status:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-600">Online</span>
                 </div>
               </div>
               <div className="flex justify-between items-center">
-                <span className="font-medium">Email:</span>
-                <span className="text-sm">{user.email}</span>
+                <span className="font-medium">Database:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-600">Connected</span>
+                </div>
               </div>
+
               <div className="flex justify-between items-center">
-                <span className="font-medium">Last Login:</span>
-                <span className="text-sm text-muted-foreground">
-                  {user.lastLogin.toLocaleDateString()} at {formatTime(user.lastLogin)}
-                </span>
+                <span className="font-medium">System Load:</span>
+                <span className="text-sm text-blue-600">23% CPU</span>
               </div>
             </div>
           </CardContent>
@@ -118,6 +116,18 @@ const Overview = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center mt-2">
+                  <span className="font-medium">Browser:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {navigator.userAgent.split(' ').pop().split('/')[0]}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="font-medium">Screen Resolution:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {window.screen.width} × {window.screen.height}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
                   <span className="font-medium">Session Duration:</span>
                   <span className="text-sm text-muted-foreground">
                     Active since login
@@ -132,4 +142,4 @@ const Overview = () => {
   );
 };
 
-export default Overview;
+export default Dashboard;
