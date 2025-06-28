@@ -5,6 +5,7 @@ import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
+import StatsCard from '../../components/StatsCard';
 import { debounce } from 'lodash';
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,13 @@ const AdminDashboard: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  const stats = [
+    { title: "Total Users", value: "120", icon: Users, color: "bg-blue-100 dark:bg-blue-900" },
+    { title: "Total Events", value: "48", icon: CalendarDays, color: "bg-green-100 dark:bg-green-900" },
+    { title: "Revenue", value: "$4,327", icon: DollarSign, color: "bg-purple-100 dark:bg-purple-900" },
+    { title: "Active Sessions", value: "1,208", icon: Activity, color: "bg-amber-100 dark:bg-amber-900" },
+  ];
 
   const getHeaderContent = () => {
     switch (currentView) {
@@ -347,10 +355,13 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="space-y-6">
             {currentView === 'reports' && (
-              <SystemReports />
+              <div className="space-y-6">
+                <StatsCard stats={stats} />
+                <SystemReports />
+              </div>
             )}
             {currentView === 'events' && (
-              <RecentEvents/>
+              <RecentEvents />
             )}
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
               <UserManagement

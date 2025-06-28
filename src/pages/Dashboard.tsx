@@ -1,5 +1,3 @@
-// frontend/pulse/src/pages/Dashboard.tsx - Enhanced Responsive Version
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -189,7 +187,7 @@ const Dashboard = () => {
 
   // Enhanced Component for Organizer's Event Management with Event Creation
   const MyEventsComponent = () => (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">ssx
       {/* Event Dialog */}
       <EventDialog
         open={showEventDialog}

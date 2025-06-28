@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import {
-  CalendarDays, DollarSign, CheckCircle,
-  LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu
-} from 'lucide-react';
+import { CalendarDays, DollarSign, CheckCircle, LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
+import StatsCard from '../../components/StatsCard';
 import { cn } from "@/lib/utils";
 import { EventDialog } from '@/components/EventDialog';
 
@@ -275,6 +273,13 @@ const OrganizerDashboard: React.FC = () => {
 
   const headerContent = getHeaderContent();
 
+  const stats = [
+    { title: "Total Events", value: organizerEvents.length.toString(), icon: LayoutDashboard, color: "bg-blue-100 dark:bg-blue-900" },
+    { title: "Upcoming Events", value: upcomingEvents.length.toString(), icon: CalendarDays, color: "bg-green-100 dark:bg-green-900" },
+    { title: "Past Events", value: pastEvents.length.toString(), icon: CheckCircle, color: "bg-purple-100 dark:bg-purple-900" },
+    { title: "Total Revenue", value: overallSummary?.total_revenue_across_all_events || '$0', icon: DollarSign, color: "bg-amber-100 dark:bg-amber-900" },
+  ];
+
   return (
     <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10"
@@ -352,68 +357,29 @@ const OrganizerDashboard: React.FC = () => {
                   Welcome, <strong>{organizerName}</strong>! Here's a quick glance at your event management activities and key metrics.
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
-                        <LayoutDashboard className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Total Events</h2>
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
-                      {isLoading ? '...' : organizerEvents.length}
-                    </p>
-                    <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">All events you've organized.</p>
-                  </div>
+                <StatsCard stats={stats} />
 
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
-                        <CalendarDays className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Upcoming Events</h2>
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
-                      {isLoading ? '...' : upcomingEvents.length}
-                    </p>
-                    <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">Events scheduled for the future.</p>
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center shadow-md dark:bg-gray-700">
-                        <CheckCircle className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      </div>
-                      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Past Events</h2>
-                    </div>
-                    <p className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">
-                      {isLoading ? '...' : pastEvents.length}
-                    </p>
-                    <p className="text-sm mt-1 text-gray-600 dark:text-gray-300">Events that have already concluded.</p>
-                  </div>
-
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => handleViewChange('myEvents')}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                      >
-                        View My Events
-                      </button>
-                      <button
-                        onClick={() => handleViewChange('overallStats')}
-                        className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
-                      >
-                        View Overall Stats
-                      </button>
-                      <button
-                        onClick={() => handleViewChange('reports')}
-                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                      >
-                        Generate Reports
-                      </button>
-                    </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 transition-all duration-300 transform hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Quick Actions</h2>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={() => handleViewChange('myEvents')}
+                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                    >
+                      View My Events
+                    </button>
+                    <button
+                      onClick={() => handleViewChange('overallStats')}
+                      className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
+                    >
+                      View Overall Stats
+                    </button>
+                    <button
+                      onClick={() => handleViewChange('reports')}
+                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-gray-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                    >
+                      Generate Reports
+                    </button>
                   </div>
                 </div>
 
@@ -586,13 +552,13 @@ const OrganizerDashboard: React.FC = () => {
         </div>
       </div>
 
-     " <EventDialog
+      <EventDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingEvent={editingEvent}
         onEventDeleted={handleEventDeleted}
         onEventCreated={handleEventCreated}
-      />"
+      />
 
       <style>{`
         @keyframes fade-in-up {
