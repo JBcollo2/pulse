@@ -1,3 +1,5 @@
+// frontend/pulse/src/components/OrganizerNavigation.tsx
+
 import React, { useState, useEffect, useRef, Dispatch, SetStateAction } from "react";
 import {
   LayoutDashboard,
@@ -176,6 +178,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 
   return (
     <>
+      {/* Mobile Header (fixed on top for small screens) */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -196,6 +199,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         </div>
       </div>
 
+      {/* Mobile Overlay (when sidebar is open on mobile) */}
       {isMobileOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
@@ -203,6 +207,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         />
       )}
 
+      {/* Main Sidebar */}
       <aside
         ref={sidebarRef}
         className={`fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out
@@ -210,12 +215,13 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           ${isMobileOpen ? "left-0 w-72" : "-left-72 md:left-0"}
           md:relative md:translate-x-0 md:shadow-none md:z-auto`}
       >
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
+        {/* Logo and Search Section */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0"> {/* mt-16 accounts for mobile fixed header */}
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
               <Ticket className="w-6 h-6 text-white" />
             </div>
-            {(isExpanded || isMobile) && (
+            {(isExpanded || isMobile) && ( // Show "Pulse" text only when expanded or on mobile
               <div className="animate-fade-in hidden md:block">
                 <h2 className="font-bold text-2xl bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
                   Pulse
@@ -223,7 +229,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Event Organizer</p>
               </div>
             )}
-            {(isExpanded || isMobile) && (
+            {(isExpanded || isMobile) && ( // Toggle button for desktop sidebar collapse
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="ml-auto p-2 rounded-lg transition-colors duration-200 hidden md:block hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -233,7 +239,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
             )}
           </div>
 
-          {(isExpanded || isMobile) && (
+          {(isExpanded || isMobile) && ( // Search bar visible when expanded or on mobile
             <div className="mt-4 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
               <input
@@ -247,6 +253,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           )}
         </div>
 
+        {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           {filteredItems.map((item, index) => {
             const isActive = currentView === item.id;
@@ -270,7 +277,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     ${isActive ? "text-white" : item.color}
                     ${isExpanded || isMobile ? "" : "mx-auto"}`} />
 
-                  {(isExpanded || isMobile) && (
+                  {(isExpanded || isMobile) && ( // Show labels and descriptions only when expanded or on mobile
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.label}</div>
                       <div className={`text-xs truncate transition-colors duration-300
@@ -280,16 +287,16 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                     </div>
                   )}
 
-                  {hasSubItems && (isExpanded || isMobile) && (
+                  {hasSubItems && (isExpanded || isMobile) && ( // Show chevron for sub-items
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200
                       ${isCategoryOpen ? 'rotate-180' : ''} ${isActive ? "text-white" : "text-gray-500 dark:text-gray-400"}`} />
                   )}
 
-                  {isActive && (
+                  {isActive && ( // Active item indicator
                     <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80" />
                   )}
 
-                  {!isExpanded && !isMobile && (
+                  {!isExpanded && !isMobile && ( // Tooltip for collapsed sidebar
                     <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl">
                       {item.label}
                       <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
@@ -297,7 +304,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                   )}
                 </button>
 
-                {hasSubItems && (isExpanded || isMobile) && isCategoryOpen && (
+                {hasSubItems && (isExpanded || isMobile) && isCategoryOpen && ( // Render sub-items if expanded/mobile and category is open
                   <div className="ml-8 mt-1 space-y-1 border-l border-gray-300 dark:border-gray-600 pl-4 py-1 animate-fade-in-down">
                     {item.subItems?.map((subItem) => {
                       const isSubActive = currentView === subItem.id;
@@ -323,6 +330,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           })}
         </nav>
 
+        {/* User Profile and Logout (visible when expanded or on mobile) */}
         {(isExpanded || isMobile) && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
@@ -365,6 +373,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           </div>
         )}
 
+        {/* User Icon for Collapsed Sidebar */}
         {!isExpanded && !isMobile && (
           <div className="flex justify-center p-4 border-t border-gray-200 dark:border-gray-700">
             <button className="p-3 rounded-lg transition-all duration-200 group relative bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700">
@@ -423,6 +432,7 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
           animation: fade-in-down 0.3s ease-out forwards;
         }
 
+        /* Custom Scrollbar for navigation items */
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
@@ -432,19 +442,19 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgb(203 213 225);
+          background: rgb(203 213 225); /* slate-300 */
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgb(148 163 184);
+          background: rgb(148 163 184); /* slate-400 */
         }
 
         .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgb(100 116 139);
+          background: rgb(100 116 139); /* slate-600 */
         }
 
         .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgb(71 85 105);
+          background: rgb(71 85 105); /* slate-700 */
         }
       `}</style>
     </>

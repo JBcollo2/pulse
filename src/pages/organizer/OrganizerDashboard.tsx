@@ -315,8 +315,11 @@ const OrganizerDashboard: React.FC = () => {
           <div className={cn(
             "p-6 md:p-8 rounded-xl shadow-lg border overflow-hidden",
             "bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700",
-            `bg-gradient-to-r ${headerContent.gradient} text-white`
-          )} style={{ marginTop: '0' }}>
+            `bg-gradient-to-r ${headerContent.gradient} text-white`,
+            // Removed inline style 'marginTop: 0' and instead rely on the margin/padding of the parent/sibling elements
+            // and adjust the top padding of the content div for spacing.
+            "mb-6 md:mb-8" // Added bottom margin for spacing between header and content
+          )}>
             <div className="flex items-center gap-6">
               <div className="p-4 rounded-full bg-white bg-opacity-20 shadow-inner transition-transform duration-300 hover:scale-105">
                 {headerContent.icon}
@@ -332,7 +335,8 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 pt-0 md:p-8 md:pt-0">
+          {/* Adjusted padding for the main content area */}
+          <div className="p-4 md:p-8 pt-0 md:pt-0"> {/* Kept pt-0 to prevent double padding if header already has mb- */}
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
                 <strong className="font-bold">Error!</strong>
