@@ -40,7 +40,7 @@ interface Category {
 interface Event {
   id: number;
   name: string;
-  description?: string; // Make it optional
+  description?: string;
   date: string;
   end_date?: string;
   start_time: string;
@@ -55,8 +55,8 @@ interface EventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingEvent?: Event | null;
-  onEventDeleted?: () => void;
-  onEventCreated?: () => void;
+  onEventDeleted?: (eventId: string) => void; // Updated to expect a string
+  onEventCreated?: (eventData: Event) => void;
 }
 
 interface TicketType {
@@ -136,7 +136,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     if (editingEvent) {
       setNewEvent({
         name: editingEvent.name,
-        description: editingEvent.description,
+        description: editingEvent.description || '',
         date: new Date(editingEvent.date),
         end_date: editingEvent.end_date ? new Date(editingEvent.end_date) : new Date(editingEvent.date),
         start_time: editingEvent.start_time,
@@ -208,7 +208,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
       setDeleteDialogOpen(false);
       onOpenChange(false);
-      onEventDeleted?.();
+      onEventDeleted?.(editingEvent.id.toString()); // Convert number to string
     } catch (error) {
       console.error('Error deleting event:', error);
       toast({
@@ -221,8 +221,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     }
   };
 
-  const handleAddEvent = async (e: React.FormEvent) => {
+  const handleSubmitEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         credentials: 'include'
@@ -260,19 +261,30 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         }
       });
 
-      const eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-      });
+      let eventResponse;
+      let eventId;
+
+      if (isEditing && editingEvent) {
+        eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
+          method: 'PUT',
+          credentials: 'include',
+          body: formData
+        });
+        eventId = editingEvent.id;
+      } else {
+        eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        const eventData = await eventResponse.json();
+        eventId = eventData.id;
+      }
 
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
-        throw new Error(errorData.message || 'Failed to create event');
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
       }
-
-      const eventData = await eventResponse.json();
-      const eventId = eventData.id;
 
       if (newEvent.ticket_types.length > 0) {
         for (const ticketType of newEvent.ticket_types) {
@@ -292,19 +304,35 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
           if (!ticketTypeResponse.ok) {
             const errorData = await ticketTypeResponse.json();
-            throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
+            throw new Error(`Failed to create/update ticket type: ${errorData.message || 'Unknown error'}`);
           }
         }
       }
 
       toast({
         title: "Success",
-        description: "Event and ticket types created successfully",
+        description: `Event and ticket types ${isEditing ? 'updated' : 'created'} successfully`,
         variant: "default"
       });
 
       onOpenChange(false);
-      onEventCreated?.();
+      if (isEditing && editingEvent) {
+        onEventCreated?.(editingEvent);
+      } else {
+        onEventCreated?.({
+          id: eventId,
+          name: newEvent.name,
+          description: newEvent.description,
+          date: formatDate(newEvent.date),
+          end_date: formatDate(newEvent.end_date),
+          start_time: newEvent.start_time,
+          end_time: newEvent.end_time,
+          location: newEvent.location,
+          organizer_id: organizer_id,
+          category_id: newEvent.category_id || undefined
+        });
+      }
+
       setNewEvent({
         name: '',
         description: '',
@@ -318,10 +346,10 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         category_id: null
       });
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create event",
+        description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
         variant: "destructive"
       });
     }
@@ -350,7 +378,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               )}
             </div>
           </DialogHeader>
-          <div onSubmit={handleAddEvent} className="space-y-4 pt-4">
+          <form onSubmit={handleSubmitEvent} className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Event Name</Label>
               <Input
@@ -376,7 +404,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             <div className="space-y-2">
               <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">Category</Label>
               <Select
-                value={newEvent.category_id?.toString()}
+                value={newEvent.category_id?.toString() || ''}
                 onValueChange={(value) => setNewEvent({...newEvent, category_id: value ? parseInt(value) : null})}
               >
                 <SelectTrigger
@@ -559,13 +587,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               </Button>
               <Button
                 type="submit"
-                onClick={handleAddEvent}
                 className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 {isEditing ? 'Update Event' : 'Create Event'}
               </Button>
             </div>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 
