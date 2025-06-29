@@ -281,7 +281,7 @@ const OrganizerDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
+    <div className=" relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10"
         style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
       ></div>
@@ -300,7 +300,7 @@ const OrganizerDashboard: React.FC = () => {
 
         <div className={cn(
           "flex-1 transition-all duration-300 ease-in-out",
-          isExpanded ? 'md:ml-72' : 'md:ml-20',
+          isExpanded ? 'md:ml-7' : 'md:ml-20',
           "ml-0"
         )}>
           {isMobile && (
@@ -334,7 +334,7 @@ const OrganizerDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 md:p-8 pt-0 md:pt-0">
+          <div className=" p-2 md:p-4 pt-0 md:pt-0">
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
                 <strong className="font-bold">Error!</strong>
@@ -349,7 +349,7 @@ const OrganizerDashboard: React.FC = () => {
             )}
 
             {currentView === 'overview' && (
-              <div className="space-y-8 animate-fade-in-up">
+              <div className="   space-y-8 animate-fade-in-up">
                 <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                   Organizer Dashboard Overview
                 </h1>
