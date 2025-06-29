@@ -101,6 +101,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     category_id: null
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
   const [deletingEvent, setDeletingEvent] = useState(false);
   const { toast } = useToast();
 
@@ -224,7 +225,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
   const handleSubmitEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setIsLoading(true);
     try {
       const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         credentials: 'include'
@@ -346,14 +347,16 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         ticket_types: [],
         category_id: null
       });
-    } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
-        variant: "destructive"
-      });
-    }
+ } catch (error) {
+    console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
+      variant: "destructive"
+    });
+  } finally {
+    setIsLoading(false); 
+  }
   };
 
   return (
@@ -578,6 +581,41 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             </div>
 
             <div className="flex justify-end space-x-2">
+        <Button
+  type="submit"
+  disabled={isLoading}
+  className={`bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+    isLoading ? 'opacity-70 cursor-not-allowed' : ''
+  }`}
+>
+  {isLoading ? (
+    <>
+      <svg
+        className="animate-spin h-5 w-5 mr-2 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
+        <path
+          className="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        />
+      </svg>
+      {isEditing ? 'Updating...' : 'Creating...'}
+    </>
+  ) : (
+    isEditing ? 'Update Event' : 'Create Event'
+  )}
+</Button>
               <Button
                 type="button"
                 variant="outline"
@@ -585,12 +623,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                {isEditing ? 'Update Event' : 'Create Event'}
               </Button>
             </div>
           </form>
