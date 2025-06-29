@@ -119,6 +119,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
         const data = await response.json();
         setCategories(data.categories);
+        console.log('Fetched categories:', data);
       } catch (error) {
         console.error('Error fetching categories:', error);
         toast({

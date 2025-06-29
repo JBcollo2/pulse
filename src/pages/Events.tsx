@@ -20,6 +20,7 @@ interface Event {
   organizer_id: number;
   featured: boolean;
   likes_count: number;
+  category: string | null;
   organizer: {
     id: number;
     company_name: string;
@@ -111,10 +112,10 @@ const Events = () => {
         event.location.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesCategory = activeCategory === '' || 
-        (event.description && event.description.toLowerCase().includes(activeCategory.toLowerCase()));
-      
-      return matchesSearch && matchesCategory;
-    });
+      (event.category && event.category.toLowerCase() === activeCategory.toLowerCase());
+    
+    return matchesSearch && matchesCategory;
+  });
     
     setFilteredEvents(filtered);
   }, [searchQuery, activeCategory, events]);
