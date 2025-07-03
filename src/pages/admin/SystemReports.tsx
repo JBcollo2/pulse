@@ -45,10 +45,10 @@ interface Event {
 }
 
 interface CurrencyOption {
-  value: string; // Currency code like 'USD'
-  label: string; // Currency code like 'USD'
-  id: number;    // Currency ID from backend
-  symbol: string; // Currency symbol
+  value: string;
+  label: string;
+  id: number;
+  symbol: string;
 }
 
 interface ReportSummary {
@@ -90,12 +90,12 @@ interface AdminEventReportResponse {
   existing_reports: Array<{
     id: number;
     event_id: number;
-    total_revenue: number; // Original revenue
+    total_revenue: number;
     base_currency: {
       code: string;
       symbol: string;
     };
-    converted_revenue: number; // Converted revenue if applicable
+    converted_revenue: number;
     converted_currency: {
       code: string;
       symbol: string;
@@ -103,18 +103,17 @@ interface AdminEventReportResponse {
     tickets_sold_by_type: { [key: string]: number };
     revenue_by_ticket_type: { [key: string]: number };
   }>;
-  // Other fields from the backend response can be added if needed
 }
 
 interface DashboardStats {
-  originalRevenue: number; // Sum of original revenues from all reports
-  totalRevenue: number; // This will be the converted revenue if a target currency is selected
+  originalRevenue: number;
+  totalRevenue: number;
   totalTickets: number;
   exchangeRate: number;
   ticketBreakdown: Array<{
     name: string;
-    value: number; // Count
-    revenue: number; // Revenue for this ticket type (in target currency)
+    value: number;
+    revenue: number;
   }>;
   targetCurrencyCode: string;
   targetCurrencySymbol: string;
@@ -208,8 +207,8 @@ const SystemReports = () => {
   const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
-  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD'); // Stores currency code
-  const [baseCurrencyCode] = useState<string>('USD'); // Assuming original reports are in USD
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD');
+  const [baseCurrencyCode] = useState<string>('USD');
 
   // Data states
   const [reportApiResponse, setReportApiResponse] = useState<AdminEventReportResponse | null>(null);
@@ -373,7 +372,6 @@ const SystemReports = () => {
     fetchExchangeRate();
   }, [selectedCurrencyCode, baseCurrencyCode]);
 
-
   // Fetch report data
   const fetchReportData = useCallback(async () => {
     if (!selectedOrganizer || !selectedEvent) {
@@ -396,7 +394,7 @@ const SystemReports = () => {
       params.append('event_id', selectedEvent);
       if (targetCurrencyId) {
         params.append('currency_id', targetCurrencyId.toString());
-        params.append('use_latest_rates', 'true'); // Always use latest rates for conversion
+        params.append('use_latest_rates', 'true');
       }
 
       const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
@@ -413,13 +411,24 @@ const SystemReports = () => {
       const reportResponse: AdminEventReportResponse = await response.json();
       setReportApiResponse(reportResponse);
 
-      const summary = reportResponse.fresh_report_data.event_summary;
-      const currencyInfo = reportResponse.fresh_report_data.currency_info;
+      const summary = reportResponse.fresh_report_data?.event_summary || {
+        total_tickets_sold: 0,
+        total_revenue: 0,
+        total_attendees: 0,
+        event_count: 0,
+        report_count: 0,
+        currency: 'USD',
+        events: []
+      };
+
+      const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
+        currency: 'USD',
+        currency_symbol: '$'
+      };
 
       // Aggregate ticket breakdown from existing_reports
       const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
       reportResponse.existing_reports.forEach(report => {
-        // Use converted_revenue and converted_currency if available, otherwise original
         const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
           ? report.converted_revenue
           : report.total_revenue;
@@ -430,11 +439,10 @@ const SystemReports = () => {
             aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
           }
         }
-        // Assuming revenue_by_ticket_type is also converted by backend if currency_id is passed
         if (report.revenue_by_ticket_type) {
-            for (const type in report.revenue_by_ticket_type) {
-                aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
-            }
+          for (const type in report.revenue_by_ticket_type) {
+            aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+          }
         }
       });
 
@@ -447,7 +455,7 @@ const SystemReports = () => {
       setDashboardStats(prev => ({
         ...prev,
         originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
-        totalRevenue: summary.total_revenue, // This is already in target currency if converted
+        totalRevenue: summary.total_revenue,
         totalTickets: summary.total_tickets_sold,
         ticketBreakdown: ticketBreakdownArray,
         targetCurrencyCode: currencyInfo.currency,
@@ -459,8 +467,8 @@ const SystemReports = () => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch report data';
       setError(errorMessage);
       showToast(errorMessage, 'error');
-      setReportApiResponse(null); // Clear previous report data on error
-      setDashboardStats({ // Reset dashboard stats on error
+      setReportApiResponse(null);
+      setDashboardStats({
         originalRevenue: 0,
         totalRevenue: 0,
         totalTickets: 0,
@@ -476,29 +484,23 @@ const SystemReports = () => {
 
   // Convert revenue button action (triggers re-fetch with new currency)
   const handleConvertRevenue = () => {
-    // When the "Convert Revenue" button is clicked, it means the user wants to see the report
-    // in the currently selected `selectedCurrencyCode`.
-    // The `fetchReportData` function already handles fetching the report in the target currency.
-    // So, we just need to re-trigger `fetchReportData`.
-    if (reportApiResponse) { // Only re-fetch if there's an existing report to convert
-        fetchReportData();
-        showToast(`Attempting to convert revenue to ${selectedCurrencyCode}...`);
+    if (reportApiResponse) {
+      fetchReportData();
+      showToast(`Attempting to convert revenue to ${selectedCurrencyCode}...`);
     } else {
-        showToast('Please generate a report first.', 'error');
+      showToast('Please generate a report first.', 'error');
     }
   };
 
   // Load report when organizer or event selection changes
   useEffect(() => {
-    // Only auto-fetch if both organizer and event are selected
     if (selectedOrganizer && selectedEvent && currencies.length > 0) {
       fetchReportData();
     }
-  }, [selectedOrganizer, selectedEvent, fetchReportData, currencies]); // Add currencies as dependency for initial currency ID mapping
+  }, [selectedOrganizer, selectedEvent, fetchReportData, currencies]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-inter">
-      {/* Toast */}
       {toast && (
         <Toast
           message={toast.message}
@@ -507,7 +509,6 @@ const SystemReports = () => {
         />
       )}
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -530,7 +531,6 @@ const SystemReports = () => {
           </div>
         </div>
 
-        {/* Controls */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -540,7 +540,6 @@ const SystemReports = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Organizer Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Organizer
@@ -553,7 +552,6 @@ const SystemReports = () => {
                   loading={isLoadingOrganizers}
                 />
               </div>
-              {/* Event Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Event
@@ -566,7 +564,6 @@ const SystemReports = () => {
                   loading={isLoadingEvents}
                 />
               </div>
-              {/* Currency Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Target Currency
@@ -579,7 +576,6 @@ const SystemReports = () => {
                   loading={isLoadingCurrencies}
                 />
               </div>
-              {/* Actions */}
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={fetchReportData}
@@ -612,7 +608,6 @@ const SystemReports = () => {
           </CardContent>
         </Card>
 
-        {/* Exchange Rate Display */}
         {selectedCurrencyCode !== baseCurrencyCode && (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardContent className="pt-6">
@@ -630,7 +625,6 @@ const SystemReports = () => {
           </Card>
         )}
 
-        {/* Error Display */}
         {error && (
           <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <CardContent className="pt-6">
@@ -642,7 +636,6 @@ const SystemReports = () => {
           </Card>
         )}
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardContent className="pt-6">
@@ -722,7 +715,6 @@ const SystemReports = () => {
           </Card>
         </div>
 
-        {/* Charts */}
         {dashboardStats.ticketBreakdown.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card>
@@ -805,7 +797,6 @@ const SystemReports = () => {
           </div>
         )}
 
-        {/* Conversion History - Now reflects the report's conversion */}
         {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
           <Card>
             <CardHeader>
