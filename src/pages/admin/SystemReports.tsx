@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Calendar,
   Building,
+  Download,
 } from "lucide-react";
 import {
   BarChart,
@@ -229,6 +230,7 @@ const SystemReports = () => {
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [isLoadingExchangeRate, setIsLoadingExchangeRate] = useState(false);
   const [error, setError] = useState<string>('');
+  const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -347,7 +349,6 @@ const SystemReports = () => {
 
       setIsLoadingExchangeRate(true);
       try {
-        // Fetch latest rates for the base currency (USD)
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrencyCode}`, {
           credentials: 'include'
         });
@@ -489,6 +490,52 @@ const SystemReports = () => {
       showToast(`Attempting to convert revenue to ${selectedCurrencyCode}...`);
     } else {
       showToast('Please generate a report first.', 'error');
+    }
+  };
+
+  // Download PDF
+  const downloadPDF = async (eventId: number, eventName: string) => {
+    setDownloadingPdfs(prev => new Set([...prev, eventId]));
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to download PDF (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `event_report_${eventId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      showToast(`PDF report for "${eventName}" downloaded successfully`, 'success');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      showToast(error instanceof Error ? error.message : "Failed to download PDF report", 'error');
+    } finally {
+      setDownloadingPdfs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(eventId);
+        return newSet;
+      });
     }
   };
 
@@ -838,6 +885,48 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Reports Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Reports</CardTitle>
+            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Download PDF reports for each event</div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {reportApiResponse?.fresh_report_data?.event_summary?.events?.map((event) => (
+                <div key={event.event_id} className="flex justify-between items-center p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <p className="font-medium">{event.event_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.tickets_sold} tickets sold
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => downloadPDF(event.event_id, event.event_name)}
+                    disabled={downloadingPdfs.has(event.event_id)}
+                    variant="outline"
+                  >
+                    {downloadingPdfs.has(event.event_id) ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
