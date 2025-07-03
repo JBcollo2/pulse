@@ -29,6 +29,9 @@ import {
   Eye,
   Clock,
   X,
+  DollarSign,
+  Globe,
+  ArrowUpDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,43 +75,107 @@ const QUICK_FILTERS = [
   { label: 'This Year', days: 365 },
 ];
 
+// Define interfaces
+interface SystemReport {
+  id: number;
+  event_id: number;
+  event_name: string;
+  total_revenue_summary: number;
+  total_tickets_sold_summary: number;
+  ticket_type_name?: string;
+  timestamp: string;
+}
+
+interface Organizer {
+  id: number;
+  name: string;
+}
+
+interface Event {
+  id: number;
+  name: string;
+}
+
+interface ReportsByEvent {
+  event_name: string;
+  count: number;
+  event_id: number;
+  revenue: number;
+  convertedRevenue: number;
+}
+
+interface RevenueByTicketType {
+  ticket_type_name: string;
+  amount: number;
+  tickets: number;
+  convertedAmount: number;
+}
+
+interface TimeSeriesData {
+  date: string;
+  revenue: number;
+  tickets: number;
+  convertedRevenue: number;
+}
+
+interface Stats {
+  totalReports: number;
+  totalRevenue: number;
+  totalTickets: number;
+  convertedRevenue: number;
+  reportsByEvent: ReportsByEvent[];
+  revenueByTicketType: RevenueByTicketType[];
+  timeSeriesData: TimeSeriesData[];
+}
+
 const SystemReports = () => {
-  const [reports, setReports] = useState([]);
-  const [organizers, setOrganizers] = useState([]);
-  const [selectedOrganizer, setSelectedOrganizer] = useState('all');
-  const [stats, setStats] = useState({
+  const [reports, setReports] = useState<SystemReport[]>([]);
+  const [organizers, setOrganizers] = useState<Organizer[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [currencies, setCurrencies] = useState<string[]>([]);
+  const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
+  const [selectedEvent, setSelectedEvent] = useState<string>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const [baseCurrency, setBaseCurrency] = useState<string>('USD');
+  const [stats, setStats] = useState<Stats>({
     totalReports: 0,
     totalRevenue: 0,
     totalTickets: 0,
+    convertedRevenue: 0,
     reportsByEvent: [],
     revenueByTicketType: [],
     timeSeriesData: []
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
-  const [downloadingPdfs, setDownloadingPdfs] = useState(new Set());
-  const [isExportingAll, setIsExportingAll] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [viewMode, setViewMode] = useState('overview');
-  const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(true);
+  const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
+  const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(true);
+  const [isConvertingRevenue, setIsConvertingRevenue] = useState<boolean>(false);
+  const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
+  const [isExportingAll, setIsExportingAll] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview');
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  const toast = ({ title, description, variant = "default" }) => {
+  const toast = ({ title, description, variant = "default" }: { title: string; description: string; variant?: string }) => {
     console.log(`${title}: ${description}`);
   };
 
   const clearFilters = () => {
-    setSelectedOrganizer('all');
+    setSelectedOrganizer('');
+    setSelectedEvent('');
     setStartDate('');
     setEndDate('');
+    setSelectedCurrency('USD');
+    setExchangeRate(1);
   };
 
-  const applyQuickFilter = (days) => {
+  const applyQuickFilter = (days: number) => {
     const today = new Date();
     let start = new Date(today);
     let end = new Date(today);
-
     if (days === 0) {
       start = new Date(today);
     } else if (days === 365) {
@@ -116,26 +183,25 @@ const SystemReports = () => {
     } else {
       start.setDate(today.getDate() - days + 1);
     }
-
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(end.toISOString().split('T')[0]);
   };
 
-  const isValidDate = (dateString) => {
+  const isValidDate = (dateString: string): boolean => {
     const date = new Date(dateString);
     return date instanceof Date && !isNaN(date.getTime());
   };
 
-  const debounce = (func, delay) => {
-    let debounceTimer;
-    return function(...args) {
+  const debounce = (func: Function, delay: number) => {
+    let debounceTimer: NodeJS.Timeout;
+    return function(...args: any[]) {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => func.apply(this, args), delay);
     };
   };
 
-  const handleDateChange = (setDate) => {
-    return debounce((date) => {
+  const handleDateChange = (setDate: React.Dispatch<React.SetStateAction<string>>) => {
+    return debounce((date: string) => {
       if (isValidDate(date)) {
         setDate(date);
       } else {
@@ -147,13 +213,13 @@ const SystemReports = () => {
   const handleStartDateChange = handleDateChange(setStartDate);
   const handleEndDateChange = handleDateChange(setEndDate);
 
+  // Fetch organizers
   useEffect(() => {
     const fetchOrganizers = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
           credentials: 'include'
         });
-
         if (response.ok) {
           const data = await response.json();
           const organizersData = Array.isArray(data) ? data : (data.data || []);
@@ -165,11 +231,89 @@ const SystemReports = () => {
         setIsLoadingOrganizers(false);
       }
     };
-
     fetchOrganizers();
   }, []);
 
+  // Fetch events when organizer changes
+  useEffect(() => {
+    const fetchEvents = async () => {
+      if (!selectedOrganizer) {
+        setEvents([]);
+        return;
+      }
+      setIsLoadingEvents(true);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/admin/organizers/${selectedOrganizer}/events`,
+          { credentials: 'include' }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const eventsData = Array.isArray(data) ? data : (data.data || []);
+          setEvents(eventsData);
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+    fetchEvents();
+  }, [selectedOrganizer]);
+
+  // Fetch currencies
+  useEffect(() => {
+    const fetchCurrencies = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCurrencies(data.currencies || []);
+        }
+      } catch (error) {
+        console.error('Error fetching currencies:', error);
+      } finally {
+        setIsLoadingCurrencies(false);
+      }
+    };
+    fetchCurrencies();
+  }, []);
+
+  // Fetch exchange rate when currency changes
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      if (selectedCurrency === baseCurrency) {
+        setExchangeRate(1);
+        return;
+      }
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}&target=${selectedCurrency}`,
+          { credentials: 'include' }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setExchangeRate(data.rates[selectedCurrency] || 1);
+        }
+      } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+        setExchangeRate(1);
+      }
+    };
+    fetchExchangeRate();
+  }, [selectedCurrency, baseCurrency]);
+
   const fetchReports = useCallback(async () => {
+    if (!selectedOrganizer || !selectedEvent) {
+      toast({
+        title: "Error",
+        description: "Please select both organizer and event to generate reports.",
+        variant: "destructive",
+      });
+      return;
+    }
     if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
       toast({
         title: "Error",
@@ -178,102 +322,84 @@ const SystemReports = () => {
       });
       return;
     }
-
     setIsLoading(true);
     try {
-      let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports`;
       const params = new URLSearchParams();
-
-      if (selectedOrganizer !== 'all') {
-        params.append('organizer_id', selectedOrganizer);
-      }
-
+      params.append('organizer_id', selectedOrganizer);
+      params.append('event_id', selectedEvent);
       if (startDate) {
         params.append('start_date', startDate);
       }
-
       if (endDate) {
         params.append('end_date', endDate);
       }
-
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-
       const response = await fetch(url, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
         console.error('Error fetching reports:', errorMessage);
         throw new Error(errorMessage);
       }
-
       const data = await response.json();
       let reportsData = Array.isArray(data.data) ? data.data : [];
-
       setReports(reportsData);
+      const totalRevenue = reportsData.reduce((sum: number, report: SystemReport) => sum + (report.total_revenue_summary || 0), 0);
+      const totalTickets = reportsData.reduce((sum: number, report: SystemReport) => sum + (report.total_tickets_sold_summary || 0), 0);
+      const convertedRevenue = totalRevenue * exchangeRate;
 
-      const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
-      const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
-
-      const reportsByEvent = reportsData.reduce((acc, report) => {
+      const reportsByEvent = reportsData.reduce((acc: Record<string, ReportsByEvent>, report: SystemReport) => {
         const eventName = report.event_name || 'N/A Event';
         if (!acc[eventName]) {
-          acc[eventName] = { count: 0, event_id: report.event_id, revenue: 0 };
+          acc[eventName] = { event_name: eventName, count: 0, event_id: report.event_id, revenue: 0, convertedRevenue: 0 };
         }
         acc[eventName].count += 1;
         acc[eventName].revenue += report.total_revenue_summary || 0;
+        acc[eventName].convertedRevenue += (report.total_revenue_summary || 0) * exchangeRate;
         return acc;
       }, {});
 
-      const revenueByTicketType = reportsData.reduce((acc, report) => {
+      const revenueByTicketType = reportsData.reduce((acc: Record<string, RevenueByTicketType>, report: SystemReport) => {
         const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
         const revenue = report.total_revenue_summary || 0;
         const tickets = report.total_tickets_sold_summary || 0;
-
+        const convertedRevenue = revenue * exchangeRate;
         if (!acc[ticketTypeName]) {
-          acc[ticketTypeName] = { amount: 0, tickets: 0 };
+          acc[ticketTypeName] = { ticket_type_name: ticketTypeName, amount: 0, tickets: 0, convertedAmount: 0 };
         }
         acc[ticketTypeName].amount += revenue;
         acc[ticketTypeName].tickets += tickets;
+        acc[ticketTypeName].convertedAmount += convertedRevenue;
         return acc;
       }, {});
 
-      const timeSeriesData = reportsData.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
+      const timeSeriesData = reportsData.reduce((acc: Record<string, TimeSeriesData>, report: SystemReport) => {
         const date = new Date(report.timestamp).toISOString().split('T')[0];
+        const revenue = report.total_revenue_summary || 0;
+        const tickets = report.total_tickets_sold_summary || 0;
         if (!acc[date]) {
-          acc[date] = { revenue: 0, tickets: 0 };
+          acc[date] = { date, revenue: 0, tickets: 0, convertedRevenue: 0 };
         }
-        acc[date].revenue += report.total_revenue_summary || 0;
-        acc[date].tickets += report.total_tickets_sold_summary || 0;
+        acc[date].revenue += revenue;
+        acc[date].tickets += tickets;
+        acc[date].convertedRevenue += revenue * exchangeRate;
         return acc;
-      }, {} as Record<string, { revenue: number; tickets: number }>);
+      }, {});
 
       setStats({
         totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
-          event_name: name,
-          count: (data as { count: number; event_id: number; revenue: number }).count,
-          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
-          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
-        })),
-        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
-          ticket_type_name: type,
-          amount: data.amount,
-          tickets: data.tickets
-        })),
-        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
-          date,
-          revenue: (data as { revenue: number; tickets: number }).revenue,
-          tickets: (data as { revenue: number; tickets: number }).tickets
-        })).sort((a, b) => a.date.localeCompare(b.date))
+        convertedRevenue,
+        reportsByEvent: Object.values(reportsByEvent),
+        revenueByTicketType: Object.values(revenueByTicketType),
+        timeSeriesData: (Object.values(timeSeriesData) as TimeSeriesData[]).sort((a, b) => a.date.localeCompare(b.date))
       });
-
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
@@ -284,15 +410,67 @@ const SystemReports = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganizer, startDate, endDate]);
+  }, [selectedOrganizer, selectedEvent, startDate, endDate, exchangeRate]);
+
+  // Convert revenue using the batch API
+  const convertRevenueBatch = async () => {
+    if (!selectedEvent || !selectedOrganizer) {
+      toast({
+        title: "Error",
+        description: "Please select organizer and event first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsConvertingRevenue(true);
+    try {
+      const revenueData = stats.revenueByTicketType.map(item => ({
+        amount: item.amount,
+        from_currency: baseCurrency,
+        to_currency: selectedCurrency,
+        event_id: selectedEvent,
+        ticket_type: item.ticket_type_name
+      }));
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/currency/revenue/convert/batch`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ conversions: revenueData })
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: "Success",
+          description: `Revenue converted successfully to ${selectedCurrency}`,
+        });
+        // Refresh reports to show converted values
+        fetchReports();
+      }
+    } catch (error) {
+      console.error('Error converting revenue:', error);
+      toast({
+        title: "Error",
+        description: "Failed to convert revenue",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConvertingRevenue(false);
+    }
+  };
 
   useEffect(() => {
-    fetchReports();
+    if (selectedOrganizer && selectedEvent) {
+      fetchReports();
+    }
   }, [fetchReports]);
 
-  const downloadPDF = async (eventId, eventName) => {
+  const downloadPDF = async (eventId: number, eventName: string) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
-
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
         method: 'GET',
@@ -301,7 +479,6 @@ const SystemReports = () => {
           'Accept': 'application/pdf',
         },
       });
-
       if (!response.ok) {
         let errorMessage = `Failed to download PDF (${response.status})`;
         try {
@@ -312,7 +489,6 @@ const SystemReports = () => {
         }
         throw new Error(errorMessage);
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -320,15 +496,12 @@ const SystemReports = () => {
       link.download = `event_report_${eventId}.pdf`;
       document.body.appendChild(link);
       link.click();
-
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-
       toast({
         title: "Success",
         description: `PDF report for "${eventName}" downloaded successfully`,
       });
-
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
@@ -350,9 +523,11 @@ const SystemReports = () => {
     try {
       let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`;
       const params = new URLSearchParams();
-
-      if (selectedOrganizer !== 'all') {
+      if (selectedOrganizer) {
         params.append('organizer_id', selectedOrganizer);
+      }
+      if (selectedEvent) {
+        params.append('event_id', selectedEvent);
       }
       if (startDate) {
         params.append('start_date', startDate);
@@ -360,11 +535,9 @@ const SystemReports = () => {
       if (endDate) {
         params.append('end_date', endDate);
       }
-
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
@@ -372,7 +545,6 @@ const SystemReports = () => {
           'Accept': 'text/csv',
         },
       });
-
       if (!response.ok) {
         let errorMessage = `Failed to export all reports (${response.status})`;
         try {
@@ -383,23 +555,19 @@ const SystemReports = () => {
         }
         throw new Error(errorMessage);
       }
-
       const blob = await response.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = urlBlob;
-      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `event_reports_${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
-
       window.URL.revokeObjectURL(urlBlob);
       document.body.removeChild(link);
-
       toast({
         title: "Success",
         description: "All filtered reports exported successfully.",
       });
-
     } catch (error) {
       console.error('Error exporting all reports:', error);
       toast({
@@ -446,12 +614,10 @@ const SystemReports = () => {
               <div>
                 <CardTitle className="flex items-center gap-2 text-2xl text-gray-900 dark:text-white">
                   <BarChart3 className="h-6 w-6 text-blue-500 dark:text-blue-400" />
-                  System Reports Dashboard
+                  Event Reports Dashboard
                 </CardTitle>
                 <CardDescription className="text-lg text-gray-600 dark:text-gray-400">
-                  {selectedOrganizer === 'all'
-                    ? 'Comprehensive analytics across all organizers'
-                    : `Analytics for selected organizer`}
+                  Organizer-specific event analytics with currency conversion
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -471,6 +637,21 @@ const SystemReports = () => {
                 </Button>
               </div>
             </div>
+            {/* Currency Display */}
+            <div className="flex items-center gap-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span className="font-medium text-blue-900 dark:text-blue-100">
+                  Currency: {selectedCurrency}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Exchange Rate: 1 {baseCurrency} = {exchangeRate.toFixed(4)} {selectedCurrency}
+                </span>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {QUICK_FILTERS.map((filter) => (
                 <Button
@@ -484,9 +665,9 @@ const SystemReports = () => {
               ))}
             </div>
             {showFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="space-y-2">
-                  <Label htmlFor="organizer" className="text-gray-900 dark:text-white">Organizer</Label>
+                  <Label htmlFor="organizer" className="text-gray-900 dark:text-white">Organizer *</Label>
                   <Select
                     value={selectedOrganizer}
                     onValueChange={setSelectedOrganizer}
@@ -496,10 +677,47 @@ const SystemReports = () => {
                       <SelectValue placeholder="Select organizer" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
-                      <SelectItem value="all">All Organizers</SelectItem>
                       {organizers.map((organizer) => (
                         <SelectItem key={organizer.id} value={organizer.id.toString()}>
                           {organizer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event" className="text-gray-900 dark:text-white">Event *</Label>
+                  <Select
+                    value={selectedEvent}
+                    onValueChange={setSelectedEvent}
+                    disabled={isLoadingEvents || !selectedOrganizer}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select event" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      {events.map((event) => (
+                        <SelectItem key={event.id} value={event.id.toString()}>
+                          {event.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency" className="text-gray-900 dark:text-white">Currency</Label>
+                  <Select
+                    value={selectedCurrency}
+                    onValueChange={setSelectedCurrency}
+                    disabled={isLoadingCurrencies}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -528,7 +746,7 @@ const SystemReports = () => {
                   <Button
                     onClick={fetchReports}
                     className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 dark:from-blue-600 dark:to-purple-700 dark:hover:from-blue-700 dark:hover:to-purple-800 text-white transition-all hover:scale-105"
-                    disabled={isLoading}
+                    disabled={isLoading || !selectedOrganizer || !selectedEvent}
                   >
                     {isLoading ? (
                       <>
@@ -538,7 +756,7 @@ const SystemReports = () => {
                     ) : (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Apply Filters
+                        Generate Report
                       </>
                     )}
                   </Button>
@@ -569,12 +787,30 @@ const SystemReports = () => {
                     )}
                   </Button>
                 </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={convertRevenueBatch}
+                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 dark:from-purple-600 dark:to-indigo-700 dark:hover:from-purple-700 dark:hover:to-indigo-800 text-white transition-all hover:scale-105"
+                    disabled={isConvertingRevenue || !selectedEvent || !selectedOrganizer}
+                  >
+                    {isConvertingRevenue ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Converting...
+                      </>
+                    ) : (
+                      <>
+                        <DollarSign className="mr-2 h-4 w-4" />
+                        Convert Revenue
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         </CardHeader>
       </Card>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -586,7 +822,6 @@ const SystemReports = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">Generated reports</p>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</CardTitle>
@@ -594,12 +829,23 @@ const SystemReports = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {baseCurrency} {stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Across all events</p>
           </CardContent>
         </Card>
-
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Converted Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {selectedCurrency} {stats.convertedRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">In selected currency</p>
+          </CardContent>
+        </Card>
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Tickets</CardTitle>
@@ -610,21 +856,7 @@ const SystemReports = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">Tickets sold</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue/Event</CardTitle>
-            <BarChart3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Per event average</p>
-          </CardContent>
-        </Card>
       </div>
-
       {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
@@ -655,15 +887,27 @@ const SystemReports = () => {
                     stroke="#8884d8"
                     fill="#8884d8"
                     fillOpacity={0.6}
+                    name="Revenue (Original Currency)"
+                  />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="convertedRevenue"
+                    stackId="2"
+                    stroke="#82ca9d"
+                    fill="#82ca9d"
+                    fillOpacity={0.6}
+                    name="Revenue (Converted Currency)"
                   />
                   <Area
                     yAxisId="right"
                     type="monotone"
                     dataKey="tickets"
-                    stackId="2"
-                    stroke="#82ca9d"
-                    fill="#82ca9d"
+                    stackId="3"
+                    stroke="#ffc658"
+                    fill="#ffc658"
                     fillOpacity={0.6}
+                    name="Tickets Sold"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -671,7 +915,6 @@ const SystemReports = () => {
           </CardContent>
         </Card>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
@@ -696,9 +939,12 @@ const SystemReports = () => {
                     <YAxis stroke="#ccc" />
                     <Tooltip
                       contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
-                      formatter={(value, name) => [
-                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
-                        name === 'count' ? 'Reports' : 'Revenue'
+                      formatter={(value: number, name: string) => [
+                        name === 'count' ? `${value} Reports` :
+                        name === 'revenue' ? `${baseCurrency} ${value.toLocaleString()}` :
+                        `${selectedCurrency} ${value.toLocaleString()}`,
+                        name === 'count' ? 'Reports' :
+                        name === 'revenue' ? 'Revenue (Original)' : 'Revenue (Converted)'
                       ]}
                     />
                     <Bar
@@ -708,12 +954,20 @@ const SystemReports = () => {
                       radius={[4, 4, 0, 0]}
                     />
                     {viewMode === 'detailed' && (
-                      <Bar
-                        dataKey="revenue"
-                        fill="#82ca9d"
-                        name="revenue"
-                        radius={[4, 4, 0, 0]}
-                      />
+                      <>
+                        <Bar
+                          dataKey="revenue"
+                          fill="#82ca9d"
+                          name="revenue"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="convertedRevenue"
+                          fill="#ffc658"
+                          name="convertedRevenue"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </>
                     )}
                   </BarChart>
                 </ResponsiveContainer>
@@ -725,7 +979,6 @@ const SystemReports = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
             <CardTitle className="text-gray-900 dark:text-white">Revenue by Ticket Type</CardTitle>
@@ -738,14 +991,14 @@ const SystemReports = () => {
                   <PieChart>
                     <Pie
                       data={stats.revenueByTicketType}
-                      dataKey="amount"
+                      dataKey={viewMode === 'detailed' ? "convertedAmount" : "amount"}
                       nameKey="ticket_type_name"
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
                       outerRadius={90}
                       paddingAngle={3}
-                      label={({ ticket_type_name, percent }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ ticket_type_name, percent }: { ticket_type_name: string; percent: number }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
                     >
                       {stats.revenueByTicketType.map((entry, index) => (
                         <Cell
@@ -756,7 +1009,10 @@ const SystemReports = () => {
                     </Pie>
                     <Tooltip
                       contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                      formatter={(value: number, name: string, props: any) => [
+                        `${viewMode === 'detailed' ? selectedCurrency : baseCurrency} ${value.toLocaleString()}`,
+                        'Revenue'
+                      ]}
                     />
                     <Legend />
                   </PieChart>
@@ -770,7 +1026,6 @@ const SystemReports = () => {
           </CardContent>
         </Card>
       </div>
-
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">Event Reports</CardTitle>
@@ -783,9 +1038,9 @@ const SystemReports = () => {
                 <div
                   key={event.event_id}
                   className={`flex justify-between items-center p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
-                    selectedEvent === event.event_id ? 'border-blue-400 bg-gray-700' : 'bg-gray-700 border-gray-600'
+                    selectedEvent === event.event_id.toString() ? 'border-blue-400 bg-gray-700' : 'bg-gray-700 border-gray-600'
                   }`}
-                  onClick={() => setSelectedEvent(event.event_id)}
+                  onClick={() => setSelectedEvent(event.event_id.toString())}
                 >
                   <div className="flex items-center space-x-3">
                     <FileText className="h-5 w-5 text-blue-400" />
