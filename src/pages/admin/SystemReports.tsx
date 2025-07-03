@@ -33,52 +33,94 @@ const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#8
 
 // Interfaces
 interface Organizer {
-  id: number;
+  organizer_id: number;
   name: string;
 }
 
 interface Event {
-  id: number;
+  event_id: number;
   name: string;
-  date?: string;
+  event_date?: string;
   status?: string;
 }
 
-interface ReportData {
-  event_id: number;
-  event_name: string;
-  total_revenue: number;
-  total_tickets: number;
-  ticket_breakdown: Array<{
-    ticket_type: string;
-    count: number;
-    revenue: number;
-  }>;
-  timestamp: string;
+interface CurrencyOption {
+  value: string; // Currency code like 'USD'
+  label: string; // Currency code like 'USD'
+  id: number;    // Currency ID from backend
+  symbol: string; // Currency symbol
 }
 
-interface ConvertedReport {
-  original_amount: number;
-  converted_amount: number;
-  from_currency: string;
-  to_currency: string;
-  exchange_rate: number;
-  conversion_date: string;
+interface ReportSummary {
+  total_tickets_sold: number;
+  total_revenue: number;
+  total_attendees: number;
+  event_count: number;
+  report_count: number;
+  currency: string;
+  currency_symbol: string;
+  events: Array<{
+    event_id: number;
+    event_name: string;
+    event_date: string;
+    location: string;
+    tickets_sold: number;
+    revenue: number;
+    attendees: number;
+    report_count: number;
+  }>;
+}
+
+interface AdminEventReportResponse {
+  event_info: {
+    event_id: number;
+    event_name: string;
+    event_date: string;
+    location: string;
+    organizer_id: number;
+    organizer_name: string;
+  };
+  fresh_report_data: {
+    event_summary: ReportSummary;
+    currency_info: {
+      currency: string;
+      currency_symbol: string;
+    };
+  };
+  existing_reports: Array<{
+    id: number;
+    event_id: number;
+    total_revenue: number; // Original revenue
+    base_currency: {
+      code: string;
+      symbol: string;
+    };
+    converted_revenue: number; // Converted revenue if applicable
+    converted_currency: {
+      code: string;
+      symbol: string;
+    };
+    tickets_sold_by_type: { [key: string]: number };
+    revenue_by_ticket_type: { [key: string]: number };
+  }>;
+  // Other fields from the backend response can be added if needed
 }
 
 interface DashboardStats {
-  totalRevenue: number;
-  convertedRevenue: number;
+  originalRevenue: number; // Sum of original revenues from all reports
+  totalRevenue: number; // This will be the converted revenue if a target currency is selected
   totalTickets: number;
   exchangeRate: number;
   ticketBreakdown: Array<{
     name: string;
-    value: number;
-    revenue: number;
+    value: number; // Count
+    revenue: number; // Revenue for this ticket type (in target currency)
   }>;
+  targetCurrencyCode: string;
+  targetCurrencySymbol: string;
 }
 
-// Custom Components
+// Custom Components (Tailwind CSS for styling)
 const Card = ({ children, className = "" }) => (
   <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
     {children}
@@ -163,21 +205,22 @@ const SystemReports = () => {
   // State management
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [currencies, setCurrencies] = useState<string[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
-  const [baseCurrency] = useState<string>('USD');
+  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD'); // Stores currency code
+  const [baseCurrencyCode] = useState<string>('USD'); // Assuming original reports are in USD
 
   // Data states
-  const [reportData, setReportData] = useState<ReportData | null>(null);
-  const [convertedReport, setConvertedReport] = useState<ConvertedReport | null>(null);
+  const [reportApiResponse, setReportApiResponse] = useState<AdminEventReportResponse | null>(null);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    originalRevenue: 0,
     totalRevenue: 0,
-    convertedRevenue: 0,
     totalTickets: 0,
     exchangeRate: 1,
-    ticketBreakdown: []
+    ticketBreakdown: [],
+    targetCurrencyCode: 'USD',
+    targetCurrencySymbol: '$',
   });
 
   // Loading states
@@ -185,11 +228,23 @@ const SystemReports = () => {
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
-  const [isConverting, setIsConverting] = useState(false);
+  const [isLoadingExchangeRate, setIsLoadingExchangeRate] = useState(false);
   const [error, setError] = useState<string>('');
 
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Helper to get currency ID from code
+  const getCurrencyIdFromCode = useCallback((code: string): number | null => {
+    const currency = currencies.find(c => c.value === code);
+    return currency ? currency.id : null;
+  }, [currencies]);
+
+  // Helper to get currency symbol from code
+  const getCurrencySymbolFromCode = useCallback((code: string): string => {
+    const currency = currencies.find(c => c.value === code);
+    return currency ? currency.symbol : '$';
+  }, [currencies]);
 
   // Toast notification helper
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -202,18 +257,19 @@ const SystemReports = () => {
     const fetchOrganizers = async () => {
       try {
         setIsLoadingOrganizers(true);
-        // Simulate API call with mock data
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const mockOrganizers = [
-          { id: 1, name: 'EventCorp Solutions' },
-          { id: 2, name: 'Premier Events Ltd' },
-          { id: 3, name: 'Global Conferences Inc' },
-          { id: 4, name: 'TechMeet Organizers' }
-        ];
-        setOrganizers(mockOrganizers);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setOrganizers(data.organizers || []);
       } catch (error) {
-        setError('Failed to fetch organizers');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizers';
+        setError(errorMessage);
         console.error('Error fetching organizers:', error);
+        showToast(errorMessage, 'error');
       } finally {
         setIsLoadingOrganizers(false);
       }
@@ -231,18 +287,19 @@ const SystemReports = () => {
 
       setIsLoadingEvents(true);
       try {
-        // Simulate API call with mock data
-        await new Promise(resolve => setTimeout(resolve, 800));
-        const mockEvents = [
-          { id: 1, name: 'Annual Tech Conference 2024', date: '2024-03-15', status: 'completed' },
-          { id: 2, name: 'Spring Product Launch', date: '2024-04-20', status: 'completed' },
-          { id: 3, name: 'Summer Networking Event', date: '2024-06-10', status: 'completed' },
-          { id: 4, name: 'Q4 Business Summit', date: '2024-11-05', status: 'upcoming' }
-        ];
-        setEvents(mockEvents);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${selectedOrganizer}/events`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setEvents(data.events || []);
       } catch (error) {
-        setError('Failed to fetch events');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events';
+        setError(errorMessage);
         console.error('Error fetching events:', error);
+        showToast(errorMessage, 'error');
       } finally {
         setIsLoadingEvents(false);
       }
@@ -255,13 +312,25 @@ const SystemReports = () => {
     const fetchCurrencies = async () => {
       try {
         setIsLoadingCurrencies(true);
-        // Simulate API call with mock data
-        await new Promise(resolve => setTimeout(resolve, 600));
-        const mockCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'KES', 'NGN'];
-        setCurrencies(mockCurrencies);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const currencyOptions: CurrencyOption[] = data.data.map((c: any) => ({
+          value: c.code,
+          label: c.code,
+          id: c.id,
+          symbol: c.symbol,
+        }));
+        setCurrencies(currencyOptions);
       } catch (error) {
-        setError('Failed to fetch currencies');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch currencies';
+        setError(errorMessage);
         console.error('Error fetching currencies:', error);
+        showToast(errorMessage, 'error');
       } finally {
         setIsLoadingCurrencies(false);
       }
@@ -269,41 +338,41 @@ const SystemReports = () => {
     fetchCurrencies();
   }, []);
 
-  // Fetch exchange rate when currency changes
+  // Fetch exchange rate for display
   useEffect(() => {
     const fetchExchangeRate = async () => {
-      if (selectedCurrency === baseCurrency) {
+      if (selectedCurrencyCode === baseCurrencyCode) {
         setDashboardStats(prev => ({ ...prev, exchangeRate: 1 }));
         return;
       }
 
+      setIsLoadingExchangeRate(true);
       try {
-        // Simulate API call with mock exchange rates
-        await new Promise(resolve => setTimeout(resolve, 400));
-        const mockRates = {
-          EUR: 0.85,
-          GBP: 0.73,
-          JPY: 110.25,
-          CAD: 1.25,
-          AUD: 1.35,
-          CHF: 0.92,
-          CNY: 6.45,
-          KES: 110.50,
-          NGN: 415.75
-        };
-        const rate = mockRates[selectedCurrency] || 1;
+        // Fetch latest rates for the base currency (USD)
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrencyCode}`, {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const rate = data.data?.rates?.[selectedCurrencyCode] || 1;
         setDashboardStats(prev => ({
           ...prev,
           exchangeRate: rate,
-          convertedRevenue: prev.totalRevenue * rate
         }));
       } catch (error) {
         console.error('Error fetching exchange rate:', error);
+        setError('Failed to fetch exchange rate');
+        showToast('Failed to fetch exchange rate', 'error');
         setDashboardStats(prev => ({ ...prev, exchangeRate: 1 }));
+      } finally {
+        setIsLoadingExchangeRate(false);
       }
     };
     fetchExchangeRate();
-  }, [selectedCurrency, baseCurrency]);
+  }, [selectedCurrencyCode, baseCurrencyCode]);
+
 
   // Fetch report data
   const fetchReportData = useCallback(async () => {
@@ -314,36 +383,75 @@ const SystemReports = () => {
     setIsLoadingReport(true);
     setError('');
 
-    try {
-      // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1200));
+    const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
+    if (selectedCurrencyCode && !targetCurrencyId) {
+      showToast('Selected currency not found in system.', 'error');
+      setIsLoadingReport(false);
+      return;
+    }
 
-      // Mock report data
-      const mockReport = {
-        event_id: parseInt(selectedEvent),
-        event_name: events.find(e => e.id === parseInt(selectedEvent))?.name || 'Unknown Event',
-        total_revenue: Math.floor(Math.random() * 50000) + 10000,
-        total_tickets: Math.floor(Math.random() * 500) + 100,
-        ticket_breakdown: [
-          { ticket_type: 'VIP', count: Math.floor(Math.random() * 50) + 20, revenue: Math.floor(Math.random() * 10000) + 5000 },
-          { ticket_type: 'Standard', count: Math.floor(Math.random() * 200) + 100, revenue: Math.floor(Math.random() * 15000) + 8000 },
-          { ticket_type: 'Student', count: Math.floor(Math.random() * 100) + 50, revenue: Math.floor(Math.random() * 5000) + 2000 },
-          { ticket_type: 'Early Bird', count: Math.floor(Math.random() * 80) + 30, revenue: Math.floor(Math.random() * 8000) + 3000 }
-        ],
-        timestamp: new Date().toISOString()
-      };
-      const ticketBreakdownArray = mockReport.ticket_breakdown.map(item => ({
-        name: item.ticket_type,
-        value: item.count,
-        revenue: item.revenue
+    try {
+      const params = new URLSearchParams();
+      params.append('organizer_id', selectedOrganizer);
+      params.append('event_id', selectedEvent);
+      if (targetCurrencyId) {
+        params.append('currency_id', targetCurrencyId.toString());
+        params.append('use_latest_rates', 'true'); // Always use latest rates for conversion
+      }
+
+      const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
+
+      const response = await fetch(url, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const reportResponse: AdminEventReportResponse = await response.json();
+      setReportApiResponse(reportResponse);
+
+      const summary = reportResponse.fresh_report_data.event_summary;
+      const currencyInfo = reportResponse.fresh_report_data.currency_info;
+
+      // Aggregate ticket breakdown from existing_reports
+      const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
+      reportResponse.existing_reports.forEach(report => {
+        // Use converted_revenue and converted_currency if available, otherwise original
+        const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
+          ? report.converted_revenue
+          : report.total_revenue;
+
+        if (report.tickets_sold_by_type) {
+          for (const type in report.tickets_sold_by_type) {
+            aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
+            aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
+          }
+        }
+        // Assuming revenue_by_ticket_type is also converted by backend if currency_id is passed
+        if (report.revenue_by_ticket_type) {
+            for (const type in report.revenue_by_ticket_type) {
+                aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+            }
+        }
+      });
+
+      const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
+        name: type,
+        value: aggregatedTicketBreakdown[type].count,
+        revenue: aggregatedTicketBreakdown[type].revenue
       }));
-      setReportData(mockReport);
+
       setDashboardStats(prev => ({
         ...prev,
-        totalRevenue: mockReport.total_revenue,
-        totalTickets: mockReport.total_tickets,
-        convertedRevenue: mockReport.total_revenue * prev.exchangeRate,
-        ticketBreakdown: ticketBreakdownArray
+        originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
+        totalRevenue: summary.total_revenue, // This is already in target currency if converted
+        totalTickets: summary.total_tickets_sold,
+        ticketBreakdown: ticketBreakdownArray,
+        targetCurrencyCode: currencyInfo.currency,
+        targetCurrencySymbol: currencyInfo.currency_symbol,
       }));
       showToast('Report data loaded successfully');
 
@@ -351,56 +459,45 @@ const SystemReports = () => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch report data';
       setError(errorMessage);
       showToast(errorMessage, 'error');
+      setReportApiResponse(null); // Clear previous report data on error
+      setDashboardStats({ // Reset dashboard stats on error
+        originalRevenue: 0,
+        totalRevenue: 0,
+        totalTickets: 0,
+        exchangeRate: 1,
+        ticketBreakdown: [],
+        targetCurrencyCode: 'USD',
+        targetCurrencySymbol: '$',
+      });
     } finally {
       setIsLoadingReport(false);
     }
-  }, [selectedOrganizer, selectedEvent, events]);
+  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, currencies, getCurrencyIdFromCode]);
 
-  // Convert revenue to selected currency
-  const convertRevenue = async () => {
-    if (!reportData) {
-      showToast('No report data to convert', 'error');
-      return;
-    }
-    setIsConverting(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const convertedAmount = reportData.total_revenue * dashboardStats.exchangeRate;
-
-      setConvertedReport({
-        original_amount: reportData.total_revenue,
-        converted_amount: convertedAmount,
-        from_currency: baseCurrency,
-        to_currency: selectedCurrency,
-        exchange_rate: dashboardStats.exchangeRate,
-        conversion_date: new Date().toISOString()
-      });
-      setDashboardStats(prev => ({
-        ...prev,
-        convertedRevenue: convertedAmount
-      }));
-      showToast(`Revenue converted successfully to ${selectedCurrency}`);
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to convert revenue';
-      showToast(errorMessage, 'error');
-    } finally {
-      setIsConverting(false);
+  // Convert revenue button action (triggers re-fetch with new currency)
+  const handleConvertRevenue = () => {
+    // When the "Convert Revenue" button is clicked, it means the user wants to see the report
+    // in the currently selected `selectedCurrencyCode`.
+    // The `fetchReportData` function already handles fetching the report in the target currency.
+    // So, we just need to re-trigger `fetchReportData`.
+    if (reportApiResponse) { // Only re-fetch if there's an existing report to convert
+        fetchReportData();
+        showToast(`Attempting to convert revenue to ${selectedCurrencyCode}...`);
+    } else {
+        showToast('Please generate a report first.', 'error');
     }
   };
 
-  // Load report when dependencies change
+  // Load report when organizer or event selection changes
   useEffect(() => {
-    if (selectedOrganizer && selectedEvent) {
+    // Only auto-fetch if both organizer and event are selected
+    if (selectedOrganizer && selectedEvent && currencies.length > 0) {
       fetchReportData();
     }
-  }, [selectedOrganizer, selectedEvent, fetchReportData]);
+  }, [selectedOrganizer, selectedEvent, fetchReportData, currencies]); // Add currencies as dependency for initial currency ID mapping
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-inter">
       {/* Toast */}
       {toast && (
         <Toast
@@ -451,7 +548,7 @@ const SystemReports = () => {
                 <Select
                   value={selectedOrganizer}
                   onChange={setSelectedOrganizer}
-                  options={organizers.map(org => ({ value: org.id.toString(), label: org.name }))}
+                  options={organizers.map(org => ({ value: org.organizer_id.toString(), label: org.name }))}
                   placeholder="Choose organizer..."
                   loading={isLoadingOrganizers}
                 />
@@ -464,7 +561,7 @@ const SystemReports = () => {
                 <Select
                   value={selectedEvent}
                   onChange={setSelectedEvent}
-                  options={events.map(event => ({ value: event.id.toString(), label: event.name }))}
+                  options={events.map(event => ({ value: event.event_id.toString(), label: event.name }))}
                   placeholder="Choose event..."
                   loading={isLoadingEvents}
                 />
@@ -475,9 +572,9 @@ const SystemReports = () => {
                   Target Currency
                 </label>
                 <Select
-                  value={selectedCurrency}
-                  onChange={setSelectedCurrency}
-                  options={currencies.map(currency => ({ value: currency, label: currency }))}
+                  value={selectedCurrencyCode}
+                  onChange={setSelectedCurrencyCode}
+                  options={currencies.map(currency => ({ value: currency.value, label: currency.label }))}
                   placeholder="Choose currency..."
                   loading={isLoadingCurrencies}
                 />
@@ -498,12 +595,12 @@ const SystemReports = () => {
                 </Button>
 
                 <Button
-                  onClick={convertRevenue}
-                  disabled={!reportData || isConverting || selectedCurrency === baseCurrency}
+                  onClick={handleConvertRevenue}
+                  disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
                   variant="success"
                   className="w-full"
                 >
-                  {isConverting ? (
+                  {isLoadingReport || isLoadingExchangeRate ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <DollarSign className="h-4 w-4" />
@@ -516,7 +613,7 @@ const SystemReports = () => {
         </Card>
 
         {/* Exchange Rate Display */}
-        {selectedCurrency !== baseCurrency && (
+        {selectedCurrencyCode !== baseCurrencyCode && (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardContent className="pt-6">
               <div className="flex items-center justify-center gap-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
@@ -524,7 +621,7 @@ const SystemReports = () => {
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400">Current Exchange Rate</p>
                   <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    1 {baseCurrency} = {dashboardStats.exchangeRate.toFixed(4)} {selectedCurrency}
+                    1 {baseCurrencyCode} = {isLoadingExchangeRate ? '...' : dashboardStats.exchangeRate.toFixed(4)} {selectedCurrencyCode}
                   </p>
                 </div>
                 <ArrowUpDown className="h-5 w-5 text-blue-600" />
@@ -552,12 +649,13 @@ const SystemReports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    Total Revenue ({baseCurrency})
+                    Original Revenue ({baseCurrencyCode})
                   </p>
                   <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    ${dashboardStats.totalRevenue.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
+                    {baseCurrencyCode === 'JPY' ? '¥' : '$'}
+                    {dashboardStats.originalRevenue.toLocaleString(undefined, {
+                      minimumFractionDigits: baseCurrencyCode === 'JPY' ? 0 : 2,
+                      maximumFractionDigits: baseCurrencyCode === 'JPY' ? 0 : 2
                     })}
                   </p>
                 </div>
@@ -572,13 +670,13 @@ const SystemReports = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                    Converted Revenue ({selectedCurrency})
+                    Converted Revenue ({dashboardStats.targetCurrencyCode})
                   </p>
                   <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                    {selectedCurrency === 'JPY' ? '¥' : selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : '$'}
-                    {dashboardStats.convertedRevenue.toLocaleString(undefined, {
-                      minimumFractionDigits: selectedCurrency === 'JPY' ? 0 : 2,
-                      maximumFractionDigits: selectedCurrency === 'JPY' ? 0 : 2
+                    {dashboardStats.targetCurrencySymbol}
+                    {dashboardStats.totalRevenue.toLocaleString(undefined, {
+                      minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2,
+                      maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2
                     })}
                   </p>
                 </div>
@@ -613,7 +711,7 @@ const SystemReports = () => {
                     Active Event
                   </p>
                   <p className="text-lg font-bold text-orange-700 dark:text-orange-300 truncate">
-                    {reportData?.event_name || 'No Event Selected'}
+                    {reportApiResponse?.event_info?.event_name || 'No Event Selected'}
                   </p>
                 </div>
                 <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
@@ -655,6 +753,7 @@ const SystemReports = () => {
                           borderRadius: '8px',
                           color: '#F9FAFB'
                         }}
+                        formatter={(value) => [`${value.toLocaleString()} tickets`, 'Quantity']}
                       />
                       <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -666,7 +765,7 @@ const SystemReports = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Revenue Distribution
+                  Revenue Distribution ({dashboardStats.targetCurrencyCode})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -689,7 +788,7 @@ const SystemReports = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                        formatter={(value) => [`${dashboardStats.targetCurrencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2, maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2 })}`, 'Revenue']}
                         contentStyle={{
                           backgroundColor: '#1F2937',
                           border: 'none',
@@ -706,43 +805,43 @@ const SystemReports = () => {
           </div>
         )}
 
-        {/* Conversion History */}
-        {convertedReport && (
+        {/* Conversion History - Now reflects the report's conversion */}
+        {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ArrowUpDown className="h-5 w-5" />
-                Latest Currency Conversion
+                Report Currency Conversion Details
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Original Amount</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Original Total Revenue</p>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      ${convertedReport.original_amount.toLocaleString()} {convertedReport.from_currency}
+                      ${dashboardStats.originalRevenue.toLocaleString()} {baseCurrencyCode}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Exchange Rate</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Exchange Rate (USD to {selectedCurrencyCode})</p>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      1 {convertedReport.from_currency} = {convertedReport.exchange_rate.toFixed(4)} {convertedReport.to_currency}
+                      1 {baseCurrencyCode} = {dashboardStats.exchangeRate.toFixed(4)} {selectedCurrencyCode}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Converted Amount</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Converted Total Revenue</p>
                     <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {convertedReport.to_currency === 'JPY' ? '¥' : convertedReport.to_currency === 'EUR' ? '€' : convertedReport.to_currency === 'GBP' ? '£' : '$'}
-                      {convertedReport.converted_amount.toLocaleString(undefined, {
-                        minimumFractionDigits: convertedReport.to_currency === 'JPY' ? 0 : 2,
-                        maximumFractionDigits: convertedReport.to_currency === 'JPY' ? 0 : 2
+                      {dashboardStats.targetCurrencySymbol}
+                      {dashboardStats.totalRevenue.toLocaleString(undefined, {
+                        minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2,
+                        maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2
                       })}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  Converted on: {new Date(convertedReport.conversion_date).toLocaleString()}
+                  Conversion applied on report generation.
                 </div>
               </div>
             </CardContent>
