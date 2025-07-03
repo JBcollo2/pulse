@@ -265,138 +265,137 @@ const Dashboard = () => {
       });
     }
   };
+const MyEventsComponent = () => (
+  <div className="space-y-6 animate-fade-in">
+    <EventDialog
+      open={showEventDialog}
+      onOpenChange={setShowEventDialog}
+      editingEvent={editingEvent}
+      onEventCreated={handleEventSave}
+      onEventDeleted={handleEventDelete}
+    />
 
-  const MyEventsComponent = () => (
-    <div className="space-y-6 animate-fade-in">
-      <EventDialog
-        open={showEventDialog}
-        onOpenChange={setShowEventDialog}
-        editingEvent={editingEvent}
-        onEventCreated={handleEventSave}
-        onEventDeleted={handleEventDelete}
-      />
-      
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <Calendar className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Events</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and organize your events</p>
-          </div>
+    {/* Header Section */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+          <Calendar className="h-6 w-6 text-white" />
         </div>
-        {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-          <button
-            onClick={handleCreateEventClick}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Create New Event</span>
-          </button>
-        )}
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Events</h2>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and organize your events</p>
+        </div>
       </div>
+      {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+        <button
+          onClick={handleCreateEventClick}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        >
+          <Plus className="h-5 w-5" />
+          <span>Create New Event</span>
+        </button>
+      )}
+    </div>
 
-      {/* Events Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => (
-          <div key={event.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 group overflow-hidden">
-            {/* Card Header */}
-            <div className="p-6 pb-4">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 line-clamp-2">
-                  {event.name}
-                </h3>
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ml-2
-                  ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+    {/* Events Grid */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {events.map((event) => (
+        <div key={event.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 group overflow-hidden">
+          {/* Card Header */}
+          <div className="p-6 pb-4">
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 line-clamp-2">
+                {event.name}
+              </h3>
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ml-2
+                ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
                   event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
                   'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'}`}>
-                  {event.status}
-                </span>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4">
-                {event.description}
-              </p>
-              
-              {/* Event Details */}
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Date:
-                  </span>
-                  <span className="text-gray-900 dark:text-white font-medium text-sm">{event.date}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
-                    <Ticket className="h-4 w-4" />
-                    Tickets Sold:
-                  </span>
-                  <span className="text-gray-900 dark:text-white font-medium text-sm">{event.ticketsSold}/{event.totalTickets}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Revenue:
-                  </span>
-                  <span className="text-green-600 dark:text-green-400 font-bold text-sm">${event.revenue?.toLocaleString()}</span>
-                </div>
-              </div>
+                {event.status}
+              </span>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4">
+              {event.description}
+            </p>
 
-              {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  <span>Progress</span>
-                  <span className="font-medium">{((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out"
-                    style={{width: `${((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%`}}
-                  ></div>
-                </div>
+            {/* Event Details */}
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Date:
+                </span>
+                <span className="text-gray-900 dark:text-white font-medium text-sm">{event.date}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
+                  <Ticket className="h-4 w-4" />
+                  Tickets Sold:
+                </span>
+                <span className="text-gray-900 dark:text-white font-medium text-sm">{event.ticketsSold}/{event.totalTickets}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Revenue:
+                </span>
+                <span className="text-green-600 dark:text-green-400 font-bold text-sm">${event.revenue?.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="px-6 pb-6">
-              <div className="flex gap-3">
-                {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-                  <button
-                    onClick={() => handleEditEventClick(event)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    <Edit className="h-4 w-4 relative z-10" />
-                    <span className="relative z-10">Manage</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => handleViewEventClick(event)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
-                  <Eye className="h-4 w-4 relative z-10" />
-                  <span className="relative z-10">View</span>
-                </button>
-                {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-                  <button
-                    onClick={() => handleEventDelete(event.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    <Trash2 className="h-4 w-4 relative z-10" />
-                    <span className="relative z-10">Delete</span>
-                  </button>
-                )}
+            {/* Progress Bar */}
+            <div className="mb-6">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                <span>Progress</span>
+                <span className="font-medium">{((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out"
+                  style={{width: `${((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%`}}
+                ></div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Action Buttons */}
+          <div className="px-6 pb-6">
+            <div className="flex gap-3">
+              {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+                <button
+                  onClick={() => handleEditEventClick(event)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <Edit className="h-4 w-4 relative z-10" />
+                  <span className="relative z-10">Manage</span>
+                </button>
+              )}
+              <button
+                onClick={() => handleViewEventClick(event)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <Eye className="h-4 w-4 relative z-10" />
+                <span className="relative z-10">View</span>
+              </button>
+              {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+                <button
+                  onClick={() => handleEventDelete(event.id)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <Trash2 className="h-4 w-4 relative z-10" />
+                  <span className="relative z-10">Delete</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
-  );
+  </div>
+);
 
 
 
