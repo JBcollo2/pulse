@@ -360,23 +360,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
           <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {isEditing ? 'Edit Event' : 'Create New Event'}
-              </DialogTitle>
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Event
-                </Button>
-              )}
-            </div>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              {isEditing ? 'Edit Event' : 'Create New Event'}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitEvent} className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -576,21 +562,36 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               ))}
             </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                {isEditing ? 'Update Event' : 'Create Event'}
-              </Button>
+            <div className="flex justify-between items-center space-x-2">
+              <div>
+                {isEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Event
+                  </Button>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                >
+                  {isEditing ? 'Update Event' : 'Create Event'}
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>
