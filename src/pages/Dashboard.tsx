@@ -275,20 +275,22 @@ const Dashboard = () => {
         onEventCreated={handleEventSave}
         onEventDeleted={handleEventDelete}
       />
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <Calendar className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and organize your events</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Events</h2>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and organize your events</p>
           </div>
         </div>
         {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
           <button
             onClick={handleCreateEventClick}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
           >
             <Plus className="h-5 w-5" />
             <span>Create New Event</span>
@@ -296,66 +298,74 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* Events Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event) => (
-          <Card key={event.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-200 group">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+          <div key={event.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 group overflow-hidden">
+            {/* Card Header */}
+            <div className="p-6 pb-4">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 line-clamp-2">
                   {event.name}
-                </CardTitle>
-                <span className={`px-3 py-1 text-xs font-medium rounded-full
-                  ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                  event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                  'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                </h3>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ml-2
+                  ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                  event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                  'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400'}`}>
                   {event.status}
                 </span>
               </div>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4">
                 {event.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3 text-sm mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+              </p>
+              
+              {/* Event Details */}
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Date:
                   </span>
-                  <span className="text-gray-800 dark:text-gray-200 font-medium">{event.date}</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm">{event.date}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                     <Ticket className="h-4 w-4" />
                     Tickets Sold:
                   </span>
-                  <span className="text-gray-800 dark:text-gray-200 font-medium">{event.ticketsSold}/{event.totalTickets}</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm">{event.ticketsSold}/{event.totalTickets}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2">
                     <DollarSign className="h-4 w-4" />
                     Revenue:
                   </span>
-                  <span className="text-green-600 dark:text-green-400 font-semibold">${event.revenue?.toLocaleString()}</span>
+                  <span className="text-green-600 dark:text-green-400 font-bold text-sm">${event.revenue?.toLocaleString()}</span>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              {/* Progress Bar */}
+              <div className="mb-6">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
                   <span>Progress</span>
-                  <span>{((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%</span>
+                  <span className="font-medium">{((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full"
-                    style={{width: `${((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%`}}></div>
+                <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{width: `${((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%`}}
+                  ></div>
                 </div>
               </div>
+            </div>
 
+            {/* Action Buttons */}
+            <div className="px-6 pb-6">
               <div className="flex gap-2">
                 {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                   <button
                     onClick={() => handleEditEventClick(event)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
                   >
                     <Edit className="h-4 w-4" />
                     Manage
@@ -363,7 +373,7 @@ const Dashboard = () => {
                 )}
                 <button
                   onClick={() => handleViewEventClick(event)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
                 >
                   <Eye className="h-4 w-4" />
                   View
@@ -371,15 +381,15 @@ const Dashboard = () => {
                 {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                   <button
                     onClick={() => handleEventDelete(event.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
                   </button>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     </div>
