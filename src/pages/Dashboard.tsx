@@ -361,30 +361,33 @@ const Dashboard = () => {
 
             {/* Action Buttons */}
             <div className="px-6 pb-6">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                   <button
                     onClick={() => handleEditEventClick(event)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
                   >
-                    <Edit className="h-4 w-4" />
-                    Manage
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                    <Edit className="h-4 w-4 relative z-10" />
+                    <span className="relative z-10">Manage</span>
                   </button>
                 )}
                 <button
                   onClick={() => handleViewEventClick(event)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-semibold rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
                 >
-                  <Eye className="h-4 w-4" />
-                  View
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
+                  <Eye className="h-4 w-4 relative z-10" />
+                  <span className="relative z-10">View</span>
                 </button>
                 {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                   <button
                     onClick={() => handleEventDelete(event.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-md hover:shadow-lg transform hover:scale-105"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 shadow-lg hover:shadow-xl transform hover:scale-105 hover:-translate-y-0.5 active:scale-95 active:translate-y-0 relative overflow-hidden group"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                    <Trash2 className="h-4 w-4 relative z-10" />
+                    <span className="relative z-10">Delete</span>
                   </button>
                 )}
               </div>
@@ -394,6 +397,8 @@ const Dashboard = () => {
       </div>
     </div>
   );
+
+
 
   const renderActiveTab = () => {
     switch (activeTab) {
