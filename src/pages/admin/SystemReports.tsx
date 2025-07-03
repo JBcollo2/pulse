@@ -14,6 +14,8 @@ import {
   Calendar,
   Building,
   Download,
+  Mail,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   BarChart,
@@ -183,6 +185,16 @@ const Select = ({ value, onChange, options, placeholder = "Select...", loading =
   </div>
 );
 
+const Input = ({ value, onChange, placeholder = "", type = "text", className = "" }) => (
+  <input
+    type={type}
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className={`w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white ${className}`}
+    placeholder={placeholder}
+  />
+);
+
 const Toast = ({ message, type = "success", onClose }) => (
   <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
     type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
@@ -210,6 +222,10 @@ const SystemReports = () => {
   const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD');
   const [baseCurrencyCode] = useState<string>('USD');
+  const [days, setDays] = useState<string>('30');
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [sendEmail, setSendEmail] = useState<boolean>(false);
+  const [format, setFormat] = useState<string>('json');
 
   // Data states
   const [reportApiResponse, setReportApiResponse] = useState<AdminEventReportResponse | null>(null);
@@ -397,6 +413,12 @@ const SystemReports = () => {
         params.append('currency_id', targetCurrencyId.toString());
         params.append('use_latest_rates', 'true');
       }
+      params.append('days', days);
+      if (sendEmail) {
+        params.append('send_email', 'true');
+        params.append('recipient_email', recipientEmail);
+      }
+      params.append('format', format);
 
       const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
 
@@ -409,61 +431,82 @@ const SystemReports = () => {
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
-      const reportResponse: AdminEventReportResponse = await response.json();
-      setReportApiResponse(reportResponse);
+      if (format === 'pdf') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `report_${selectedEvent}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      } else if (format === 'csv') {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `report_${selectedEvent}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      } else {
+        const reportResponse: AdminEventReportResponse = await response.json();
+        setReportApiResponse(reportResponse);
 
-      const summary = reportResponse.fresh_report_data?.event_summary || {
-        total_tickets_sold: 0,
-        total_revenue: 0,
-        total_attendees: 0,
-        event_count: 0,
-        report_count: 0,
-        currency: 'USD',
-        events: []
-      };
+        const summary = reportResponse.fresh_report_data?.event_summary || {
+          total_tickets_sold: 0,
+          total_revenue: 0,
+          total_attendees: 0,
+          event_count: 0,
+          report_count: 0,
+          currency: 'USD',
+          events: []
+        };
 
-      const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
-        currency: 'USD',
-        currency_symbol: '$'
-      };
+        const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
+          currency: 'USD',
+          currency_symbol: '$'
+        };
 
-      // Aggregate ticket breakdown from existing_reports
-      const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
-      reportResponse.existing_reports.forEach(report => {
-        const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
-          ? report.converted_revenue
-          : report.total_revenue;
+        // Aggregate ticket breakdown from existing_reports
+        const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
+        reportResponse.existing_reports.forEach(report => {
+          const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
+            ? report.converted_revenue
+            : report.total_revenue;
 
-        if (report.tickets_sold_by_type) {
-          for (const type in report.tickets_sold_by_type) {
-            aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
-            aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
+          if (report.tickets_sold_by_type) {
+            for (const type in report.tickets_sold_by_type) {
+              aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
+              aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
+            }
           }
-        }
-        if (report.revenue_by_ticket_type) {
-          for (const type in report.revenue_by_ticket_type) {
-            aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+          if (report.revenue_by_ticket_type) {
+            for (const type in report.revenue_by_ticket_type) {
+              aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+            }
           }
-        }
-      });
+        });
 
-      const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
-        name: type,
-        value: aggregatedTicketBreakdown[type].count,
-        revenue: aggregatedTicketBreakdown[type].revenue
-      }));
+        const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
+          name: type,
+          value: aggregatedTicketBreakdown[type].count,
+          revenue: aggregatedTicketBreakdown[type].revenue
+        }));
 
-      setDashboardStats(prev => ({
-        ...prev,
-        originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
-        totalRevenue: summary.total_revenue,
-        totalTickets: summary.total_tickets_sold,
-        ticketBreakdown: ticketBreakdownArray,
-        targetCurrencyCode: currencyInfo.currency,
-        targetCurrencySymbol: currencyInfo.currency_symbol,
-      }));
+        setDashboardStats(prev => ({
+          ...prev,
+          originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
+          totalRevenue: summary.total_revenue,
+          totalTickets: summary.total_tickets_sold,
+          ticketBreakdown: ticketBreakdownArray,
+          targetCurrencyCode: currencyInfo.currency,
+          targetCurrencySymbol: currencyInfo.currency_symbol,
+        }));
+      }
       showToast('Report data loaded successfully');
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch report data';
       setError(errorMessage);
@@ -481,7 +524,7 @@ const SystemReports = () => {
     } finally {
       setIsLoadingReport(false);
     }
-  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, currencies, getCurrencyIdFromCode]);
+  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, currencies, getCurrencyIdFromCode, days, sendEmail, recipientEmail, format]);
 
   // Convert revenue button action (triggers re-fetch with new currency)
   const handleConvertRevenue = () => {
@@ -493,48 +536,39 @@ const SystemReports = () => {
     }
   };
 
-  // Download PDF
+  // Download PDF for a specific event
   const downloadPDF = async (eventId: number, eventName: string) => {
-    setDownloadingPdfs(prev => new Set([...prev, eventId]));
-
+    setDownloadingPdfs(prev => new Set(prev).add(eventId));
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/pdf',
-        },
-      });
-
+      const params = new URLSearchParams();
+      params.append('organizer_id', selectedOrganizer);
+      params.append('event_id', eventId.toString());
+      params.append('format', 'pdf');
+      const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
+      const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) {
-        let errorMessage = `Failed to download PDF (${response.status})`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          // If response is not JSON, use default error message
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = `event_report_${eventId}.pdf`;
+      link.href = downloadUrl;
+      link.download = `report_${eventName.replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       document.body.removeChild(link);
-      showToast(`PDF report for "${eventName}" downloaded successfully`, 'success');
+      showToast('PDF downloaded successfully');
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      showToast(error instanceof Error ? error.message : "Failed to download PDF report", 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
     } finally {
       setDownloadingPdfs(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(eventId);
-        return newSet;
+        const updated = new Set(prev);
+        updated.delete(eventId);
+        return updated;
       });
     }
   };
@@ -623,6 +657,17 @@ const SystemReports = () => {
                   loading={isLoadingCurrencies}
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Days
+                </label>
+                <Input
+                  value={days}
+                  onChange={setDays}
+                  type="number"
+                  placeholder="Enter days..."
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={fetchReportData}
@@ -636,7 +681,6 @@ const SystemReports = () => {
                   )}
                   Generate Report
                 </Button>
-
                 <Button
                   onClick={handleConvertRevenue}
                   disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
@@ -650,6 +694,42 @@ const SystemReports = () => {
                   )}
                   Convert Revenue
                 </Button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sendEmail"
+                  checked={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded"
+                />
+                <label htmlFor="sendEmail" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Send Email
+                </label>
+              </div>
+              {sendEmail && (
+                <div className="flex-grow">
+                  <Input
+                    value={recipientEmail}
+                    onChange={setRecipientEmail}
+                    placeholder="Recipient Email"
+                    type="email"
+                  />
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Select
+                  value={format}
+                  onChange={setFormat}
+                  options={[
+                    { value: 'json', label: 'JSON' },
+                    { value: 'pdf', label: 'PDF' },
+                    { value: 'csv', label: 'CSV' }
+                  ]}
+                  className="w-32"
+                />
               </div>
             </div>
           </CardContent>
