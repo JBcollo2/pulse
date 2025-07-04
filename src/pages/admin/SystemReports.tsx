@@ -609,12 +609,11 @@ const SystemReports = () => {
               Report Configuration
             </CardTitle>
           </CardHeader>
-
           <CardContent className="p-8 space-y-8">
             {/* Main Configuration Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Organizer Selection */}
-              <div className="space-y-3 relative z-40">
+              <div className="space-y-3 relative">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Users className="h-4 w-4" />
                   Select Organizer
@@ -632,17 +631,17 @@ const SystemReports = () => {
                     menuPortalTarget={document.body}
                     menuPosition="fixed"
                     styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                      menu: (base) => ({ ...base, zIndex: 9999 })
+                      menuPortal: (base) => ({ ...base, zIndex: 1000 }),
+                      menu: (base) => ({ ...base, zIndex: 1000 })
                     }}
                   />
                   {organizers.length > 5 && (
-                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
+                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   )}
                 </div>
               </div>
               {/* Event Selection */}
-              <div className="space-y-3 relative z-30">
+              <div className="space-y-3 relative">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Calendar className="h-4 w-4" />
                   Select Event
@@ -659,13 +658,13 @@ const SystemReports = () => {
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                   styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9998 }),
-                    menu: (base) => ({ ...base, zIndex: 9998 })
+                    menuPortal: (base) => ({ ...base, zIndex: 999 }),
+                    menu: (base) => ({ ...base, zIndex: 999 })
                   }}
                 />
               </div>
               {/* Currency Selection */}
-              <div className="space-y-3 relative z-20">
+              <div className="space-y-3 relative">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <DollarSign className="h-4 w-4" />
                   Target Currency
@@ -682,13 +681,13 @@ const SystemReports = () => {
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                   styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9997 }),
-                    menu: (base) => ({ ...base, zIndex: 9997 })
+                    menuPortal: (base) => ({ ...base, zIndex: 998 }),
+                    menu: (base) => ({ ...base, zIndex: 998 })
                   }}
                 />
               </div>
               {/* Days Input */}
-              <div className="space-y-3 relative z-10">
+              <div className="space-y-3 relative">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Clock className="h-4 w-4" />
                   Days
@@ -793,8 +792,8 @@ const SystemReports = () => {
                     menuPortalTarget={document.body}
                     menuPosition="fixed"
                     styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                      menu: (base) => ({ ...base, zIndex: 9999 })
+                      menuPortal: (base) => ({ ...base, zIndex: 997 }),
+                      menu: (base) => ({ ...base, zIndex: 997 })
                     }}
                   />
                 </div>
