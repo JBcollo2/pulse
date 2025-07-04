@@ -228,6 +228,17 @@ const SystemReports = () => {
   const [recipientEmail, setRecipientEmail] = useState<string>('dk7468563@gmail.com');
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [format, setFormat] = useState<string>('json');
+  const [isFormValid, setIsFormValid] = useState(false);
+  interface ValidationErrors {
+    organizer?: string;
+    event?: string;
+    currency?: string;
+    days?: string;
+    email?: string;
+  }
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [reportGenerated, setReportGenerated] = useState(false);
 
   // Data states
   const [reportApiResponse, setReportApiResponse] = useState<AdminEventReportResponse | null>(null);
@@ -270,6 +281,55 @@ const SystemReports = () => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
   };
+
+  // Add validation function
+  const validateForm = () => {
+    const errors: ValidationErrors = {};
+
+    if (!selectedOrganizer) {
+      errors.organizer = 'Please select an organizer';
+    }
+
+    if (!selectedEvent) {
+      errors.event = 'Please select an event';
+    }
+
+    if (!selectedCurrencyCode) {
+      errors.currency = 'Please select a target currency';
+    }
+
+    const daysNumber = Number(days);
+    if (!days || isNaN(daysNumber) || daysNumber <= 0) {
+      errors.days = 'Please enter a valid number of days';
+    }
+
+    if (sendEmail && !recipientEmail) {
+      errors.email = 'Please enter recipient email';
+    }
+
+    if (sendEmail && recipientEmail && !/\S+@\S+\.\S+/.test(recipientEmail)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    setValidationErrors(errors);
+    const isValid = Object.keys(errors).length === 0;
+    setIsFormValid(isValid);
+    return isValid;
+  };
+
+  // Add useEffect to validate form on changes
+  useEffect(() => {
+    if (!isInitialLoad) {
+      validateForm();
+    }
+  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, days, sendEmail, recipientEmail]);
+
+  // Add useEffect to handle initial load
+  useEffect(() => {
+    if (isInitialLoad && organizers.length > 0) {
+      setIsInitialLoad(false);
+    }
+  }, [organizers, isInitialLoad]);
 
   // Fetch organizers
   useEffect(() => {
@@ -389,21 +449,17 @@ const SystemReports = () => {
     fetchExchangeRate();
   }, [selectedCurrencyCode, baseCurrencyCode]);
 
-  // Fetch report data
-  const fetchReportData = useCallback(async () => {
-    if (!selectedOrganizer || !selectedEvent) {
-      showToast('Please select both organizer and event', 'error');
+  // Modified fetchReportData function
+  const fetchReportData = async () => {
+    if (!validateForm()) {
       return;
     }
+
     setIsLoadingReport(true);
-    setError('');
-    const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
-    if (selectedCurrencyCode && !targetCurrencyId) {
-      showToast('Selected currency not found in system.', 'error');
-      setIsLoadingReport(false);
-      return;
-    }
+    setReportGenerated(false);
+
     try {
+      const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
       params.append('event_id', selectedEvent);
@@ -494,6 +550,7 @@ const SystemReports = () => {
           targetCurrencySymbol: currencyInfo.currency_symbol,
         }));
       }
+      setReportGenerated(true);
       showToast('Report data loaded successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch report data';
@@ -512,7 +569,7 @@ const SystemReports = () => {
     } finally {
       setIsLoadingReport(false);
     }
-  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, currencies, getCurrencyIdFromCode, days, sendEmail, recipientEmail, format]);
+  };
 
   // Convert revenue button action (triggers re-fetch with new currency)
   const handleConvertRevenue = () => {
@@ -607,125 +664,225 @@ const SystemReports = () => {
                 <Building className="h-6 w-6 text-white" />
               </div>
               Report Configuration
+              {isInitialLoad && (
+                <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading options...
+                </div>
+              )}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="p-8 space-y-8">
-            {/* Main Configuration Grid */}
+            {/* Loading Overlay */}
+            {isInitialLoad && (
+              <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-50">
+                <div className="text-center">
+                  <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
+                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">Loading Configuration Options...</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait while we fetch the available options</p>
+                </div>
+              </div>
+            )}
+
+            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Organizer Selection */}
-              <div className="space-y-3 relative">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Users className="h-4 w-4" />
-                  Select Organizer
+              <div className="flex flex-col h-full">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
+                  Organizer
                 </label>
-                <div className="relative group">
+                <div className="flex-1">
                   <Select
                     value={selectedOrganizer}
-                    onChange={setSelectedOrganizer}
+                    onChange={(value: string) => {
+                      setSelectedOrganizer(value);
+                      setReportGenerated(false);
+                    }}
                     options={organizers.map(org => ({ value: org.organizer_id.toString(), label: org.name }))}
                     placeholder="Choose organizer..."
                     loading={isLoadingOrganizers}
                     isSearchable={organizers.length > 5}
                     searchPlaceholder="Search organizers..."
-                    className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
+                    className="w-full h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                     menuPortalTarget={document.body}
                     menuPosition="fixed"
                     styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 1000 }),
-                      menu: (base) => ({ ...base, zIndex: 1000 })
+                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
+                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
                     }}
                   />
-                  {organizers.length > 5 && (
-                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  {validationErrors.organizer && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.organizer}</p>
                   )}
                 </div>
               </div>
               {/* Event Selection */}
-              <div className="space-y-3 relative">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Calendar className="h-4 w-4" />
-                  Select Event
+              <div className="flex flex-col h-full">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
+                  Event
                 </label>
-                <Select
-                  value={selectedEvent}
-                  onChange={setSelectedEvent}
-                  options={events.map(event => ({ value: event.event_id.toString(), label: event.name }))}
-                  placeholder="Choose event..."
-                  loading={isLoadingEvents}
-                  isSearchable={events.length > 5}
-                  searchPlaceholder="Search events..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
-                  menuPortalTarget={document.body}
-                  menuPosition="fixed"
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 999 }),
-                    menu: (base) => ({ ...base, zIndex: 999 })
-                  }}
-                />
+                <div className="flex-1">
+                  <Select
+                    value={selectedEvent}
+                    onChange={(value: string) => {
+                      setSelectedEvent(value);
+                      setReportGenerated(false);
+                    }}
+                    options={events.map(event => ({ value: event.event_id.toString(), label: event.name }))}
+                    placeholder="Choose event..."
+                    loading={isLoadingEvents}
+                    isSearchable={events.length > 5}
+                    searchPlaceholder="Search events..."
+                    className={`w-full h-12 text-base border-2 ${
+                      validationErrors.event
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
+                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    styles={{
+                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
+                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
+                    }}
+                  />
+                  {validationErrors.event && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.event}</p>
+                  )}
+                </div>
               </div>
               {/* Currency Selection */}
-              <div className="space-y-3 relative">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <DollarSign className="h-4 w-4" />
-                  Target Currency
+              <div className="flex flex-col h-full">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
+                  Currency
                 </label>
-                <Select
-                  value={selectedCurrencyCode}
-                  onChange={setSelectedCurrencyCode}
-                  options={currencies.map(currency => ({ value: currency.value, label: currency.label }))}
-                  placeholder="Choose currency..."
-                  loading={isLoadingCurrencies}
-                  isSearchable={currencies.length > 5}
-                  searchPlaceholder="Search currencies..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
-                  menuPortalTarget={document.body}
-                  menuPosition="fixed"
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 998 }),
-                    menu: (base) => ({ ...base, zIndex: 998 })
-                  }}
-                />
+                <div className="flex-1">
+                  <Select
+                    value={selectedCurrencyCode}
+                    onChange={(value: string) => {
+                      setSelectedCurrencyCode(value);
+                      setReportGenerated(false);
+                    }}
+                    options={currencies.map(currency => ({ value: currency.value, label: currency.label }))}
+                    placeholder="Choose currency..."
+                    loading={isLoadingCurrencies}
+                    isSearchable={currencies.length > 5}
+                    searchPlaceholder="Search currencies..."
+                    className={`w-full h-12 text-base border-2 ${
+                      validationErrors.currency
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
+                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    styles={{
+                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
+                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
+                    }}
+                  />
+                  {validationErrors.currency && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.currency}</p>
+                  )}
+                </div>
               </div>
               {/* Days Input */}
-              <div className="space-y-3 relative">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  <Clock className="h-4 w-4" />
+              <div className="flex flex-col h-full">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
                   Days
                 </label>
-                <Input
-                  value={days}
-                  onChange={setDays}
-                  type="number"
-                  placeholder="Enter days..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
-                />
+                <div className="flex-1">
+                  <Input
+                    value={days}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setDays(e.target.value);
+                      setReportGenerated(false);
+                    }}
+                    type="number"
+                    placeholder="Enter days..."
+                    className={`w-full h-12 text-base border-2 ${
+                      validationErrors.days
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
+                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
+                  />
+                  {validationErrors.days && (
+                    <p className="mt-1 text-sm text-red-500">{validationErrors.days}</p>
+                  )}
+                </div>
               </div>
             </div>
+
+            {/* Form Status Indicator */}
+            {!isInitialLoad && (
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                <div className="flex items-center gap-3">
+                  {isFormValid ? (
+                    <>
+                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                          All required fields completed
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          Ready to generate report
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex-shrink-0 w-6 h-6 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                          Please complete all required fields
+                        </p>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                          {Object.keys(validationErrors).length} field(s) need attention
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
                 onClick={fetchReportData}
-                disabled={!selectedOrganizer || !selectedEvent || isLoadingReport}
+                disabled={!isFormValid || isLoadingReport || isInitialLoad}
                 className="flex-1 h-14 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 {isLoadingReport ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                    Generating...
+                    Generating Report...
+                  </>
+                ) : reportGenerated ? (
+                  <>
+                    <RefreshCw className="h-5 w-5 mr-3" />
+                    Regenerate Report
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-5 w-5 mr-3" />
+                    <FileText className="h-5 w-5 mr-3" />
                     Generate Report
                   </>
                 )}
               </Button>
+
               <Button
                 onClick={handleConvertRevenue}
-                disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
+                disabled={!reportGenerated || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
                 className="flex-1 h-14 bg-gradient-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {isLoadingReport || isLoadingExchangeRate ? (
+                {isLoadingExchangeRate ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin mr-3" />
                     Converting...
@@ -738,6 +895,7 @@ const SystemReports = () => {
                 )}
               </Button>
             </div>
+
             {/* Email and Export Section */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-inner">
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -748,7 +906,10 @@ const SystemReports = () => {
                       type="checkbox"
                       id="sendEmail"
                       checked={sendEmail}
-                      onChange={(e) => setSendEmail(e.target.checked)}
+                      onChange={(e) => {
+                        setSendEmail(e.target.checked);
+                        setReportGenerated(false);
+                      }}
                       className="peer h-6 w-6 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 dark:border-gray-600 transition-all duration-200"
                     />
                     <Check className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 pointer-events-none" />
@@ -757,6 +918,7 @@ const SystemReports = () => {
                     Send Email Notification
                   </label>
                 </div>
+
                 {/* Email Input */}
                 {sendEmail && (
                   <div className="flex-grow lg:max-w-md">
@@ -764,22 +926,36 @@ const SystemReports = () => {
                       <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                       <Input
                         value={recipientEmail}
-                        onChange={setRecipientEmail}
+                        onChange={(e) => {
+                          setRecipientEmail(e.target.value);
+                          setReportGenerated(false);
+                        }}
                         placeholder="Enter recipient email..."
                         type="email"
-                        className="pl-12 h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                        className={`pl-12 h-12 text-base border-2 ${
+                          validationErrors.email
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
+                        } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
                       />
+                      {validationErrors.email && (
+                        <p className="mt-1 text-sm text-red-500">{validationErrors.email}</p>
+                      )}
                     </div>
                   </div>
                 )}
+
                 {/* Export Format */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 relative z-10">
                   <label className="text-base font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     Export Format:
                   </label>
                   <Select
                     value={format}
-                    onChange={setFormat}
+                    onChange={(value) => {
+                      setFormat(value);
+                      setReportGenerated(false);
+                    }}
                     options={[
                       { value: 'json', label: '📄 JSON' },
                       { value: 'pdf', label: '📋 PDF' },
@@ -789,8 +965,9 @@ const SystemReports = () => {
                     menuPortalTarget={document.body}
                     menuPosition="fixed"
                     styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 997 }),
-                      menu: (base) => ({ ...base, zIndex: 997 })
+                      menuPortal: (base) => ({ ...base, zIndex: 9996 }),
+                      menu: (base) => ({ ...base, zIndex: 9996 }),
+                      control: (base) => ({ ...base, width: '100%', minWidth: 0 })
                     }}
                   />
                 </div>
@@ -798,6 +975,7 @@ const SystemReports = () => {
             </div>
           </CardContent>
         </Card>
+
         {selectedCurrencyCode !== baseCurrencyCode && (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardContent className="pt-6">
@@ -814,6 +992,7 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
+
         {error && (
           <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <CardContent className="pt-6">
@@ -824,6 +1003,7 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardContent className="pt-6">
@@ -902,6 +1082,7 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         </div>
+
         {dashboardStats.ticketBreakdown.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card>
@@ -983,6 +1164,7 @@ const SystemReports = () => {
             </Card>
           </div>
         )}
+
         {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
           <Card>
             <CardHeader>
@@ -1024,6 +1206,7 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
+
         {/* Event Reports Section */}
         <Card>
           <CardHeader>
