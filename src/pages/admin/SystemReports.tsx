@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { debounce } from 'lodash';
 import {
   BarChart3,
   DollarSign,
@@ -229,6 +231,8 @@ const SystemReports = () => {
   const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [format, setFormat] = useState<string>('json');
   const [isFormValid, setIsFormValid] = useState(false);
+  const [emailDisabled, setEmailDisabled] = useState(false);
+
   interface ValidationErrors {
     organizer?: string;
     event?: string;
@@ -236,6 +240,7 @@ const SystemReports = () => {
     days?: string;
     email?: string;
   }
+
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [reportGenerated, setReportGenerated] = useState(false);
@@ -285,32 +290,25 @@ const SystemReports = () => {
   // Add validation function
   const validateForm = () => {
     const errors: ValidationErrors = {};
-
     if (!selectedOrganizer) {
       errors.organizer = 'Please select an organizer';
     }
-
     if (!selectedEvent) {
       errors.event = 'Please select an event';
     }
-
     if (!selectedCurrencyCode) {
       errors.currency = 'Please select a target currency';
     }
-
     const daysNumber = Number(days);
     if (!days || isNaN(daysNumber) || daysNumber <= 0) {
       errors.days = 'Please enter a valid number of days';
     }
-
     if (sendEmail && !recipientEmail) {
       errors.email = 'Please enter recipient email';
     }
-
     if (sendEmail && recipientEmail && !/\S+@\S+\.\S+/.test(recipientEmail)) {
       errors.email = 'Please enter a valid email address';
     }
-
     setValidationErrors(errors);
     const isValid = Object.keys(errors).length === 0;
     setIsFormValid(isValid);
@@ -454,9 +452,9 @@ const SystemReports = () => {
     if (!validateForm()) {
       return;
     }
-
     setIsLoadingReport(true);
     setReportGenerated(false);
+    setEmailDisabled(true); // Disable the button immediately
 
     try {
       const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
@@ -473,89 +471,101 @@ const SystemReports = () => {
         params.append('recipient_email', recipientEmail);
       }
       params.append('format', format);
-      const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
-      const response = await fetch(url, {
-        credentials: 'include'
+
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/reports`, {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      if (format === 'pdf') {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `report_${selectedEvent}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(link);
-      } else if (format === 'csv') {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `report_${selectedEvent}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(link);
-      } else {
-        const reportResponse: AdminEventReportResponse = await response.json();
-        setReportApiResponse(reportResponse);
-        const summary = reportResponse.fresh_report_data?.event_summary || {
-          total_tickets_sold: 0,
-          total_revenue: 0,
-          total_attendees: 0,
-          event_count: 0,
-          report_count: 0,
-          currency: 'USD',
-          events: []
-        };
-        const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
-          currency: 'USD',
-          currency_symbol: '$'
-        };
-        // Aggregate ticket breakdown from existing_reports
-        const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
-        reportResponse.existing_reports.forEach(report => {
-          const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
-            ? report.converted_revenue
-            : report.total_revenue;
-          if (report.tickets_sold_by_type) {
-            for (const type in report.tickets_sold_by_type) {
-              aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
-              aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
+
+      if (response.status === 200) {
+        if (format === 'pdf') {
+          const blob = await response.data;
+          const url = window.URL.createObjectURL(new Blob([blob]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `report_${selectedEvent}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(link);
+        } else if (format === 'csv') {
+          const blob = await response.data;
+          const url = window.URL.createObjectURL(new Blob([blob]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `report_${selectedEvent}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(link);
+        } else {
+          const reportResponse: AdminEventReportResponse = response.data;
+          setReportApiResponse(reportResponse);
+          const summary = reportResponse.fresh_report_data?.event_summary || {
+            total_tickets_sold: 0,
+            total_revenue: 0,
+            total_attendees: 0,
+            event_count: 0,
+            report_count: 0,
+            currency: 'USD',
+            events: []
+          };
+          const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
+            currency: 'USD',
+            currency_symbol: '$'
+          };
+          const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
+          reportResponse.existing_reports.forEach(report => {
+            const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
+              ? report.converted_revenue
+              : report.total_revenue;
+            if (report.tickets_sold_by_type) {
+              for (const type in report.tickets_sold_by_type) {
+                aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
+                aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
+              }
             }
-          }
-          if (report.revenue_by_ticket_type) {
-            for (const type in report.revenue_by_ticket_type) {
-              aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+            if (report.revenue_by_ticket_type) {
+              for (const type in report.revenue_by_ticket_type) {
+                aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
+              }
             }
-          }
-        });
-        const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
-          name: type,
-          value: aggregatedTicketBreakdown[type].count,
-          revenue: aggregatedTicketBreakdown[type].revenue
-        }));
-        setDashboardStats(prev => ({
-          ...prev,
-          originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
-          totalRevenue: summary.total_revenue,
-          totalTickets: summary.total_tickets_sold,
-          ticketBreakdown: ticketBreakdownArray,
-          targetCurrencyCode: currencyInfo.currency,
-          targetCurrencySymbol: currencyInfo.currency_symbol,
-        }));
+          });
+          const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
+            name: type,
+            value: aggregatedTicketBreakdown[type].count,
+            revenue: aggregatedTicketBreakdown[type].revenue
+          }));
+          setDashboardStats(prev => ({
+            ...prev,
+            originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
+            totalRevenue: summary.total_revenue,
+            totalTickets: summary.total_tickets_sold,
+            ticketBreakdown: ticketBreakdownArray,
+            targetCurrencyCode: currencyInfo.currency,
+            targetCurrencySymbol: currencyInfo.currency_symbol,
+          }));
+        }
+        setReportGenerated(true);
+        showToast('Report data loaded successfully');
       }
-      setReportGenerated(true);
-      showToast('Report data loaded successfully');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch report data';
-      setError(errorMessage);
-      showToast(errorMessage, 'error');
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 429) {
+          const waitTime = error.response?.data?.wait_time || 30;
+          showToast(`Too many requests. Try again in ${waitTime} seconds.`, 'error');
+          setTimeout(() => setEmailDisabled(false), waitTime * 1000);
+        } else {
+          showToast("Something went wrong while sending the report.", 'error');
+          setEmailDisabled(false); // Re-enable if not a duplicate issue
+        }
+      } else {
+        showToast("An unexpected error occurred.", 'error');
+        setEmailDisabled(false); // Re-enable if not a duplicate issue
+      }
+      setError('Failed to fetch report data');
       setReportApiResponse(null);
       setDashboardStats({
         originalRevenue: 0,
@@ -570,6 +580,11 @@ const SystemReports = () => {
       setIsLoadingReport(false);
     }
   };
+
+  const debouncedSendEmail = debounce(fetchReportData, 2000, {
+    leading: true,
+    trailing: false,
+  });
 
   // Convert revenue button action (triggers re-fetch with new currency)
   const handleConvertRevenue = () => {
@@ -656,7 +671,6 @@ const SystemReports = () => {
             </div>
           </div>
         </div>
-
         <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl overflow-hidden">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600 px-8 py-6">
             <CardTitle className="flex items-center gap-4 text-2xl font-bold text-gray-800 dark:text-white">
@@ -672,7 +686,6 @@ const SystemReports = () => {
               )}
             </CardTitle>
           </CardHeader>
-
           <CardContent className="p-8 space-y-8">
             {/* Loading Overlay */}
             {isInitialLoad && (
@@ -684,7 +697,6 @@ const SystemReports = () => {
                 </div>
               </div>
             )}
-
             {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Organizer Selection */}
@@ -814,7 +826,6 @@ const SystemReports = () => {
                 </div>
               </div>
             </div>
-
             {/* Form Status Indicator */}
             {!isInitialLoad && (
               <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
@@ -851,15 +862,19 @@ const SystemReports = () => {
                 </div>
               </div>
             )}
-
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                onClick={fetchReportData}
-                disabled={!isFormValid || isLoadingReport || isInitialLoad}
+                onClick={debouncedSendEmail}
+                disabled={!isFormValid || isLoadingReport || isInitialLoad || emailDisabled}
                 className="flex-1 h-14 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
-                {isLoadingReport ? (
+                {emailDisabled ? (
+                  <>
+                    <Clock className="h-5 w-5 mr-3" />
+                    Please wait...
+                  </>
+                ) : isLoadingReport ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin mr-3" />
                     Generating Report...
@@ -876,7 +891,6 @@ const SystemReports = () => {
                   </>
                 )}
               </Button>
-
               <Button
                 onClick={handleConvertRevenue}
                 disabled={!reportGenerated || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
@@ -895,7 +909,6 @@ const SystemReports = () => {
                 )}
               </Button>
             </div>
-
             {/* Email and Export Section */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-inner">
               <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -918,7 +931,6 @@ const SystemReports = () => {
                     Send Email Notification
                   </label>
                 </div>
-
                 {/* Email Input */}
                 {sendEmail && (
                   <div className="flex-grow lg:max-w-md">
@@ -944,7 +956,6 @@ const SystemReports = () => {
                     </div>
                   </div>
                 )}
-
                 {/* Export Format */}
                 <div className="flex items-center gap-4 relative z-10">
                   <label className="text-base font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -975,7 +986,6 @@ const SystemReports = () => {
             </div>
           </CardContent>
         </Card>
-
         {selectedCurrencyCode !== baseCurrencyCode && (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardContent className="pt-6">
@@ -992,7 +1002,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         {error && (
           <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <CardContent className="pt-6">
@@ -1003,7 +1012,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardContent className="pt-6">
@@ -1082,7 +1090,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         </div>
-
         {dashboardStats.ticketBreakdown.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card>
@@ -1164,7 +1171,6 @@ const SystemReports = () => {
             </Card>
           </div>
         )}
-
         {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
           <Card>
             <CardHeader>
@@ -1206,7 +1212,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         {/* Event Reports Section */}
         <Card>
           <CardHeader>
