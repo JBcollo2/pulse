@@ -627,7 +627,7 @@ const SystemReports = () => {
                     loading={isLoadingOrganizers}
                     isSearchable={organizers.length > 5}
                     searchPlaceholder="Search organizers..."
-                    className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                    className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
                     menuPortalTarget={document.body}
                     menuPosition="fixed"
                     styles={{
@@ -654,7 +654,7 @@ const SystemReports = () => {
                   loading={isLoadingEvents}
                   isSearchable={events.length > 5}
                   searchPlaceholder="Search events..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                   styles={{
@@ -677,7 +677,7 @@ const SystemReports = () => {
                   loading={isLoadingCurrencies}
                   isSearchable={currencies.length > 5}
                   searchPlaceholder="Search currencies..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
                   menuPortalTarget={document.body}
                   menuPosition="fixed"
                   styles={{
@@ -697,7 +697,7 @@ const SystemReports = () => {
                   onChange={setDays}
                   type="number"
                   placeholder="Enter days..."
-                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md pl-10"
                 />
               </div>
             </div>
@@ -720,7 +720,6 @@ const SystemReports = () => {
                   </>
                 )}
               </Button>
-
               <Button
                 onClick={handleConvertRevenue}
                 disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
@@ -758,7 +757,6 @@ const SystemReports = () => {
                     Send Email Notification
                   </label>
                 </div>
-
                 {/* Email Input */}
                 {sendEmail && (
                   <div className="flex-grow lg:max-w-md">
@@ -774,7 +772,6 @@ const SystemReports = () => {
                     </div>
                   </div>
                 )}
-
                 {/* Export Format */}
                 <div className="flex items-center gap-4">
                   <label className="text-base font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
@@ -801,7 +798,6 @@ const SystemReports = () => {
             </div>
           </CardContent>
         </Card>
-
         {selectedCurrencyCode !== baseCurrencyCode && (
           <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
             <CardContent className="pt-6">
@@ -818,7 +814,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         {error && (
           <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <CardContent className="pt-6">
@@ -829,7 +824,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
             <CardContent className="pt-6">
@@ -908,7 +902,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         </div>
-
         {dashboardStats.ticketBreakdown.length > 0 && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <Card>
@@ -990,7 +983,6 @@ const SystemReports = () => {
             </Card>
           </div>
         )}
-
         {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
           <Card>
             <CardHeader>
@@ -1032,7 +1024,6 @@ const SystemReports = () => {
             </CardContent>
           </Card>
         )}
-
         {/* Event Reports Section */}
         <Card>
           <CardHeader>
