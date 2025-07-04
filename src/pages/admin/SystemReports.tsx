@@ -16,6 +16,9 @@ import {
   Download,
   Mail,
   FileSpreadsheet,
+  Search,
+  Clock,
+  Check
 } from "lucide-react";
 import {
   BarChart,
@@ -129,8 +132,8 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
-const CardHeader = ({ children }) => (
-  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+const CardHeader = ({ children, className = "" }) => (
+  <div className={`px-6 py-4 border-b border-gray-200 dark:border-gray-700 ${className}`}>
     {children}
   </div>
 );
@@ -154,7 +157,6 @@ const Button = ({ children, onClick, disabled = false, className = "", variant =
     success: "bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400",
     outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
   };
-
   return (
     <button
       onClick={onClick}
@@ -166,7 +168,7 @@ const Button = ({ children, onClick, disabled = false, className = "", variant =
   );
 };
 
-const Select = ({ value, onChange, options, placeholder = "Select...", loading = false, className = "" }) => (
+const Select = ({ value, onChange, options, placeholder = "Select...", loading = false, className = "", isSearchable = false, searchPlaceholder = "Search..." }) => (
   <div className={`relative ${className}`}>
     <select
       value={value}
@@ -223,8 +225,8 @@ const SystemReports = () => {
   const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD');
   const [baseCurrencyCode] = useState<string>('USD');
   const [days, setDays] = useState<string>('30');
-  const [recipientEmail, setRecipientEmail] = useState<string>('');
-  const [sendEmail, setSendEmail] = useState<boolean>(false);
+  const [recipientEmail, setRecipientEmail] = useState<string>('dk7468563@gmail.com');
+  const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [format, setFormat] = useState<string>('json');
 
   // Data states
@@ -301,7 +303,6 @@ const SystemReports = () => {
         setEvents([]);
         return;
       }
-
       setIsLoadingEvents(true);
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${selectedOrganizer}/events`, {
@@ -362,7 +363,6 @@ const SystemReports = () => {
         setDashboardStats(prev => ({ ...prev, exchangeRate: 1 }));
         return;
       }
-
       setIsLoadingExchangeRate(true);
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrencyCode}`, {
@@ -397,14 +397,12 @@ const SystemReports = () => {
     }
     setIsLoadingReport(true);
     setError('');
-
     const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
     if (selectedCurrencyCode && !targetCurrencyId) {
       showToast('Selected currency not found in system.', 'error');
       setIsLoadingReport(false);
       return;
     }
-
     try {
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
@@ -419,18 +417,14 @@ const SystemReports = () => {
         params.append('recipient_email', recipientEmail);
       }
       params.append('format', format);
-
       const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
-
       const response = await fetch(url, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-
       if (format === 'pdf') {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -454,7 +448,6 @@ const SystemReports = () => {
       } else {
         const reportResponse: AdminEventReportResponse = await response.json();
         setReportApiResponse(reportResponse);
-
         const summary = reportResponse.fresh_report_data?.event_summary || {
           total_tickets_sold: 0,
           total_revenue: 0,
@@ -464,19 +457,16 @@ const SystemReports = () => {
           currency: 'USD',
           events: []
         };
-
         const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
           currency: 'USD',
           currency_symbol: '$'
         };
-
         // Aggregate ticket breakdown from existing_reports
         const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
         reportResponse.existing_reports.forEach(report => {
           const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
             ? report.converted_revenue
             : report.total_revenue;
-
           if (report.tickets_sold_by_type) {
             for (const type in report.tickets_sold_by_type) {
               aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
@@ -489,13 +479,11 @@ const SystemReports = () => {
             }
           }
         });
-
         const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
           name: type,
           value: aggregatedTicketBreakdown[type].count,
           revenue: aggregatedTicketBreakdown[type].revenue
         }));
-
         setDashboardStats(prev => ({
           ...prev,
           originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
@@ -612,29 +600,45 @@ const SystemReports = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="h-5 w-5" />
+        <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600 px-8 py-6">
+            <CardTitle className="flex items-center gap-4 text-2xl font-bold text-gray-800 dark:text-white">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                <Building className="h-6 w-6 text-white" />
+              </div>
               Report Configuration
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+
+          <CardContent className="p-8 space-y-8">
+            {/* Main Configuration Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              {/* Organizer Selection */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <Users className="h-4 w-4" />
                   Select Organizer
                 </label>
-                <Select
-                  value={selectedOrganizer}
-                  onChange={setSelectedOrganizer}
-                  options={organizers.map(org => ({ value: org.organizer_id.toString(), label: org.name }))}
-                  placeholder="Choose organizer..."
-                  loading={isLoadingOrganizers}
-                />
+                <div className="relative group">
+                  <Select
+                    value={selectedOrganizer}
+                    onChange={setSelectedOrganizer}
+                    options={organizers.map(org => ({ value: org.organizer_id.toString(), label: org.name }))}
+                    placeholder="Choose organizer..."
+                    loading={isLoadingOrganizers}
+                    isSearchable={organizers.length > 5}
+                    searchPlaceholder="Search organizers..."
+                    className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  />
+                  {organizers.length > 5 && (
+                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {/* Event Selection */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <Calendar className="h-4 w-4" />
                   Select Event
                 </label>
                 <Select
@@ -643,10 +647,15 @@ const SystemReports = () => {
                   options={events.map(event => ({ value: event.event_id.toString(), label: event.name }))}
                   placeholder="Choose event..."
                   loading={isLoadingEvents}
+                  isSearchable={events.length > 5}
+                  searchPlaceholder="Search events..."
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {/* Currency Selection */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <DollarSign className="h-4 w-4" />
                   Target Currency
                 </label>
                 <Select
@@ -655,10 +664,15 @@ const SystemReports = () => {
                   options={currencies.map(currency => ({ value: currency.value, label: currency.label }))}
                   placeholder="Choose currency..."
                   loading={isLoadingCurrencies}
+                  isSearchable={currencies.length > 5}
+                  searchPlaceholder="Search currencies..."
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {/* Days Input */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <Clock className="h-4 w-4" />
                   Days
                 </label>
                 <Input
@@ -666,70 +680,100 @@ const SystemReports = () => {
                   onChange={setDays}
                   type="number"
                   placeholder="Enter days..."
+                  className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                 />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Button
-                  onClick={fetchReportData}
-                  disabled={!selectedOrganizer || !selectedEvent || isLoadingReport}
-                  className="w-full"
-                >
-                  {isLoadingReport ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  Generate Report
-                </Button>
-                <Button
-                  onClick={handleConvertRevenue}
-                  disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
-                  variant="success"
-                  className="w-full"
-                >
-                  {isLoadingReport || isLoadingExchangeRate ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <DollarSign className="h-4 w-4" />
-                  )}
-                  Convert Revenue
-                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-4 mt-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="sendEmail"
-                  checked={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded"
-                />
-                <label htmlFor="sendEmail" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Send Email
-                </label>
-              </div>
-              {sendEmail && (
-                <div className="flex-grow">
-                  <Input
-                    value={recipientEmail}
-                    onChange={setRecipientEmail}
-                    placeholder="Recipient Email"
-                    type="email"
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button
+                onClick={fetchReportData}
+                disabled={!selectedOrganizer || !selectedEvent || isLoadingReport}
+                className="flex-1 h-14 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {isLoadingReport ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-5 w-5 mr-3" />
+                    Generate Report
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleConvertRevenue}
+                disabled={!reportApiResponse || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
+                className="flex-1 h-14 bg-gradient-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {isLoadingReport || isLoadingExchangeRate ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
+                    Converting...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="h-5 w-5 mr-3" />
+                    Convert Revenue
+                  </>
+                )}
+              </Button>
+            </div>
+            {/* Email and Export Section */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-inner">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                {/* Email Toggle */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      id="sendEmail"
+                      checked={sendEmail}
+                      onChange={(e) => setSendEmail(e.target.checked)}
+                      className="peer h-6 w-6 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 dark:border-gray-600 transition-all duration-200"
+                    />
+                    <Check className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                  </div>
+                  <label htmlFor="sendEmail" className="text-base font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    Send Email Notification
+                  </label>
+                </div>
+
+                {/* Email Input */}
+                {sendEmail && (
+                  <div className="flex-grow lg:max-w-md">
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        value={recipientEmail}
+                        onChange={setRecipientEmail}
+                        placeholder="Enter recipient email..."
+                        type="email"
+                        className="pl-12 h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Export Format */}
+                <div className="flex items-center gap-4">
+                  <label className="text-base font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    Export Format:
+                  </label>
+                  <Select
+                    value={format}
+                    onChange={setFormat}
+                    options={[
+                      { value: 'json', label: '📄 JSON' },
+                      { value: 'pdf', label: '📋 PDF' },
+                      { value: 'csv', label: '📊 CSV' }
+                    ]}
+                    className="w-40 h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
                   />
                 </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Select
-                  value={format}
-                  onChange={setFormat}
-                  options={[
-                    { value: 'json', label: 'JSON' },
-                    { value: 'pdf', label: 'PDF' },
-                    { value: 'csv', label: 'CSV' }
-                  ]}
-                  className="w-32"
-                />
               </div>
             </div>
           </CardContent>
@@ -1013,3 +1057,5 @@ const SystemReports = () => {
 };
 
 export default SystemReports;
+
+
