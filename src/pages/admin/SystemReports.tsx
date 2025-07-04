@@ -168,7 +168,7 @@ const Button = ({ children, onClick, disabled = false, className = "", variant =
   );
 };
 
-const Select = ({ value, onChange, options, placeholder = "Select...", loading = false, className = "", isSearchable = false, searchPlaceholder = "Search..." }) => (
+const Select = ({ value, onChange, options, placeholder = "Select...", loading = false, className = "", isSearchable = false, searchPlaceholder = "Search...", menuPortalTarget, menuPosition, styles }) => (
   <div className={`relative ${className}`}>
     <select
       value={value}
@@ -614,7 +614,7 @@ const SystemReports = () => {
             {/* Main Configuration Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Organizer Selection */}
-              <div className="space-y-3">
+              <div className="space-y-3 relative z-40">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Users className="h-4 w-4" />
                   Select Organizer
@@ -629,14 +629,20 @@ const SystemReports = () => {
                     isSearchable={organizers.length > 5}
                     searchPlaceholder="Search organizers..."
                     className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    styles={{
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                      menu: (base) => ({ ...base, zIndex: 9999 })
+                    }}
                   />
                   {organizers.length > 5 && (
-                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none z-10" />
                   )}
                 </div>
               </div>
               {/* Event Selection */}
-              <div className="space-y-3">
+              <div className="space-y-3 relative z-30">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Calendar className="h-4 w-4" />
                   Select Event
@@ -650,10 +656,16 @@ const SystemReports = () => {
                   isSearchable={events.length > 5}
                   searchPlaceholder="Search events..."
                   className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9998 }),
+                    menu: (base) => ({ ...base, zIndex: 9998 })
+                  }}
                 />
               </div>
               {/* Currency Selection */}
-              <div className="space-y-3">
+              <div className="space-y-3 relative z-20">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <DollarSign className="h-4 w-4" />
                   Target Currency
@@ -667,10 +679,16 @@ const SystemReports = () => {
                   isSearchable={currencies.length > 5}
                   searchPlaceholder="Search currencies..."
                   className="h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9997 }),
+                    menu: (base) => ({ ...base, zIndex: 9997 })
+                  }}
                 />
               </div>
               {/* Days Input */}
-              <div className="space-y-3">
+              <div className="space-y-3 relative z-10">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   <Clock className="h-4 w-4" />
                   Days
@@ -772,6 +790,12 @@ const SystemReports = () => {
                       { value: 'csv', label: '📊 CSV' }
                     ]}
                     className="w-40 h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    styles={{
+                      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                      menu: (base) => ({ ...base, zIndex: 9999 })
+                    }}
                   />
                 </div>
               </div>
@@ -1057,5 +1081,3 @@ const SystemReports = () => {
 };
 
 export default SystemReports;
-
-
