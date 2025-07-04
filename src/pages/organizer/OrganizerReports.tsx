@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import {
-  Loader2, AlertCircle, FileText, Download, RefreshCw, 
+  Loader2, AlertCircle, FileText, Download, RefreshCw,
   DollarSign, TrendingUp, Calendar, Globe, BarChart3, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,7 @@ const OrganizerSimpleReport: React.FC = () => {
     start: '',
     end: ''
   });
-  
+
   const [loading, setLoading] = useState({
     reports: false,
     generating: false,
@@ -73,7 +73,7 @@ const OrganizerSimpleReport: React.FC = () => {
     deleting: false,
     exporting: false
   });
-  
+
   const [error, setError] = useState<string | null>(null);
 
   // Fetch available currencies
@@ -82,7 +82,7 @@ const OrganizerSimpleReport: React.FC = () => {
       const response = await fetch('/api/currency/list', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setCurrencies(data.currencies || []);
@@ -96,15 +96,18 @@ const OrganizerSimpleReport: React.FC = () => {
   const fetchReports = useCallback(async () => {
     setLoading(prev => ({ ...prev, reports: true }));
     setError(null);
-    
+
     try {
       const response = await fetch('/reports', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setReports(data.reports || []);
+        if (data.reports.length === 0) {
+          showToast("No reports found for the selected date range.");
+        }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to fetch reports');
@@ -123,7 +126,7 @@ const OrganizerSimpleReport: React.FC = () => {
       const response = await fetch('/api/currency/reports/converted', {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setConvertedReports(data.converted_reports || []);
@@ -139,10 +142,9 @@ const OrganizerSimpleReport: React.FC = () => {
       setError('Please select both start and end dates');
       return;
     }
-
     setLoading(prev => ({ ...prev, generating: true }));
     setError(null);
-    
+
     try {
       const response = await fetch('/reports/generate', {
         method: 'POST',
@@ -156,7 +158,7 @@ const OrganizerSimpleReport: React.FC = () => {
           title: `Report ${new Date().toLocaleDateString()}`
         })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         await fetchReports(); // Refresh reports list
@@ -176,10 +178,10 @@ const OrganizerSimpleReport: React.FC = () => {
   // Convert revenue to selected currency
   const convertRevenue = useCallback(async (reportId: number) => {
     if (!selectedCurrency) return;
-    
+
     setLoading(prev => ({ ...prev, converting: true }));
     setError(null);
-    
+
     try {
       const response = await fetch('/api/currency/revenue/convert', {
         method: 'POST',
@@ -192,7 +194,7 @@ const OrganizerSimpleReport: React.FC = () => {
           target_currency: selectedCurrency
         })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         // Update the selected report with converted values
@@ -219,16 +221,16 @@ const OrganizerSimpleReport: React.FC = () => {
   // Delete report
   const deleteReport = useCallback(async (reportId: number) => {
     if (!window.confirm('Are you sure you want to delete this report?')) return;
-    
+
     setLoading(prev => ({ ...prev, deleting: true }));
     setError(null);
-    
+
     try {
       const response = await fetch(`/reports/${reportId}/delete`, {
         method: 'DELETE',
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         await fetchReports(); // Refresh reports list
         if (selectedReport && selectedReport.id === reportId) {
@@ -250,12 +252,12 @@ const OrganizerSimpleReport: React.FC = () => {
   const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv' | 'xlsx') => {
     setLoading(prev => ({ ...prev, exporting: true }));
     setError(null);
-    
+
     try {
       const response = await fetch(`/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -311,10 +313,15 @@ const OrganizerSimpleReport: React.FC = () => {
 
   const COLORS = ['#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
+  const showToast = (message: string) => {
+    // Implement your toast notification logic here
+    console.log(message);
+  };
+
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -358,8 +365,8 @@ const OrganizerSimpleReport: React.FC = () => {
                   className="mt-1"
                 />
               </div>
-              <Button 
-                onClick={generateReport} 
+              <Button
+                onClick={generateReport}
                 disabled={loading.generating || !dateRange.start || !dateRange.end}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               >
@@ -421,8 +428,8 @@ const OrganizerSimpleReport: React.FC = () => {
                     key={report.id}
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md",
-                      selectedReport?.id === report.id 
-                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20" 
+                      selectedReport?.id === report.id
+                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
                         : "border-gray-200 dark:border-gray-700"
                     )}
                     onClick={() => setSelectedReport(report)}
@@ -555,7 +562,6 @@ const OrganizerSimpleReport: React.FC = () => {
                   <TabsTrigger value="tickets">Ticket Types</TabsTrigger>
                   <TabsTrigger value="monthly">Monthly Trends</TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="events">
                   <Card>
                     <CardHeader>
@@ -575,7 +581,6 @@ const OrganizerSimpleReport: React.FC = () => {
                     </CardContent>
                   </Card>
                 </TabsContent>
-
                 <TabsContent value="tickets">
                   <Card>
                     <CardHeader>
@@ -603,7 +608,6 @@ const OrganizerSimpleReport: React.FC = () => {
                     </CardContent>
                   </Card>
                 </TabsContent>
-
                 <TabsContent value="monthly">
                   <Card>
                     <CardHeader>
@@ -661,5 +665,6 @@ const OrganizerSimpleReport: React.FC = () => {
 };
 
 export default OrganizerReport;
+
 
 
