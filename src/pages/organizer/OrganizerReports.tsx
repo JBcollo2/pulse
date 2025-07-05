@@ -25,7 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 interface OrganizerReport {
   id: number;
   title: string;
-  total_revenue: number | null | undefined; // Allow null or undefined
+  total_revenue: number | null | undefined;
   total_tickets: number;
   total_events: number;
   total_attendees: number;
@@ -56,8 +56,8 @@ interface ConvertedReport {
   id: number;
   original_currency: string;
   target_currency: string;
-  original_amount: number | null | undefined; // Allow null or undefined
-  converted_amount: number | null | undefined; // Allow null or undefined
+  original_amount: number | null | undefined;
+  converted_amount: number | null | undefined;
   conversion_rate: number;
   converted_at: string;
 }
@@ -76,72 +76,71 @@ const OrganizerReport: React.FC = () => {
     reports: false,
     generating: false,
     converting: false,
-    exporting: false
+    exporting: false,
+    currencies: false
   });
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchCurrencies = useCallback(async () => {
     try {
-      const response = await fetch('/api/currency/list', {
+      setLoading(prev => ({ ...prev, currencies: true }));
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
-      if (response.ok) {
-        const data = await response.json();
-        setCurrencies(data.data || []);
-        if (!selectedCurrency && data.data && data.data.length > 0) {
-          setSelectedCurrency(data.data[0].code);
-        }
-      } else {
-        console.error('Failed to fetch currencies:', response.statusText);
-        toast({
-          title: "Error fetching currencies",
-          description: "Could not load available currencies. Please try again later.",
-          variant: "destructive",
-        });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCurrencies(data.data || []);
+      
+      if (!selectedCurrency && data.data && data.data.length > 0) {
+        setSelectedCurrency(data.data[0].code);
       }
     } catch (err) {
       console.error('Failed to fetch currencies:', err);
       toast({
-        title: "Network error",
-        description: "Unable to connect to currency service.",
+        title: "Error fetching currencies",
+        description: "Could not load available currencies. Please try again later.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(prev => ({ ...prev, currencies: false }));
     }
   }, [selectedCurrency, toast]);
 
   const fetchReports = useCallback(async () => {
-    setLoading(prev => ({ ...prev, reports: true }));
-    setError(null);
     try {
-      const response = await fetch('/reports', {
+      setLoading(prev => ({ ...prev, reports: true }));
+      setError(null);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports`, {
         credentials: 'include'
       });
-      if (response.ok) {
-        const data = await response.json();
-        setReports(data.reports || []);
-        if (data.reports.length === 0) {
-          toast({
-            title: "No reports found",
-            description: "No reports available. Generate your first report!",
-            variant: "default",
-          });
-        }
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to fetch reports');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setReports(data.reports || []);
+      
+      if (data.reports.length === 0) {
         toast({
-          title: "Error fetching reports",
-          description: errorData.message || 'Failed to load reports.',
-          variant: "destructive",
+          title: "No reports found",
+          description: "No reports available. Generate your first report!",
+          variant: "default",
         });
       }
     } catch (err) {
-      setError('An error occurred while fetching reports');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching reports';
+      setError(errorMessage);
       console.error('Fetch reports error:', err);
       toast({
-        title: "Network error",
-        description: "Unable to connect to report service.",
+        title: "Error fetching reports",
+        description: "Failed to load reports. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -151,25 +150,21 @@ const OrganizerReport: React.FC = () => {
 
   const fetchConvertedReports = useCallback(async () => {
     try {
-      const response = await fetch('/api/currency/reports/converted', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/reports/converted`, {
         credentials: 'include'
       });
-      if (response.ok) {
-        const data = await response.json();
-        setConvertedReports(data.data.reports || []);
-      } else {
-        console.error('Failed to fetch converted reports:', response.statusText);
-        toast({
-          title: "Error fetching converted reports",
-          description: "Could not load currency conversion history.",
-          variant: "destructive",
-        });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      setConvertedReports(data.data.reports || []);
     } catch (err) {
       console.error('Failed to fetch converted reports:', err);
       toast({
-        title: "Network error",
-        description: "Unable to connect to conversion history service.",
+        title: "Error fetching converted reports",
+        description: "Could not load currency conversion history.",
         variant: "destructive",
       });
     }
@@ -185,10 +180,12 @@ const OrganizerReport: React.FC = () => {
       });
       return;
     }
-    setLoading(prev => ({ ...prev, generating: true }));
-    setError(null);
+
     try {
-      const response = await fetch('/reports/generate', {
+      setLoading(prev => ({ ...prev, generating: true }));
+      setError(null);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,30 +197,27 @@ const OrganizerReport: React.FC = () => {
           title: `Report ${new Date().toLocaleDateString()}`
         })
       });
-      if (response.ok) {
-        const data = await response.json();
-        await fetchReports();
-        setSelectedReport(data.report);
-        toast({
-          title: "Report Generated!",
-          description: `Report "${data.report.title}" has been successfully generated.`,
-          variant: "default",
-        });
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to generate report');
-        toast({
-          title: "Report Generation Failed",
-          description: errorData.message || 'Could not generate the report.',
-          variant: "destructive",
-        });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      await fetchReports();
+      setSelectedReport(data.report);
+      
+      toast({
+        title: "Report Generated!",
+        description: `Report "${data.report.title}" has been successfully generated.`,
+        variant: "default",
+      });
     } catch (err) {
-      setError('An error occurred while generating the report');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the report';
+      setError(errorMessage);
       console.error('Generate report error:', err);
       toast({
-        title: "Network Error",
-        description: "Unable to connect to generate report.",
+        title: "Report Generation Failed",
+        description: "Could not generate the report. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -240,10 +234,12 @@ const OrganizerReport: React.FC = () => {
       });
       return;
     }
-    setLoading(prev => ({ ...prev, converting: true }));
-    setError(null);
+
     try {
-      const response = await fetch('/api/currency/revenue/convert', {
+      setLoading(prev => ({ ...prev, converting: true }));
+      setError(null);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/revenue/convert`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,36 +250,35 @@ const OrganizerReport: React.FC = () => {
           target_currency: selectedCurrency
         })
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (selectedReport && selectedReport.id === reportId) {
-          setSelectedReport(prev => prev ? {
-            ...prev,
-            total_revenue: data.data.converted_amount,
-            currency: selectedCurrency,
-          } : null);
-        }
-        await fetchConvertedReports();
-        toast({
-          title: "Conversion Successful!",
-          description: `Revenue converted to ${selectedCurrency}.`,
-          variant: "default",
-        });
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to convert currency');
-        toast({
-          title: "Conversion Failed",
-          description: errorData.message || 'Could not convert currency.',
-          variant: "destructive",
-        });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      
+      if (selectedReport && selectedReport.id === reportId) {
+        setSelectedReport(prev => prev ? {
+          ...prev,
+          total_revenue: data.data.converted_amount,
+          currency: selectedCurrency,
+        } : null);
+      }
+      
+      await fetchConvertedReports();
+      
+      toast({
+        title: "Conversion Successful!",
+        description: `Revenue converted to ${selectedCurrency}.`,
+        variant: "default",
+      });
     } catch (err) {
-      setError('An error occurred while converting currency');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while converting currency';
+      setError(errorMessage);
       console.error('Convert currency error:', err);
       toast({
-        title: "Network Error",
-        description: "Unable to connect to currency conversion service.",
+        title: "Conversion Failed",
+        description: "Could not convert currency. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -292,42 +287,40 @@ const OrganizerReport: React.FC = () => {
   }, [selectedCurrency, selectedReport, fetchConvertedReports, toast]);
 
   const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv') => {
-    setLoading(prev => ({ ...prev, exporting: true }));
-    setError(null);
     try {
-      const response = await fetch(`/reports/${reportId}/export?format=${format}`, {
+      setLoading(prev => ({ ...prev, exporting: true }));
+      setError(null);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `report_${reportId}.${format}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-        toast({
-          title: "Export Successful!",
-          description: `Report exported as ${format.toUpperCase()}.`,
-          variant: "default",
-        });
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to export report');
-        toast({
-          title: "Export Failed",
-          description: errorData.message || 'Could not export the report.',
-          variant: "destructive",
-        });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_${reportId}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful!",
+        description: `Report exported as ${format.toUpperCase()}.`,
+        variant: "default",
+      });
     } catch (err) {
-      setError('An error occurred while exporting the report');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while exporting the report';
+      setError(errorMessage);
       console.error('Export report error:', err);
       toast({
-        title: "Network Error",
-        description: "Unable to connect to report export service.",
+        title: "Export Failed",
+        description: "Could not export the report. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -531,7 +524,11 @@ const OrganizerReport: React.FC = () => {
                     onClick={() => convertRevenue(selectedReport.id)}
                     disabled={loading.converting || !selectedCurrency || selectedCurrency === selectedReport.currency}
                   >
-                    <Globe className="h-4 w-4 mr-2" />
+                    {loading.converting ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Globe className="h-4 w-4 mr-2" />
+                    )}
                     Convert
                   </Button>
                   <div className="relative">
@@ -541,7 +538,11 @@ const OrganizerReport: React.FC = () => {
                       disabled={loading.exporting}
                       onClick={() => { /* This button now acts as a trigger for a dropdown */ }}
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      {loading.exporting ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
                       Export
                     </Button>
                     <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
