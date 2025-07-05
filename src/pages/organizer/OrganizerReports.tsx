@@ -95,14 +95,11 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       setCurrencies(data.data || []);
-
       if (!selectedCurrency && data.data && data.data.length > 0) {
         setSelectedCurrency(data.data[0].code);
       }
@@ -122,18 +119,14 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, reports: true }));
       setError(null);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       setReports(data.reports || []);
-
       if (data.reports.length === 0) {
         toast({
           title: "No reports found",
@@ -160,11 +153,9 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/reports/converted`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       setConvertedReports(data.data.reports || []);
     } catch (err) {
@@ -190,8 +181,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://ticketing-system-994g.onrender.com';
+      const fullUrl = `${apiUrl}/reports/generate`;
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
+      console.log('Making request to:', fullUrl); // Debug log
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +242,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, converting: true }));
       setError(null);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/revenue/convert`, {
         method: 'POST',
         headers: {
@@ -259,13 +253,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           target_currency: selectedCurrency
         })
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
-
       if (selectedReport && selectedReport.id === reportId) {
         setSelectedReport(prev => prev ? {
           ...prev,
@@ -273,9 +264,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           currency: selectedCurrency,
         } : null);
       }
-
       await fetchConvertedReports();
-
       toast({
         title: "Conversion Successful!",
         description: `Revenue converted to ${selectedCurrency}.`,
@@ -299,15 +288,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, exporting: true }));
       setError(null);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -317,7 +303,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
       toast({
         title: "Export Successful!",
         description: `Report exported as ${format.toUpperCase()}.`,
