@@ -76,6 +76,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     start: '',
     end: ''
   });
+  const [recipientEmail, setRecipientEmail] = useState('');
   const [loading, setLoading] = useState({
     reports: false,
     generating: false,
@@ -175,15 +176,15 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   }, [toast]);
 
   const generateReport = useCallback(async () => {
-    if (!dateRange.start || !dateRange.end) {
-      setError('Please select both start and end dates');
+    if (!dateRange.start || !dateRange.end || !recipientEmail || !recipientEmail.includes('@')) {
       toast({
-        title: "Missing Dates",
-        description: "Please select both a start and an end date to generate a report.",
+        title: "Missing Input",
+        description: "Please fill in all required fields with valid data.",
         variant: "destructive",
       });
       return;
     }
+
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
@@ -201,7 +202,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           ticket_type_id: null,
           target_currency_id: currencies.find(c => c.code === selectedCurrency)?.code ?? 'USD',
           send_email: true,
-          recipient_email: 'your@email.com',
+          recipient_email: recipientEmail,
         })
       });
 
@@ -230,7 +231,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     } finally {
       setLoading(prev => ({ ...prev, generating: false }));
     }
-  }, [dateRange, fetchReports, reports, selectedReport, currencies, selectedCurrency, toast]);
+  }, [dateRange, fetchReports, reports, selectedReport, currencies, selectedCurrency, toast, recipientEmail]);
 
   const convertRevenue = useCallback(async (reportId: number) => {
     if (!selectedCurrency) {
@@ -402,9 +403,20 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                   className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
                 />
               </div>
+              <div className="flex-1">
+                <Label htmlFor="recipientEmail" className={darkMode ? "text-gray-200" : "text-gray-800"}>Recipient Email</Label>
+                <Input
+                  id="recipientEmail"
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  placeholder="Enter email to receive report"
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                />
+              </div>
               <Button
                 onClick={generateReport}
-                disabled={loading.generating || !dateRange.start || !dateRange.end}
+                disabled={loading.generating || !dateRange.start || !dateRange.end || !recipientEmail}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
               >
                 {loading.generating ? (
