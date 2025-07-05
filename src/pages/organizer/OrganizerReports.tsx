@@ -88,14 +88,14 @@ const OrganizerReport: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setCurrencies(data.data || []);
-      
+
       if (!selectedCurrency && data.data && data.data.length > 0) {
         setSelectedCurrency(data.data[0].code);
       }
@@ -115,18 +115,18 @@ const OrganizerReport: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, reports: true }));
       setError(null);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setReports(data.reports || []);
-      
+
       if (data.reports.length === 0) {
         toast({
           title: "No reports found",
@@ -153,11 +153,11 @@ const OrganizerReport: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/reports/converted`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setConvertedReports(data.data.reports || []);
     } catch (err) {
@@ -180,11 +180,10 @@ const OrganizerReport: React.FC = () => {
       });
       return;
     }
-
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -194,18 +193,22 @@ const OrganizerReport: React.FC = () => {
         body: JSON.stringify({
           start_date: dateRange.start,
           end_date: dateRange.end,
-          title: `Report ${new Date().toLocaleDateString()}`
+          event_id: selectedReport?.id ?? reports[0]?.id ?? null,
+          ticket_type_id: null,
+          target_currency_id: currencies.find(c => c.code === selectedCurrency)?.code ?? 'USD',
+          send_email: true,
+          recipient_email: 'your@email.com',
         })
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       await fetchReports();
       setSelectedReport(data.report);
-      
+
       toast({
         title: "Report Generated!",
         description: `Report "${data.report.title}" has been successfully generated.`,
@@ -223,7 +226,7 @@ const OrganizerReport: React.FC = () => {
     } finally {
       setLoading(prev => ({ ...prev, generating: false }));
     }
-  }, [dateRange, fetchReports, toast]);
+  }, [dateRange, fetchReports, reports, selectedReport, currencies, selectedCurrency, toast]);
 
   const convertRevenue = useCallback(async (reportId: number) => {
     if (!selectedCurrency) {
@@ -234,11 +237,10 @@ const OrganizerReport: React.FC = () => {
       });
       return;
     }
-
     try {
       setLoading(prev => ({ ...prev, converting: true }));
       setError(null);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/revenue/convert`, {
         method: 'POST',
         headers: {
@@ -250,13 +252,13 @@ const OrganizerReport: React.FC = () => {
           target_currency: selectedCurrency
         })
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (selectedReport && selectedReport.id === reportId) {
         setSelectedReport(prev => prev ? {
           ...prev,
@@ -264,9 +266,9 @@ const OrganizerReport: React.FC = () => {
           currency: selectedCurrency,
         } : null);
       }
-      
+
       await fetchConvertedReports();
-      
+
       toast({
         title: "Conversion Successful!",
         description: `Revenue converted to ${selectedCurrency}.`,
@@ -290,15 +292,15 @@ const OrganizerReport: React.FC = () => {
     try {
       setLoading(prev => ({ ...prev, exporting: true }));
       setError(null);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -308,7 +310,7 @@ const OrganizerReport: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      
+
       toast({
         title: "Export Successful!",
         description: `Report exported as ${format.toUpperCase()}.`,
@@ -334,11 +336,9 @@ const OrganizerReport: React.FC = () => {
     fetchConvertedReports();
   }, [fetchCurrencies, fetchReports, fetchConvertedReports]);
 
-  // Helper function to safely format numbers
   const formatNumber = (value: number | undefined | null) =>
     value != null ? value.toLocaleString?.() : '0';
 
-  // Data preparation for charts
   const eventsChartData = selectedReport?.data_breakdown?.events?.map(event => ({
     name: event.name,
     revenue: event.revenue,
@@ -353,7 +353,6 @@ const OrganizerReport: React.FC = () => {
     })) : [];
 
   const monthlyRevenueData = selectedReport?.data_breakdown?.monthly_revenue || [];
-
   const COLORS = ['#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
   return (
@@ -367,7 +366,6 @@ const OrganizerReport: React.FC = () => {
             Generate, manage, and analyze your event reports
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -415,7 +413,6 @@ const OrganizerReport: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         {error && (
           <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
             <CardContent className="pt-6">
@@ -426,7 +423,6 @@ const OrganizerReport: React.FC = () => {
             </CardContent>
           </Card>
         )}
-
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -491,7 +487,6 @@ const OrganizerReport: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
         {selectedReport && (
           <Card>
             <CardHeader>
@@ -600,7 +595,6 @@ const OrganizerReport: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
-
               <Tabs defaultValue="events" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="events">Events Revenue</TabsTrigger>
@@ -676,7 +670,6 @@ const OrganizerReport: React.FC = () => {
             </CardContent>
           </Card>
         )}
-
         {convertedReports.length > 0 && (
           <Card>
             <CardHeader>
