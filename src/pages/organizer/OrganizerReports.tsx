@@ -350,7 +350,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${reportId}.${format === 'csv' ? 'csv' : 'pdf'}`; // Assuming csv for both csv and xlsx on download filename
+      a.download = `report_${reportId}.${format === 'pdf' ? 'pdf' : (format === 'csv' ? 'csv' : 'xlsx')}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -501,7 +501,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200 placeholder:text-gray-400" : "bg-gray-200 border-gray-300 text-gray-800 placeholder:text-gray-500")}
                 />
               </div>
               <div className="flex-1">
@@ -511,7 +511,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200 placeholder:text-gray-400" : "bg-gray-200 border-gray-300 text-gray-800 placeholder:text-gray-500")}
                 />
               </div>
               <div className="flex-1">
@@ -522,7 +522,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
                   placeholder="Enter email to receive report"
-                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200 placeholder:text-gray-400" : "bg-gray-200 border-gray-300 text-gray-800 placeholder:text-gray-500")}
                 />
               </div>
               <Button
@@ -640,7 +640,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
                     <SelectContent className={cn(darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}>
-                      {loading.currencies && <Loader2 className="h-4 w-4 animate-spin mr-2 text-purple-500" />}
+                      {loading.currencies && <div className="p-2 text-center"><Loader2 className="h-4 w-4 animate-spin mr-2 text-purple-500 inline-block" /> Loading...</div>}
                       {!loading.currencies && currencies.length === 0 && <div className="p-2 text-center text-sm text-gray-500">No currencies available</div>}
                       {currencies.map((currency) => (
                         <SelectItem key={currency.code} value={currency.code}>
@@ -680,13 +680,13 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className={cn(darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
-                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'pdf')}>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'pdf')} className={cn(darkMode ? "focus:bg-gray-700" : "focus:bg-gray-100")}>
                         Export as PDF
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'csv')}>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'csv')} className={cn(darkMode ? "focus:bg-gray-700" : "focus:bg-gray-100")}>
                         Export as CSV
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'xlsx')}>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'xlsx')} className={cn(darkMode ? "focus:bg-gray-700" : "focus:bg-gray-100")}>
                         Export as XLSX
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -726,7 +726,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       </div>
                       <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Tickets</p>
                     </div>
-                    <Mail className="h-8 w-8 text-purple-500/70" />
+                    <Mail className="h-8 w-8 text-purple-500/70" /> {/* Using Mail icon as a generic 'tickets' icon for now, consider a specific ticket icon if available */}
                   </CardContent>
                 </Card>
                 <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
@@ -742,242 +742,117 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                 </Card>
               </div>
 
-              <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList className={cn("grid w-full grid-cols-3", darkMode ? "bg-gray-700" : "bg-gray-100")}>
-                  <TabsTrigger value="overview" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Overview</TabsTrigger>
-                  <TabsTrigger value="tickets" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Tickets & Attendees</TabsTrigger>
-                  <TabsTrigger value="revenue" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Revenue & Payments</TabsTrigger>
+              {/* Charts Section */}
+              <Tabs value={activeChart} onValueChange={setActiveChart} className="mt-8">
+                <TabsList className={cn("grid w-full grid-cols-3", darkMode ? "bg-gray-700" : "bg-gray-200")}>
+                  <TabsTrigger
+                    value="eventsRevenue"
+                    className={cn(darkMode ? "data-[state=active]:bg-gray-900 data-[state=active]:text-gray-50 text-gray-300" : "data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-700")}
+                  >
+                    Event Revenue
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ticketTypes"
+                    className={cn(darkMode ? "data-[state=active]:bg-gray-900 data-[state=active]:text-gray-50 text-gray-300" : "data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-700")}
+                  >
+                    Ticket Types
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="monthlyRevenue"
+                    className={cn(darkMode ? "data-[state=active]:bg-gray-900 data-[state=active]:text-gray-50 text-gray-300" : "data-[state=active]:bg-white data-[state=active]:text-gray-900 text-gray-700")}
+                  >
+                    Monthly Revenue
+                  </TabsTrigger>
                 </TabsList>
-
-                {/* Overview Tab */}
-                <TabsContent value="overview">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <PieChartIcon className="h-5 w-5 text-blue-500" />
-                          Tickets Distribution
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Breakdown of tickets sold by type
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {ticketsSoldChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                              <Pie
-                                data={ticketsSoldChartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={renderPieLabel}
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
-                                animationBegin={0}
-                                animationDuration={800}
-                              >
-                                {ticketsSoldChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No ticket sales data available for this report.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <DollarSign className="h-5 w-5 text-green-500" />
-                          Revenue by Event
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Revenue distribution across individual events
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {revenueChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
-                            {activeChart === 'bar' ? (
-                              <BarChart data={revenueChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
-                                <XAxis dataKey="name" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                                <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend />
-                                <Bar dataKey="value" name="Revenue" fill="#8B5CF6" />
-                              </BarChart>
-                            ) : (
-                              <PieChart>
-                                <Pie
-                                  data={revenueChartData}
-                                  cx="50%"
-                                  cy="50%"
-                                  labelLine={false}
-                                  label={renderPieLabel}
-                                  outerRadius={100}
-                                  dataKey="value"
-                                  animationBegin={0}
-                                  animationDuration={800}
-                                >
-                                  {revenueChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend />
-                              </PieChart>
-                            )}
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No revenue data by event available for this report.
-                          </div>
-                        )}
-                        <div className="flex justify-center gap-2 mt-4">
-                          <Button
-                            variant={activeChart === 'bar' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setActiveChart('bar')}
-                            className={cn(darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
-                          >
-                            Bar Chart
-                          </Button>
-                          <Button
-                            variant={activeChart === 'pie' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setActiveChart('pie')}
-                            className={cn(darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
-                          >
-                            Pie Chart
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                <TabsContent value="eventsRevenue" className="mt-4 p-4 rounded-lg border dark:border-gray-700 dark:bg-gray-800 bg-white">
+                  <h3 className={cn("text-lg font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>Revenue by Event</h3>
+                  {eventsChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={eventsChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
+                        <XAxis dataKey="name" stroke={darkMode ? "#A0AEC0" : "#4A5568"} />
+                        <YAxis stroke={darkMode ? "#A0AEC0" : "#4A5568"} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar dataKey="revenue" fill="#8B5CF6" name={`Revenue (${selectedReport.currency})`} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className={cn("text-center py-10", darkMode ? "text-gray-400" : "text-gray-500")}>No event revenue data available.</p>
+                  )}
                 </TabsContent>
-
-                {/* Tickets & Attendees Tab */}
-                <TabsContent value="tickets">
-                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                    <CardHeader>
-                      <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                        <Users className="h-5 w-5 text-orange-500" />
-                        Event Performance (Tickets & Attendees)
-                      </CardTitle>
-                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                        Detailed breakdown of tickets and attendees per event
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {eventsChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={350}>
-                          <BarChart data={eventsChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
-                            <XAxis dataKey="name" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                            <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Tickets', angle: -90, position: 'insideLeft', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
-                            <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Attendees', angle: 90, position: 'insideRight', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Bar yAxisId="left" dataKey="tickets" fill="#8884d8" name="Tickets Sold" />
-                            <Bar yAxisId="right" dataKey="attendees" fill="#82ca9d" name="Total Attendees" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      ) : (
-                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                          No event-specific ticket and attendee data available.
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                <TabsContent value="ticketTypes" className="mt-4 p-4 rounded-lg border dark:border-gray-700 dark:bg-gray-800 bg-white">
+                  <h3 className={cn("text-lg font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>Tickets Sold by Type</h3>
+                  {ticketsSoldChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={ticketsSoldChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={renderPieLabel}
+                        >
+                          {ticketsSoldChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className={cn("text-center py-10", darkMode ? "text-gray-400" : "text-gray-500")}>No ticket type data available.</p>
+                  )}
                 </TabsContent>
-
-                {/* Revenue & Payments Tab */}
-                <TabsContent value="revenue">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <TrendingUp className="h-5 w-5 text-purple-500" />
-                          Monthly Revenue Trend
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Revenue performance over time
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {monthlyRevenueData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
-                              <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
-                              <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} label={{ value: `Revenue (${selectedReport.currency})`, angle: -90, position: 'insideLeft', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend />
-                              <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" activeDot={{ r: 8 }} name="Revenue" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No monthly revenue data available for this report.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <PieChartIcon className="h-5 w-5 text-red-500" />
-                          Payment Method Usage
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Distribution of payment methods used
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {paymentMethodChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                              <Pie
-                                data={paymentMethodChartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={renderPieLabel}
-                                outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
-                                animationBegin={0}
-                                animationDuration={800}
-                              >
-                                {paymentMethodChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No payment method usage data available for this report.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
+                <TabsContent value="monthlyRevenue" className="mt-4 p-4 rounded-lg border dark:border-gray-700 dark:bg-gray-800 bg-white">
+                  <h3 className={cn("text-lg font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>Monthly Revenue Trend</h3>
+                  {monthlyRevenueData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={monthlyRevenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
+                        <XAxis dataKey="month" stroke={darkMode ? "#A0AEC0" : "#4A5568"} />
+                        <YAxis stroke={darkMode ? "#A0AEC0" : "#4A5568"} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Line type="monotone" dataKey="revenue" stroke="#3B82F6" activeDot={{ r: 8 }} name={`Revenue (${selectedReport.currency})`} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className={cn("text-center py-10", darkMode ? "text-gray-400" : "text-gray-500")}>No monthly revenue data available.</p>
+                  )}
                 </TabsContent>
               </Tabs>
+
+              {/* Payment Method Usage */}
+              {paymentMethodChartData.length > 0 && (
+                <div className="mt-8 p-4 rounded-lg border dark:border-gray-700 dark:bg-gray-800 bg-white">
+                  <h3 className={cn("text-lg font-semibold mb-4", darkMode ? "text-gray-200" : "text-gray-800")}>Payment Method Usage</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={paymentMethodChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={renderPieLabel}
+                      >
+                        {paymentMethodChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
