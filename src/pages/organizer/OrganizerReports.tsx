@@ -181,10 +181,22 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://ticketing-system-994g.onrender.com';
+
+      // Debug: Check what URL is being used
+      const apiUrl = import.meta.env.VITE_API_URL;
       const fullUrl = `${apiUrl}/reports/generate`;
 
-      console.log('Making request to:', fullUrl); // Debug log
+      console.log('Environment API URL:', apiUrl);
+      console.log('Full URL being called:', fullUrl);
+      console.log('Request payload:', {
+        start_date: dateRange.start,
+        end_date: dateRange.end,
+        event_id: selectedReport?.id ?? reports[0]?.id ?? null,
+        ticket_type_id: null,
+        target_currency_id: currencies.find(c => c.code === selectedCurrency)?.code ?? 'USD',
+        send_email: true,
+        recipient_email: recipientEmail,
+      });
 
       const response = await fetch(fullUrl, {
         method: 'POST',
@@ -202,6 +214,9 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           recipient_email: recipientEmail,
         })
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', [...response.headers.entries()]);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -242,6 +257,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, converting: true }));
       setError(null);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/revenue/convert`, {
         method: 'POST',
         headers: {
@@ -253,10 +269,13 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           target_currency: selectedCurrency
         })
       });
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       const data = await response.json();
+
       if (selectedReport && selectedReport.id === reportId) {
         setSelectedReport(prev => prev ? {
           ...prev,
@@ -264,7 +283,9 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           currency: selectedCurrency,
         } : null);
       }
+
       await fetchConvertedReports();
+
       toast({
         title: "Conversion Successful!",
         description: `Revenue converted to ${selectedCurrency}.`,
@@ -288,12 +309,15 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, exporting: true }));
       setError(null);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -303,6 +327,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+
       toast({
         title: "Export Successful!",
         description: `Report exported as ${format.toUpperCase()}.`,
