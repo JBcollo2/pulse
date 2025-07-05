@@ -46,7 +46,6 @@ interface OrganizerReport {
 }
 
 interface Currency {
-  id: number;
   code: string;
   name: string;
   symbol: string;
@@ -88,7 +87,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   });
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<string>('bar');
-
   const { toast } = useToast();
 
   const fetchCurrencies = useCallback(async () => {
@@ -183,8 +181,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://ticketing-system-994g.onrender.com';
+      const fullUrl = `${apiUrl}/reports/generate`;
 
-      const response = await fetch('https://ticketing-system-994g.onrender.com/reports/generate', {
+      console.log('Making request to:', fullUrl); // Debug log
+
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,10 +197,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           end_date: dateRange.end,
           event_id: selectedReport?.id ?? reports[0]?.id ?? null,
           ticket_type_id: null,
-          target_currency_id: currencies.find(c => c.code === selectedCurrency)?.id ?? 1,
+          target_currency_id: currencies.find(c => c.code === selectedCurrency)?.code ?? 'USD',
           send_email: true,
           recipient_email: recipientEmail,
-        }),
+        })
       });
 
       if (!response.ok) {
@@ -218,7 +220,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the report';
       setError(errorMessage);
       console.error('Generate report error:', err);
-
       toast({
         title: "Report Generation Failed",
         description: "Could not generate the report. Please try again later.",
@@ -610,6 +611,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       variant="outline"
                       size="sm"
                       disabled={loading.exporting}
+                      onClick={() => { /* This button now acts as a trigger for a dropdown */ }}
                       className={darkMode ? "text-gray-200" : "text-gray-800"}
                     >
                       {loading.exporting ? (
