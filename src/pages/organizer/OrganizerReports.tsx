@@ -1,19 +1,26 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Card, CardContent, CardHeader, CardTitle, CardDescription
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger
+} from "@/components/ui/tabs";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import {
   Loader2, AlertCircle, FileText, Download, RefreshCw,
-  DollarSign, TrendingUp, Calendar, Globe, BarChart3, Trash2
-} from "lucide-react";
+  DollarSign, TrendingUp, Calendar, Globe, BarChart3
+} from "lucide-react"; // Removed Trash2 icon
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/use-toast"; // Assuming you have a toast component
 
 interface OrganizerReport {
   id: number;
@@ -55,96 +62,133 @@ interface ConvertedReport {
   converted_at: string;
 }
 
-const OrganizerSimpleReport: React.FC = () => {
+const OrganizerReport: React.FC = () => {
   const [reports, setReports] = useState<OrganizerReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<OrganizerReport | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD'); // Default to USD
   const [convertedReports, setConvertedReports] = useState<ConvertedReport[]>([]);
   const [dateRange, setDateRange] = useState({
     start: '',
     end: ''
   });
-
   const [loading, setLoading] = useState({
     reports: false,
     generating: false,
     converting: false,
-    deleting: false,
+    // deleting: false, // Removed deleting loading state
     exporting: false
   });
-
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast(); // Initialize toast
 
-  // Fetch available currencies
   const fetchCurrencies = useCallback(async () => {
     try {
       const response = await fetch('/api/currency/list', {
         credentials: 'include'
       });
-
       if (response.ok) {
         const data = await response.json();
-        setCurrencies(data.currencies || []);
+        setCurrencies(data.data || []);
+        // Set a default selected currency if available and not already set
+        if (!selectedCurrency && data.data && data.data.length > 0) {
+          setSelectedCurrency(data.data[0].code);
+        }
+      } else {
+        console.error('Failed to fetch currencies:', response.statusText);
+        toast({
+          title: "Error fetching currencies",
+          description: "Could not load available currencies. Please try again later.",
+          variant: "destructive",
+        });
       }
     } catch (err) {
       console.error('Failed to fetch currencies:', err);
+      toast({
+        title: "Network error",
+        description: "Unable to connect to currency service.",
+        variant: "destructive",
+      });
     }
-  }, []);
+  }, [selectedCurrency, toast]);
 
-  // Fetch organizer reports
   const fetchReports = useCallback(async () => {
     setLoading(prev => ({ ...prev, reports: true }));
     setError(null);
-
     try {
       const response = await fetch('/reports', {
         credentials: 'include'
       });
-
       if (response.ok) {
         const data = await response.json();
         setReports(data.reports || []);
         if (data.reports.length === 0) {
-          showToast("No reports found for the selected date range.");
+          toast({
+            title: "No reports found",
+            description: "No reports available. Generate your first report!",
+            variant: "default",
+          });
         }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to fetch reports');
+        toast({
+          title: "Error fetching reports",
+          description: errorData.message || 'Failed to load reports.',
+          variant: "destructive",
+        });
       }
     } catch (err) {
       setError('An error occurred while fetching reports');
       console.error('Fetch reports error:', err);
+      toast({
+        title: "Network error",
+        description: "Unable to connect to report service.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(prev => ({ ...prev, reports: false }));
     }
-  }, []);
+  }, [toast]);
 
-  // Fetch converted reports
   const fetchConvertedReports = useCallback(async () => {
     try {
       const response = await fetch('/api/currency/reports/converted', {
         credentials: 'include'
       });
-
       if (response.ok) {
         const data = await response.json();
-        setConvertedReports(data.converted_reports || []);
+        setConvertedReports(data.data.reports || []);
+      } else {
+        console.error('Failed to fetch converted reports:', response.statusText);
+        toast({
+          title: "Error fetching converted reports",
+          description: "Could not load currency conversion history.",
+          variant: "destructive",
+        });
       }
     } catch (err) {
       console.error('Failed to fetch converted reports:', err);
+      toast({
+        title: "Network error",
+        description: "Unable to connect to conversion history service.",
+        variant: "destructive",
+      });
     }
-  }, []);
+  }, [toast]);
 
-  // Generate new report
   const generateReport = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) {
       setError('Please select both start and end dates');
+      toast({
+        title: "Missing Dates",
+        description: "Please select both a start and an end date to generate a report.",
+        variant: "destructive",
+      });
       return;
     }
     setLoading(prev => ({ ...prev, generating: true }));
     setError(null);
-
     try {
       const response = await fetch('/reports/generate', {
         method: 'POST',
@@ -158,30 +202,48 @@ const OrganizerSimpleReport: React.FC = () => {
           title: `Report ${new Date().toLocaleDateString()}`
         })
       });
-
       if (response.ok) {
         const data = await response.json();
-        await fetchReports(); // Refresh reports list
+        await fetchReports(); // Refresh the list of reports
         setSelectedReport(data.report);
+        toast({
+          title: "Report Generated!",
+          description: `Report "${data.report.title}" has been successfully generated.`,
+          variant: "default",
+        });
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to generate report');
+        toast({
+          title: "Report Generation Failed",
+          description: errorData.message || 'Could not generate the report.',
+          variant: "destructive",
+        });
       }
     } catch (err) {
       setError('An error occurred while generating the report');
       console.error('Generate report error:', err);
+      toast({
+        title: "Network Error",
+        description: "Unable to connect to generate report.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(prev => ({ ...prev, generating: false }));
     }
-  }, [dateRange, fetchReports]);
+  }, [dateRange, fetchReports, toast]);
 
-  // Convert revenue to selected currency
   const convertRevenue = useCallback(async (reportId: number) => {
-    if (!selectedCurrency) return;
-
+    if (!selectedCurrency) {
+      toast({
+        title: "No Currency Selected",
+        description: "Please select a target currency for conversion.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(prev => ({ ...prev, converting: true }));
     setError(null);
-
     try {
       const response = await fetch('/api/currency/revenue/convert', {
         method: 'POST',
@@ -194,70 +256,56 @@ const OrganizerSimpleReport: React.FC = () => {
           target_currency: selectedCurrency
         })
       });
-
       if (response.ok) {
         const data = await response.json();
-        // Update the selected report with converted values
         if (selectedReport && selectedReport.id === reportId) {
+          // Update the selected report with converted values
           setSelectedReport(prev => prev ? {
             ...prev,
-            total_revenue: data.converted_amount,
-            currency: selectedCurrency
+            total_revenue: data.data.converted_amount,
+            currency: selectedCurrency,
+            // You might want to update data_breakdown as well if the backend converts it
+            // For now, only total_revenue is updated as per prompt.
           } : null);
         }
-        await fetchConvertedReports(); // Refresh converted reports
+        await fetchConvertedReports(); // Refresh converted reports history
+        toast({
+          title: "Conversion Successful!",
+          description: `Revenue converted to ${selectedCurrency}.`,
+          variant: "default",
+        });
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to convert currency');
+        toast({
+          title: "Conversion Failed",
+          description: errorData.message || 'Could not convert currency.',
+          variant: "destructive",
+        });
       }
     } catch (err) {
       setError('An error occurred while converting currency');
       console.error('Convert currency error:', err);
+      toast({
+        title: "Network Error",
+        description: "Unable to connect to currency conversion service.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(prev => ({ ...prev, converting: false }));
     }
-  }, [selectedCurrency, selectedReport, fetchConvertedReports]);
+  }, [selectedCurrency, selectedReport, fetchConvertedReports, toast]);
 
-  // Delete report
-  const deleteReport = useCallback(async (reportId: number) => {
-    if (!window.confirm('Are you sure you want to delete this report?')) return;
+  // Removed deleteReport function entirely
 
-    setLoading(prev => ({ ...prev, deleting: true }));
-    setError(null);
 
-    try {
-      const response = await fetch(`/reports/${reportId}/delete`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        await fetchReports(); // Refresh reports list
-        if (selectedReport && selectedReport.id === reportId) {
-          setSelectedReport(null);
-        }
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to delete report');
-      }
-    } catch (err) {
-      setError('An error occurred while deleting the report');
-      console.error('Delete report error:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, deleting: false }));
-    }
-  }, [fetchReports, selectedReport]);
-
-  // Export report
-  const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv' | 'xlsx') => {
+  const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv') => {
     setLoading(prev => ({ ...prev, exporting: true }));
     setError(null);
-
     try {
       const response = await fetch(`/reports/${reportId}/export?format=${format}`, {
         credentials: 'include'
       });
-
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -268,61 +316,67 @@ const OrganizerSimpleReport: React.FC = () => {
         a.click();
         a.remove();
         window.URL.revokeObjectURL(url);
+        toast({
+          title: "Export Successful!",
+          description: `Report exported as ${format.toUpperCase()}.`,
+          variant: "default",
+        });
+        // Frontend doesn't handle emailing directly; this is for download.
+        // For emailing, the backend would need a separate endpoint or a parameter.
+        // E.g., if we had an email input field:
+        // const email = prompt("Enter recipient email for report:");
+        // if (email) {
+        //   await fetch(`/reports/${reportId}/export?format=${format}&email=${email}`, ...);
+        // }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to export report');
+        toast({
+          title: "Export Failed",
+          description: errorData.message || 'Could not export the report.',
+          variant: "destructive",
+        });
       }
     } catch (err) {
       setError('An error occurred while exporting the report');
       console.error('Export report error:', err);
+      toast({
+        title: "Network Error",
+        description: "Unable to connect to report export service.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(prev => ({ ...prev, exporting: false }));
     }
-  }, []);
+  }, [toast]);
 
-  // Load data on component mount
   useEffect(() => {
     fetchCurrencies();
     fetchReports();
     fetchConvertedReports();
   }, [fetchCurrencies, fetchReports, fetchConvertedReports]);
 
-  // Chart data transformations
-  const eventsChartData = useMemo(() => {
-    if (!selectedReport?.data_breakdown?.events) return [];
-    return selectedReport.data_breakdown.events.map(event => ({
-      name: event.name,
-      revenue: event.revenue,
-      tickets: event.tickets,
-      attendees: event.attendees
-    }));
-  }, [selectedReport]);
+  // Data preparation for charts
+  const eventsChartData = selectedReport?.data_breakdown?.events?.map(event => ({
+    name: event.name,
+    revenue: event.revenue,
+    tickets: event.tickets,
+    attendees: event.attendees
+  })) || [];
 
-  const ticketTypesChartData = useMemo(() => {
-    if (!selectedReport?.data_breakdown?.ticket_types) return [];
-    return Object.entries(selectedReport.data_breakdown.ticket_types).map(([type, count]) => ({
+  const ticketTypesChartData = selectedReport?.data_breakdown?.ticket_types ?
+    Object.entries(selectedReport.data_breakdown.ticket_types).map(([type, count]) => ({
       name: type,
       value: count
-    }));
-  }, [selectedReport]);
+    })) : [];
 
-  const monthlyRevenueData = useMemo(() => {
-    if (!selectedReport?.data_breakdown?.monthly_revenue) return [];
-    return selectedReport.data_breakdown.monthly_revenue;
-  }, [selectedReport]);
+  const monthlyRevenueData = selectedReport?.data_breakdown?.monthly_revenue || [];
 
   const COLORS = ['#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
-
-  const showToast = (message: string) => {
-    // Implement your toast notification logic here
-    console.log(message);
-  };
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Organizer Reports Dashboard
@@ -332,7 +386,7 @@ const OrganizerSimpleReport: React.FC = () => {
           </p>
         </div>
 
-        {/* Report Generation */}
+        {/* Generate New Report Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -393,7 +447,7 @@ const OrganizerSimpleReport: React.FC = () => {
           </Card>
         )}
 
-        {/* Reports List */}
+        {/* Your Reports List Card */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -450,17 +504,7 @@ const OrganizerSimpleReport: React.FC = () => {
                             {report.total_events} events • {report.total_tickets} tickets
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteReport(report.id);
-                          }}
-                          disabled={loading.deleting}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {/* Removed Delete Button */}
                       </div>
                     </div>
                   </div>
@@ -470,7 +514,7 @@ const OrganizerSimpleReport: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Selected Report Details */}
+        {/* Selected Report Details Card */}
         {selectedReport && (
           <Card>
             <CardHeader>
@@ -487,12 +531,12 @@ const OrganizerSimpleReport: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
                     <SelectTrigger className="w-32">
-                      <SelectValue />
+                      <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
                     <SelectContent>
                       {currencies.map((currency) => (
                         <SelectItem key={currency.code} value={currency.code}>
-                          {currency.code}
+                          {currency.code} - {currency.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -501,25 +545,44 @@ const OrganizerSimpleReport: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => convertRevenue(selectedReport.id)}
-                    disabled={loading.converting}
+                    disabled={loading.converting || !selectedCurrency || selectedCurrency === selectedReport.currency}
                   >
                     <Globe className="h-4 w-4 mr-2" />
                     Convert
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportReport(selectedReport.id, 'pdf')}
-                    disabled={loading.exporting}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={loading.exporting}
+                      onClick={() => { /* This button now acts as a trigger for a dropdown */ }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export
+                    </Button>
+                    {/* Simple dropdown for export options - could be a more sophisticated component */}
+                    <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start px-3 py-2 text-sm"
+                        onClick={() => exportReport(selectedReport.id, 'pdf')}
+                      >
+                        Export as PDF
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start px-3 py-2 text-sm"
+                        onClick={() => exportReport(selectedReport.id, 'csv')}
+                      >
+                        Export as CSV/XLS
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {/* Summary Cards */}
+              {/* Report Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <Card>
                   <CardContent className="pt-6">
@@ -555,7 +618,7 @@ const OrganizerSimpleReport: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Charts */}
+              {/* Report Data Breakdown Tabs */}
               <Tabs defaultValue="events" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="events">Events Revenue</TabsTrigger>
@@ -632,7 +695,7 @@ const OrganizerSimpleReport: React.FC = () => {
           </Card>
         )}
 
-        {/* Converted Reports History */}
+        {/* Currency Conversion History Card */}
         {convertedReports.length > 0 && (
           <Card>
             <CardHeader>
@@ -640,6 +703,9 @@ const OrganizerSimpleReport: React.FC = () => {
                 <Globe className="h-5 w-5" />
                 Currency Conversion History
               </CardTitle>
+              <CardDescription>
+                A record of your report currency conversions.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -647,10 +713,10 @@ const OrganizerSimpleReport: React.FC = () => {
                   <div key={conversion.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div>
                       <p className="font-medium">
-                        {conversion.original_currency} {conversion.original_amount.toLocaleString()} → {conversion.target_currency} {conversion.converted_amount.toLocaleString()}
+                        <span className="text-gray-700 dark:text-gray-300">{conversion.original_currency} {conversion.original_amount.toLocaleString()}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {conversion.converted_amount.toLocaleString()}</span>
                       </p>
                       <p className="text-sm text-gray-500">
-                        Rate: {conversion.conversion_rate} • {new Date(conversion.converted_at).toLocaleDateString()}
+                        Rate: {conversion.conversion_rate.toFixed(4)} • {new Date(conversion.converted_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -665,6 +731,3 @@ const OrganizerSimpleReport: React.FC = () => {
 };
 
 export default OrganizerReport;
-
-
-
