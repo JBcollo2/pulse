@@ -18,14 +18,14 @@ import {
 import {
   Loader2, AlertCircle, FileText, Download, RefreshCw,
   DollarSign, TrendingUp, Calendar, Globe, BarChart3
-} from "lucide-react"; // Removed Trash2 icon
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast"; // Assuming you have a toast component
+import { useToast } from "@/components/ui/use-toast";
 
 interface OrganizerReport {
   id: number;
   title: string;
-  total_revenue: number;
+  total_revenue: number | null | undefined; // Allow null or undefined
   total_tickets: number;
   total_events: number;
   total_attendees: number;
@@ -56,8 +56,8 @@ interface ConvertedReport {
   id: number;
   original_currency: string;
   target_currency: string;
-  original_amount: number;
-  converted_amount: number;
+  original_amount: number | null | undefined; // Allow null or undefined
+  converted_amount: number | null | undefined; // Allow null or undefined
   conversion_rate: number;
   converted_at: string;
 }
@@ -66,7 +66,7 @@ const OrganizerReport: React.FC = () => {
   const [reports, setReports] = useState<OrganizerReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<OrganizerReport | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD'); // Default to USD
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
   const [convertedReports, setConvertedReports] = useState<ConvertedReport[]>([]);
   const [dateRange, setDateRange] = useState({
     start: '',
@@ -76,11 +76,10 @@ const OrganizerReport: React.FC = () => {
     reports: false,
     generating: false,
     converting: false,
-    // deleting: false, // Removed deleting loading state
     exporting: false
   });
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast(); // Initialize toast
+  const { toast } = useToast();
 
   const fetchCurrencies = useCallback(async () => {
     try {
@@ -90,7 +89,6 @@ const OrganizerReport: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setCurrencies(data.data || []);
-        // Set a default selected currency if available and not already set
         if (!selectedCurrency && data.data && data.data.length > 0) {
           setSelectedCurrency(data.data[0].code);
         }
@@ -204,7 +202,7 @@ const OrganizerReport: React.FC = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        await fetchReports(); // Refresh the list of reports
+        await fetchReports();
         setSelectedReport(data.report);
         toast({
           title: "Report Generated!",
@@ -259,16 +257,13 @@ const OrganizerReport: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (selectedReport && selectedReport.id === reportId) {
-          // Update the selected report with converted values
           setSelectedReport(prev => prev ? {
             ...prev,
             total_revenue: data.data.converted_amount,
             currency: selectedCurrency,
-            // You might want to update data_breakdown as well if the backend converts it
-            // For now, only total_revenue is updated as per prompt.
           } : null);
         }
-        await fetchConvertedReports(); // Refresh converted reports history
+        await fetchConvertedReports();
         toast({
           title: "Conversion Successful!",
           description: `Revenue converted to ${selectedCurrency}.`,
@@ -296,9 +291,6 @@ const OrganizerReport: React.FC = () => {
     }
   }, [selectedCurrency, selectedReport, fetchConvertedReports, toast]);
 
-  // Removed deleteReport function entirely
-
-
   const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv') => {
     setLoading(prev => ({ ...prev, exporting: true }));
     setError(null);
@@ -321,13 +313,6 @@ const OrganizerReport: React.FC = () => {
           description: `Report exported as ${format.toUpperCase()}.`,
           variant: "default",
         });
-        // Frontend doesn't handle emailing directly; this is for download.
-        // For emailing, the backend would need a separate endpoint or a parameter.
-        // E.g., if we had an email input field:
-        // const email = prompt("Enter recipient email for report:");
-        // if (email) {
-        //   await fetch(`/reports/${reportId}/export?format=${format}&email=${email}`, ...);
-        // }
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Failed to export report');
@@ -355,6 +340,10 @@ const OrganizerReport: React.FC = () => {
     fetchReports();
     fetchConvertedReports();
   }, [fetchCurrencies, fetchReports, fetchConvertedReports]);
+
+  // Helper function to safely format numbers
+  const formatNumber = (value: number | undefined | null) =>
+    value != null ? value.toLocaleString?.() : '0';
 
   // Data preparation for charts
   const eventsChartData = selectedReport?.data_breakdown?.events?.map(event => ({
@@ -386,7 +375,6 @@ const OrganizerReport: React.FC = () => {
           </p>
         </div>
 
-        {/* Generate New Report Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -435,7 +423,6 @@ const OrganizerReport: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Error Display */}
         {error && (
           <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
             <CardContent className="pt-6">
@@ -447,7 +434,6 @@ const OrganizerReport: React.FC = () => {
           </Card>
         )}
 
-        {/* Your Reports List Card */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -498,13 +484,12 @@ const OrganizerReport: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <div className="text-right">
                           <p className="font-semibold text-green-600">
-                            {report.currency} {report.total_revenue.toLocaleString()}
+                            {report.currency} {formatNumber(report.total_revenue)}
                           </p>
                           <p className="text-sm text-gray-500">
                             {report.total_events} events • {report.total_tickets} tickets
                           </p>
                         </div>
-                        {/* Removed Delete Button */}
                       </div>
                     </div>
                   </div>
@@ -514,7 +499,6 @@ const OrganizerReport: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Selected Report Details Card */}
         {selectedReport && (
           <Card>
             <CardHeader>
@@ -560,7 +544,6 @@ const OrganizerReport: React.FC = () => {
                       <Download className="h-4 w-4 mr-2" />
                       Export
                     </Button>
-                    {/* Simple dropdown for export options - could be a more sophisticated component */}
                     <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
                       <Button
                         variant="ghost"
@@ -582,12 +565,11 @@ const OrganizerReport: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Report Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-green-600">
-                      {selectedReport.currency} {selectedReport.total_revenue.toLocaleString()}
+                      {selectedReport.currency} {formatNumber(selectedReport.total_revenue)}
                     </div>
                     <p className="text-sm text-gray-500">Total Revenue</p>
                   </CardContent>
@@ -618,7 +600,6 @@ const OrganizerReport: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Report Data Breakdown Tabs */}
               <Tabs defaultValue="events" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="events">Events Revenue</TabsTrigger>
@@ -695,7 +676,6 @@ const OrganizerReport: React.FC = () => {
           </Card>
         )}
 
-        {/* Currency Conversion History Card */}
         {convertedReports.length > 0 && (
           <Card>
             <CardHeader>
@@ -713,7 +693,7 @@ const OrganizerReport: React.FC = () => {
                   <div key={conversion.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div>
                       <p className="font-medium">
-                        <span className="text-gray-700 dark:text-gray-300">{conversion.original_currency} {conversion.original_amount.toLocaleString()}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {conversion.converted_amount.toLocaleString()}</span>
+                        <span className="text-gray-700 dark:text-gray-300">{conversion.original_currency} {formatNumber(conversion.original_amount)}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {formatNumber(conversion.converted_amount)}</span>
                       </p>
                       <p className="text-sm text-gray-500">
                         Rate: {conversion.conversion_rate.toFixed(4)} • {new Date(conversion.converted_at).toLocaleDateString()}
