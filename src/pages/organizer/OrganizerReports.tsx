@@ -62,7 +62,11 @@ interface ConvertedReport {
   converted_at: string;
 }
 
-const OrganizerReport: React.FC = () => {
+interface OrganizerReportProps {
+  darkMode: boolean;
+}
+
+const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   const [reports, setReports] = useState<OrganizerReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<OrganizerReport | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -356,46 +360,46 @@ const OrganizerReport: React.FC = () => {
   const COLORS = ['#8B5CF6', '#06D6A0', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
   return (
-    <div className="min-h-screen p-4 md:p-6 bg-gray-50 dark:bg-gray-900">
+    <div className={cn("min-h-screen p-4 md:p-6", darkMode ? "bg-gray-900 text-gray-200" : "bg-gray-50 text-gray-800")}>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
             Organizer Reports Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className={cn("mt-2", darkMode ? "text-gray-400" : "text-gray-600")}>
             Generate, manage, and analyze your event reports
           </p>
         </div>
-        <Card>
+        <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
               <BarChart3 className="h-5 w-5" />
               Generate New Report
             </CardTitle>
-            <CardDescription>
+            <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
               Create a comprehensive report for your events within a specific date range
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row gap-4 items-end">
               <div className="flex-1">
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>Start Date</Label>
                 <Input
                   id="startDate"
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="mt-1"
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
                 />
               </div>
               <div className="flex-1">
-                <Label htmlFor="endDate">End Date</Label>
+                <Label htmlFor="endDate" className={darkMode ? "text-gray-200" : "text-gray-800"}>End Date</Label>
                 <Input
                   id="endDate"
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="mt-1"
+                  className={cn("mt-1", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}
                 />
               </div>
               <Button
@@ -423,10 +427,10 @@ const OrganizerReport: React.FC = () => {
             </CardContent>
           </Card>
         )}
-        <Card>
+        <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
                 <FileText className="h-5 w-5" />
                 Your Reports
               </CardTitle>
@@ -435,6 +439,7 @@ const OrganizerReport: React.FC = () => {
                 size="sm"
                 onClick={fetchReports}
                 disabled={loading.reports}
+                className={darkMode ? "text-gray-200" : "text-gray-800"}
               >
                 <RefreshCw className={cn("h-4 w-4 mr-2", loading.reports && "animate-spin")} />
                 Refresh
@@ -447,7 +452,7 @@ const OrganizerReport: React.FC = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : reports.length === 0 ? (
-              <p className="text-center text-gray-500 h-32 flex items-center justify-center">
+              <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-400" : "text-gray-500")}>
                 No reports found. Generate your first report above.
               </p>
             ) : (
@@ -459,14 +464,15 @@ const OrganizerReport: React.FC = () => {
                       "p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md",
                       selectedReport?.id === report.id
                         ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
-                        : "border-gray-200 dark:border-gray-700"
+                        : "border-gray-200 dark:border-gray-700",
+                      darkMode ? "bg-gray-800" : "bg-white"
                     )}
                     onClick={() => setSelectedReport(report)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">{report.title}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <h3 className={cn("font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>{report.title}</h3>
+                        <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
                           {report.report_date} • {report.currency}
                         </p>
                       </div>
@@ -475,7 +481,7 @@ const OrganizerReport: React.FC = () => {
                           <p className="font-semibold text-green-600">
                             {report.currency} {formatNumber(report.total_revenue)}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
                             {report.total_events} events • {report.total_tickets} tickets
                           </p>
                         </div>
@@ -488,24 +494,24 @@ const OrganizerReport: React.FC = () => {
           </CardContent>
         </Card>
         {selectedReport && (
-          <Card>
+          <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
                     <TrendingUp className="h-5 w-5" />
                     {selectedReport.title}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
                     Generated on {selectedReport.report_date}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className={cn("w-32", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}>
                       <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className={darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800"}>
                       {currencies.map((currency) => (
                         <SelectItem key={currency.code} value={currency.code}>
                           {currency.code} - {currency.name}
@@ -518,6 +524,7 @@ const OrganizerReport: React.FC = () => {
                     size="sm"
                     onClick={() => convertRevenue(selectedReport.id)}
                     disabled={loading.converting || !selectedCurrency || selectedCurrency === selectedReport.currency}
+                    className={darkMode ? "text-gray-200" : "text-gray-800"}
                   >
                     {loading.converting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -532,6 +539,7 @@ const OrganizerReport: React.FC = () => {
                       size="sm"
                       disabled={loading.exporting}
                       onClick={() => { /* This button now acts as a trigger for a dropdown */ }}
+                      className={darkMode ? "text-gray-200" : "text-gray-800"}
                     >
                       {loading.exporting ? (
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -540,11 +548,12 @@ const OrganizerReport: React.FC = () => {
                       )}
                       Export
                     </Button>
-                    <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
+                    <div className={cn("absolute right-0 mt-2 w-32 border rounded-md shadow-lg z-10", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                       <Button
                         variant="ghost"
                         className="w-full justify-start px-3 py-2 text-sm"
                         onClick={() => exportReport(selectedReport.id, 'pdf')}
+                        style={{ color: darkMode ? "white" : "black" }}
                       >
                         Export as PDF
                       </Button>
@@ -552,6 +561,7 @@ const OrganizerReport: React.FC = () => {
                         variant="ghost"
                         className="w-full justify-start px-3 py-2 text-sm"
                         onClick={() => exportReport(selectedReport.id, 'csv')}
+                        style={{ color: darkMode ? "white" : "black" }}
                       >
                         Export as CSV/XLS
                       </Button>
@@ -562,36 +572,36 @@ const OrganizerReport: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <Card>
+                <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-green-600">
                       {selectedReport.currency} {formatNumber(selectedReport.total_revenue)}
                     </div>
-                    <p className="text-sm text-gray-500">Total Revenue</p>
+                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Revenue</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-blue-600">
                       {selectedReport.total_events}
                     </div>
-                    <p className="text-sm text-gray-500">Total Events</p>
+                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Events</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-purple-600">
                       {selectedReport.total_tickets}
                     </div>
-                    <p className="text-sm text-gray-500">Total Tickets</p>
+                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Tickets</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
                   <CardContent className="pt-6">
                     <div className="text-2xl font-bold text-orange-600">
                       {selectedReport.total_attendees}
                     </div>
-                    <p className="text-sm text-gray-500">Total Attendees</p>
+                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Attendees</p>
                   </CardContent>
                 </Card>
               </div>
@@ -602,9 +612,9 @@ const OrganizerReport: React.FC = () => {
                   <TabsTrigger value="monthly">Monthly Trends</TabsTrigger>
                 </TabsList>
                 <TabsContent value="events">
-                  <Card>
+                  <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle>Revenue by Event</CardTitle>
+                      <CardTitle className={darkMode ? "text-gray-200" : "text-gray-800"}>Revenue by Event</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -621,9 +631,9 @@ const OrganizerReport: React.FC = () => {
                   </Card>
                 </TabsContent>
                 <TabsContent value="tickets">
-                  <Card>
+                  <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle>Ticket Types Distribution</CardTitle>
+                      <CardTitle className={darkMode ? "text-gray-200" : "text-gray-800"}>Ticket Types Distribution</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -648,9 +658,9 @@ const OrganizerReport: React.FC = () => {
                   </Card>
                 </TabsContent>
                 <TabsContent value="monthly">
-                  <Card>
+                  <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                     <CardHeader>
-                      <CardTitle>Monthly Revenue Trends</CardTitle>
+                      <CardTitle className={darkMode ? "text-gray-200" : "text-gray-800"}>Monthly Revenue Trends</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
@@ -671,25 +681,25 @@ const OrganizerReport: React.FC = () => {
           </Card>
         )}
         {convertedReports.length > 0 && (
-          <Card>
+          <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
                 <Globe className="h-5 w-5" />
                 Currency Conversion History
               </CardTitle>
-              <CardDescription>
+              <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
                 A record of your report currency conversions.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {convertedReports.map((conversion) => (
-                  <div key={conversion.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div key={conversion.id} className={cn("flex items-center justify-between p-3 rounded-lg", darkMode ? "bg-gray-700" : "bg-gray-50")}>
                     <div>
                       <p className="font-medium">
-                        <span className="text-gray-700 dark:text-gray-300">{conversion.original_currency} {formatNumber(conversion.original_amount)}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {formatNumber(conversion.converted_amount)}</span>
+                        <span className={darkMode ? "text-gray-200" : "text-gray-700"}>{conversion.original_currency} {formatNumber(conversion.original_amount)}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {formatNumber(conversion.converted_amount)}</span>
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
                         Rate: {conversion.conversion_rate.toFixed(4)} • {new Date(conversion.converted_at).toLocaleDateString()}
                       </p>
                     </div>
