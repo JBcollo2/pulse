@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -177,16 +177,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       });
       return;
     }
-
     try {
       setLoading(prev => ({ ...prev, generating: true }));
       setError(null);
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://ticketing-system-994g.onrender.com';
-      const fullUrl = `${apiUrl}/reports/generate`;
-
-      console.log('Making request to:', fullUrl); // Debug log
-
-      const response = await fetch(fullUrl, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,15 +196,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           recipient_email: recipientEmail,
         })
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       await fetchReports();
       setSelectedReport(data.report);
-
       toast({
         title: "Report Generated!",
         description: `Report "${data.report.title}" has been successfully generated.`,
@@ -321,12 +312,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       setLoading(prev => ({ ...prev, exporting: false }));
     }
   }, [toast]);
-
-  useEffect(() => {
-    fetchCurrencies();
-    fetchReports();
-    fetchConvertedReports();
-  }, [fetchCurrencies, fetchReports, fetchConvertedReports]);
 
   const formatNumber = (value: number | undefined | null) =>
     value != null ? value.toLocaleString?.() : '0';
