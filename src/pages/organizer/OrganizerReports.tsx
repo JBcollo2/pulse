@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,19 @@ import {
 } from "@/components/ui/tabs";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell
+  PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import {
   Loader2, AlertCircle, FileText, Download, Mail, PieChart as PieChartIcon,
-  TrendingUp, Users, DollarSign, Calendar, Globe, BarChart3, RefreshCw
+  TrendingUp, Users, DollarSign, Calendar, Globe, BarChart3, RefreshCw, ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface OrganizerReport {
   id: number;
@@ -75,7 +81,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   const [selectedReport, setSelectedReport] = useState<OrganizerReport | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedCurrency, setSelectedCurrency] = useState<string>('USD');
-  const [convertedReports, setConvertedReports] = useState<ConvertedReport[]>([]);
+  const [convertedReports, setConvertedReports] = useState<ConvertedReport[]>([]); // This state is not currently used in the UI, but kept for future expansion
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [recipientEmail, setRecipientEmail] = useState('');
   const [loading, setLoading] = useState({
@@ -100,7 +106,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       }
       const data = await response.json();
       setCurrencies(data.data || []);
-      if (!selectedCurrency && data.data && data.data.length > 0) {
+      if (data.data && data.data.length > 0 && !selectedCurrency) {
+        setSelectedCurrency(data.data[0].code);
+      } else if (data.data && data.data.length > 0 && !data.data.some((c: Currency) => c.code === selectedCurrency)) {
+        // If the previously selected currency is no longer available, default to the first one
         setSelectedCurrency(data.data[0].code);
       }
     } catch (err) {
@@ -133,6 +142,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           description: "No reports available. Generate your first report!",
           variant: "default",
         });
+        setSelectedReport(null);
+      } else if (!selectedReport || !data.reports.some((report: OrganizerReport) => report.id === selectedReport.id)) {
+        // Automatically select the first report if no report is selected or if the selected report no longer exists
+        setSelectedReport(data.reports[0]);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching reports';
@@ -143,12 +156,16 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
         description: "Failed to load reports. Please try again later.",
         variant: "destructive",
       });
+      setReports([]);
+      setSelectedReport(null);
     } finally {
       setLoading(prev => ({ ...prev, reports: false }));
     }
-  }, [toast]);
+  }, [toast, selectedReport]);
 
   const fetchConvertedReports = useCallback(async () => {
+    // This function is currently not directly used to display converted reports,
+    // but it could be used to populate a history of conversions if needed.
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/reports/converted`, {
         credentials: 'include'
@@ -167,6 +184,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       });
     }
   }, [toast]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchCurrencies();
+    fetchReports();
+  }, [fetchCurrencies, fetchReports]);
 
   const generateReport = useCallback(async () => {
     if (!dateRange.start || !dateRange.end || !recipientEmail || !recipientEmail.includes('@')) {
@@ -189,22 +212,24 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
         body: JSON.stringify({
           start_date: dateRange.start,
           end_date: dateRange.end,
-          event_id: selectedReport?.id ?? reports[0]?.id ?? null,
-          ticket_type_id: null,
+          // If no report is selected, or if reports array is empty, default to null for event_id
+          event_id: selectedReport?.id ?? (reports.length > 0 ? reports[0].id : null),
+          ticket_type_id: null, // Assuming this is not required or can be null for a general report
           target_currency_id: currencies.find(c => c.code === selectedCurrency)?.code ?? 'USD',
           send_email: true,
           recipient_email: recipientEmail,
         })
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      await fetchReports();
-      setSelectedReport(data.report);
+      await fetchReports(); // Re-fetch reports to show the newly generated one
+      setSelectedReport(data.report); // Select the newly generated report
       toast({
         title: "Report Generated!",
-        description: `Report "${data.report.title}" has been successfully generated.`,
+        description: `Report "${data.report.title}" has been successfully generated and sent to ${recipientEmail}.`,
         variant: "default",
       });
     } catch (err) {
@@ -213,7 +238,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       console.error('Generate report error:', err);
       toast({
         title: "Report Generation Failed",
-        description: "Could not generate the report. Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -230,6 +255,24 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       });
       return;
     }
+    const reportToConvert = reports.find(r => r.id === reportId);
+    if (!reportToConvert) {
+      toast({
+        title: "Report Not Found",
+        description: "Could not find the report to convert.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (selectedCurrency === reportToConvert.currency) {
+      toast({
+        title: "No Conversion Needed",
+        description: `The report is already in ${selectedCurrency}.`,
+        variant: "default",
+      });
+      return;
+    }
+
     try {
       setLoading(prev => ({ ...prev, converting: true }));
       setError(null);
@@ -245,20 +288,36 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
         })
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      if (selectedReport && selectedReport.id === reportId) {
-        setSelectedReport(prev => prev ? {
-          ...prev,
-          total_revenue: data.data.converted_amount,
-          currency: selectedCurrency,
-        } : null);
-      }
-      await fetchConvertedReports();
+      const convertedData = data.data;
+
+      // Update the selected report with converted revenue and currency
+      setSelectedReport(prev => prev ? {
+        ...prev,
+        total_revenue: convertedData.converted_amount,
+        currency: convertedData.target_currency,
+        // Optionally update the data_breakdown if specific event revenues were also converted
+        // For simplicity, we're only updating total_revenue here.
+      } : null);
+
+      // Also update the reports list
+      setReports(prevReports => prevReports.map(report =>
+        report.id === reportId
+          ? {
+            ...report,
+            total_revenue: convertedData.converted_amount,
+            currency: convertedData.target_currency,
+          }
+          : report
+      ));
+
+      await fetchConvertedReports(); // Update conversion history (if displayed)
       toast({
         title: "Conversion Successful!",
-        description: `Revenue converted to ${selectedCurrency}.`,
+        description: `Revenue converted to ${selectedCurrency}. New amount: ${convertedData.converted_amount.toLocaleString()} ${convertedData.target_currency}.`,
         variant: "default",
       });
     } catch (err) {
@@ -267,15 +326,16 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       console.error('Convert currency error:', err);
       toast({
         title: "Conversion Failed",
-        description: "Could not convert currency. Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setLoading(prev => ({ ...prev, converting: false }));
     }
-  }, [selectedCurrency, selectedReport, fetchConvertedReports, toast]);
+  }, [selectedCurrency, selectedReport, reports, fetchConvertedReports, toast]);
 
-  const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv') => {
+
+  const exportReport = useCallback(async (reportId: number, format: 'pdf' | 'csv' | 'xlsx') => {
     try {
       setLoading(prev => ({ ...prev, exporting: true }));
       setError(null);
@@ -283,13 +343,14 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
         credentials: 'include'
       });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${reportId}.${format}`;
+      a.download = `report_${reportId}.${format === 'csv' ? 'csv' : 'pdf'}`; // Assuming csv for both csv and xlsx on download filename
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -305,7 +366,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       console.error('Export report error:', err);
       toast({
         title: "Export Failed",
-        description: "Could not export the report. Please try again later.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -314,7 +375,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   }, [toast]);
 
   const formatNumber = (value: number | undefined | null) =>
-    value != null ? value.toLocaleString?.() : '0';
+    value != null ? value.toLocaleString() : '0';
 
   const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
     if (!data) return [];
@@ -322,7 +383,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
       name: label,
       value,
       color: CHART_COLORS[index % CHART_COLORS.length],
-      percentage: 0
+      percentage: 0 // Will be calculated later
     }));
   }, []);
 
@@ -330,7 +391,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0);
     return data.map(item => ({
       ...item,
-      percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
+      percentage: total > 0 ? parseFloat(((item.value / total) * 100).toFixed(1)) : 0
     }));
   }, []);
 
@@ -364,10 +425,12 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
             <div key={index} className="flex items-center gap-2 mb-1">
               <div
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: entry.color }}
+                style={{ backgroundColor: entry.color || entry.stroke || entry.fill }}
               />
               <span className="text-sm">
-                {entry.name}: {entry.value}
+                {entry.name || entry.dataKey}: {typeof entry.value === 'number' ? formatNumber(entry.value) : entry.value}
+                {entry.unit && ` ${entry.unit}`}
+                {entry.payload.percentage && ` (${entry.payload.percentage}%)`}
               </span>
             </div>
           ))}
@@ -378,7 +441,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
   };
 
   const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.05) return null;
+    if (percent < 0.05) return null; // Only show labels for slices larger than 5%
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -417,6 +480,8 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
             Generate, manage, and analyze your event reports
           </p>
         </div>
+
+        {/* Generate New Report Card */}
         <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
           <CardHeader>
             <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
@@ -424,7 +489,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
               Generate New Report
             </CardTitle>
             <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-              Create a comprehensive report for your events within a specific date range
+              Create a comprehensive report for your events within a specific date range and email it.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -475,6 +540,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
             </div>
           </CardContent>
         </Card>
+
         {error && (
           <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
             <CardContent className="pt-6">
@@ -485,6 +551,8 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
             </CardContent>
           </Card>
         )}
+
+        {/* Your Reports Card */}
         <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -497,7 +565,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                 size="sm"
                 onClick={fetchReports}
                 disabled={loading.reports}
-                className={darkMode ? "text-gray-200" : "text-gray-800"}
+                className={cn(darkMode ? "text-gray-200 border-gray-600 bg-gray-700 hover:bg-gray-600" : "text-gray-800 border-gray-300 bg-gray-100 hover:bg-gray-200")}
               >
                 <RefreshCw className={cn("h-4 w-4 mr-2", loading.reports && "animate-spin")} />
                 Refresh
@@ -507,7 +575,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
           <CardContent>
             {loading.reports ? (
               <div className="flex items-center justify-center h-32">
-                <Loader2 className="h-8 w-8 animate-spin" />
+                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
               </div>
             ) : reports.length === 0 ? (
               <p className={cn("text-center h-32 flex items-center justify-center", darkMode ? "text-gray-400" : "text-gray-500")}>
@@ -521,7 +589,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                     className={cn(
                       "p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md",
                       selectedReport?.id === report.id
-                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                        ? "border-purple-500 ring-2 ring-purple-500/50 bg-purple-50 dark:bg-purple-900/20"
                         : "border-gray-200 dark:border-gray-700",
                       darkMode ? "bg-gray-800" : "bg-white"
                     )}
@@ -531,16 +599,16 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       <div>
                         <h3 className={cn("font-semibold", darkMode ? "text-gray-200" : "text-gray-800")}>{report.title}</h3>
                         <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-600")}>
-                          {report.report_date} • {report.currency}
+                          <Calendar className="inline-block h-3 w-3 mr-1 text-gray-500" /> {report.report_date} • <Globe className="inline-block h-3 w-3 mr-1 text-gray-500" /> {report.currency}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
+                      <div className="flex items-center gap-2 text-right">
+                        <div>
                           <p className="font-semibold text-green-600">
                             {report.currency} {formatNumber(report.total_revenue)}
                           </p>
                           <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
-                            {report.total_events} events • {report.total_tickets} tickets
+                            <BarChart3 className="inline-block h-3 w-3 mr-1 text-gray-500" /> {report.total_events} events • <Users className="inline-block h-3 w-3 mr-1 text-gray-500" /> {report.total_tickets} tickets
                           </p>
                         </div>
                       </div>
@@ -551,25 +619,29 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
             )}
           </CardContent>
         </Card>
+
+        {/* Selected Report Details and Charts */}
         {selectedReport && (
           <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                   <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                    <TrendingUp className="h-5 w-5" />
+                    <TrendingUp className="h-5 w-5 text-purple-500" />
                     {selectedReport.title}
                   </CardTitle>
-                  <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                    Generated on {selectedReport.report_date}
+                  <CardDescription className={cn("mt-1", darkMode ? "text-gray-400" : "text-gray-600")}>
+                    Report details generated on {selectedReport.report_date}
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
-                    <SelectTrigger className={cn("w-32", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}>
+                <div className="flex items-center gap-3 mt-2 md:mt-0">
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={loading.currencies}>
+                    <SelectTrigger className={cn("w-36 md:w-40", darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}>
                       <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
-                    <SelectContent className={darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800"}>
+                    <SelectContent className={cn(darkMode ? "bg-gray-700 border-gray-600 text-gray-200" : "bg-gray-200 border-gray-300 text-gray-800")}>
+                      {loading.currencies && <Loader2 className="h-4 w-4 animate-spin mr-2 text-purple-500" />}
+                      {!loading.currencies && currencies.length === 0 && <div className="p-2 text-center text-sm text-gray-500">No currencies available</div>}
                       {currencies.map((currency) => (
                         <SelectItem key={currency.code} value={currency.code}>
                           {currency.code} - {currency.name}
@@ -582,7 +654,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                     size="sm"
                     onClick={() => convertRevenue(selectedReport.id)}
                     disabled={loading.converting || !selectedCurrency || selectedCurrency === selectedReport.currency}
-                    className={darkMode ? "text-gray-200" : "text-gray-800"}
+                    className={cn(darkMode ? "text-gray-200 border-gray-600 bg-gray-700 hover:bg-gray-600" : "text-gray-800 border-gray-300 bg-gray-100 hover:bg-gray-200")}
                   >
                     {loading.converting ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -591,84 +663,93 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                     )}
                     Convert
                   </Button>
-                  <div className="relative">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={loading.exporting}
-                      onClick={() => { /* This button now acts as a trigger for a dropdown */ }}
-                      className={darkMode ? "text-gray-200" : "text-gray-800"}
-                    >
-                      {loading.exporting ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Download className="h-4 w-4 mr-2" />
-                      )}
-                      Export
-                    </Button>
-                    <div className={cn("absolute right-0 mt-2 w-32 border rounded-md shadow-lg z-10", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
-                        className="w-full justify-start px-3 py-2 text-sm"
-                        onClick={() => exportReport(selectedReport.id, 'pdf')}
-                        style={{ color: darkMode ? "white" : "black" }}
+                        variant="outline"
+                        size="sm"
+                        disabled={loading.exporting}
+                        className={cn(darkMode ? "text-gray-200 border-gray-600 bg-gray-700 hover:bg-gray-600" : "text-gray-800 border-gray-300 bg-gray-100 hover:bg-gray-200")}
                       >
+                        {loading.exporting ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        Export <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className={cn(darkMode ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-200 text-gray-800")}>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'pdf')}>
                         Export as PDF
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start px-3 py-2 text-sm"
-                        onClick={() => exportReport(selectedReport.id, 'csv')}
-                        style={{ color: darkMode ? "white" : "black" }}
-                      >
-                        Export as CSV/XLS
-                      </Button>
-                    </div>
-                  </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'csv')}>
+                        Export as CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportReport(selectedReport.id, 'xlsx')}>
+                        Export as XLSX
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-green-600">
-                      {selectedReport.currency} {formatNumber(selectedReport.total_revenue)}
+                  <CardContent className="pt-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {selectedReport.currency} {formatNumber(selectedReport.total_revenue)}
+                      </div>
+                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Revenue</p>
                     </div>
-                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Revenue</p>
+                    <DollarSign className="h-8 w-8 text-green-500/70" />
                   </CardContent>
                 </Card>
                 <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {selectedReport.total_events}
+                  <CardContent className="pt-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {selectedReport.total_events}
+                      </div>
+                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Events</p>
                     </div>
-                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Events</p>
+                    <Calendar className="h-8 w-8 text-blue-500/70" />
                   </CardContent>
                 </Card>
                 <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {selectedReport.total_tickets}
+                  <CardContent className="pt-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {selectedReport.total_tickets}
+                      </div>
+                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Tickets</p>
                     </div>
-                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Tickets</p>
+                    <Mail className="h-8 w-8 text-purple-500/70" />
                   </CardContent>
                 </Card>
                 <Card className={cn(darkMode ? "bg-gray-700 border-gray-600" : "bg-gray-200 border-gray-300")}>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {selectedReport.total_attendees}
+                  <CardContent className="pt-6 flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        {selectedReport.total_attendees}
+                      </div>
+                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Attendees</p>
                     </div>
-                    <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>Total Attendees</p>
+                    <Users className="h-8 w-8 text-orange-500/70" />
                   </CardContent>
                 </Card>
               </div>
+
               <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="tickets">Tickets & Attendees</TabsTrigger>
-                  <TabsTrigger value="revenue">Revenue & Payments</TabsTrigger>
+                <TabsList className={cn("grid w-full grid-cols-3", darkMode ? "bg-gray-700" : "bg-gray-100")}>
+                  <TabsTrigger value="overview" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Overview</TabsTrigger>
+                  <TabsTrigger value="tickets" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Tickets & Attendees</TabsTrigger>
+                  <TabsTrigger value="revenue" className={darkMode ? "data-[state=active]:bg-purple-600 data-[state=active]:text-white" : ""}>Revenue & Payments</TabsTrigger>
                 </TabsList>
+
+                {/* Overview Tab */}
                 <TabsContent value="overview">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
@@ -683,7 +764,7 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                       </CardHeader>
                       <CardContent>
                         {ticketsSoldChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
+                          <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                               <Pie
                                 data={ticketsSoldChartData}
@@ -691,11 +772,11 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                                 cy="50%"
                                 labelLine={false}
                                 label={renderPieLabel}
-                                outerRadius={120}
+                                outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
                                 animationBegin={0}
-                                animationDuration={1000}
+                                animationDuration={800}
                               >
                                 {ticketsSoldChartData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -706,48 +787,36 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                             </PieChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No ticket sales data available for this period.
+                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            No ticket sales data available for this report.
                           </div>
                         )}
                       </CardContent>
                     </Card>
+
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                       <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                              <DollarSign className="h-5 w-5 text-green-500" />
-                              Revenue by Type
-                            </CardTitle>
-                            <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                              Revenue distribution across ticket categories
-                            </CardDescription>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant={activeChart === 'bar' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => setActiveChart('bar')}
-                              className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
-                            >
-                              Bar
-                            </Button>
-                            <Button
-                              variant={activeChart === 'pie' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => setActiveChart('pie')}
-                              className={darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}
-                            >
-                              Pie
-                            </Button>
-                          </div>
-                        </div>
+                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
+                          <DollarSign className="h-5 w-5 text-green-500" />
+                          Revenue by Event
+                        </CardTitle>
+                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                          Revenue distribution across individual events
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         {revenueChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
-                            {activeChart === 'pie' ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            {activeChart === 'bar' ? (
+                              <BarChart data={revenueChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
+                                <XAxis dataKey="name" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                                <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend />
+                                <Bar dataKey="value" name="Revenue" fill="#8B5CF6" />
+                              </BarChart>
+                            ) : (
                               <PieChart>
                                 <Pie
                                   data={revenueChartData}
@@ -755,11 +824,10 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                                   cy="50%"
                                   labelLine={false}
                                   label={renderPieLabel}
-                                  outerRadius={120}
-                                  fill="#8884d8"
+                                  outerRadius={100}
                                   dataKey="value"
                                   animationBegin={0}
-                                  animationDuration={1000}
+                                  animationDuration={800}
                                 >
                                   {revenueChartData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -768,144 +836,117 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                                 <Tooltip content={<CustomTooltip />} />
                                 <Legend />
                               </PieChart>
-                            ) : (
-                              <BarChart data={revenueChartData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend />
-                                <Bar dataKey="value" fill="#8884d8" />
-                              </BarChart>
                             )}
                           </ResponsiveContainer>
                         ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No revenue data available for this period.
+                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            No revenue data by event available for this report.
                           </div>
                         )}
+                        <div className="flex justify-center gap-2 mt-4">
+                          <Button
+                            variant={activeChart === 'bar' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setActiveChart('bar')}
+                            className={cn(darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+                          >
+                            Bar Chart
+                          </Button>
+                          <Button
+                            variant={activeChart === 'pie' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setActiveChart('pie')}
+                            className={cn(darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-200 text-gray-800 hover:bg-gray-300")}
+                          >
+                            Pie Chart
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
                 </TabsContent>
+
+                {/* Tickets & Attendees Tab */}
                 <TabsContent value="tickets">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <Users className="h-5 w-5 text-green-500" />
-                          Attendees by Ticket Type
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Number of attendees associated with each ticket type
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {ticketsSoldChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={ticketsSoldChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis />
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend />
-                              <Bar dataKey="value" fill="#8884d8" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No attendee data available by ticket type for this period.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-                      <CardHeader>
-                        <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <DollarSign className="h-5 w-5 text-blue-500" />
-                          Payment Method Usage
-                        </CardTitle>
-                        <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Breakdown of transactions by payment method
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {paymentMethodChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
-                            <PieChart>
-                              <Pie
-                                data={paymentMethodChartData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={renderPieLabel}
-                                outerRadius={120}
-                                fill="#8884d8"
-                                dataKey="value"
-                                animationBegin={0}
-                                animationDuration={1000}
-                              >
-                                {paymentMethodChartData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <Tooltip content={<CustomTooltip />} />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No payment method usage data available for this period.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
+                  <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
+                    <CardHeader>
+                      <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
+                        <Users className="h-5 w-5 text-orange-500" />
+                        Event Performance (Tickets & Attendees)
+                      </CardTitle>
+                      <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
+                        Detailed breakdown of tickets and attendees per event
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {eventsChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={350}>
+                          <BarChart data={eventsChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
+                            <XAxis dataKey="name" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                            <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Tickets', angle: -90, position: 'insideLeft', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Attendees', angle: 90, position: 'insideRight', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Bar yAxisId="left" dataKey="tickets" fill="#8884d8" name="Tickets Sold" />
+                            <Bar yAxisId="right" dataKey="attendees" fill="#82ca9d" name="Total Attendees" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                          No event-specific ticket and attendee data available.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
+
+                {/* Revenue & Payments Tab */}
                 <TabsContent value="revenue">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                       <CardHeader>
                         <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <DollarSign className="h-5 w-5 text-green-500" />
-                          Revenue by Ticket Type
+                          <TrendingUp className="h-5 w-5 text-purple-500" />
+                          Monthly Revenue Trend
                         </CardTitle>
                         <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Revenue generated from each ticket category
+                          Revenue performance over time
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        {revenueChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={revenueChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis />
+                        {monthlyRevenueData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#4B5563" : "#E5E7EB"} />
+                              <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6B7280"} />
+                              <YAxis stroke={darkMode ? "#9CA3AF" : "#6B7280"} label={{ value: `Revenue (${selectedReport.currency})`, angle: -90, position: 'insideLeft', fill: darkMode ? "#9CA3AF" : "#6B7280" }} />
                               <Tooltip content={<CustomTooltip />} />
                               <Legend />
-                              <Bar dataKey="value" fill="#8884d8" />
-                            </BarChart>
+                              <Line type="monotone" dataKey="revenue" stroke="#8B5CF6" activeDot={{ r: 8 }} name="Revenue" />
+                            </LineChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No revenue data available for this period.
+                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            No monthly revenue data available for this report.
                           </div>
                         )}
                       </CardContent>
                     </Card>
+
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow", darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
                       <CardHeader>
                         <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                          <DollarSign className="h-5 w-5 text-blue-500" />
+                          <PieChartIcon className="h-5 w-5 text-red-500" />
                           Payment Method Usage
                         </CardTitle>
                         <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                          Breakdown of transactions by payment method
+                          Distribution of payment methods used
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         {paymentMethodChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height={350}>
+                          <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                               <Pie
                                 data={paymentMethodChartData}
@@ -913,11 +954,11 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                                 cy="50%"
                                 labelLine={false}
                                 label={renderPieLabel}
-                                outerRadius={120}
+                                outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
                                 animationBegin={0}
-                                animationDuration={1000}
+                                animationDuration={800}
                               >
                                 {paymentMethodChartData.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={entry.color} />
@@ -928,8 +969,8 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                             </PieChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="h-[350px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                            No payment method usage data available for this period.
+                          <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            No payment method usage data available for this report.
                           </div>
                         )}
                       </CardContent>
@@ -937,35 +978,6 @@ const OrganizerReport: React.FC<OrganizerReportProps> = ({ darkMode }) => {
                   </div>
                 </TabsContent>
               </Tabs>
-            </CardContent>
-          </Card>
-        )}
-        {convertedReports.length > 0 && (
-          <Card className={cn(darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className={cn("flex items-center gap-2", darkMode ? "text-gray-200" : "text-gray-800")}>
-                <Globe className="h-5 w-5" />
-                Currency Conversion History
-              </CardTitle>
-              <CardDescription className={darkMode ? "text-gray-400" : "text-gray-600"}>
-                A record of your report currency conversions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {convertedReports.map((conversion) => (
-                  <div key={conversion.id} className={cn("flex items-center justify-between p-3 rounded-lg", darkMode ? "bg-gray-700" : "bg-gray-50")}>
-                    <div>
-                      <p className="font-medium">
-                        <span className={darkMode ? "text-gray-200" : "text-gray-700"}>{conversion.original_currency} {formatNumber(conversion.original_amount)}</span> → <span className="text-green-600 font-bold">{conversion.target_currency} {formatNumber(conversion.converted_amount)}</span>
-                      </p>
-                      <p className={cn("text-sm", darkMode ? "text-gray-400" : "text-gray-500")}>
-                        Rate: {conversion.conversion_rate.toFixed(4)} • {new Date(conversion.converted_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
         )}
