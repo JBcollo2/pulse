@@ -325,7 +325,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-      const data: ReportGenerationResponse = await response.json();
+      const data = await response.json();
       setGeneratedReport(data);
       const params = new URLSearchParams();
       if (useSpecificDate) {
@@ -339,7 +339,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include'
       });
       if (detailedResponse.ok) {
-        const detailedData: EventReport = await detailedResponse.json();
+        const detailedData = await detailedResponse.json();
         setReportData(detailedData);
         toast({
           title: "Detailed Report Updated",
@@ -518,30 +518,23 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </>
             )}
           </div>
-          {/* Download & Email Buttons */}
-          {generatedReport && (
-            <div className="flex flex-wrap justify-center md:justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
-                disabled={isLoadingDownload}
-                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isLoadingDownload ? "Downloading..." : "Download PDF"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
-                disabled={isLoadingDownload}
-                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isLoadingDownload ? "Downloading..." : "Download CSV"}
-              </Button>
-            </div>
-          )}
+          {/* Email Configuration */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="sendEmail"
+              checked={sendEmail}
+              onCheckedChange={(checked: boolean) => setSendEmail(checked)}
+              className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
+            />
+            <label
+              htmlFor="sendEmail"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
+            >
+              Send report via email
+            </label>
+          </div>
         </div>
+
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -712,63 +705,25 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-            {/* Email Configuration */}
-            <div className="space-y-4">
-              <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Email Options</Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sendEmail"
-                  checked={sendEmail}
-                  onCheckedChange={(checked: boolean) => setSendEmail(checked)}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                />
-                <label
-                  htmlFor="sendEmail"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
-                >
-                  Send report via email
-                </label>
-              </div>
-              {sendEmail && (
-                <div className="space-y-2">
-                  <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email (Leave blank for your account email)</Label>
-                  <Input
-                    id="recipientEmail"
-                    type="email"
-                    placeholder="Enter email address"
-                    value={recipientEmail}
-                    onChange={(e) => setRecipientEmail(e.target.value)}
-                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
-                  />
-                </div>
-              )}
-            </div>
-            {/* Generate Report Button */}
-            <Button
-              onClick={generateReport}
-              className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] w-full sm:w-auto hover:scale-105 transition-all"
-              disabled={isGeneratingReport || !canGenerateReport}
-            >
-              {isGeneratingReport ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
+            {/* Generate and Fetch Report Buttons */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <Button
+                onClick={generateReport}
+                className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] hover:scale-105 transition-all flex items-center"
+                disabled={isGeneratingReport || !canGenerateReport}
+              >
                 <BarChart3 className="mr-2 h-4 w-4" />
-              )}
-              Generate Report
-            </Button>
-            {/* Fetch Reports Button */}
-            <Button
-              onClick={fetchReports}
-              className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] w-full sm:w-auto hover:scale-105 transition-all"
-              disabled={isLoadingReport}
-            >
-              {isLoadingReport ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
+                {isGeneratingReport ? "Generating Report..." : "Generate Report"}
+              </Button>
+              <Button
+                onClick={fetchReports}
+                className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] hover:scale-105 transition-all flex items-center"
+                disabled={isLoadingReport}
+              >
                 <FileText className="mr-2 h-4 w-4" />
-              )}
-              Fetch Reports
-            </Button>
+                {isLoadingReport ? "Fetching Reports..." : "Fetch Reports"}
+              </Button>
+            </div>
             {error && (
               <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" /> {error}
@@ -776,6 +731,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </CardContent>
         </Card>
+
         {/* Display Generated Report Summary */}
         {generatedReport && (
           <div className="space-y-6">
@@ -842,6 +798,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </div>
         )}
+
         {/* Display Reports */}
         <div className="space-y-6">
           <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
@@ -888,6 +845,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             ))}
           </div>
         </div>
+
         {/* Charts Section */}
         {reportData ? (
           <Tabs defaultValue="overview" className="space-y-6">
