@@ -321,33 +321,34 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   }, [eventId, canGenerateReport, useSpecificDate, specificDate, startDate, endDate, selectedCurrency, sendEmail, recipientEmail, currencies, handleOperationError, toast]);
 
   // Helper for downloading files from URL
-  const downloadReportFromUrl = useCallback(async (url: string, filename: string) => {
+  const downloadReportFromUrl = useCallback(async (reportId: string, format: string) => {
     setIsLoadingDownload(true);
     try {
+      const url = `https://ticketing-system-994g.onrender.com/reports/${reportId}/export?format=${format}`;
       const response = await fetch(url, {
         credentials: 'include'
       });
       if (!response.ok) {
         const errorData = await response.json();
-        handleOperationError(errorData.message || `Failed to download ${filename}.`, errorData);
+        handleOperationError(errorData.message || `Failed to download report.`, errorData);
         return;
       }
       const blob = await response.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = urlBlob;
-      a.download = filename;
+      a.download = `report_${reportId}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(urlBlob);
       toast({
         title: "Download Successful",
-        description: `${filename} downloaded successfully!`,
+        description: `Report downloaded successfully!`,
         variant: "default",
       });
     } catch (err: any) {
-      handleOperationError(`An unexpected error occurred while downloading ${filename}.`, err);
+      handleOperationError(`An unexpected error occurred while downloading the report.`, err);
     } finally {
       setIsLoadingDownload(false);
     }
@@ -474,7 +475,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <div className="flex flex-wrap justify-center md:justify-end gap-3">
               <Button
                 variant="outline"
-                onClick={() => downloadReportFromUrl(generatedReport.pdf_download_url, `report_${generatedReport.report_id}.pdf`)}
+                onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
                 disabled={isLoadingDownload}
                 className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
@@ -483,7 +484,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </Button>
               <Button
                 variant="outline"
-                onClick={() => downloadReportFromUrl(generatedReport.csv_download_url, `report_${generatedReport.report_id}.csv`)}
+                onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
                 disabled={isLoadingDownload}
                 className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
               >
