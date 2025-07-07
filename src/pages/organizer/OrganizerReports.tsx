@@ -77,7 +77,7 @@ interface ReportGenerationResponse {
 
 interface OrganizerReportsProps {
   eventId: number;
-  eventReport?: EventReport | null; // This might be for initial display or a default report
+  eventReport?: EventReport | null;
 }
 
 // --- Constants ---
@@ -108,9 +108,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
-
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<string>('bar');
+
   const { toast } = useToast();
 
   // --- Helper Callbacks for Error Handling and Data Formatting ---
@@ -142,8 +142,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }));
   }, []);
 
-  // --- API Fetching Callbacks (Moved fetchExchangeRates before its usage in useEffect) ---
-
+  // --- API Fetching Callbacks ---
   const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
     setIsLoadingRates(true);
     setError(null);
@@ -184,8 +183,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       }
       const data = await response.json();
       setCurrencies(data.data || []);
-
-      // Set default currency to USD if available and no currency is pre-selected
       if (!selectedCurrency) {
         const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
         if (usdCurrency) {
@@ -204,12 +201,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     fetchCurrencies();
   }, []);
 
-  // Fetch exchange rates when selectedCurrency changes (if not USD, as USD is base)
+  // Fetch exchange rates when selectedCurrency changes
   useEffect(() => {
-    if (selectedCurrency && selectedCurrency !== 'USD') { // Assuming 'USD' is the base for currencyapi.com
-      fetchExchangeRates('USD'); // Always fetch rates against USD as per your backend
+    if (selectedCurrency && selectedCurrency !== 'USD') {
+      fetchExchangeRates('USD');
     } else {
-        setExchangeRates(null); // Clear rates if USD is selected or no currency selected
+      setExchangeRates(null);
     }
   }, [selectedCurrency, fetchExchangeRates]);
 
@@ -243,36 +240,30 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       });
       return;
     }
-
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
     setReportData(null);
-
     try {
       const selectedCurrencyObj = currencies.find(c => c.code === selectedCurrency);
       if (!selectedCurrencyObj) {
         handleOperationError("Selected currency not found in list.");
         return;
       }
-
       const requestBody: any = {
         event_id: eventId,
         target_currency_id: selectedCurrencyObj.id,
         send_email: sendEmail,
       };
-
       if (useSpecificDate) {
         requestBody.specific_date = specificDate;
       } else {
         requestBody.start_date = startDate;
         requestBody.end_date = endDate;
       }
-
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -281,41 +272,35 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-
       const data: ReportGenerationResponse = await response.json();
       setGeneratedReport(data);
-
       const params = new URLSearchParams();
       if (useSpecificDate) {
-          params.append('specific_date', specificDate);
+        params.append('specific_date', specificDate);
       } else {
-          params.append('start_date', startDate);
-          params.append('end_date', endDate);
+        params.append('start_date', startDate);
+        params.append('end_date', endDate);
       }
       const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
       const detailedResponse = await fetch(detailedReportUrl, {
-          credentials: 'include'
+        credentials: 'include'
       });
-
       if (detailedResponse.ok) {
-          const detailedData: EventReport = await detailedResponse.json();
-          setReportData(detailedData);
-          toast({
-              title: "Detailed Report Updated",
-              description: "Chart data has been refreshed.",
-              variant: "default",
-          });
+        const detailedData: EventReport = await detailedResponse.json();
+        setReportData(detailedData);
+        toast({
+          title: "Detailed Report Updated",
+          description: "Chart data has been refreshed.",
+          variant: "default",
+        });
       } else {
-          console.warn("Could not fetch detailed report for charts after generation.");
+        console.warn("Could not fetch detailed report for charts after generation.");
       }
-
-
       toast({
         title: "Report Generated",
         description: data.message,
@@ -335,8 +320,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [eventId, canGenerateReport, useSpecificDate, specificDate, startDate, endDate, selectedCurrency, sendEmail, recipientEmail, currencies, handleOperationError, toast]);
 
-
-  // Helper for downloading files from URL (e.g., from generatedReport)
+  // Helper for downloading files from URL
   const downloadReportFromUrl = useCallback(async (url: string, filename: string) => {
     setIsLoadingDownload(true);
     try {
@@ -369,20 +353,22 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [handleOperationError, toast]);
 
-
-  // --- Memoized Chart Data (based on reportData) ---
+  // --- Memoized Chart Data ---
   const ticketsSoldChartData = useMemo(() =>
     calculatePercentages(formatChartData(reportData?.tickets_sold_by_type)),
     [reportData, formatChartData, calculatePercentages]
   );
+
   const revenueChartData = useMemo(() =>
     calculatePercentages(formatChartData(reportData?.revenue_by_ticket_type)),
     [reportData, formatChartData, calculatePercentages]
   );
+
   const paymentMethodChartData = useMemo(() =>
     calculatePercentages(formatChartData(reportData?.payment_method_usage)),
     [reportData, formatChartData, calculatePercentages]
   );
+
   const attendeesByTicketTypeData = useMemo(() =>
     calculatePercentages(formatChartData(reportData?.attendees_by_ticket_type)),
     [reportData, formatChartData, calculatePercentages]
@@ -483,7 +469,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </>
             )}
           </div>
-          {/* Download & Email Buttons (conditional on generatedReport presence) */}
+          {/* Download & Email Buttons */}
           {generatedReport && (
             <div className="flex flex-wrap justify-center md:justify-end gap-3">
               <Button
@@ -507,9 +493,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           )}
         </div>
-
         {/* Report Configuration Section */}
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
               <Filter className="h-5 w-5" />
@@ -535,7 +520,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   Refresh Rates
                 </Button>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="currency" className="dark:text-gray-200 text-gray-800">Target Currency</Label>
@@ -570,7 +554,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Display Exchange Rate (USD to selected currency, if not USD itself) */}
+                {/* Display Exchange Rate */}
                 {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
                   <div className="space-y-2">
                     <Label className="dark:text-gray-200 text-gray-800">Exchange Rate (USD → {selectedCurrency})</Label>
@@ -586,7 +570,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
-
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -612,7 +595,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   Generate for a specific date
                 </label>
               </div>
-
               {useSpecificDate ? (
                 <div className="space-y-2">
                   <Label htmlFor="specificDate" className="dark:text-gray-200 text-gray-800">Specific Date</Label>
@@ -651,7 +633,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-
             {/* Email Configuration */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Email Options</Label>
@@ -683,7 +664,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-
             {/* Generate Report Button */}
             <Button
               onClick={generateReport}
@@ -697,7 +677,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               )}
               Generate Report
             </Button>
-
             {error && (
               <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" /> {error}
@@ -705,75 +684,73 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </CardContent>
         </Card>
-
-        {/* Display Generated Report Summary (if available) */}
+        {/* Display Generated Report Summary */}
         {generatedReport && (
-            <div className="space-y-6">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
-                    Generated Report Summary
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
-                            <FileText className="h-4 w-4 text-[#06D6A0]" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
-                                {generatedReport.report_data_summary.total_tickets_sold.toLocaleString()}
-                            </div>
-                            <div className="flex items-center text-xs text-green-500 mt-1">
-                                Tickets sold in {generatedReport.report_period.is_single_day ? generatedReport.report_period.start_date : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Converted Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-[#06D6A0]" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
-                                {generatedReport.currency_conversion.converted_currency} {generatedReport.currency_conversion.converted_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div className="flex items-center text-xs text-gray-500 mt-1">
-                                Converted from {generatedReport.currency_conversion.original_currency} at rate {generatedReport.currency_conversion.conversion_rate.toFixed(4)}
-                            </div>
-                        </CardContent>
-                    </Card>
-                     <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Original Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-[#F59E0B]" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#F59E0B]">
-                                {generatedReport.report_data_summary.currency_symbol} {generatedReport.report_data_summary.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div className="flex items-center text-xs text-gray-500 mt-1">
-                                In original event currency
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
-                            <Users className="h-4 w-4 text-[#06D6A0]" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
-                                {generatedReport.report_data_summary.number_of_attendees.toLocaleString()}
-                            </div>
-                            <div className="flex items-center text-xs text-green-500 mt-1">
-                                {((generatedReport.report_data_summary.number_of_attendees / generatedReport.report_data_summary.total_tickets_sold) * 100).toFixed(1)}% attendance rate
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
+              Generated Report Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
+                  <FileText className="h-4 w-4 text-[#06D6A0]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
+                    {generatedReport.report_data_summary.total_tickets_sold.toLocaleString()}
+                  </div>
+                  <div className="flex items-center text-xs text-green-500 mt-1">
+                    Tickets sold in {generatedReport.report_period.is_single_day ? generatedReport.report_period.start_date : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Converted Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-[#06D6A0]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
+                    {generatedReport.currency_conversion.converted_currency} {generatedReport.currency_conversion.converted_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500 mt-1">
+                    Converted from {generatedReport.currency_conversion.original_currency} at rate {generatedReport.currency_conversion.conversion_rate.toFixed(4)}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Original Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-[#F59E0B]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl md:text-3xl font-bold text-[#F59E0B]">
+                    {generatedReport.report_data_summary.currency_symbol} {generatedReport.report_data_summary.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="flex items-center text-xs text-gray-500 mt-1">
+                    In original event currency
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
+                  <Users className="h-4 w-4 text-[#06D6A0]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
+                    {generatedReport.report_data_summary.number_of_attendees.toLocaleString()}
+                  </div>
+                  <div className="flex items-center text-xs text-green-500 mt-1">
+                    {((generatedReport.report_data_summary.number_of_attendees / generatedReport.report_data_summary.total_tickets_sold) * 100).toFixed(1)}% attendance rate
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          </div>
         )}
-
-        {/* Charts Section (Now driven by `reportData`, which is updated after generateReport) */}
+        {/* Charts Section */}
         {reportData ? (
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
@@ -781,7 +758,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               <TabsTrigger value="tickets">Tickets & Attendees</TabsTrigger>
               <TabsTrigger value="revenue">Revenue & Payments</TabsTrigger>
             </TabsList>
-
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -825,7 +801,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     )}
                   </CardContent>
                 </Card>
-
                 {/* Revenue Breakdown */}
                 <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                   <CardHeader>
@@ -901,7 +876,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </Card>
               </div>
             </TabsContent>
-
             {/* Tickets & Attendees Tab */}
             <TabsContent value="tickets" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -933,7 +907,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     )}
                   </CardContent>
                 </Card>
-
                 {/* Payment Method Usage */}
                 <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                   <CardHeader>
@@ -976,80 +949,78 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </Card>
               </div>
             </TabsContent>
-
-            {/* Revenue & Payments Tab (Added in the prompt's missing part) */}
+            {/* Revenue & Payments Tab */}
             <TabsContent value="revenue" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Revenue by Ticket Type (can be a duplicate or more detailed) */}
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                                <DollarSign className="h-5 w-5 text-[#06D6A0]" />
-                                Revenue by Ticket Type (Detailed)
-                            </CardTitle>
-                            <CardDescription className="dark:text-gray-400 text-gray-600">Detailed revenue distribution across ticket categories</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {revenueChartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={350}>
-                                    <BarChart data={revenueChartData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                        <Bar dataKey="value" fill="#06D6A0" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
-                                    No detailed revenue data available for this period.
-                                    </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Payment Method Usage (from previous section) */}
-                    <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                                <PieChartIcon className="h-5 w-5 text-[#06D6A0]" />
-                                Payment Method Usage
-                            </CardTitle>
-                            <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {paymentMethodChartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={350}>
-                                    <PieChart>
-                                        <Pie
-                                            data={paymentMethodChartData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={renderPieLabel}
-                                            outerRadius={120}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                            animationBegin={0}
-                                            animationDuration={1000}
-                                        >
-                                            {paymentMethodChartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Legend />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
-                                    No payment method data available for this period.
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Revenue by Ticket Type */}
+                <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                      <DollarSign className="h-5 w-5 text-[#06D6A0]" />
+                      Revenue by Ticket Type (Detailed)
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400 text-gray-600">Detailed revenue distribution across ticket categories</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {revenueChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={350}>
+                        <BarChart data={revenueChartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                          <Bar dataKey="value" fill="#06D6A0" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
+                        No detailed revenue data available for this period.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                {/* Payment Method Usage */}
+                <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                      <PieChartIcon className="h-5 w-5 text-[#06D6A0]" />
+                      Payment Method Usage
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {paymentMethodChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={350}>
+                        <PieChart>
+                          <Pie
+                            data={paymentMethodChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={renderPieLabel}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                            animationBegin={0}
+                            animationDuration={1000}
+                          >
+                            {paymentMethodChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[350px] flex items-center justify-center dark:text-gray-400 text-gray-500">
+                        No payment method data available for this period.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         ) : (
@@ -1060,8 +1031,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               <p>Please use the "Report Configuration" above to generate a report.</p>
               {isGeneratingReport && (
                 <div className="flex items-center mt-4 text-[#06D6A0]">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Generating report...
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Generating report...
                 </div>
               )}
             </CardContent>
