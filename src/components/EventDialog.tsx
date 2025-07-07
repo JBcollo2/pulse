@@ -101,7 +101,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     category_id: null
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
   const [deletingEvent, setDeletingEvent] = useState(false);
   const { toast } = useToast();
 
@@ -120,7 +119,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
         const data = await response.json();
         setCategories(data.categories);
-        console.log('Fetched categories:', data);
       } catch (error) {
         console.error('Error fetching categories:', error);
         toast({
@@ -225,7 +223,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
 
   const handleSubmitEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+
     try {
       const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         credentials: 'include'
@@ -270,8 +268,6 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
           method: 'PUT',
           credentials: 'include',
-          
-            
           body: formData
         });
         eventId = editingEvent.id;
@@ -349,16 +345,14 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         ticket_types: [],
         category_id: null
       });
- } catch (error) {
-    console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
-    toast({
-      title: "Error",
-      description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
-      variant: "destructive"
-    });
-  } finally {
-    setIsLoading(false); 
-  }
+    } catch (error) {
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -366,23 +360,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
           <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {isEditing ? 'Edit Event' : 'Create New Event'}
-              </DialogTitle>
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Event
-                </Button>
-              )}
-            </div>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              {isEditing ? 'Edit Event' : 'Create New Event'}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitEvent} className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -582,50 +562,36 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               ))}
             </div>
 
-            <div className="flex justify-end space-x-2">
-        <Button
-                type="submit"
-                disabled={isLoading}
-                className={`bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
-                  isLoading ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <svg
-                      className="animate-spin h-5 w-5 mr-2 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      />
-                    </svg>
-                    {isEditing ? 'Updating...' : 'Creating...'}
-                  </>
-                ) : (
-                  isEditing ? 'Update Event' : 'Create Event'
+            <div className="flex justify-between items-center space-x-2">
+              <div>
+                {isEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="bg-white dark:bg-gray-700 border-red-200 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Event
+                  </Button>
                 )}
-         </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                Cancel
-              </Button>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                >
+                  {isEditing ? 'Update Event' : 'Create Event'}
+                </Button>
+              </div>
             </div>
           </form>
         </DialogContent>
