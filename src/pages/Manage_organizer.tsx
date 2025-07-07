@@ -5,8 +5,7 @@ import React from 'react';
 import OrganizerDashboard from './organizer/OrganizerDashboard'; // Adjust path if your directories are structured differently
 
 const Manage_organizer: React.FC = () => {
-  // This component serves as the entry point for the organizer route.
-  // It renders the core Organizer Dashboard.
+  // This component serves as the entry point f
   return <OrganizerDashboard />;
 };
 
