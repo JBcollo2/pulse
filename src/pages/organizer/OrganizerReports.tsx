@@ -82,35 +82,35 @@ interface OrganizerReportsProps {
 
 // --- Constants ---
 const CHART_COLORS = [
-  '#06D6A0', '#3B82F6', '#F59E0B', '#EF4444', // Reordered to prioritize green and blue, removed purple
+  '#06D6A0', '#3B82F6', '#F59E0B', '#EF4444',
   '#EC4899', '#10B981', '#F97316', '#6366F1', '#84CC16'
 ];
 
 // --- OrganizerReports Component ---
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
   // --- State Variables ---
-  const [reportData, setReportData] = useState<EventReport | null>(initialReport); // For displaying initial/fetched detailed report
-  const [generatedReport, setGeneratedReport] = useState<ReportGenerationResponse | null>(null); // For summary after generating a new report
+  const [reportData, setReportData] = useState<EventReport | null>(initialReport);
+  const [generatedReport, setGeneratedReport] = useState<ReportGenerationResponse | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
-  const [selectedCurrency, setSelectedCurrency] = useState<string>(''); // Stores currency CODE (e.g., 'USD', 'EUR')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [specificDate, setSpecificDate] = useState<string>('');
   const [useSpecificDate, setUseSpecificDate] = useState<boolean>(false);
-  const [recipientEmail, setRecipientEmail] = useState<string>(''); // For email recipient
-  const [sendEmail, setSendEmail] = useState<boolean>(false); // To toggle email sending
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [sendEmail, setSendEmail] = useState<boolean>(false);
 
   // Loading states
-  const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false); // For old direct report fetch
+  const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
   const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false);
-  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false); // Keep for old email logic or repurpose
+  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
-  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false); // For new generate report API
+  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
 
   const [error, setError] = useState<string | null>(null);
-  const [activeChart, setActiveChart] = useState<string>('bar'); // For toggling chart types in revenue breakdown
+  const [activeChart, setActiveChart] = useState<string>('bar');
   const { toast } = useToast();
 
   // --- Helper Callbacks for Error Handling and Data Formatting ---
@@ -211,7 +211,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     } else {
         setExchangeRates(null); // Clear rates if USD is selected or no currency selected
     }
-  }, [selectedCurrency, fetchExchangeRates]); // `fetchExchangeRates` is now defined when this effect runs
+  }, [selectedCurrency, fetchExchangeRates]);
 
   // --- Validation for Report Generation ---
   const canGenerateReport = useMemo(() => {
@@ -246,8 +246,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
     setIsGeneratingReport(true);
     setError(null);
-    setGeneratedReport(null); // Clear previous generated report summary
-    setReportData(null); // Clear previous detailed report for new generation
+    setGeneratedReport(null);
+    setReportData(null);
 
     try {
       const selectedCurrencyObj = currencies.find(c => c.code === selectedCurrency);
@@ -289,14 +289,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       }
 
       const data: ReportGenerationResponse = await response.json();
-      setGeneratedReport(data); // Store the summary response
+      setGeneratedReport(data);
 
-      // Attempt to fetch the detailed report for charts if possible (assuming existing /reports/events/{eventId} still works for display)
-      // This part might need adjustment if your backend only provides summary for /generate and expects /reports/events/{eventId} for full data.
-      // For now, let's try to update the detailed report based on the generated report's period.
-      // The original `fetchReport` can be used, but it's currently tied to the filter buttons.
-      // For a truly integrated experience, you might want to call it here or refine its use.
-      // For simplicity, we'll keep `reportData` for the charts separate, possibly loading it if `generatedReport` is set.
       const params = new URLSearchParams();
       if (useSpecificDate) {
           params.append('specific_date', specificDate);
@@ -304,7 +298,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           params.append('start_date', startDate);
           params.append('end_date', endDate);
       }
-      // Re-fetch detailed report data for chart visualization based on the generated report's period
       const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
       const detailedResponse = await fetch(detailedReportUrl, {
           credentials: 'include'
@@ -312,7 +305,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
       if (detailedResponse.ok) {
           const detailedData: EventReport = await detailedResponse.json();
-          setReportData(detailedData); // Update state for charts
+          setReportData(detailedData);
           toast({
               title: "Detailed Report Updated",
               description: "Chart data has been refreshed.",
@@ -320,7 +313,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           });
       } else {
           console.warn("Could not fetch detailed report for charts after generation.");
-          // Optionally show a warning toast
       }
 
 
@@ -399,7 +391,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   // --- Recharts Custom Components ---
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      // Adjusted to use the currency symbol from generatedReport for revenue display
       const currencySymbol = generatedReport?.report_data_summary?.currency_symbol || reportData?.total_revenue ? '$' : '';
       return (
         <div className={cn(
@@ -425,7 +416,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   };
 
   const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.05) return null; // Avoid overlapping labels for very small slices
+    if (percent < 0.05) return null;
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -434,7 +425,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       <text
         x={x}
         y={y}
-        fill={"#ffffff"} // White text for contrast
+        fill={"#ffffff"}
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         className="text-xs font-medium"
@@ -453,7 +444,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           <CardDescription className="dark:text-gray-400 text-gray-600">Loading initial data...</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-64">
-          <Loader2 className="h-12 w-12 animate-spin text-[#06D6A0]" /> {/* Changed to green */}
+          <Loader2 className="h-12 w-12 animate-spin text-[#06D6A0]" />
           <p className={cn("mt-4 text-lg dark:text-gray-400 text-gray-600")}>Fetching currencies and setup...</p>
         </CardContent>
       </Card>
@@ -470,7 +461,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
               Event Analytics Dashboard
             </h1>
-            {/* Display event details from reportData or initial event info if available */}
             {(reportData || initialReport) && (
               <>
                 <h2 className={cn("text-xl md:text-2xl font-semibold dark:text-gray-200 text-gray-800")}>
@@ -514,7 +504,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Download className="mr-2 h-4 w-4" />
                 {isLoadingDownload ? "Downloading..." : "Download CSV"}
               </Button>
-              {/* The email sending is handled by the generateReport call itself, this button is removed or repurposed if needed */}
             </div>
           )}
         </div>
@@ -538,7 +527,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => fetchExchangeRates('USD')} // Always refresh rates from USD base
+                  onClick={() => fetchExchangeRates('USD')}
                   disabled={isLoadingRates}
                   className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                 >
@@ -568,9 +557,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         )}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200"> {/* Added dark styles */}
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                       {currencies.map((currency) => (
-                        <SelectItem key={currency.id} value={currency.code} className="focus:bg-blue-100 dark:focus:bg-[#06D6A0]/20 dark:focus:text-[#06D6A0] data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:text-white"> {/* Updated highlight colors */}
+                        <SelectItem key={currency.id} value={currency.code} className="focus:bg-blue-100 dark:focus:bg-[#06D6A0]/20 dark:focus:text-[#06D6A0] data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:text-white">
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{currency.symbol}</span>
                             <span className="font-medium">{currency.code}</span>
@@ -607,7 +596,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   checked={useSpecificDate}
                   onCheckedChange={(checked: boolean) => {
                     setUseSpecificDate(checked);
-                    // Clear other date fields when toggling
                     if (checked) {
                       setStartDate('');
                       setEndDate('');
@@ -615,7 +603,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       setSpecificDate('');
                     }
                   }}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white" // Updated checkbox checked state color
+                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
                 />
                 <label
                   htmlFor="useSpecificDate"
@@ -633,7 +621,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     type="date"
                     value={specificDate}
                     onChange={(e) => setSpecificDate(e.target.value)}
-                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")} // Updated focus/hover border color
+                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   />
                 </div>
               ) : (
@@ -645,7 +633,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")} // Updated focus/hover border color
+                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                       max={endDate || undefined}
                     />
                   </div>
@@ -656,7 +644,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")} // Updated focus/hover border color
+                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                       min={startDate || undefined}
                     />
                   </div>
@@ -672,7 +660,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   id="sendEmail"
                   checked={sendEmail}
                   onCheckedChange={(checked: boolean) => setSendEmail(checked)}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white" // Updated checkbox checked state color
+                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
                 />
                 <label
                   htmlFor="sendEmail"
@@ -690,7 +678,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     placeholder="Enter email address"
                     value={recipientEmail}
                     onChange={(e) => setRecipientEmail(e.target.value)}
-                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")} // Updated focus/hover border color
+                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   />
                 </div>
               )}
@@ -699,7 +687,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             {/* Generate Report Button */}
             <Button
               onClick={generateReport}
-              className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] w-full sm:w-auto hover:scale-105 transition-all" // Changed gradient end color
+              className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] w-full sm:w-auto hover:scale-105 transition-all"
               disabled={isGeneratingReport || !canGenerateReport}
             >
               {isGeneratingReport ? (
@@ -721,17 +709,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         {/* Display Generated Report Summary (if available) */}
         {generatedReport && (
             <div className="space-y-6">
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent"> {/* Changed gradient end color */}
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
                     Generated Report Summary
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
-                            <FileText className="h-4 w-4 text-[#06D6A0]" /> {/* Changed to green */}
+                            <FileText className="h-4 w-4 text-[#06D6A0]" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]"> {/* Changed to green */}
+                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
                                 {generatedReport.report_data_summary.total_tickets_sold.toLocaleString()}
                             </div>
                             <div className="flex items-center text-xs text-green-500 mt-1">
@@ -742,10 +730,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Converted Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-[#06D6A0]" /> {/* Changed color to green */}
+                            <DollarSign className="h-4 w-4 text-[#06D6A0]" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]"> {/* Changed color to green */}
+                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
                                 {generatedReport.currency_conversion.converted_currency} {generatedReport.currency_conversion.converted_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center text-xs text-gray-500 mt-1">
@@ -756,10 +744,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                      <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Original Revenue</CardTitle>
-                            <DollarSign className="h-4 w-4 text-[#F59E0B]" /> {/* Keeping original orange for distinction */}
+                            <DollarSign className="h-4 w-4 text-[#F59E0B]" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#F59E0B]"> {/* Keeping original orange for distinction */}
+                            <div className="text-2xl md:text-3xl font-bold text-[#F59E0B]">
                                 {generatedReport.report_data_summary.currency_symbol} {generatedReport.report_data_summary.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                             <div className="flex items-center text-xs text-gray-500 mt-1">
@@ -770,10 +758,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
-                            <Users className="h-4 w-4 text-[#06D6A0]" /> {/* Changed color to green */}
+                            <Users className="h-4 w-4 text-[#06D6A0]" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]"> {/* Changed color to green */}
+                            <div className="text-2xl md:text-3xl font-bold text-[#06D6A0]">
                                 {generatedReport.report_data_summary.number_of_attendees.toLocaleString()}
                             </div>
                             <div className="flex items-center text-xs text-green-500 mt-1">
@@ -801,7 +789,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                      <PieChartIcon className="h-5 w-5 text-[#06D6A0]" /> {/* Changed color to green */}
+                      <PieChartIcon className="h-5 w-5 text-[#06D6A0]" />
                       Tickets Distribution
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of tickets sold by type</CardDescription>
@@ -817,7 +805,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             labelLine={false}
                             label={renderPieLabel}
                             outerRadius={120}
-                            fill="#8884d8" // This is a default Recharts fill, actual colors come from Cells below
+                            fill="#8884d8"
                             dataKey="value"
                             animationBegin={0}
                             animationDuration={1000}
@@ -844,7 +832,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                          <DollarSign className="h-5 w-5 text-[#06D6A0]" /> {/* Changed color to green */}
+                          <DollarSign className="h-5 w-5 text-[#06D6A0]" />
                           Revenue by Type
                         </CardTitle>
                         <CardDescription className="dark:text-gray-400 text-gray-600">Revenue distribution across ticket categories</CardDescription>
@@ -854,7 +842,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           variant={activeChart === 'bar' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setActiveChart('bar')}
-                          className="data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300" // Updated active state
+                          className="data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                         >
                           Bar
                         </Button>
@@ -862,7 +850,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           variant={activeChart === 'pie' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setActiveChart('pie')}
-                          className="data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300" // Updated active state
+                          className="data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                         >
                           Pie
                         </Button>
@@ -881,7 +869,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                               labelLine={false}
                               label={renderPieLabel}
                               outerRadius={120}
-                              fill="#8884d8" // This is a default Recharts fill, actual colors come from Cells below
+                              fill="#8884d8"
                               dataKey="value"
                               animationBegin={0}
                               animationDuration={1000}
@@ -900,7 +888,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             <YAxis />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend />
-                            <Bar dataKey="value" fill="#06D6A0" /> {/* Changed to green */}
+                            <Bar dataKey="value" fill="#06D6A0" />
                           </BarChart>
                         )}
                       </ResponsiveContainer>
@@ -921,7 +909,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                      <Users className="h-5 w-5 text-[#06D6A0]" /> {/* Changed color to green */}
+                      <Users className="h-5 w-5 text-[#06D6A0]" />
                       Attendees by Ticket Type
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600">Number of attendees associated with each ticket type</CardDescription>
@@ -935,7 +923,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" fill="#06D6A0" /> {/* Changed to green */}
+                          <Bar dataKey="value" fill="#06D6A0" />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
@@ -950,7 +938,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                      <DollarSign className="h-5 w-5 text-[#06D6A0]" /> {/* Changed color to green */}
+                      <DollarSign className="h-5 w-5 text-[#06D6A0]" />
                       Payment Method Usage
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
@@ -966,7 +954,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             labelLine={false}
                             label={renderPieLabel}
                             outerRadius={120}
-                            fill="#8884d8" // This is a default Recharts fill, actual colors come from Cells below
+                            fill="#8884d8"
                             dataKey="value"
                             animationBegin={0}
                             animationDuration={1000}
@@ -996,7 +984,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                                <DollarSign className="h-5 w-5 text-[#06D6A0]" /> {/* Changed color to green */}
+                                <DollarSign className="h-5 w-5 text-[#06D6A0]" />
                                 Revenue by Ticket Type (Detailed)
                             </CardTitle>
                             <CardDescription className="dark:text-gray-400 text-gray-600">Detailed revenue distribution across ticket categories</CardDescription>
@@ -1010,7 +998,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                         <YAxis />
                                         <Tooltip content={<CustomTooltip />} />
                                         <Legend />
-                                        <Bar dataKey="value" fill="#06D6A0" /> {/* Using the specific green color */}
+                                        <Bar dataKey="value" fill="#06D6A0" />
                                     </BarChart>
                                 </ResponsiveContainer>
                             ) : (
@@ -1025,7 +1013,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <Card className={cn("shadow-lg hover:shadow-xl transition-shadow dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                                <PieChartIcon className="h-5 w-5 text-[#06D6A0]" /> {/* Changed to green */}
+                                <PieChartIcon className="h-5 w-5 text-[#06D6A0]" />
                                 Payment Method Usage
                             </CardTitle>
                             <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of transactions by payment method</CardDescription>
@@ -1041,7 +1029,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                                             labelLine={false}
                                             label={renderPieLabel}
                                             outerRadius={120}
-                                            fill="#8884d8" // This is a default Recharts fill, actual colors come from Cells below
+                                            fill="#8884d8"
                                             dataKey="value"
                                             animationBegin={0}
                                             animationDuration={1000}
@@ -1065,14 +1053,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         ) : (
-          // Message when no reportData is available for charts
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
             <CardContent className="h-64 flex flex-col items-center justify-center text-center dark:text-gray-400 text-gray-500">
-              <AlertCircle className="h-10 w-10 mb-4 text-[#06D6A0]" /> {/* Changed to green */}
+              <AlertCircle className="h-10 w-10 mb-4 text-[#06D6A0]" />
               <p className="text-lg font-medium">No Report Data Available</p>
               <p>Please use the "Report Configuration" above to generate a report.</p>
               {isGeneratingReport && (
-                <div className="flex items-center mt-4 text-[#06D6A0]"> {/* Changed to green */}
+                <div className="flex items-center mt-4 text-[#06D6A0]">
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
                     Generating report...
                 </div>
