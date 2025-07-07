@@ -93,8 +93,8 @@ interface OrganizerReportsProps {
 
 // --- Constants ---
 const CHART_COLORS = [
-  '#06D6A0', '#3B82F6', '#F59E0B', '#EF4444',
-  '#EC4899', '#10B981', '#F97316', '#6366F1', '#84CC16'
+  '#06D6A0', '#06D6A0', '#06D6A0', '#06D6A0',
+  '#06D6A0', '#06D6A0', '#06D6A0', '#06D6A0', '#06D6A0'
 ];
 
 // --- OrganizerReports Component ---
@@ -109,7 +109,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [endDate, setEndDate] = useState<string>('');
   const [specificDate, setSpecificDate] = useState<string>('');
   const [useSpecificDate, setUseSpecificDate] = useState<boolean>(false);
-  const [recipientEmail, setRecipientEmail] = useState<string>(''); // New state for recipient email
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [limit, setLimit] = useState<number>(5);
@@ -118,13 +118,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   // Loading states
   const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
   const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false);
-  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false); // This is not strictly needed as email sending is part of report generation
+  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<string>('bar');
-
   const { toast } = useToast();
 
   // --- Helper Callbacks for Error Handling and Data Formatting ---
@@ -219,17 +218,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (endDate) params.append('end_date', endDate);
       if (specificDate) params.append('specific_date', specificDate);
       if (!getAll) params.append('limit', limit.toString());
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleOperationError(errorData.message || "Failed to fetch reports.", errorData);
         return;
       }
-
       const data = await response.json();
       setReports(data.reports || []);
       toast({
@@ -297,7 +293,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       });
       return;
     }
-
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
@@ -322,7 +317,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -331,16 +325,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-
       const data = await response.json();
       setGeneratedReport(data);
-
       const params = new URLSearchParams();
       if (useSpecificDate) {
         params.append('specific_date', specificDate);
@@ -352,7 +343,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       const detailedResponse = await fetch(detailedReportUrl, {
         credentials: 'include'
       });
-
       if (detailedResponse.ok) {
         const detailedData = await detailedResponse.json();
         setReportData(detailedData);
@@ -364,7 +354,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       } else {
         console.warn("Could not fetch detailed report for charts after generation.");
       }
-
       toast({
         title: "Report Generated",
         description: data.message,
@@ -534,23 +523,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </>
             )}
           </div>
-          {/* Email Configuration Checkbox */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="sendEmail"
-              checked={sendEmail}
-              onCheckedChange={(checked: boolean) => setSendEmail(checked)}
-              className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-            />
-            <label
-              htmlFor="sendEmail"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
-            >
-              Send report via email
-            </label>
-          </div>
         </div>
-
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -690,26 +663,39 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Recipient Email Input - Only visible if sendEmail is checked */}
-            {sendEmail && (
-              <div className="space-y-2">
-                <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
-                <Input
-                  id="recipientEmail"
-                  type="email"
-                  placeholder="e.g., reports@example.com"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+              {/* Email Configuration Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="sendEmail"
+                  checked={sendEmail}
+                  onCheckedChange={(checked: boolean) => setSendEmail(checked)}
+                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Leave blank to send to your account's primary email address.
-                </p>
+                <label
+                  htmlFor="sendEmail"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
+                >
+                  Send report via email
+                </label>
               </div>
-            )}
-
+              {/* Recipient Email Input - Only visible if sendEmail is checked */}
+              {sendEmail && (
+                <div className="space-y-2">
+                  <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                  <Input
+                    id="recipientEmail"
+                    type="email"
+                    placeholder="e.g., reports@example.com"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Leave blank to send to your account's primary email address.
+                  </p>
+                </div>
+              )}
+            </div>
             {/* Limit Configuration */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Limit</Label>
@@ -761,14 +747,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
-
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             <p>{error}</p>
           </div>
         )}
-
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -789,21 +773,21 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               </div>
               <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Converted Revenue</p>
-                <p className="text-2xl font-bold text-[#3B82F6]">
+                <p className="text-2xl font-bold text-[#06D6A0]">
                   {generatedReport.currency_conversion.converted_currency} {generatedReport.currency_conversion.converted_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Converted from {generatedReport.currency_conversion.original_currency} at rate {generatedReport.currency_conversion.conversion_rate?.toFixed(4)}</p>
               </div>
               <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Original Revenue</p>
-                <p className="text-2xl font-bold text-[#F59E0B]">
+                <p className="text-2xl font-bold text-[#06D6A0]">
                   {currencies.find(c => c.code === generatedReport.currency_conversion.original_currency)?.symbol || ''} {generatedReport.currency_conversion.original_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">In original event currency</p>
               </div>
               <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Attendees</p>
-                <p className="text-2xl font-bold text-[#EC4899]">{generatedReport.report_data_summary.number_of_attendees}</p>
+                <p className="text-2xl font-bold text-[#06D6A0]">{generatedReport.report_data_summary.number_of_attendees}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{generatedReport.report_data_summary.total_tickets_sold > 0 ? ((generatedReport.report_data_summary.number_of_attendees / generatedReport.report_data_summary.total_tickets_sold) * 100).toFixed(1) : 'NaN'}% attendance rate</p>
               </div>
             </CardContent>
@@ -812,7 +796,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Button
                   onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
                   disabled={isLoadingDownload}
-                  className="bg-red-500 hover:bg-red-600 text-white flex items-center transition-all hover:scale-105" // Red for PDF
+                  className="bg-[#06D6A0] hover:bg-[#06D6A0] text-white flex items-center transition-all hover:scale-105"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Download PDF
@@ -820,7 +804,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Button
                   onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
                   disabled={isLoadingDownload}
-                  className="bg-green-500 hover:bg-green-600 text-white flex items-center transition-all hover:scale-105" // Green for CSV
+                  className="bg-[#06D6A0] hover:bg-[#06D6A0] text-white flex items-center transition-all hover:scale-105"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Download CSV
@@ -829,7 +813,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
-
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="tickets" className="w-full">
@@ -847,7 +830,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
-
             <TabsContent value="tickets" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -893,7 +875,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="revenue" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -913,7 +894,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" fill="#3B82F6" name="Revenue" />
+                          <Bar dataKey="value" fill="#06D6A0" name="Revenue" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -942,7 +923,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="attendees" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -959,7 +939,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           <YAxis className="dark:text-gray-200 text-gray-800" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" fill="#F59E0B" name="Attendees" />
+                          <Bar dataKey="value" fill="#06D6A0" name="Attendees" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -988,7 +968,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="payments" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1005,7 +984,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           <YAxis className="dark:text-gray-200 text-gray-800" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" fill="#EF4444" name="Transactions" />
+                          <Bar dataKey="value" fill="#06D6A0" name="Transactions" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -1036,7 +1015,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         )}
-
         {/* Existing Reports Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -1063,14 +1041,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       <Button
                         onClick={() => downloadReportFromUrl(report.report_id.toString(), 'pdf')}
                         disabled={isLoadingDownload}
-                        className="bg-red-500 hover:bg-red-600 text-white flex items-center transition-all hover:scale-105" // Red for PDF
+                        className="bg-[#06D6A0] hover:bg-[#06D6A0] text-white flex items-center transition-all hover:scale-105"
                       >
                         <Download className="mr-2 h-4 w-4" /> PDF
                       </Button>
                       <Button
                         onClick={() => downloadReportFromUrl(report.report_id.toString(), 'csv')}
                         disabled={isLoadingDownload}
-                        className="bg-green-500 hover:bg-green-600 text-white flex items-center transition-all hover:scale-105" // Green for CSV
+                        className="bg-[#06D6A0] hover:bg-[#06D6A0] text-white flex items-center transition-all hover:scale-105"
                       >
                         <Download className="mr-2 h-4 w-4" /> CSV
                       </Button>
