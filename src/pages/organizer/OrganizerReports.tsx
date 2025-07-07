@@ -289,10 +289,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       return;
     }
     if (sendEmail && !recipientEmail) {
-      setError("Please enter a recipient email address to send the report.");
+      setError("Please enter a recipient email address to send the report, or uncheck the 'Send report via email' option.");
       toast({
         title: "Validation Error",
-        description: "Please enter a recipient email address to send the report.",
+        description: "Please enter a recipient email address to send the report, or uncheck the 'Send report via email' option.",
         variant: "destructive",
       });
       return;
@@ -705,7 +705,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  The generated report will be sent to this email address.
+                  Leave blank to send to your account's primary email address.
                 </p>
               </div>
             )}
@@ -759,163 +759,112 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 {isLoadingReport ? "Fetching Reports..." : "Fetch Reports"}
               </Button>
             </div>
-            {error && (
-              <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" /> {error}
-              </p>
-            )}
           </CardContent>
         </Card>
 
-        {/* Display Generated Report Summary */}
-        {generatedReport && (
-          <div className="space-y-6">
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
-              Generated Report Summary
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
-                  <FileText className="h-4 w-4 text-[#06D6A0]" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {generatedReport.report_data_summary.total_tickets_sold.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Tickets sold during the period
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {generatedReport.report_data_summary.currency_symbol}
-                    {generatedReport.report_data_summary.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Revenue in {generatedReport.report_data_summary.currency}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
-                  <Users className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {generatedReport.report_data_summary.number_of_attendees.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Total unique attendees
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Report Period</CardTitle>
-                  <Calendar className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm font-bold">
-                    {generatedReport.report_period.is_single_day
-                      ? generatedReport.report_period.start_date
-                      : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {generatedReport.report_period.is_single_day ? 'Single Day Report' : 'Date Range Report'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Download Buttons for Generated Report */}
-            <div className="flex flex-wrap gap-4 mt-6">
-              {generatedReport.pdf_download_url && (
-                <Button
-                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
-                  disabled={isLoadingDownload}
-                  className="bg-red-600 hover:bg-red-700 transition-all text-white flex items-center"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {isLoadingDownload ? "Downloading PDF..." : "Download PDF"}
-                </Button>
-              )}
-              {generatedReport.csv_download_url && (
-                <Button
-                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
-                  disabled={isLoadingDownload}
-                  className="bg-green-600 hover:bg-green-700 transition-all text-white flex items-center"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  {isLoadingDownload ? "Downloading CSV..." : "Download CSV"}
-                </Button>
-              )}
-              {generatedReport.email_sent && (
-                <div className="flex items-center text-sm text-[#06D6A0] dark:text-[#06D6A0] gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email delivery initiated!
-                </div>
-              )}
-            </div>
+        {error && (
+          <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
           </div>
         )}
 
-        {/* Detailed Event Report Section */}
-        {reportData && (reportData.total_tickets_sold > 0 || reportData.total_revenue > 0) && (
+        {/* Generated Report Summary */}
+        {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                <TrendingUp className="h-5 w-5" />
-                Detailed Performance Overview
+                <FileText className="h-5 w-5" />
+                Latest Generated Report Summary
               </CardTitle>
               <CardDescription className="dark:text-gray-400 text-gray-600">
-                In-depth analysis of ticket sales, revenue, and attendee demographics.
+                Summary of the most recently generated report.
               </CardDescription>
             </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Tickets Sold</p>
+                <p className="text-2xl font-bold text-[#06D6A0]">{generatedReport.report_data_summary.total_tickets_sold}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">For {generatedReport.report_period.is_single_day ? generatedReport.report_period.start_date : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}</p>
+              </div>
+              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Converted Revenue</p>
+                <p className="text-2xl font-bold text-[#3B82F6]">
+                  {generatedReport.currency_conversion.converted_currency} {generatedReport.currency_conversion.converted_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Converted from {generatedReport.currency_conversion.original_currency} at rate {generatedReport.currency_conversion.conversion_rate?.toFixed(4)}</p>
+              </div>
+              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Original Revenue</p>
+                <p className="text-2xl font-bold text-[#F59E0B]">
+                  {currencies.find(c => c.code === generatedReport.currency_conversion.original_currency)?.symbol || ''} {generatedReport.currency_conversion.original_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">In original event currency</p>
+              </div>
+              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Attendees</p>
+                <p className="text-2xl font-bold text-[#EC4899]">{generatedReport.report_data_summary.number_of_attendees}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{generatedReport.report_data_summary.total_tickets_sold > 0 ? ((generatedReport.report_data_summary.number_of_attendees / generatedReport.report_data_summary.total_tickets_sold) * 100).toFixed(1) : 'NaN'}% attendance rate</p>
+              </div>
+            </CardContent>
             <CardContent>
-              <Tabs defaultValue="tickets" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 dark:bg-gray-700 bg-gray-100">
-                  <TabsTrigger value="tickets" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Tickets Sold</TabsTrigger>
-                  <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Revenue</TabsTrigger>
-                  <TabsTrigger value="attendees" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Attendees</TabsTrigger>
-                  <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Payment Methods</TabsTrigger>
-                </TabsList>
+              <div className="flex justify-center gap-4 mt-4">
+                <Button
+                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
+                  disabled={isLoadingDownload}
+                  className="bg-red-500 hover:bg-red-600 text-white flex items-center transition-all hover:scale-105" // Red for PDF
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button
+                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
+                  disabled={isLoadingDownload}
+                  className="bg-green-500 hover:bg-green-600 text-white flex items-center transition-all hover:scale-105" // Green for CSV
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download CSV
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {/* Tickets Sold by Type Chart */}
-                <TabsContent value="tickets" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Tickets Sold by Type</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
-                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    >
-                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                      <span className="ml-2">
-                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
-                      </span>
-                    </Button>
-                  </div>
+        {/* Detailed Report Visualizations */}
+        {reportData && (
+          <Tabs defaultValue="tickets" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
+              <TabsTrigger value="tickets" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+                <FileText className="h-4 w-4 mr-2" /> Tickets Sold
+              </TabsTrigger>
+              <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+                <DollarSign className="h-4 w-4 mr-2" /> Revenue
+              </TabsTrigger>
+              <TabsTrigger value="attendees" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+                <Users className="h-4 w-4 mr-2" /> Attendees
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+                <Mail className="h-4 w-4 mr-2" /> Payment Methods
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="tickets" className="mt-4">
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800">Tickets Sold by Type</CardTitle>
+                  <CardDescription className="dark:text-gray-400 text-gray-600">Distribution of tickets sold across different ticket categories.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
                   {ticketsSoldChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={ticketsSoldChartData}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
-                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
-                          <YAxis className="dark:text-gray-400 text-gray-600" />
+                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
+                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
+                          <YAxis className="dark:text-gray-200 text-gray-800" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          {ticketsSoldChartData.map((entry, index) => (
-                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
-                          ))}
+                          <Bar dataKey="value" fill="#06D6A0" name="Tickets Sold" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -924,10 +873,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={renderPieLabel}
-                            outerRadius={100}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
+                            label={renderPieLabel}
                           >
                             {ticketsSoldChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -939,41 +888,32 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-center text-gray-500 dark:text-gray-400">No ticket sales data available for the selected period.</p>
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No ticket sales data available for this period.</div>
                   )}
-                </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Revenue by Ticket Type Chart */}
-                <TabsContent value="revenue" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Revenue by Ticket Type</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
-                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    >
-                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                      <span className="ml-2">
-                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
-                      </span>
-                    </Button>
-                  </div>
+            <TabsContent value="revenue" className="mt-4">
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800">Revenue by Ticket Type</CardTitle>
+                  <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of revenue generated from each ticket category.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
                   {revenueChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={revenueChartData}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
-                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
-                          <YAxis tickFormatter={(value: number) => {
-                            const currencySymbol = generatedReport?.report_data_summary?.currency_symbol || '$';
-                            return `${currencySymbol}${value.toLocaleString()}`;
-                          }} className="dark:text-gray-400 text-gray-600" />
+                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
+                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
+                          <YAxis
+                            tickFormatter={(value) => `${generatedReport?.report_data_summary?.currency_symbol || '$'}${value.toLocaleString()}`}
+                            className="dark:text-gray-200 text-gray-800"
+                          />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          {revenueChartData.map((entry, index) => (
-                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
-                          ))}
+                          <Bar dataKey="value" fill="#3B82F6" name="Revenue" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -982,10 +922,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={renderPieLabel}
-                            outerRadius={100}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
+                            label={renderPieLabel}
                           >
                             {revenueChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -997,38 +937,29 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-center text-gray-500 dark:text-gray-400">No revenue data available for the selected period.</p>
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No revenue data available for this period.</div>
                   )}
-                </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Attendees by Ticket Type Chart */}
-                <TabsContent value="attendees" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Attendees by Ticket Type</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
-                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    >
-                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                      <span className="ml-2">
-                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
-                      </span>
-                    </Button>
-                  </div>
+            <TabsContent value="attendees" className="mt-4">
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800">Attendees by Ticket Type</CardTitle>
+                  <CardDescription className="dark:text-gray-400 text-gray-600">Number of attendees based on their ticket types.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
                   {attendeesByTicketTypeData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={attendeesByTicketTypeData}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
-                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
-                          <YAxis className="dark:text-gray-400 text-gray-600" />
+                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
+                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
+                          <YAxis className="dark:text-gray-200 text-gray-800" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          {attendeesByTicketTypeData.map((entry, index) => (
-                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
-                          ))}
+                          <Bar dataKey="value" fill="#F59E0B" name="Attendees" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -1037,10 +968,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={renderPieLabel}
-                            outerRadius={100}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
+                            label={renderPieLabel}
                           >
                             {attendeesByTicketTypeData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1052,38 +983,29 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-center text-gray-500 dark:text-gray-400">No attendee data available for the selected period.</p>
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No attendee data available for this period.</div>
                   )}
-                </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Payment Method Usage Chart */}
-                <TabsContent value="payments" className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Payment Method Usage</h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
-                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    >
-                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
-                      <span className="ml-2">
-                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
-                      </span>
-                    </Button>
-                  </div>
+            <TabsContent value="payments" className="mt-4">
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800">Payment Method Usage</CardTitle>
+                  <CardDescription className="dark:text-gray-400 text-gray-600">Overview of how attendees paid for their tickets.</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
                   {paymentMethodChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={paymentMethodChartData}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
-                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
-                          <YAxis className="dark:text-gray-400 text-gray-600" />
+                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
+                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
+                          <YAxis className="dark:text-gray-200 text-gray-800" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          {paymentMethodChartData.map((entry, index) => (
-                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
-                          ))}
+                          <Bar dataKey="value" fill="#EF4444" name="Transactions" />
                         </BarChart>
                       ) : (
                         <PieChart>
@@ -1092,10 +1014,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={renderPieLabel}
-                            outerRadius={100}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
+                            label={renderPieLabel}
                           >
                             {paymentMethodChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1107,74 +1029,62 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-center text-gray-500 dark:text-gray-400">No payment method data available for the selected period.</p>
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No payment method data available for this period.</div>
                   )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
 
-        {/* Historical Reports Section */}
-        {reports.length > 0 && (
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                <FileText className="h-5 w-5" />
-                Historical Reports
-              </CardTitle>
-              <CardDescription className="dark:text-gray-400 text-gray-600">
-                Browse and download previously generated reports.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Existing Reports Section */}
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <FileText className="h-5 w-5" />
+              Get All Reports
+            </CardTitle>
+            <CardDescription className="dark:text-gray-400 text-gray-600">
+              View and download previously generated reports.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {reports.length > 0 ? (
+              <div className="space-y-4">
                 {reports.map((report) => (
-                  <Card key={report.report_id} className={cn("dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-200")}>
-                    <CardHeader>
-                      <CardTitle className="text-lg dark:text-gray-200 text-gray-800">Report #{report.report_id}</CardTitle>
-                      <CardDescription className="dark:text-gray-400 text-gray-500">
-                        Generated on: {new Date(report.report_date).toLocaleDateString()}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="text-sm dark:text-gray-300 text-gray-700">
-                        <span className="font-medium">Tickets Sold:</span> {report.total_tickets_sold.toLocaleString()}
-                      </p>
-                      <p className="text-sm dark:text-gray-300 text-gray-700">
-                        <span className="font-medium">Total Revenue:</span> {'$'}
-                        {report.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-sm dark:text-gray-300 text-gray-700">
-                        <span className="font-medium">Attendees:</span> {report.number_of_attendees.toLocaleString()}
-                      </p>
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadReportFromUrl(report.report_id.toString(), 'pdf')}
-                          disabled={isLoadingDownload}
-                          className="flex-1 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-900 border-red-500 text-red-500 hover:text-white hover:bg-red-600"
-                        >
-                          <Download className="mr-1 h-3 w-3" /> PDF
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadReportFromUrl(report.report_id.toString(), 'csv')}
-                          disabled={isLoadingDownload}
-                          className="flex-1 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-900 border-green-500 text-green-500 hover:text-white hover:bg-green-600"
-                        >
-                          <Download className="mr-1 h-3 w-3" /> CSV
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div key={report.report_id} className="flex flex-col sm:flex-row items-center justify-between p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                    <div className="text-sm dark:text-gray-200 text-gray-800">
+                      <p className="font-semibold">Report ID: {report.report_id}</p>
+                      <p>Date: {new Date(report.report_date).toLocaleDateString()}</p>
+                      <p>Tickets Sold: {report.total_tickets_sold}</p>
+                      <p>Revenue: {report.total_revenue?.toLocaleString()}</p>
+                    </div>
+                    <div className="flex gap-2 mt-3 sm:mt-0">
+                      <Button
+                        onClick={() => downloadReportFromUrl(report.report_id.toString(), 'pdf')}
+                        disabled={isLoadingDownload}
+                        className="bg-red-500 hover:bg-red-600 text-white flex items-center transition-all hover:scale-105" // Red for PDF
+                      >
+                        <Download className="mr-2 h-4 w-4" /> PDF
+                      </Button>
+                      <Button
+                        onClick={() => downloadReportFromUrl(report.report_id.toString(), 'csv')}
+                        disabled={isLoadingDownload}
+                        className="bg-green-500 hover:bg-green-600 text-white flex items-center transition-all hover:scale-105" // Green for CSV
+                      >
+                        <Download className="mr-2 h-4 w-4" /> CSV
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <div className="text-center p-6 text-gray-500 dark:text-gray-400">
+                No reports found. Generate a new report above!
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
