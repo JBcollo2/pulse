@@ -218,6 +218,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (endDate) params.append('end_date', endDate);
       if (specificDate) params.append('specific_date', specificDate);
       if (!getAll) params.append('limit', limit.toString());
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
       });
@@ -243,7 +244,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   // Fetch currencies on component mount
   useEffect(() => {
     fetchCurrencies();
-  }, []);
+  }, [fetchCurrencies]);
 
   // Fetch exchange rates when selectedCurrency changes
   useEffect(() => {
@@ -498,7 +499,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         {/* Header Section */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-[#yourNewColor] bg-clip-text text-transparent">
               Event Analytics Dashboard
             </h1>
             {(reportData || initialReport) && (
@@ -1032,7 +1033,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 {reports.map((report) => (
                   <div key={report.report_id} className="flex flex-col sm:flex-row items-center justify-between p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                     <div className="text-sm dark:text-gray-200 text-gray-800">
-                      <p className="font-semibold">Report ID: {report.report_id}</p>
+                      <p className="font-semibold">Report #{report.report_id}</p>
                       <p>Date: {new Date(report.report_date).toLocaleDateString()}</p>
                       <p>Tickets Sold: {report.total_tickets_sold}</p>
                       <p>Revenue: {report.total_revenue?.toLocaleString()}</p>
