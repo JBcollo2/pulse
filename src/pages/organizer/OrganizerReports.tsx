@@ -32,8 +32,23 @@ interface ExchangeRates {
   source: string;
 }
 
-// Updated EventReport interface to match EventReportsResource response
 interface EventReport {
+  event_id: number;
+  event_name: string;
+  total_tickets_sold: number;
+  number_of_attendees: number;
+  total_revenue: number;
+  event_date: string;
+  event_location: string;
+  tickets_sold_by_type: { [key: string]: number };
+  revenue_by_ticket_type: { [key: string]: number };
+  attendees_by_ticket_type: { [key: string]: number };
+  payment_method_usage: { [key: string]: number };
+  filter_start_date?: string;
+  filter_end_date?: string;
+}
+
+interface Report {
   report_id: number;
   event_id: number;
   total_tickets_sold: number;
@@ -42,23 +57,6 @@ interface EventReport {
   report_date: string;
   pdf_download_url: string;
   csv_download_url: string;
-}
-
-// Interface for the overall response from /reports/events/{eventId}
-interface EventReportsResponse {
-  event_id: number;
-  reports: EventReport[];
-  total_reports_returned: number;
-  is_limited: boolean;
-  limit_applied: number | null;
-  query_info: {
-    specific_date?: string;
-    start_date?: string;
-    end_date?: string;
-    is_single_day?: boolean;
-    limit: number | null;
-    get_all: boolean;
-  };
 }
 
 interface ReportGenerationResponse {
@@ -102,9 +100,7 @@ const CHART_COLORS = [
 // --- OrganizerReports Component ---
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
   // --- State Variables ---
-  const [reportsData, setReportsData] = useState<EventReportsResponse | null>(null);
-  const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
-  const [currentDetailedReport, setCurrentDetailedReport] = useState<any | null>(null);
+  const [reportData, setReportData] = useState<EventReport | null>(initialReport);
   const [generatedReport, setGeneratedReport] = useState<ReportGenerationResponse | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
@@ -113,16 +109,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [endDate, setEndDate] = useState<string>('');
   const [specificDate, setSpecificDate] = useState<string>('');
   const [useSpecificDate, setUseSpecificDate] = useState<boolean>(false);
-  const [reportLimit, setReportLimit] = useState<number>(5);
-  const [getAllReports, setGetAllReports] = useState<boolean>(false);
-  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [recipientEmail, setRecipientEmail] = useState<string>(''); // New state for recipient email
   const [sendEmail, setSendEmail] = useState<boolean>(false);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [limit, setLimit] = useState<number>(5);
+  const [getAll, setGetAll] = useState<boolean>(false);
 
   // Loading states
-  const [isLoadingReportsList, setIsLoadingReportsList] = useState<boolean>(false);
-  const [isLoadingDetailedReport, setIsLoadingDetailedReport] = useState<boolean>(false);
+  const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
   const [isLoadingDownload, setIsLoadingDownload] = useState<boolean>(false);
-  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false);
+  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false); // This is not strictly needed as email sending is part of report generation
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
@@ -214,83 +210,39 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [handleOperationError, selectedCurrency]);
 
-  const fetchEventReports = useCallback(async () => {
-    setIsLoadingReportsList(true);
+  const fetchReports = useCallback(async () => {
+    setIsLoadingReport(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (useSpecificDate && specificDate) {
-        params.append('specific_date', specificDate);
-      } else if (startDate && endDate) {
-        params.append('start_date', startDate);
-        params.append('end_date', endDate);
-      }
-      if (getAllReports) {
-        params.append('get_all', 'true');
-      } else if (reportLimit > 0) {
-        params.append('limit', reportLimit.toString());
-      } else {
-        params.append('limit', '5');
-      }
+      if (startDate) params.append('start_date', startDate);
+      if (endDate) params.append('end_date', endDate);
+      if (specificDate) params.append('specific_date', specificDate);
+      if (!getAll) params.append('limit', limit.toString());
 
-      const url = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
-      const response = await fetch(url, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
-        handleOperationError(errorData.error || "Failed to fetch event reports.", errorData);
+        handleOperationError(errorData.message || "Failed to fetch reports.", errorData);
         return;
       }
+
       const data = await response.json();
-      setReportsData(data);
-      if (data.reports.length > 0) {
-        setSelectedReportId(data.reports[0].report_id);
-      } else {
-        setSelectedReportId(null);
-        setCurrentDetailedReport(null);
-      }
+      setReports(data.reports || []);
       toast({
         title: "Reports Fetched",
-        description: `Found ${data.total_reports_returned} reports for event ${eventId}.`,
+        description: `Successfully fetched ${data.reports.length} reports.`,
         variant: "default",
       });
     } catch (err: any) {
-      handleOperationError("An unexpected error occurred while fetching event reports.", err);
+      handleOperationError("An unexpected error occurred while fetching reports.", err);
     } finally {
-      setIsLoadingReportsList(false);
+      setIsLoadingReport(false);
     }
-  }, [eventId, useSpecificDate, specificDate, startDate, endDate, getAllReports, reportLimit, handleOperationError, toast]);
-
-  const fetchDetailedReport = useCallback(async (reportId: number, targetCurrencyId?: number) => {
-    setIsLoadingDetailedReport(true);
-    setError(null);
-    try {
-      let url = `${import.meta.env.VITE_API_URL}/reports/${reportId}`;
-      if (targetCurrencyId) {
-        url += `?target_currency_id=${targetCurrencyId}`;
-      }
-      const response = await fetch(url, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        handleOperationError(errorData.error || "Failed to fetch detailed report.", errorData);
-        return;
-      }
-      const data = await response.json();
-      setCurrentDetailedReport(data.report);
-      toast({
-        title: "Detailed Report Loaded",
-        description: `Displaying details for report ID: ${reportId}.`,
-        variant: "default",
-      });
-    } catch (err: any) {
-      handleOperationError("An unexpected error occurred while fetching detailed report.", err);
-    } finally {
-      setIsLoadingDetailedReport(false);
-    }
-  }, [handleOperationError, toast]);
+  }, [eventId, startDate, endDate, specificDate, limit, getAll, handleOperationError, toast]);
 
   // Fetch currencies on component mount
   useEffect(() => {
@@ -305,21 +257,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       setExchangeRates(null);
     }
   }, [selectedCurrency, fetchExchangeRates]);
-
-  // Fetch event reports on mount and when parameters change
-  useEffect(() => {
-    if (currencies.length > 0) {
-      fetchEventReports();
-    }
-  }, [fetchEventReports, currencies.length]);
-
-  // Fetch detailed report when selectedReportId changes
-  useEffect(() => {
-    if (selectedReportId) {
-      const selectedCurrencyObj = currencies.find(c => c.code === selectedCurrency);
-      fetchDetailedReport(selectedReportId, selectedCurrencyObj?.id);
-    }
-  }, [selectedReportId, fetchDetailedReport, selectedCurrency, currencies]);
 
   // --- Validation for Report Generation ---
   const canGenerateReport = useMemo(() => {
@@ -351,18 +288,27 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       });
       return;
     }
+    if (sendEmail && !recipientEmail) {
+      setError("Please enter a recipient email address to send the report.");
+      toast({
+        title: "Validation Error",
+        description: "Please enter a recipient email address to send the report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
-    setCurrentDetailedReport(null);
-    setReportsData(null);
+    setReportData(null);
     try {
       const selectedCurrencyObj = currencies.find(c => c.code === selectedCurrency);
       if (!selectedCurrencyObj) {
         handleOperationError("Selected currency not found in list.");
         return;
       }
-      const requestBody: { [key: string]: any } = {
+      const requestBody: any = {
         event_id: eventId,
         target_currency_id: selectedCurrencyObj.id,
         send_email: sendEmail,
@@ -376,7 +322,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-      const generateResponse = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -384,38 +331,64 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-      if (!generateResponse.ok) {
-        const errorData = await generateResponse.json();
+
+      if (!response.ok) {
+        const errorData = await response.json();
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-      const generateData = await generateResponse.json();
-      setGeneratedReport(generateData);
+
+      const data = await response.json();
+      setGeneratedReport(data);
+
+      const params = new URLSearchParams();
+      if (useSpecificDate) {
+        params.append('specific_date', specificDate);
+      } else {
+        params.append('start_date', startDate);
+        params.append('end_date', endDate);
+      }
+      const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
+      const detailedResponse = await fetch(detailedReportUrl, {
+        credentials: 'include'
+      });
+
+      if (detailedResponse.ok) {
+        const detailedData = await detailedResponse.json();
+        setReportData(detailedData);
+        toast({
+          title: "Detailed Report Updated",
+          description: "Chart data has been refreshed.",
+          variant: "default",
+        });
+      } else {
+        console.warn("Could not fetch detailed report for charts after generation.");
+      }
+
       toast({
         title: "Report Generated",
-        description: generateData.message,
+        description: data.message,
         variant: "default",
       });
-      if (generateData.email_sent) {
+      if (data.email_sent) {
         toast({
           title: "Email Initiated",
           description: `Report email sent to ${recipientEmail || 'your default email'}. Check your inbox.`,
           variant: "default",
         });
       }
-      await fetchEventReports();
     } catch (err: any) {
       handleOperationError("An unexpected error occurred while generating the report.", err);
     } finally {
       setIsGeneratingReport(false);
     }
-  }, [eventId, canGenerateReport, useSpecificDate, specificDate, startDate, endDate, selectedCurrency, sendEmail, recipientEmail, currencies, handleOperationError, toast, fetchEventReports]);
+  }, [eventId, canGenerateReport, useSpecificDate, specificDate, startDate, endDate, selectedCurrency, sendEmail, recipientEmail, currencies, handleOperationError, toast]);
 
   // Helper for downloading files from URL
   const downloadReportFromUrl = useCallback(async (reportId: string, format: string) => {
     setIsLoadingDownload(true);
     try {
-      const url = `${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}`;
+      const url = `https://ticketing-system-994g.onrender.com/reports/${reportId}/export?format=${format}`;
       const response = await fetch(url, {
         credentials: 'include'
       });
@@ -447,29 +420,29 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
   // --- Memoized Chart Data ---
   const ticketsSoldChartData = useMemo(() =>
-    calculatePercentages(formatChartData(currentDetailedReport?.tickets_sold_by_type)),
-    [currentDetailedReport, formatChartData, calculatePercentages]
+    calculatePercentages(formatChartData(reportData?.tickets_sold_by_type)),
+    [reportData, formatChartData, calculatePercentages]
   );
 
   const revenueChartData = useMemo(() =>
-    calculatePercentages(formatChartData(currentDetailedReport?.revenue_by_ticket_type)),
-    [currentDetailedReport, formatChartData, calculatePercentages]
+    calculatePercentages(formatChartData(reportData?.revenue_by_ticket_type)),
+    [reportData, formatChartData, calculatePercentages]
   );
 
   const paymentMethodChartData = useMemo(() =>
-    calculatePercentages(formatChartData(currentDetailedReport?.payment_method_usage)),
-    [currentDetailedReport, formatChartData, calculatePercentages]
+    calculatePercentages(formatChartData(reportData?.payment_method_usage)),
+    [reportData, formatChartData, calculatePercentages]
   );
 
   const attendeesByTicketTypeData = useMemo(() =>
-    calculatePercentages(formatChartData(currentDetailedReport?.attendees_by_ticket_type)),
-    [currentDetailedReport, formatChartData, calculatePercentages]
+    calculatePercentages(formatChartData(reportData?.attendees_by_ticket_type)),
+    [reportData, formatChartData, calculatePercentages]
   );
 
   // --- Recharts Custom Components ---
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const currencySymbol = currentDetailedReport?.currency_symbol || '$';
+      const currencySymbol = generatedReport?.report_data_summary?.currency_symbol || reportData?.total_revenue ? '$' : '';
       return (
         <div className={cn(
           "p-4 rounded-lg shadow-lg border backdrop-blur-sm",
@@ -539,43 +512,43 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
               Event Analytics Dashboard
             </h1>
-            <h2 className={cn("text-xl md:text-2xl font-semibold dark:text-gray-200 text-gray-800")}>
-              {`Event ID: ${eventId}`}
-            </h2>
+            {(reportData || initialReport) && (
+              <>
+                <h2 className={cn("text-xl md:text-2xl font-semibold dark:text-gray-200 text-gray-800")}>
+                  {reportData?.event_name || initialReport?.event_name || `Event ID: ${eventId}`}
+                </h2>
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm dark:text-gray-400 text-gray-500">
+                  {(reportData?.event_date || initialReport?.event_date) && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {reportData?.event_date || initialReport?.event_date}
+                    </div>
+                  )}
+                  {(reportData?.event_location || initialReport?.event_location) && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      {reportData?.event_location || initialReport?.event_location}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
-          {/* Download & Email Buttons */}
-          {currentDetailedReport && (
-            <div className="flex flex-wrap justify-center md:justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => downloadReportFromUrl(currentDetailedReport.report_id, 'pdf')}
-                disabled={isLoadingDownload}
-                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isLoadingDownload ? "Downloading..." : "Download PDF"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => downloadReportFromUrl(currentDetailedReport.report_id, 'csv')}
-                disabled={isLoadingDownload}
-                className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {isLoadingDownload ? "Downloading..." : "Download CSV"}
-              </Button>
-              {generatedReport?.email_sent && (
-                <Button
-                  variant="outline"
-                  disabled
-                  className="hover:scale-105 transition-transform dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email Sent!
-                </Button>
-              )}
-            </div>
-          )}
+          {/* Email Configuration Checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="sendEmail"
+              checked={sendEmail}
+              onCheckedChange={(checked: boolean) => setSendEmail(checked)}
+              className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
+            />
+            <label
+              htmlFor="sendEmail"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
+            >
+              Send report via email
+            </label>
+          </div>
         </div>
 
         {/* Report Configuration Section */}
@@ -639,18 +612,23 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </SelectContent>
                   </Select>
                 </div>
-                {exchangeRates && selectedCurrency !== exchangeRates.base_currency && (
-                  <Card className="p-3 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 shadow-sm">
-                    <CardDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                      1 {exchangeRates.base_currency} = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
-                      <span className="ml-2 text-xs opacity-70"> (Source: {exchangeRates.source})</span>
-                    </CardDescription>
-                  </Card>
+                {/* Display Exchange Rate */}
+                {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
+                  <div className="space-y-2">
+                    <Label className="dark:text-gray-200 text-gray-800">Exchange Rate (USD → {selectedCurrency})</Label>
+                    <div className="p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                      <div className="text-lg font-semibold dark:text-gray-200 text-gray-800">
+                        1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Source: {exchangeRates.source}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-
-            {/* Date Range Selection */}
+            {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
               <div className="flex items-center space-x-2">
@@ -666,11 +644,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       setSpecificDate('');
                     }
                   }}
-                  className="dark:border-gray-600 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
+                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
                 />
                 <label
                   htmlFor="useSpecificDate"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
                 >
                   Generate for a specific date
                 </label>
@@ -683,274 +661,273 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     type="date"
                     value={specificDate}
                     onChange={(e) => setSpecificDate(e.target.value)}
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                  <div className="flex-1 space-y-2 w-full">
                     <Label htmlFor="startDate" className="dark:text-gray-200 text-gray-800">Start Date</Label>
                     <Input
                       id="startDate"
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                      max={endDate || undefined}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex-1 space-y-2 w-full">
                     <Label htmlFor="endDate" className="dark:text-gray-200 text-gray-800">End Date</Label>
                     <Input
                       id="endDate"
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                      className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                      min={startDate || undefined}
                     />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Report Limit and Get All Checkbox */}
-            <div className="space-y-4">
-              <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Quantity</Label>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="getAllReports"
-                    checked={getAllReports}
-                    onCheckedChange={(checked: boolean) => {
-                      setGetAllReports(checked);
-                      if (checked) {
-                        setReportLimit(0);
-                      } else {
-                        setReportLimit(5);
-                      }
-                    }}
-                    className="dark:border-gray-600 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                  />
-                  <label
-                    htmlFor="getAllReports"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
-                  >
-                    Get all available reports
-                  </label>
-                </div>
-                {!getAllReports && (
-                  <div className="flex items-center space-x-2">
-                    <Label htmlFor="reportLimit" className="dark:text-gray-200 text-gray-800">Number of Reports (Default 5)</Label>
-                    <Input
-                      id="reportLimit"
-                      type="number"
-                      min="1"
-                      value={reportLimit}
-                      onChange={(e) => setReportLimit(parseInt(e.target.value) || 0)}
-                      className="w-24 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
-                    />
-                  </div>
-                )}
+            {/* Recipient Email Input - Only visible if sendEmail is checked */}
+            {sendEmail && (
+              <div className="space-y-2">
+                <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                <Input
+                  id="recipientEmail"
+                  type="email"
+                  placeholder="e.g., reports@example.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  The generated report will be sent to this email address.
+                </p>
               </div>
-            </div>
+            )}
 
-            {/* Email Configuration */}
+            {/* Limit Configuration */}
             <div className="space-y-4">
-              <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Email Options</Label>
+              <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Limit</Label>
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="sendEmail"
-                  checked={sendEmail}
-                  onCheckedChange={(checked: boolean) => setSendEmail(checked)}
-                  className="dark:border-gray-600 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
+                  id="getAll"
+                  checked={getAll}
+                  onCheckedChange={(checked: boolean) => setGetAll(checked)}
+                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#06D6A0] dark:data-[state=checked]:bg-[#06D6A0] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
                 />
                 <label
-                  htmlFor="sendEmail"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-300"
+                  htmlFor="getAll"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
                 >
-                  Send report via email
+                  Get All Reports
                 </label>
               </div>
-              {sendEmail && (
+              {!getAll && (
                 <div className="space-y-2">
-                  <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email (Optional)</Label>
+                  <Label htmlFor="limit" className="dark:text-gray-200 text-gray-800">Limit</Label>
                   <Input
-                    id="recipientEmail"
-                    type="email"
-                    placeholder="Enter email address"
-                    value={recipientEmail}
-                    onChange={(e) => setRecipientEmail(e.target.value)}
-                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                    id="limit"
+                    type="number"
+                    value={limit}
+                    onChange={(e) => setLimit(Number(e.target.value))}
+                    className={cn("transition-all hover:border-[#06D6A0] focus:border-[#06D6A0] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
                   />
                 </div>
               )}
             </div>
-
-            {/* Generate Report Button */}
-            <Button
-              onClick={generateReport}
-              disabled={isGeneratingReport || !canGenerateReport}
-              className="w-full bg-[#06D6A0] text-white hover:bg-[#05B08D] transition-colors duration-200"
-            >
-              {isGeneratingReport ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
+            {/* Generate and Fetch Report Buttons */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <Button
+                onClick={generateReport}
+                className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] hover:scale-105 transition-all flex items-center"
+                disabled={isGeneratingReport || !canGenerateReport || (sendEmail && !recipientEmail)}
+              >
+                <BarChart3 className="mr-2 h-4 w-4" />
+                {isGeneratingReport ? "Generating Report..." : "Generate Report"}
+              </Button>
+              <Button
+                onClick={fetchReports}
+                className="bg-gradient-to-r from-blue-500 to-[#06D6A0] hover:from-blue-500 hover:to-[#06D6A0] hover:scale-105 transition-all flex items-center"
+                disabled={isLoadingReport}
+              >
                 <FileText className="mr-2 h-4 w-4" />
-              )}
-              {isGeneratingReport ? "Generating Report..." : "Generate New Report"}
-            </Button>
+                {isLoadingReport ? "Fetching Reports..." : "Fetch Reports"}
+              </Button>
+            </div>
             {error && (
-              <div className="flex items-center p-3 text-red-700 bg-red-100 border border-red-200 rounded-md dark:bg-red-950 dark:border-red-800 dark:text-red-300">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                <p className="text-sm">{error}</p>
-              </div>
+              <p className="text-red-500 text-sm mt-4 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" /> {error}
+              </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Display List of Reports */}
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-              <FileText className="h-5 w-5" />
-              Available Reports
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400 text-gray-600">
-              Select a report to view detailed analytics.
-              {reportsData && reportsData.is_limited && (
-                <span className="ml-2 text-blue-500 dark:text-blue-300">
-                  (Showing latest {reportsData.limit_applied || '5'} reports)
-                </span>
+        {/* Display Generated Report Summary */}
+        {generatedReport && (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-[#06D6A0] bg-clip-text text-transparent">
+              Generated Report Summary
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Tickets</CardTitle>
+                  <FileText className="h-4 w-4 text-[#06D6A0]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {generatedReport.report_data_summary.total_tickets_sold.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Tickets sold during the period
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Total Revenue</CardTitle>
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {generatedReport.report_data_summary.currency_symbol}
+                    {generatedReport.report_data_summary.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Revenue in {generatedReport.report_data_summary.currency}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Attendees</CardTitle>
+                  <Users className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {generatedReport.report_data_summary.number_of_attendees.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Total unique attendees
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className={cn("hover:shadow-lg transition-all hover:scale-105 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200 text-gray-800")}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-200 text-gray-800">Report Period</CardTitle>
+                  <Calendar className="h-4 w-4 text-purple-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm font-bold">
+                    {generatedReport.report_period.is_single_day
+                      ? generatedReport.report_period.start_date
+                      : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {generatedReport.report_period.is_single_day ? 'Single Day Report' : 'Date Range Report'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Download Buttons for Generated Report */}
+            <div className="flex flex-wrap gap-4 mt-6">
+              {generatedReport.pdf_download_url && (
+                <Button
+                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'pdf')}
+                  disabled={isLoadingDownload}
+                  className="bg-red-600 hover:bg-red-700 transition-all text-white flex items-center"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {isLoadingDownload ? "Downloading PDF..." : "Download PDF"}
+                </Button>
               )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingReportsList ? (
-              <div className="flex flex-col items-center justify-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-[#06D6A0]" />
-                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading reports...</p>
-              </div>
-            ) : reportsData?.reports && reportsData.reports.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {reportsData.reports.map((report) => (
-                  <Card
-                    key={report.report_id}
-                    className={cn(
-                      "cursor-pointer hover:shadow-md transition-shadow duration-200 dark:bg-gray-700 dark:border-gray-600",
-                      selectedReportId === report.report_id ? "border-2 border-[#06D6A0] ring-2 ring-[#06D6A0]/50" : "border border-gray-200 dark:border-gray-700"
-                    )}
-                    onClick={() => setSelectedReportId(report.report_id)}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg dark:text-gray-200">Report ID: {report.report_id}</CardTitle>
-                      <CardDescription className="dark:text-gray-400">
-                        {report.report_date ? new Date(report.report_date).toLocaleDateString() : 'N/A'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="text-sm dark:text-gray-300">
-                      <p>Tickets Sold: {report.total_tickets_sold}</p>
-                      <p>Attendees: {report.number_of_attendees}</p>
-                      <p>Revenue: {report.total_revenue?.toFixed(2)}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-                <AlertCircle className="h-10 w-10 mx-auto mb-4" />
-                <p className="text-lg">No reports found for this event with the current filters.</p>
-                <p className="text-sm mt-2">Try adjusting the date range or generating a new report.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              {generatedReport.csv_download_url && (
+                <Button
+                  onClick={() => downloadReportFromUrl(generatedReport.report_id, 'csv')}
+                  disabled={isLoadingDownload}
+                  className="bg-green-600 hover:bg-green-700 transition-all text-white flex items-center"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {isLoadingDownload ? "Downloading CSV..." : "Download CSV"}
+                </Button>
+              )}
+              {generatedReport.email_sent && (
+                <div className="flex items-center text-sm text-[#06D6A0] dark:text-[#06D6A0] gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email delivery initiated!
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-        {/* Detailed Report Display (Charts and Summary) */}
-        {selectedReportId && currentDetailedReport ? (
+        {/* Detailed Event Report Section */}
+        {reportData && (reportData.total_tickets_sold > 0 || reportData.total_revenue > 0) && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                <BarChart3 className="h-5 w-5" />
-                Detailed Report: {currentDetailedReport.report_id}
+                <TrendingUp className="h-5 w-5" />
+                Detailed Performance Overview
               </CardTitle>
               <CardDescription className="dark:text-gray-400 text-gray-600">
-                Insights for the selected report generated on {new Date(currentDetailedReport.report_date).toLocaleString()}
+                In-depth analysis of ticket sales, revenue, and attendee demographics.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-8">
-              {/* Report Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <Card className="p-4 flex flex-col items-center dark:bg-gray-700 dark:border-gray-600">
-                  <Users className="h-8 w-8 text-blue-500 mb-2" />
-                  <p className="text-lg font-semibold dark:text-gray-200">Total Attendees</p>
-                  <p className="text-2xl font-bold text-[#06D6A0]">
-                    {currentDetailedReport.number_of_attendees?.toLocaleString() || 0}
-                  </p>
-                </Card>
-                <Card className="p-4 flex flex-col items-center dark:bg-gray-700 dark:border-gray-600">
-                  <TrendingUp className="h-8 w-8 text-yellow-500 mb-2" />
-                  <p className="text-lg font-semibold dark:text-gray-200">Total Tickets Sold</p>
-                  <p className="text-2xl font-bold text-[#06D6A0]">
-                    {currentDetailedReport.total_tickets_sold?.toLocaleString() || 0}
-                  </p>
-                </Card>
-                <Card className="p-4 flex flex-col items-center dark:bg-gray-700 dark:border-gray-600">
-                  <DollarSign className="h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-lg font-semibold dark:text-gray-200">Total Revenue</p>
-                  <p className="text-2xl font-bold text-[#06D6A0]">
-                    {currentDetailedReport.currency_symbol}{currentDetailedReport.total_revenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                  </p>
-                  {currentDetailedReport.currency_conversion?.conversion_applied && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      (Original: {currentDetailedReport.currency_conversion.original_currency_symbol}
-                      {currentDetailedReport.currency_conversion.original_amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                    </p>
-                  )}
-                </Card>
-              </div>
+            <CardContent>
+              <Tabs defaultValue="tickets" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 dark:bg-gray-700 bg-gray-100">
+                  <TabsTrigger value="tickets" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Tickets Sold</TabsTrigger>
+                  <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Revenue</TabsTrigger>
+                  <TabsTrigger value="attendees" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Attendees</TabsTrigger>
+                  <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white data-[state=active]:bg-[#06D6A0] data-[state=active]:text-white">Payment Methods</TabsTrigger>
+                </TabsList>
 
-              {/* Chart Type Selector */}
-              <div className="flex justify-center mb-4">
-                <Tabs value={activeChart} onValueChange={setActiveChart} className="w-auto">
-                  <TabsList className="dark:bg-gray-700 bg-gray-200">
-                    <TabsTrigger value="bar" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white">
-                      <BarChart3 className="h-4 w-4 mr-2" /> Bar Charts
-                    </TabsTrigger>
-                    <TabsTrigger value="pie" className="dark:data-[state=active]:bg-[#06D6A0] dark:data-[state=active]:text-white">
-                      <PieChartIcon className="h-4 w-4 mr-2" /> Pie Charts
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {/* Charts Display */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Tickets Sold by Type Chart */}
-                <Card className="dark:bg-gray-700 dark:border-gray-600">
-                  <CardHeader>
-                    <CardTitle className="text-lg dark:text-gray-200">Tickets Sold by Type</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                <TabsContent value="tickets" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Tickets Sold by Type</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    >
+                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
+                      <span className="ml-2">
+                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
+                      </span>
+                    </Button>
+                  </div>
+                  {ticketsSoldChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
                       {activeChart === 'bar' ? (
-                        <BarChart data={ticketsSoldChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-                          <XAxis dataKey="name" stroke="#888888" tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value} />
-                          <YAxis stroke="#888888" />
+                        <BarChart data={ticketsSoldChartData}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
+                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
+                          <YAxis className="dark:text-gray-400 text-gray-600" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" name="Tickets Sold" fill="#06D6A0" radius={[4, 4, 0, 0]} />
+                          {ticketsSoldChartData.map((entry, index) => (
+                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
+                          ))}
                         </BarChart>
                       ) : (
-                        <PieChart width={400} height={300}>
+                        <PieChart>
                           <Pie
                             data={ticketsSoldChartData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
+                            label={renderPieLabel}
                             outerRadius={100}
                             fill="#8884d8"
                             dataKey="value"
-                            label={renderPieLabel}
                           >
                             {ticketsSoldChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -961,36 +938,54 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </PieChart>
                       )}
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400">No ticket sales data available for the selected period.</p>
+                  )}
+                </TabsContent>
 
                 {/* Revenue by Ticket Type Chart */}
-                <Card className="dark:bg-gray-700 dark:border-gray-600">
-                  <CardHeader>
-                    <CardTitle className="text-lg dark:text-gray-200">Revenue by Ticket Type</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                <TabsContent value="revenue" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Revenue by Ticket Type</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    >
+                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
+                      <span className="ml-2">
+                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
+                      </span>
+                    </Button>
+                  </div>
+                  {revenueChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
                       {activeChart === 'bar' ? (
-                        <BarChart data={revenueChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-                          <XAxis dataKey="name" stroke="#888888" tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value} />
-                          <YAxis stroke="#888888" tickFormatter={(value) => `${currentDetailedReport?.currency_symbol || '$'}${value}`} />
+                        <BarChart data={revenueChartData}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
+                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
+                          <YAxis tickFormatter={(value: number) => {
+                            const currencySymbol = generatedReport?.report_data_summary?.currency_symbol || '$';
+                            return `${currencySymbol}${value.toLocaleString()}`;
+                          }} className="dark:text-gray-400 text-gray-600" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" name="Revenue" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                          {revenueChartData.map((entry, index) => (
+                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
+                          ))}
                         </BarChart>
                       ) : (
-                        <PieChart width={400} height={300}>
+                        <PieChart>
                           <Pie
                             data={revenueChartData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
+                            label={renderPieLabel}
                             outerRadius={100}
                             fill="#8884d8"
                             dataKey="value"
-                            label={renderPieLabel}
                           >
                             {revenueChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1001,36 +996,51 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </PieChart>
                       )}
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400">No revenue data available for the selected period.</p>
+                  )}
+                </TabsContent>
 
                 {/* Attendees by Ticket Type Chart */}
-                <Card className="dark:bg-gray-700 dark:border-gray-600">
-                  <CardHeader>
-                    <CardTitle className="text-lg dark:text-gray-200">Attendees by Ticket Type</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                <TabsContent value="attendees" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Attendees by Ticket Type</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    >
+                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
+                      <span className="ml-2">
+                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
+                      </span>
+                    </Button>
+                  </div>
+                  {attendeesByTicketTypeData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
                       {activeChart === 'bar' ? (
-                        <BarChart data={attendeesByTicketTypeData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-                          <XAxis dataKey="name" stroke="#888888" tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value} />
-                          <YAxis stroke="#888888" />
+                        <BarChart data={attendeesByTicketTypeData}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
+                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
+                          <YAxis className="dark:text-gray-400 text-gray-600" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" name="Attendees" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                          {attendeesByTicketTypeData.map((entry, index) => (
+                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
+                          ))}
                         </BarChart>
                       ) : (
-                        <PieChart width={400} height={300}>
+                        <PieChart>
                           <Pie
                             data={attendeesByTicketTypeData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
+                            label={renderPieLabel}
                             outerRadius={100}
                             fill="#8884d8"
                             dataKey="value"
-                            label={renderPieLabel}
                           >
                             {attendeesByTicketTypeData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1041,36 +1051,51 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </PieChart>
                       )}
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400">No attendee data available for the selected period.</p>
+                  )}
+                </TabsContent>
 
                 {/* Payment Method Usage Chart */}
-                <Card className="dark:bg-gray-700 dark:border-gray-600">
-                  <CardHeader>
-                    <CardTitle className="text-lg dark:text-gray-200">Payment Method Usage</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                <TabsContent value="payments" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-lg font-semibold dark:text-gray-200 text-gray-800">Payment Method Usage</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveChart(activeChart === 'bar' ? 'pie' : 'bar')}
+                      className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    >
+                      {activeChart === 'bar' ? <PieChartIcon className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
+                      <span className="ml-2">
+                        {activeChart === 'bar' ? "View Pie Chart" : "View Bar Chart"}
+                      </span>
+                    </Button>
+                  </div>
+                  {paymentMethodChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
                       {activeChart === 'bar' ? (
-                        <BarChart data={paymentMethodChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-                          <XAxis dataKey="name" stroke="#888888" tickFormatter={(value) => value.length > 10 ? value.substring(0, 10) + '...' : value} />
-                          <YAxis stroke="#888888" />
+                        <BarChart data={paymentMethodChartData}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.5} className="dark:stroke-gray-600" />
+                          <XAxis dataKey="name" className="dark:text-gray-400 text-gray-600" />
+                          <YAxis className="dark:text-gray-400 text-gray-600" />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Bar dataKey="value" name="Transactions" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                          {paymentMethodChartData.map((entry, index) => (
+                            <Bar key={`bar-${index}`} dataKey="value" fill={entry.color} name={entry.name} />
+                          ))}
                         </BarChart>
                       ) : (
-                        <PieChart width={400} height={300}>
+                        <PieChart>
                           <Pie
                             data={paymentMethodChartData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
+                            label={renderPieLabel}
                             outerRadius={100}
                             fill="#8884d8"
                             dataKey="value"
-                            label={renderPieLabel}
                           >
                             {paymentMethodChartData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1081,21 +1106,74 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         </PieChart>
                       )}
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400">No payment method data available for the selected period.</p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Historical Reports Section */}
+        {reports.length > 0 && (
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                <FileText className="h-5 w-5" />
+                Historical Reports
+              </CardTitle>
+              <CardDescription className="dark:text-gray-400 text-gray-600">
+                Browse and download previously generated reports.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reports.map((report) => (
+                  <Card key={report.report_id} className={cn("dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-200")}>
+                    <CardHeader>
+                      <CardTitle className="text-lg dark:text-gray-200 text-gray-800">Report #{report.report_id}</CardTitle>
+                      <CardDescription className="dark:text-gray-400 text-gray-500">
+                        Generated on: {new Date(report.report_date).toLocaleDateString()}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <p className="text-sm dark:text-gray-300 text-gray-700">
+                        <span className="font-medium">Tickets Sold:</span> {report.total_tickets_sold.toLocaleString()}
+                      </p>
+                      <p className="text-sm dark:text-gray-300 text-gray-700">
+                        <span className="font-medium">Total Revenue:</span> {'$'}
+                        {report.total_revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-sm dark:text-gray-300 text-gray-700">
+                        <span className="font-medium">Attendees:</span> {report.number_of_attendees.toLocaleString()}
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadReportFromUrl(report.report_id.toString(), 'pdf')}
+                          disabled={isLoadingDownload}
+                          className="flex-1 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-900 border-red-500 text-red-500 hover:text-white hover:bg-red-600"
+                        >
+                          <Download className="mr-1 h-3 w-3" /> PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadReportFromUrl(report.report_id.toString(), 'csv')}
+                          disabled={isLoadingDownload}
+                          className="flex-1 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-900 border-green-500 text-green-500 hover:text-white hover:bg-green-600"
+                        >
+                          <Download className="mr-1 h-3 w-3" /> CSV
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ) : (
-          !isLoadingReportsList && !selectedReportId && reportsData?.reports.length === 0 && (
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="text-center p-8 text-gray-500 dark:text-gray-400">
-                <AlertCircle className="h-10 w-10 mx-auto mb-4" />
-                <p className="text-lg">No detailed report selected or available.</p>
-                <p className="text-sm mt-2">Generate a new report or select one from the "Available Reports" section above.</p>
-              </CardContent>
-            </Card>
-          )
         )}
       </div>
     </div>
