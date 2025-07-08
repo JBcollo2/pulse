@@ -29,6 +29,7 @@ import {
   Eye,
   Clock,
   X,
+  Mail,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +49,6 @@ import {
   Area,
 } from 'recharts';
 
-// Define specific colors for each ticket type
 const COLORS_BY_TICKET = {
   REGULAR: '#FF8042',
   VIP: '#FFBB28',
@@ -63,7 +63,6 @@ const COLORS_BY_TICKET = {
 
 const FALLBACK_COLOR = COLORS_BY_TICKET.UNKNOWN_TYPE;
 
-// Quick filter presets
 const QUICK_FILTERS = [
   { label: 'Today', days: 0 },
   { label: 'Last 7 days', days: 7 },
@@ -93,6 +92,9 @@ const SystemReports = () => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [viewMode, setViewMode] = useState('overview');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [exchangeRates, setExchangeRates] = useState({});
+  const [recipientEmails, setRecipientEmails] = useState('');
 
   const toast = ({ title, description, variant = "default" }) => {
     console.log(`${title}: ${description}`);
@@ -108,7 +110,6 @@ const SystemReports = () => {
     const today = new Date();
     let start = new Date(today);
     let end = new Date(today);
-
     if (days === 0) {
       start = new Date(today);
     } else if (days === 365) {
@@ -116,7 +117,6 @@ const SystemReports = () => {
     } else {
       start.setDate(today.getDate() - days + 1);
     }
-
     setStartDate(start.toISOString().split('T')[0]);
     setEndDate(end.toISOString().split('T')[0]);
   };
@@ -147,27 +147,37 @@ const SystemReports = () => {
   const handleStartDateChange = handleDateChange(setStartDate);
   const handleEndDateChange = handleDateChange(setEndDate);
 
-  useEffect(() => {
-    const fetchOrganizers = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
-          credentials: 'include'
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const organizersData = Array.isArray(data) ? data : (data.data || []);
-          setOrganizers(organizersData);
-        }
-      } catch (error) {
-        console.error('Error fetching organizers:', error);
-      } finally {
-        setIsLoadingOrganizers(false);
+  const fetchOrganizers = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const organizersData = Array.isArray(data) ? data : (data.data || []);
+        setOrganizers(organizersData);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching organizers:', error);
+    } finally {
+      setIsLoadingOrganizers(false);
+    }
+  };
 
-    fetchOrganizers();
-  }, []);
+  const fetchExchangeRates = async () => {
+    if (!startDate || !endDate) return;
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/range?datetime_start=${startDate}&datetime_end=${endDate}&base_currency=${selectedCurrency}`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setExchangeRates(data.data.dates || {});
+      }
+    } catch (error) {
+      console.error('Error fetching exchange rates:', error);
+    }
+  };
 
   const fetchReports = useCallback(async () => {
     if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
@@ -178,47 +188,39 @@ const SystemReports = () => {
       });
       return;
     }
-
     setIsLoading(true);
     try {
-      let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports`;
       const params = new URLSearchParams();
-
       if (selectedOrganizer !== 'all') {
         params.append('organizer_id', selectedOrganizer);
       }
-
       if (startDate) {
         params.append('start_date', startDate);
       }
-
       if (endDate) {
         params.append('end_date', endDate);
       }
-
+      if (selectedCurrency) {
+        params.append('currency_id', selectedCurrency);
+      }
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
-
       const response = await fetch(url, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
         console.error('Error fetching reports:', errorMessage);
         throw new Error(errorMessage);
       }
-
       const data = await response.json();
       let reportsData = Array.isArray(data.data) ? data.data : [];
-
       setReports(reportsData);
-
       const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
       const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
-
       const reportsByEvent = reportsData.reduce((acc, report) => {
         const eventName = report.event_name || 'N/A Event';
         if (!acc[eventName]) {
@@ -228,12 +230,10 @@ const SystemReports = () => {
         acc[eventName].revenue += report.total_revenue_summary || 0;
         return acc;
       }, {});
-
       const revenueByTicketType = reportsData.reduce((acc, report) => {
         const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
         const revenue = report.total_revenue_summary || 0;
         const tickets = report.total_tickets_sold_summary || 0;
-
         if (!acc[ticketTypeName]) {
           acc[ticketTypeName] = { amount: 0, tickets: 0 };
         }
@@ -241,8 +241,7 @@ const SystemReports = () => {
         acc[ticketTypeName].tickets += tickets;
         return acc;
       }, {});
-
-      const timeSeriesData = reportsData.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
+      const timeSeriesData = reportsData.reduce((acc, report) => {
         const date = new Date(report.timestamp).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { revenue: 0, tickets: 0 };
@@ -250,30 +249,37 @@ const SystemReports = () => {
         acc[date].revenue += report.total_revenue_summary || 0;
         acc[date].tickets += report.total_tickets_sold_summary || 0;
         return acc;
-      }, {} as Record<string, { revenue: number; tickets: number }>);
-
+      }, {});
       setStats({
         totalReports: reportsData.length,
         totalRevenue,
         totalTickets,
-        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
-          event_name: name,
-          count: (data as { count: number; event_id: number; revenue: number }).count,
-          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
-          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
-        })),
-        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
-          ticket_type_name: type,
-          amount: data.amount,
-          tickets: data.tickets
-        })),
-        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
-          date,
-          revenue: (data as { revenue: number; tickets: number }).revenue,
-          tickets: (data as { revenue: number; tickets: number }).tickets
-        })).sort((a, b) => a.date.localeCompare(b.date))
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => {
+          const d = data as { count: number; event_id: number; revenue: number };
+          return {
+            event_name: name,
+            count: d.count,
+            event_id: d.event_id,
+            revenue: d.revenue
+          };
+        }),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]) => {
+          const d = data as { amount: number; tickets: number };
+          return {
+            ticket_type_name: type,
+            amount: d.amount,
+            tickets: d.tickets
+          };
+        }),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => {
+          const d = data as { revenue: number; tickets: number };
+          return {
+            date,
+            revenue: d.revenue,
+            tickets: d.tickets
+          };
+        }).sort((a, b) => a.date.localeCompare(b.date))
       });
-
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
@@ -284,7 +290,15 @@ const SystemReports = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedOrganizer, startDate, endDate]);
+  }, [selectedOrganizer, startDate, endDate, selectedCurrency]);
+
+  useEffect(() => {
+    fetchOrganizers();
+  }, []);
+
+  useEffect(() => {
+    fetchExchangeRates();
+  }, [startDate, endDate, selectedCurrency]);
 
   useEffect(() => {
     fetchReports();
@@ -292,16 +306,14 @@ const SystemReports = () => {
 
   const downloadPDF = async (eventId, eventName) => {
     setDownloadingPdfs(prev => new Set([...prev, eventId]));
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf?format=pdf`, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Accept': 'application/pdf',
         },
       });
-
       if (!response.ok) {
         let errorMessage = `Failed to download PDF (${response.status})`;
         try {
@@ -312,7 +324,6 @@ const SystemReports = () => {
         }
         throw new Error(errorMessage);
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -320,15 +331,12 @@ const SystemReports = () => {
       link.download = `event_report_${eventId}.pdf`;
       document.body.appendChild(link);
       link.click();
-
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-
       toast({
         title: "Success",
         description: `PDF report for "${eventName}" downloaded successfully`,
       });
-
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
@@ -345,12 +353,11 @@ const SystemReports = () => {
     }
   };
 
-  const exportAllReports = async () => {
+  const exportAllReports = async (format) => {
     setIsExportingAll(true);
     try {
-      let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`;
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports?format=${format}`;
       const params = new URLSearchParams();
-
       if (selectedOrganizer !== 'all') {
         params.append('organizer_id', selectedOrganizer);
       }
@@ -360,19 +367,19 @@ const SystemReports = () => {
       if (endDate) {
         params.append('end_date', endDate);
       }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
+      if (selectedCurrency) {
+        params.append('currency_id', selectedCurrency);
       }
-
+      if (params.toString()) {
+        url += `&${params.toString()}`;
+      }
       const response = await fetch(url, {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Accept': 'text/csv',
+          'Accept': format === 'csv' ? 'text/csv' : 'application/json',
         },
       });
-
       if (!response.ok) {
         let errorMessage = `Failed to export all reports (${response.status})`;
         try {
@@ -383,32 +390,66 @@ const SystemReports = () => {
         }
         throw new Error(errorMessage);
       }
-
       const blob = await response.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = urlBlob;
-      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.${format}`;
       document.body.appendChild(link);
       link.click();
-
       window.URL.revokeObjectURL(urlBlob);
       document.body.removeChild(link);
-
       toast({
         title: "Success",
-        description: "All filtered reports exported successfully.",
+        description: `All filtered reports exported successfully as ${format.toUpperCase()}.`,
       });
-
     } catch (error) {
-      console.error('Error exporting all reports:', error);
+      console.error(`Error exporting all reports as ${format}:`, error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to export all reports.",
+        description: error instanceof Error ? error.message : `Failed to export all reports as ${format}.`,
         variant: "destructive",
       });
     } finally {
       setIsExportingAll(false);
+    }
+  };
+
+  const sendEmail = async () => {
+    if (!recipientEmails) {
+      toast({
+        title: "Error",
+        description: "Please enter recipient email addresses.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?send_email=true&recipient_email=${recipientEmails}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        let errorMessage = `Failed to send email (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+      toast({
+        title: "Success",
+        description: "Email sent successfully.",
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send email.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -524,6 +565,23 @@ const SystemReports = () => {
                     className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currency" className="text-gray-900 dark:text-white">Currency</Label>
+                  <Select
+                    value={selectedCurrency}
+                    onValueChange={setSelectedCurrency}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="JPY">JPY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-end gap-2">
                   <Button
                     onClick={fetchReports}
@@ -552,7 +610,7 @@ const SystemReports = () => {
                 </div>
                 <div className="flex items-end">
                   <Button
-                    onClick={exportAllReports}
+                    onClick={() => exportAllReports('csv')}
                     className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 dark:from-green-600 dark:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800 text-white transition-all hover:scale-105"
                     disabled={isExportingAll || reports.length === 0}
                   >
@@ -564,7 +622,24 @@ const SystemReports = () => {
                     ) : (
                       <>
                         <FileDown className="mr-2 h-4 w-4" />
-                        Export All
+                        Export All as CSV
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => exportAllReports('json')}
+                    className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 dark:from-purple-600 dark:to-indigo-700 dark:hover:from-purple-700 dark:hover:to-indigo-800 text-white transition-all hover:scale-105 ml-2"
+                    disabled={isExportingAll || reports.length === 0}
+                  >
+                    {isExportingAll ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export All as JSON
                       </>
                     )}
                   </Button>
@@ -574,7 +649,6 @@ const SystemReports = () => {
           </div>
         </CardHeader>
       </Card>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -586,7 +660,6 @@ const SystemReports = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">Generated reports</p>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</CardTitle>
@@ -594,12 +667,11 @@ const SystemReports = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {selectedCurrency} {stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Across all events</p>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Tickets</CardTitle>
@@ -610,7 +682,6 @@ const SystemReports = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">Tickets sold</p>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue/Event</CardTitle>
@@ -618,13 +689,12 @@ const SystemReports = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-              ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              {selectedCurrency} {stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Per event average</p>
           </CardContent>
         </Card>
       </div>
-
       {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
@@ -671,7 +741,6 @@ const SystemReports = () => {
           </CardContent>
         </Card>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
@@ -697,7 +766,7 @@ const SystemReports = () => {
                     <Tooltip
                       contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
                       formatter={(value, name) => [
-                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
+                        name === 'count' ? `${value} Reports` : `${selectedCurrency} ${value.toLocaleString()}`,
                         name === 'count' ? 'Reports' : 'Revenue'
                       ]}
                     />
@@ -725,7 +794,6 @@ const SystemReports = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
           <CardHeader>
             <CardTitle className="text-gray-900 dark:text-white">Revenue by Ticket Type</CardTitle>
@@ -756,7 +824,7 @@ const SystemReports = () => {
                     </Pie>
                     <Tooltip
                       contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                      formatter={(value) => [`${selectedCurrency} ${value.toLocaleString()}`, 'Revenue']}
                     />
                     <Legend />
                   </PieChart>
@@ -770,7 +838,6 @@ const SystemReports = () => {
           </CardContent>
         </Card>
       </div>
-
       <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="text-gray-900 dark:text-white">Event Reports</CardTitle>
@@ -822,6 +889,35 @@ const SystemReports = () => {
             ) : (
               <p className="text-center text-gray-400">No events with reports found for the current filters.</p>
             )}
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-gray-900 dark:text-white">Send Report via Email</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">Enter recipient email addresses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipientEmails" className="text-gray-900 dark:text-white">Recipient Emails</Label>
+              <Input
+                id="recipientEmails"
+                type="text"
+                value={recipientEmails}
+                onChange={(e) => setRecipientEmails(e.target.value)}
+                placeholder="Enter email addresses separated by commas"
+                className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+              />
+            </div>
+            <Button
+              onClick={sendEmail}
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 dark:from-purple-600 dark:to-indigo-700 dark:hover:from-purple-700 dark:hover:to-indigo-800 text-white transition-all hover:scale-105"
+              disabled={!recipientEmails}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Send Email
+            </Button>
           </div>
         </CardContent>
       </Card>
