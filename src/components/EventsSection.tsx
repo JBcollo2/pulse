@@ -41,11 +41,11 @@ const tabs = [
   { id: 'past', label: 'Past Events', icon: History }
 ];
 
-const EventsSection: React.FC<EventsSectionProps> = ({ 
-  events, 
-  onLike, 
+const EventsSection: React.FC<EventsSectionProps> = ({
+  events,
+  onLike,
   showLikes = false,
-  showPastEvents = true 
+  showPastEvents = true
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -56,45 +56,44 @@ const EventsSection: React.FC<EventsSectionProps> = ({
     filterEvents();
   }, [activeTab, searchQuery, events]);
 
-const filterEvents = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  const filterEvents = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+    let result;
 
-  let result;
+    // First separate past and current events
+    const pastEvents = events.filter(event => new Date(event.date) < today);
+    const currentEvents = events.filter(event => new Date(event.date) >= today);
 
-  // First separate past and current events
-  const pastEvents = events.filter(event => new Date(event.date) < today);
-  const currentEvents = events.filter(event => new Date(event.date) >= today);
+    // Apply filters based on the active tab
+    if (activeTab === 'past') {
+      result = pastEvents;
+    } else if (activeTab === 'trending') {
+      result = currentEvents.filter(event => event.likes_count > 0);
+    } else if (activeTab === 'today') {
+      result = currentEvents.filter(event => event.date === todayStr);
+    } else if (activeTab === 'upcoming') {
+      result = currentEvents;
+    } else if (activeTab === 'all') {
+      result = events; // Include all events
+    } else {
+      result = currentEvents; // Default to current events
+    }
 
-  // Apply filters based on the active tab
-  if (activeTab === 'past') {
-    result = pastEvents;
-  } else if (activeTab === 'trending') {
-    result = currentEvents.filter(event => event.likes_count > 0);
-  } else if (activeTab === 'today') {
-    result = currentEvents.filter(event => event.date === todayStr);
-  } else if (activeTab === 'upcoming') {
-    result = currentEvents;
-  } else if (activeTab === 'all') {
-    result = events; // Include all events
-  } else {
-    result = currentEvents; // Default to current events
-  }
+    // Apply search filter if there's a query
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        event =>
+          event.name.toLowerCase().includes(query) ||
+          event.description.toLowerCase().includes(query) ||
+          event.location.toLowerCase().includes(query)
+      );
+    }
 
-  // Apply search filter if there's a query
-  if (searchQuery.trim() !== '') {
-    const query = searchQuery.toLowerCase();
-    result = result.filter(
-      event =>
-        event.name.toLowerCase().includes(query) ||
-        event.description.toLowerCase().includes(query) ||
-        event.location.toLowerCase().includes(query)
-    );
-  }
-
-  setFilteredEvents(result);
-};
+    setFilteredEvents(result);
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -120,10 +119,10 @@ const filterEvents = () => {
     <section className="py-8 md:py-16 px-4 container mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-10">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">Discover Events</h2>
-          <p className="text-sm md:text-base text-muted-foreground">Explore the most exciting events around you</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-white">Discover Events</h2>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">Explore the most exciting events around you</p>
         </div>
-        
+
         <div className="mt-4 md:mt-0 overflow-x-auto">
           <div className="glass-card dark:glass-card-dark p-1 flex gap-1 min-w-max">
             {tabs.map((tab) => (
@@ -132,7 +131,7 @@ const filterEvents = () => {
                 variant="ghost"
                 className={cn(
                   "flex items-center rounded-lg text-xs md:text-sm whitespace-nowrap",
-                  activeTab === tab.id && "bg-pulse-purple text-white"
+                  activeTab === tab.id && "bg-purple-600 text-white"
                 )}
                 onClick={() => handleTabClick(tab.id)}
               >
@@ -146,18 +145,18 @@ const filterEvents = () => {
 
       <div className="mb-6 md:mb-8 max-w-md mx-auto">
         <form onSubmit={handleSearchSubmit} className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-          <Input 
-            type="text" 
-            placeholder="Search events, venues, or categories" 
-            className="pl-10 bg-background border-input focus:border-pulse-purple"
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />
+          <Input
+            type="text"
+            placeholder="Search events, venues, or categories"
+            className="pl-10 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-purple-600 dark:focus:border-purple-600 rounded-lg"
             value={searchQuery}
             onChange={handleSearch}
           />
           <Button type="submit" className="sr-only">Search</Button>
         </form>
       </div>
-      
+
       {filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredEvents.map((event, index) => (
@@ -187,15 +186,15 @@ const filterEvents = () => {
         </div>
       ) : (
         <div className="text-center py-8 md:py-16">
-          <p className="text-lg md:text-xl text-muted-foreground mb-3 md:mb-4">No events found</p>
-          <p className="text-xs md:text-sm text-muted-foreground">Try changing your search criteria or check back later for new events.</p>
+          <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-3 md:mb-4">No events found</p>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Try changing your search criteria or check back later for new events.</p>
         </div>
       )}
-      
+
       <div className="flex justify-center mt-8 md:mt-12">
-        <Button 
-          variant="outline" 
-          className="border-pulse-purple text-pulse-purple hover:bg-pulse-purple hover:text-white rounded-xl px-6 md:px-8 py-4 md:py-6"
+        <Button
+          variant="outline"
+          className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl px-6 md:px-8 py-4 md:py-6"
           onClick={handleViewAll}
         >
           View All Events

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X,CheckCircle } from 'lucide-react';
+import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X, CheckCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EventMap from '@/components/EventMap';
 import {
@@ -21,10 +21,11 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TicketType {
   id: number;
-  type_name: string;  // Changed from 'name' to 'type_name'
+  type_name: string;
   price: number;
   quantity?: number;
 }
@@ -53,11 +54,8 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const paymentReference = searchParams.get('reference');
   const location = useLocation();
-
-  // Add payment status handling state
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending' | null>(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
-
   const [event, setEvent] = useState<Event | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,112 +68,9 @@ const EventDetails = () => {
   const [buyerDetails, setBuyerDetails] = useState({
     name: '',
     email: '',
-    phone_number: '' // Added phone number for M-Pesa
+    phone_number: ''
   });
   const { toast } = useToast();
-
-  // Debugging helper for inspecting API URLs
-  const logAPIUrl = (url: string) => {
-    console.log(`API URL: ${url}`);
-    // Also log any environment variables being used
-    console.log(`VITE_API_URL: ${import.meta.env.VITE_API_URL}`);
-  };
-  useEffect(() => {
-    const fetchEventAndTickets = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log("Fetching event details for ID:", id);
-
-        // Fetch event details
-        const eventRes = await fetch(`${import.meta.env.VITE_API_URL}/events/${id}`, {
-          credentials: 'include'
-        });
-
-        console.log("Event API response status:", eventRes.status);
-
-        if (!eventRes.ok) {
-          const errorText = await eventRes.text();
-          console.error("Event API error:", errorText);
-          throw new Error(`Failed to fetch event: ${errorText}`);
-        }
-
-        const eventData = await eventRes.json();
-        console.log("Event data received:", eventData);
-        setEvent(eventData);
-
-        // Fetch ticket types for this event
-        console.log("Fetching ticket types for event ID:", id);
-
-        // Log the exact URL being called
-          const ticketTypesUrl = `${import.meta.env.VITE_API_URL}/events/${id}/ticket-types`;
-        console.log("Ticket types URL:", ticketTypesUrl);
-          const ticketRes = await fetch(ticketTypesUrl, {
-            credentials: 'include'
-          });
-
-        console.log("Ticket types API response status:", ticketRes.status);
-
-          if (!ticketRes.ok) {
-          const errorText = await ticketRes.text();
-          console.error("Ticket types API error:", errorText);
-          throw new Error(`Failed to fetch ticket types: ${errorText}`);
-        }
-            const ticketData = await ticketRes.json();
-        console.log("Ticket types data received:", ticketData);
-
-        // Check the structure of the response
-        if (!ticketData.ticket_types && Array.isArray(ticketData)) {
-          // If the response is an array directly
-          console.log("Ticket data is an array, not an object with ticket_types property");
-          setTicketTypes(ticketData);
-          if (ticketData.length > 0) {
-            setTicketType(ticketData[0].id.toString());
-          }
-      } else {
-          // Handle the expected structure
-          setTicketTypes(ticketData.ticket_types || []);
-          if (ticketData.ticket_types?.length > 0) {
-            setTicketType(ticketData.ticket_types[0].id.toString());
-      }
-        }
-    } catch (err) {
-        console.error("Error fetching event data:", err);
-        setError('Could not load event or ticket types. ' + (err instanceof Error ? err.message : String(err)));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEventAndTickets();
-  }, [id]);
-
-  // Also fetch user profile to pre-fill buyer details
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          setBuyerDetails({
-            name: userData.full_name || '',
-            email: userData.email || '',
-            phone_number: userData.phone_number || ''
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-      }
-  };
-
-    fetchUserProfile();
-  }, []);
-
-  const selectedTicketPrice = ticketTypes.find(t => t.id.toString() === ticketType)?.price || 0;
-  const total = selectedTicketPrice * ticketCount;
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -193,12 +88,82 @@ const EventDetails = () => {
     }).format(amount);
   };
 
+  useEffect(() => {
+    const fetchEventAndTickets = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const eventRes = await fetch(`${import.meta.env.VITE_API_URL}/events/${id}`, {
+          credentials: 'include'
+        });
+
+        if (!eventRes.ok) {
+          throw new Error('Failed to fetch event details.');
+        }
+
+        const eventData = await eventRes.json();
+        setEvent(eventData);
+
+        const ticketTypesUrl = `${import.meta.env.VITE_API_URL}/events/${id}/ticket-types`;
+        const ticketRes = await fetch(ticketTypesUrl, {
+          credentials: 'include'
+        });
+
+        if (!ticketRes.ok) {
+          throw new Error('Failed to fetch ticket types.');
+        }
+
+        const ticketData = await ticketRes.json();
+        if (Array.isArray(ticketData)) {
+          setTicketTypes(ticketData);
+          if (ticketData.length > 0) {
+            setTicketType(ticketData[0].id.toString());
+          }
+        } else if (ticketData.ticket_types) {
+          setTicketTypes(ticketData.ticket_types);
+          if (ticketData.ticket_types.length > 0) {
+            setTicketType(ticketData.ticket_types[0].id.toString());
+          }
+        }
+      } catch (err) {
+        setError('Could not load event details. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventAndTickets();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setBuyerDetails({
+            name: userData.full_name || '',
+            email: userData.email || '',
+            phone_number: userData.phone_number || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  const selectedTicketPrice = ticketTypes.find(t => t.id.toString() === ticketType)?.price || 0;
+  const total = selectedTicketPrice * ticketCount;
+
   const handleProceedToPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    // Show payment method selection dialog
     setShowPaymentDialog(true);
-    
-    // Disable the buy button for 20 seconds
     setBuyButtonDisabled(true);
     setTimeout(() => {
       setBuyButtonDisabled(false);
@@ -207,12 +172,10 @@ const EventDetails = () => {
 
   const handlePaymentMethodSelect = async (method: string) => {
     setShowPaymentDialog(false);
-    
+
     if (!event) return;
 
     try {
-      console.log("Purchasing ticket with payment method:", method);
-      
       const ticketData = {
         event_id: event.id,
         ticket_type_id: parseInt(ticketType),
@@ -222,9 +185,7 @@ const EventDetails = () => {
         buyer_email: buyerDetails.email,
         phone_number: buyerDetails.phone_number
       };
-      
-      console.log("Ticket purchase data:", ticketData);
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/tickets`, {
         method: 'POST',
         credentials: 'include',
@@ -233,19 +194,14 @@ const EventDetails = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Payment error response:", errorData);
-        throw new Error(errorData.error || "Payment initialization failed");
+        throw new Error("Payment initialization failed");
       }
 
       const data = await response.json();
-      console.log("Payment response:", data);
-      
+
       if (method === "Paystack" && data.authorization_url) {
-        // Redirect to Paystack payment page
         window.location.href = data.authorization_url;
       } else if (method === "Mpesa") {
-        // For M-Pesa, show a message to check phone
         toast({
           title: "M-Pesa Payment Initiated",
           description: "Please check your phone for STK push notification and complete the payment",
@@ -258,16 +214,14 @@ const EventDetails = () => {
         });
       }
     } catch (err) {
-      console.error("Payment error:", err);
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Could not start payment.",
+        description: "Could not start payment. Please try again.",
         variant: "destructive"
       });
     }
   };
 
-  // Check for payment status in the URL path
   useEffect(() => {
     if (location.pathname.includes('/payment-success')) {
       setPaymentStatus('success');
@@ -277,13 +231,11 @@ const EventDetails = () => {
       setPaymentStatus('pending');
     }
 
-    // If there's a reference, verify the payment
     if (paymentReference && !paymentStatus) {
       verifyPaymentStatus(paymentReference);
     }
   }, [location.pathname, paymentReference]);
 
-  // Add function to verify payment status
   const verifyPaymentStatus = async (reference: string) => {
     setVerifyingPayment(true);
     try {
@@ -294,7 +246,6 @@ const EventDetails = () => {
       });
 
       const data = await response.json();
-      console.log("Payment verification response:", data);
 
       if (response.ok && data.status === 'success') {
         setPaymentStatus('success');
@@ -313,7 +264,6 @@ const EventDetails = () => {
         });
       }
     } catch (error) {
-      console.error("Error verifying payment:", error);
       setPaymentStatus('failed');
       toast({
         title: "Verification Error",
@@ -325,7 +275,6 @@ const EventDetails = () => {
     }
   };
 
-  // Render payment status alert if applicable
   const renderPaymentStatusAlert = () => {
     if (!paymentStatus) return null;
 
@@ -391,51 +340,74 @@ const EventDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span>Loading event details...</span>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="container mx-auto px-4 py-12">
+          <Skeleton className="h-8 w-48 mb-12" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Skeleton className="h-96 w-full" />
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+            <div className="lg:col-span-1">
+              <Skeleton className="h-96 w-full" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-500">
-        {error || "Event not found."}
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-red-500">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                {error || "Event not found. Please try again later."}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Navbar />
-      <main className="py-12">
+      <main className="py-12 pt-24">
         <div className="container mx-auto px-4">
-          {/* Payment Status Alert */}
           {verifyingPayment ? (
             <div className="mb-6 text-center p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
               <p>Verifying your payment...</p>
             </div>
           ) : renderPaymentStatusAlert()}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Event Details */}
             <div className="lg:col-span-2">
               <div className="rounded-lg overflow-hidden mb-8">
                 <img
                   src={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
                   alt={event.name}
-                  className="w-full h-auto object-cover"
+                  className="w-full max-h-96 object-cover"
                 />
               </div>
-              
+
               <div className="mb-8">
                 {event.category && (
-                  <Badge className="mb-4 bg-ticketpurple-600">{event.category}</Badge>
+                  <Badge className="mb-4 bg-purple-600">{event.category}</Badge>
                 )}
                 <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
-                
-                <div className="flex flex-wrap gap-6 mb-6 text-muted-foreground">
+
+                <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
                   <div className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
                     <span>{formatDate(event.date)}</span>
@@ -449,31 +421,26 @@ const EventDetails = () => {
                     <span>By {event.organizer.company_name}</span>
                   </div>
                 </div>
-                
-                <Separator className="my-6" />
-                
+
+                <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
+
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-bold mb-4">About This Event</h2>
-                    <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
                   </div>
-                  
+
                   <div>
                     <h2 className="text-xl font-bold mb-4">Location</h2>
-                    <p className="text-muted-foreground mb-4">{event.location}</p>
-                    <EventMap 
-                      location={event.location}
-                      // latitude={event.latitude}
-                      // longitude={event.longitude}
-                    />
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
+                    <EventMap location={event.location} />
                   </div>
                 </div>
               </div>
             </div>
-            
-            {/* Ticket Purchase */}
+
             <div className="lg:col-span-1">
-              <div className="bg-card text-card-foreground p-6 rounded-lg shadow-md sticky top-4 border border-border">
+              <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
                 {isCheckingOut ? (
                   <div>
                     <h2 className="text-xl font-bold mb-6">Complete Your Purchase</h2>
@@ -489,7 +456,7 @@ const EventDetails = () => {
                             value={buyerDetails.name}
                             onChange={(e) => setBuyerDetails({ ...buyerDetails, name: e.target.value })}
                             required
-                            className="bg-background"
+                            className="bg-gray-50 dark:bg-gray-800"
                           />
                         </div>
                         <div>
@@ -502,7 +469,7 @@ const EventDetails = () => {
                             value={buyerDetails.email}
                             onChange={(e) => setBuyerDetails({ ...buyerDetails, email: e.target.value })}
                             required
-                            className="bg-background"
+                            className="bg-gray-50 dark:bg-gray-800"
                           />
                         </div>
                         <div>
@@ -515,12 +482,12 @@ const EventDetails = () => {
                             value={buyerDetails.phone_number}
                             onChange={(e) => setBuyerDetails({ ...buyerDetails, phone_number: e.target.value })}
                             required
-                            className="bg-background"
-                          /> 
+                            className="bg-gray-50 dark:bg-gray-800"
+                          />
                         </div>
                       </div>
-                      
-                      <div className="border-t border-border pt-4 mb-6">
+
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
                         <div className="flex justify-between mb-2">
                           <span>Subtotal</span>
                           <span>{formatCurrency(total)}</span>
@@ -534,10 +501,9 @@ const EventDetails = () => {
                           <span>{formatCurrency(total * 1.1)}</span>
                         </div>
                       </div>
-
                       <Button
                         type="submit"
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                         disabled={buyButtonDisabled}
                       >
                         {buyButtonDisabled ? (
@@ -552,7 +518,7 @@ const EventDetails = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full mt-2 border-border"
+                        className="w-full mt-2 border-gray-300 dark:border-gray-700"
                         onClick={() => setIsCheckingOut(false)}
                       >
                         Back
@@ -562,8 +528,8 @@ const EventDetails = () => {
                 ) : (
                   <div>
                     <h2 className="text-xl font-bold mb-2">Tickets</h2>
-                    <p className="text-muted-foreground mb-6">Secure your spot now</p>
-                    
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
+
                     {ticketTypes.length > 0 ? (
                       <>
                         <div className="space-y-4 mb-6">
@@ -572,10 +538,10 @@ const EventDetails = () => {
                               Ticket Type
                             </label>
                             <Select value={ticketType} onValueChange={setTicketType}>
-                              <SelectTrigger id="ticketType" className="bg-background">
+                              <SelectTrigger id="ticketType" className="bg-gray-50 dark:bg-gray-800">
                                 <SelectValue placeholder="Select ticket type" />
-                          </SelectTrigger>
-                          <SelectContent>
+                              </SelectTrigger>
+                              <SelectContent>
                                 {ticketTypes.map((type) => (
                                   <SelectItem key={type.id} value={type.id.toString()}>
                                     <span className="font-medium">{type.type_name}</span> - {formatCurrency(type.price)}
@@ -584,7 +550,6 @@ const EventDetails = () => {
                               </SelectContent>
                             </Select>
                           </div>
-
                           <div>
                             <label htmlFor="quantity" className="block text-sm font-medium mb-1">
                               Quantity
@@ -592,8 +557,8 @@ const EventDetails = () => {
                             <Select
                               value={ticketCount.toString()}
                               onValueChange={(value) => setTicketCount(parseInt(value))}
-                    >
-                              <SelectTrigger id="quantity" className="bg-background">
+                            >
+                              <SelectTrigger id="quantity" className="bg-gray-50 dark:bg-gray-800">
                                 <SelectValue placeholder="Select quantity" />
                               </SelectTrigger>
                               <SelectContent>
@@ -604,46 +569,45 @@ const EventDetails = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                    </div>
-                  </div>
-
-                        <div className="border-t border-border pt-4 mb-6">
+                          </div>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
                           <div className="flex justify-between mb-2">
                             <span>
                               {ticketTypes.find(t => t.id.toString() === ticketType)?.type_name} × {ticketCount}
                             </span>
                             <span>{formatCurrency(selectedTicketPrice * ticketCount)}</span>
-              </div>
+                          </div>
                           <div className="flex justify-between font-bold text-lg mt-4">
                             <span>Subtotal</span>
                             <span>{formatCurrency(total)}</span>
-          </div>
-                      </div>
+                          </div>
+                        </div>
                         <Button
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                           onClick={() => setIsCheckingOut(true)}
-            >
+                        >
                           Get Tickets
-            </Button>
+                        </Button>
                       </>
                     ) : (
                       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600">
                         <p className="font-bold">No tickets available</p>
                         <p>There are currently no tickets available for this event.</p>
-            <Button
+                        <Button
                           variant="outline"
                           className="mt-4 w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-200 dark:hover:bg-yellow-900/50"
                           onClick={() => {
                             window.location.reload();
                           }}
-            >
+                        >
                           Refresh
-            </Button>
-          </div>
+                        </Button>
+                      </div>
                     )}
-          
+
                     <div className="mt-6 flex gap-4 justify-center">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                      <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-purple-600">
                         <Share2 className="h-4 w-4 mr-2" />
                         Share
                       </Button>
@@ -655,17 +619,16 @@ const EventDetails = () => {
           </div>
         </div>
       </main>
-      
-      {/* Payment Method Selection Dialog */}
+
       <AlertDialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <AlertDialogContent className="bg-card text-card-foreground border border-border">
+        <AlertDialogContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700">
           <AlertDialogHeader>
             <AlertDialogTitle>Select Payment Method</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
               Choose your preferred payment method to complete your purchase.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="grid grid-cols-2 gap-4 my-4">
             <Button
               onClick={() => handlePaymentMethodSelect("Mpesa")}
@@ -675,7 +638,7 @@ const EventDetails = () => {
               <span className="font-bold text-base">M-Pesa</span>
               <span className="text-xs mt-1">Pay with mobile money</span>
             </Button>
-            
+
             <Button
               onClick={() => handlePaymentMethodSelect("Paystack")}
               className="flex flex-col h-28 bg-blue-600 hover:bg-blue-700 text-white"
@@ -685,15 +648,15 @@ const EventDetails = () => {
               <span className="text-xs mt-1">Pay with card</span>
             </Button>
           </div>
-          
+
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-border bg-background hover:bg-accent hover:text-accent-foreground">
+            <AlertDialogCancel className="border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       <Footer />
     </div>
   );
