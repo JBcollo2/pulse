@@ -1,27 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-import { debounce } from 'lodash';
 import {
-  BarChart3,
-  DollarSign,
-  Globe,
-  ArrowUpDown,
-  RefreshCw,
-  Loader2,
-  TrendingUp,
-  Users,
-  FileText,
-  AlertCircle,
-  ChevronDown,
-  Calendar,
-  Building,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Download,
-  Mail,
-  FileSpreadsheet,
-  Search,
+  FileText,
+  Loader2,
+  Users,
+  BarChart3,
+  Calendar,
+  FileDown,
+  Filter,
+  RefreshCw,
+  TrendingUp,
+  Eye,
   Clock,
-  Check
+  X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   BarChart,
   Bar,
@@ -34,1207 +44,766 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 
-// Color scheme for charts
-const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
-
-// Interfaces
-interface Organizer {
-  organizer_id: number;
-  name: string;
-}
-
-interface Event {
-  event_id: number;
-  name: string;
-  event_date?: string;
-  status?: string;
-}
-
-interface CurrencyOption {
-  value: string;
-  label: string;
-  id: number;
-  symbol: string;
-}
-
-interface ReportSummary {
-  total_tickets_sold: number;
-  total_revenue: number;
-  total_attendees: number;
-  event_count: number;
-  report_count: number;
-  currency: string;
-  currency_symbol: string;
-  events: Array<{
-    event_id: number;
-    event_name: string;
-    event_date: string;
-    location: string;
-    tickets_sold: number;
-    revenue: number;
-    attendees: number;
-    report_count: number;
-  }>;
-}
-
-interface AdminEventReportResponse {
-  event_info: {
-    event_id: number;
-    event_name: string;
-    event_date: string;
-    location: string;
-    organizer_id: number;
-    organizer_name: string;
-  };
-  fresh_report_data: {
-    event_summary: ReportSummary;
-    currency_info: {
-      currency: string;
-      currency_symbol: string;
-    };
-  };
-  existing_reports: Array<{
-    id: number;
-    event_id: number;
-    total_revenue: number;
-    base_currency: {
-      code: string;
-      symbol: string;
-    };
-    converted_revenue: number;
-    converted_currency: {
-      code: string;
-      symbol: string;
-    };
-    tickets_sold_by_type: { [key: string]: number };
-    revenue_by_ticket_type: { [key: string]: number };
-  }>;
-}
-
-interface DashboardStats {
-  originalRevenue: number;
-  totalRevenue: number;
-  totalTickets: number;
-  exchangeRate: number;
-  ticketBreakdown: Array<{
-    name: string;
-    value: number;
-    revenue: number;
-  }>;
-  targetCurrencyCode: string;
-  targetCurrencySymbol: string;
-}
-
-// Custom Components (Tailwind CSS for styling)
-const Card = ({ children, className = "" }) => (
-  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg ${className}`}>
-    {children}
-  </div>
-);
-
-const CardHeader = ({ children, className = "" }) => (
-  <div className={`px-6 py-4 border-b border-gray-200 dark:border-gray-700 ${className}`}>
-    {children}
-  </div>
-);
-
-const CardTitle = ({ children, className = "" }) => (
-  <h3 className={`text-lg font-semibold text-gray-900 dark:text-white ${className}`}>
-    {children}
-  </h3>
-);
-
-const CardContent = ({ children, className = "" }) => (
-  <div className={`px-6 py-4 ${className}`}>
-    {children}
-  </div>
-);
-
-const Button = ({ children, onClick, disabled = false, className = "", variant = "default" }) => {
-  const baseClasses = "px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2";
-  const variants = {
-    default: "bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400",
-    success: "bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-400",
-    outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-  };
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClasses} ${variants[variant]} ${className}`}
-    >
-      {children}
-    </button>
-  );
+// Define specific colors for each ticket type
+const COLORS_BY_TICKET = {
+  REGULAR: '#FF8042',
+  VIP: '#FFBB28',
+  STUDENT: '#0088FE',
+  GROUP_OF_5: '#00C49F',
+  COUPLES: '#FF6699',
+  EARLY_BIRD: '#AA336A',
+  VVIP: '#00FF00',
+  GIVEAWAY: '#CCCCCC',
+  UNKNOWN_TYPE: '#A9A9A9',
 };
 
-const Select = ({ value, onChange, options, placeholder = "Select...", loading = false, className = "", isSearchable = false, searchPlaceholder = "Search...", menuPortalTarget, menuPosition, styles }) => (
-  <div className={`relative ${className}`}>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={loading}
-      className="w-full px-4 py-2 pr-10 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white disabled:opacity-50"
-    >
-      <option value="">{loading ? "Loading..." : placeholder}</option>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-  </div>
-);
+const FALLBACK_COLOR = COLORS_BY_TICKET.UNKNOWN_TYPE;
 
-const Input = ({ value, onChange, placeholder = "", type = "text", className = "" }) => (
-  <input
-    type={type}
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className={`w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white ${className}`}
-    placeholder={placeholder}
-  />
-);
-
-const Toast = ({ message, type = "success", onClose }) => (
-  <div className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-    type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-  }`}>
-    <div className="flex items-center gap-2">
-      {type === 'success' ? (
-        <div className="h-4 w-4 bg-green-200 rounded-full flex items-center justify-center">
-          <div className="h-2 w-2 bg-green-600 rounded-full"></div>
-        </div>
-      ) : (
-        <AlertCircle className="h-4 w-4" />
-      )}
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-2 hover:opacity-80">×</button>
-    </div>
-  </div>
-);
+// Quick filter presets
+const QUICK_FILTERS = [
+  { label: 'Today', days: 0 },
+  { label: 'Last 7 days', days: 7 },
+  { label: 'Last 30 days', days: 30 },
+  { label: 'Last 90 days', days: 90 },
+  { label: 'This Year', days: 365 },
+];
 
 const SystemReports = () => {
-  // State management
-  const [organizers, setOrganizers] = useState<Organizer[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
-  const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
-  const [selectedEvent, setSelectedEvent] = useState<string>('');
-  const [selectedCurrencyCode, setSelectedCurrencyCode] = useState<string>('USD');
-  const [baseCurrencyCode] = useState<string>('USD');
-  const [days, setDays] = useState<string>('30');
-  const [recipientEmail, setRecipientEmail] = useState<string>('dk7468563@gmail.com');
-  const [sendEmail, setSendEmail] = useState<boolean>(true);
-  const [format, setFormat] = useState<string>('json');
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [emailDisabled, setEmailDisabled] = useState(false);
-
-  interface ValidationErrors {
-    organizer?: string;
-    event?: string;
-    currency?: string;
-    days?: string;
-    email?: string;
-  }
-
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [reportGenerated, setReportGenerated] = useState(false);
-
-  // Data states
-  const [reportApiResponse, setReportApiResponse] = useState<AdminEventReportResponse | null>(null);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
-    originalRevenue: 0,
+  const [reports, setReports] = useState([]);
+  const [organizers, setOrganizers] = useState([]);
+  const [selectedOrganizer, setSelectedOrganizer] = useState('all');
+  const [stats, setStats] = useState({
+    totalReports: 0,
     totalRevenue: 0,
     totalTickets: 0,
-    exchangeRate: 1,
-    ticketBreakdown: [],
-    targetCurrencyCode: 'USD',
-    targetCurrencySymbol: '$',
+    reportsByEvent: [],
+    revenueByTicketType: [],
+    timeSeriesData: []
   });
-
-  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState(true);
-  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-  const [isLoadingCurrencies, setIsLoadingCurrencies] = useState(true);
-  const [isLoadingReport, setIsLoadingReport] = useState(false);
-  const [isLoadingExchangeRate, setIsLoadingExchangeRate] = useState(false);
-  const [error, setError] = useState<string>('');
-  const [downloadingPdfs, setDownloadingPdfs] = useState<Set<number>>(new Set());
+  const [downloadingPdfs, setDownloadingPdfs] = useState(new Set());
+  const [isExportingAll, setIsExportingAll] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [viewMode, setViewMode] = useState('overview');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Toast state
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  // Helper to get currency ID from code
-  const getCurrencyIdFromCode = useCallback((code: string): number | null => {
-    const currency = currencies.find(c => c.value === code);
-    return currency ? currency.id : null;
-  }, [currencies]);
-
-  // Helper to get currency symbol from code
-  const getCurrencySymbolFromCode = useCallback((code: string): string => {
-    const currency = currencies.find(c => c.value === code);
-    return currency ? currency.symbol : '$';
-  }, [currencies]);
-
-  // Toast notification helper
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 5000);
+  const toast = ({ title, description, variant = "default" }) => {
+    console.log(`${title}: ${description}`);
   };
 
-  // Add validation function
-  const validateForm = () => {
-    const errors: ValidationErrors = {};
-    if (!selectedOrganizer) {
-      errors.organizer = 'Please select an organizer';
-    }
-    if (!selectedEvent) {
-      errors.event = 'Please select an event';
-    }
-    if (!selectedCurrencyCode) {
-      errors.currency = 'Please select a target currency';
-    }
-    const daysNumber = Number(days);
-    if (!days || isNaN(daysNumber) || daysNumber <= 0) {
-      errors.days = 'Please enter a valid number of days';
-    }
-    if (sendEmail && !recipientEmail) {
-      errors.email = 'Please enter recipient email';
-    }
-    if (sendEmail && recipientEmail && !/\S+@\S+\.\S+/.test(recipientEmail)) {
-      errors.email = 'Please enter a valid email address';
-    }
-    setValidationErrors(errors);
-    const isValid = Object.keys(errors).length === 0;
-    setIsFormValid(isValid);
-    return isValid;
+  const clearFilters = () => {
+    setSelectedOrganizer('all');
+    setStartDate('');
+    setEndDate('');
   };
 
-  // Add useEffect to validate form on changes
-  useEffect(() => {
-    if (!isInitialLoad) {
-      validateForm();
-    }
-  }, [selectedOrganizer, selectedEvent, selectedCurrencyCode, days, sendEmail, recipientEmail]);
+  const applyQuickFilter = (days) => {
+    const today = new Date();
+    let start = new Date(today);
+    let end = new Date(today);
 
-  // Add useEffect to handle initial load
-  useEffect(() => {
-    if (isInitialLoad && organizers.length > 0) {
-      setIsInitialLoad(false);
+    if (days === 0) {
+      start = new Date(today);
+    } else if (days === 365) {
+      start = new Date(today.getFullYear(), 0, 1);
+    } else {
+      start.setDate(today.getDate() - days + 1);
     }
-  }, [organizers, isInitialLoad]);
 
-  // Fetch organizers
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
+  const isValidDate = (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date.getTime());
+  };
+
+  const debounce = (func, delay) => {
+    let debounceTimer;
+    return function(...args) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => func.apply(this, args), delay);
+    };
+  };
+
+  const handleDateChange = (setDate) => {
+    return debounce((date) => {
+      if (isValidDate(date)) {
+        setDate(date);
+      } else {
+        console.error('Invalid date');
+      }
+    }, 500);
+  };
+
+  const handleStartDateChange = handleDateChange(setStartDate);
+  const handleEndDateChange = handleDateChange(setEndDate);
+
   useEffect(() => {
     const fetchOrganizers = async () => {
       try {
-        setIsLoadingOrganizers(true);
         const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
           credentials: 'include'
         });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          const organizersData = Array.isArray(data) ? data : (data.data || []);
+          setOrganizers(organizersData);
         }
-        const data = await response.json();
-        setOrganizers(data.organizers || []);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizers';
-        setError(errorMessage);
         console.error('Error fetching organizers:', error);
-        showToast(errorMessage, 'error');
       } finally {
         setIsLoadingOrganizers(false);
       }
     };
+
     fetchOrganizers();
   }, []);
 
-  // Fetch events when organizer changes
-  useEffect(() => {
-    const fetchEvents = async () => {
-      if (!selectedOrganizer) {
-        setEvents([]);
-        return;
-      }
-      setIsLoadingEvents(true);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${selectedOrganizer}/events`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEvents(data.events || []);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events';
-        setError(errorMessage);
-        console.error('Error fetching events:', error);
-        showToast(errorMessage, 'error');
-      } finally {
-        setIsLoadingEvents(false);
-      }
-    };
-    fetchEvents();
-  }, [selectedOrganizer]);
-
-  // Fetch currencies
-  useEffect(() => {
-    const fetchCurrencies = async () => {
-      try {
-        setIsLoadingCurrencies(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        const currencyOptions: CurrencyOption[] = data.data.map((c: any) => ({
-          value: c.code,
-          label: c.code,
-          id: c.id,
-          symbol: c.symbol,
-        }));
-        setCurrencies(currencyOptions);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch currencies';
-        setError(errorMessage);
-        console.error('Error fetching currencies:', error);
-        showToast(errorMessage, 'error');
-      } finally {
-        setIsLoadingCurrencies(false);
-      }
-    };
-    fetchCurrencies();
-  }, []);
-
-  // Fetch exchange rate for display
-  useEffect(() => {
-    const fetchExchangeRate = async () => {
-      if (selectedCurrencyCode === baseCurrencyCode) {
-        setDashboardStats(prev => ({ ...prev, exchangeRate: 1 }));
-        return;
-      }
-      setIsLoadingExchangeRate(true);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrencyCode}`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        const rate = data.data?.rates?.[selectedCurrencyCode] || 1;
-        setDashboardStats(prev => ({
-          ...prev,
-          exchangeRate: rate,
-        }));
-      } catch (error) {
-        console.error('Error fetching exchange rate:', error);
-        setError('Failed to fetch exchange rate');
-        showToast('Failed to fetch exchange rate', 'error');
-        setDashboardStats(prev => ({ ...prev, exchangeRate: 1 }));
-      } finally {
-        setIsLoadingExchangeRate(false);
-      }
-    };
-    fetchExchangeRate();
-  }, [selectedCurrencyCode, baseCurrencyCode]);
-
-  // Modified fetchReportData function
-  const fetchReportData = async () => {
-    if (!validateForm()) {
+  const fetchReports = useCallback(async () => {
+    if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
+      toast({
+        title: "Error",
+        description: "Please enter valid dates.",
+        variant: "destructive",
+      });
       return;
     }
-    setIsLoadingReport(true);
-    setReportGenerated(false);
-    setEmailDisabled(true); // Disable the button immediately
+
+    setIsLoading(true);
+    try {
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports/summary`;
+      const params = new URLSearchParams();
+
+      if (selectedOrganizer !== 'all') {
+        params.append('organizer_id', selectedOrganizer);
+      }
+
+      if (startDate) {
+        params.append('start_date', startDate);
+      }
+
+      if (endDate) {
+        params.append('end_date', endDate);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const errorMessage = errorData.message || errorData.error || `Failed with status: ${response.status}`;
+        console.error('Error fetching reports:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      let reportsData = Array.isArray(data.data) ? data.data : [];
+
+      setReports(reportsData);
+
+      const totalRevenue = reportsData.reduce((sum, report) => sum + (report.total_revenue_summary || 0), 0);
+      const totalTickets = reportsData.reduce((sum, report) => sum + (report.total_tickets_sold_summary || 0), 0);
+
+      const reportsByEvent = reportsData.reduce((acc, report) => {
+        const eventName = report.event_name || 'N/A Event';
+        if (!acc[eventName]) {
+          acc[eventName] = { count: 0, event_id: report.event_id, revenue: 0 };
+        }
+        acc[eventName].count += 1;
+        acc[eventName].revenue += report.total_revenue_summary || 0;
+        return acc;
+      }, {});
+
+      const revenueByTicketType = reportsData.reduce((acc, report) => {
+        const ticketTypeName = (report.ticket_type_name || 'UNKNOWN_TYPE').toUpperCase();
+        const revenue = report.total_revenue_summary || 0;
+        const tickets = report.total_tickets_sold_summary || 0;
+
+        if (!acc[ticketTypeName]) {
+          acc[ticketTypeName] = { amount: 0, tickets: 0 };
+        }
+        acc[ticketTypeName].amount += revenue;
+        acc[ticketTypeName].tickets += tickets;
+        return acc;
+      }, {});
+
+      const timeSeriesData = reportsData.reduce((acc: Record<string, { revenue: number; tickets: number }>, report) => {
+        const date = new Date(report.timestamp).toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = { revenue: 0, tickets: 0 };
+        }
+        acc[date].revenue += report.total_revenue_summary || 0;
+        acc[date].tickets += report.total_tickets_sold_summary || 0;
+        return acc;
+      }, {} as Record<string, { revenue: number; tickets: number }>);
+
+      setStats({
+        totalReports: reportsData.length,
+        totalRevenue,
+        totalTickets,
+        reportsByEvent: Object.entries(reportsByEvent).map(([name, data]) => ({
+          event_name: name,
+          count: (data as { count: number; event_id: number; revenue: number }).count,
+          event_id: (data as { count: number; event_id: number; revenue: number }).event_id,
+          revenue: (data as { count: number; event_id: number; revenue: number }).revenue
+        })),
+        revenueByTicketType: Object.entries(revenueByTicketType).map(([type, data]: [string, { amount: number; tickets: number }]) => ({
+          ticket_type_name: type,
+          amount: data.amount,
+          tickets: data.tickets
+        })),
+        timeSeriesData: Object.entries(timeSeriesData).map(([date, data]) => ({
+          date,
+          revenue: (data as { revenue: number; tickets: number }).revenue,
+          tickets: (data as { revenue: number; tickets: number }).tickets
+        })).sort((a, b) => a.date.localeCompare(b.date))
+      });
+
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch system reports",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedOrganizer, startDate, endDate]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  const downloadPDF = async (eventId, eventName) => {
+    setDownloadingPdfs(prev => new Set([...prev, eventId]));
 
     try {
-      const targetCurrencyId = getCurrencyIdFromCode(selectedCurrencyCode);
-      const params = new URLSearchParams();
-      params.append('organizer_id', selectedOrganizer);
-      params.append('event_id', selectedEvent);
-      if (targetCurrencyId) {
-        params.append('currency_id', targetCurrencyId.toString());
-        params.append('use_latest_rates', 'true');
-      }
-      params.append('days', days);
-      if (sendEmail) {
-        params.append('send_email', 'true');
-        params.append('recipient_email', recipientEmail);
-      }
-      params.append('format', format);
-
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/admin/reports`, {
-        params,
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports/${eventId}/pdf`, {
+        method: 'GET',
+        credentials: 'include',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/pdf',
         },
       });
 
-      if (response.status === 200) {
-        if (format === 'pdf') {
-          const blob = await response.data;
-          const url = window.URL.createObjectURL(new Blob([blob]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `report_${selectedEvent}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(link);
-        } else if (format === 'csv') {
-          const blob = await response.data;
-          const url = window.URL.createObjectURL(new Blob([blob]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `report_${selectedEvent}.csv`;
-          document.body.appendChild(link);
-          link.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(link);
-        } else {
-          const reportResponse: AdminEventReportResponse = response.data;
-          setReportApiResponse(reportResponse);
-          const summary = reportResponse.fresh_report_data?.event_summary || {
-            total_tickets_sold: 0,
-            total_revenue: 0,
-            total_attendees: 0,
-            event_count: 0,
-            report_count: 0,
-            currency: 'USD',
-            events: []
-          };
-          const currencyInfo = reportResponse.fresh_report_data?.currency_info || {
-            currency: 'USD',
-            currency_symbol: '$'
-          };
-          const aggregatedTicketBreakdown: { [key: string]: { count: number; revenue: number } } = {};
-          reportResponse.existing_reports.forEach(report => {
-            const currentRevenue = report.converted_revenue !== undefined && report.converted_revenue !== null
-              ? report.converted_revenue
-              : report.total_revenue;
-            if (report.tickets_sold_by_type) {
-              for (const type in report.tickets_sold_by_type) {
-                aggregatedTicketBreakdown[type] = aggregatedTicketBreakdown[type] || { count: 0, revenue: 0 };
-                aggregatedTicketBreakdown[type].count += report.tickets_sold_by_type[type];
-              }
-            }
-            if (report.revenue_by_ticket_type) {
-              for (const type in report.revenue_by_ticket_type) {
-                aggregatedTicketBreakdown[type].revenue += report.revenue_by_ticket_type[type];
-              }
-            }
-          });
-          const ticketBreakdownArray = Object.keys(aggregatedTicketBreakdown).map(type => ({
-            name: type,
-            value: aggregatedTicketBreakdown[type].count,
-            revenue: aggregatedTicketBreakdown[type].revenue
-          }));
-          setDashboardStats(prev => ({
-            ...prev,
-            originalRevenue: reportResponse.existing_reports.reduce((sum, r) => sum + r.total_revenue, 0),
-            totalRevenue: summary.total_revenue,
-            totalTickets: summary.total_tickets_sold,
-            ticketBreakdown: ticketBreakdownArray,
-            targetCurrencyCode: currencyInfo.currency,
-            targetCurrencySymbol: currencyInfo.currency_symbol,
-          }));
-        }
-        setReportGenerated(true);
-        showToast('Report data loaded successfully');
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 429) {
-          const waitTime = error.response?.data?.wait_time || 30;
-          showToast(`Too many requests. Try again in ${waitTime} seconds.`, 'error');
-          setTimeout(() => setEmailDisabled(false), waitTime * 1000);
-        } else {
-          showToast("Something went wrong while sending the report.", 'error');
-          setEmailDisabled(false); // Re-enable if not a duplicate issue
-        }
-      } else {
-        showToast("An unexpected error occurred.", 'error');
-        setEmailDisabled(false); // Re-enable if not a duplicate issue
-      }
-      setError('Failed to fetch report data');
-      setReportApiResponse(null);
-      setDashboardStats({
-        originalRevenue: 0,
-        totalRevenue: 0,
-        totalTickets: 0,
-        exchangeRate: 1,
-        ticketBreakdown: [],
-        targetCurrencyCode: 'USD',
-        targetCurrencySymbol: '$',
-      });
-    } finally {
-      setIsLoadingReport(false);
-    }
-  };
-
-  const debouncedSendEmail = debounce(fetchReportData, 2000, {
-    leading: true,
-    trailing: false,
-  });
-
-  // Convert revenue button action (triggers re-fetch with new currency)
-  const handleConvertRevenue = () => {
-    if (reportApiResponse) {
-      fetchReportData();
-      showToast(`Attempting to convert revenue to ${selectedCurrencyCode}...`);
-    } else {
-      showToast('Please generate a report first.', 'error');
-    }
-  };
-
-  // Download PDF for a specific event
-  const downloadPDF = async (eventId: number, eventName: string) => {
-    setDownloadingPdfs(prev => new Set(prev).add(eventId));
-    try {
-      const params = new URLSearchParams();
-      params.append('organizer_id', selectedOrganizer);
-      params.append('event_id', eventId.toString());
-      params.append('format', 'pdf');
-      const url = `${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`;
-      const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        let errorMessage = `Failed to download PDF (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
       }
+
       const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `report_${eventName.replace(/\s+/g, '_')}.pdf`;
+      link.href = url;
+      link.download = `event_report_${eventId}.pdf`;
       document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(downloadUrl);
+
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
-      showToast('PDF downloaded successfully');
+
+      toast({
+        title: "Success",
+        description: `PDF report for "${eventName}" downloaded successfully`,
+      });
+
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';
-      setError(errorMessage);
-      showToast(errorMessage, 'error');
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download PDF report",
+        variant: "destructive",
+      });
     } finally {
       setDownloadingPdfs(prev => {
-        const updated = new Set(prev);
-        updated.delete(eventId);
-        return updated;
+        const newSet = new Set(prev);
+        newSet.delete(eventId);
+        return newSet;
       });
     }
   };
 
-  // Load report when organizer or event selection changes
-  useEffect(() => {
-    if (selectedOrganizer && selectedEvent && currencies.length > 0) {
-      fetchReportData();
-    }
-  }, [selectedOrganizer, selectedEvent, fetchReportData, currencies]);
+  const exportAllReports = async () => {
+    setIsExportingAll(true);
+    try {
+      let url = `${import.meta.env.VITE_API_URL}/admin/reports/export-all`;
+      const params = new URLSearchParams();
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-inter">
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                System Reports Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Generate comprehensive reports for events and manage currency conversions
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
-              <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {new Date().toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600 px-8 py-6">
-            <CardTitle className="flex items-center gap-4 text-2xl font-bold text-gray-800 dark:text-white">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-                <Building className="h-6 w-6 text-white" />
-              </div>
-              Report Configuration
-              {isInitialLoad && (
-                <div className="ml-auto flex items-center gap-2 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading options...
-                </div>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-8 space-y-8">
-            {/* Loading Overlay */}
-            {isInitialLoad && (
-              <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-50">
-                <div className="text-center">
-                  <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-                  <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">Loading Configuration Options...</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Please wait while we fetch the available options</p>
-                </div>
-              </div>
-            )}
-            {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* Organizer Selection */}
-              <div className="flex flex-col h-full">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
-                  Organizer
-                </label>
-                <div className="flex-1">
-                  <Select
-                    value={selectedOrganizer}
-                    onChange={(value: string) => {
-                      setSelectedOrganizer(value);
-                      setReportGenerated(false);
-                    }}
-                    options={organizers.map(org => ({ value: org.organizer_id.toString(), label: org.name }))}
-                    placeholder="Choose organizer..."
-                    loading={isLoadingOrganizers}
-                    isSearchable={organizers.length > 5}
-                    searchPlaceholder="Search organizers..."
-                    className="w-full h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                    styles={{
-                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
-                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
-                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
-                    }}
-                  />
-                  {validationErrors.organizer && (
-                    <p className="mt-1 text-sm text-red-500">{validationErrors.organizer}</p>
-                  )}
-                </div>
-              </div>
-              {/* Event Selection */}
-              <div className="flex flex-col h-full">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
-                  Event
-                </label>
-                <div className="flex-1">
-                  <Select
-                    value={selectedEvent}
-                    onChange={(value: string) => {
-                      setSelectedEvent(value);
-                      setReportGenerated(false);
-                    }}
-                    options={events.map(event => ({ value: event.event_id.toString(), label: event.name }))}
-                    placeholder="Choose event..."
-                    loading={isLoadingEvents}
-                    isSearchable={events.length > 5}
-                    searchPlaceholder="Search events..."
-                    className={`w-full h-12 text-base border-2 ${
-                      validationErrors.event
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
-                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                    styles={{
-                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
-                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
-                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
-                    }}
-                  />
-                  {validationErrors.event && (
-                    <p className="mt-1 text-sm text-red-500">{validationErrors.event}</p>
-                  )}
-                </div>
-              </div>
-              {/* Currency Selection */}
-              <div className="flex flex-col h-full">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
-                  Currency
-                </label>
-                <div className="flex-1">
-                  <Select
-                    value={selectedCurrencyCode}
-                    onChange={(value: string) => {
-                      setSelectedCurrencyCode(value);
-                      setReportGenerated(false);
-                    }}
-                    options={currencies.map(currency => ({ value: currency.value, label: currency.label }))}
-                    placeholder="Choose currency..."
-                    loading={isLoadingCurrencies}
-                    isSearchable={currencies.length > 5}
-                    searchPlaceholder="Search currencies..."
-                    className={`w-full h-12 text-base border-2 ${
-                      validationErrors.currency
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
-                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                    styles={{
-                      menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
-                      menu: (base: any) => ({ ...base, zIndex: 9999 }),
-                      control: (base: any) => ({ ...base, width: '100%', minWidth: 0 })
-                    }}
-                  />
-                  {validationErrors.currency && (
-                    <p className="mt-1 text-sm text-red-500">{validationErrors.currency}</p>
-                  )}
-                </div>
-              </div>
-              {/* Days Input */}
-              <div className="flex flex-col h-full">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 min-h-[20px]">
-                  Days
-                </label>
-                <div className="flex-1">
-                  <Input
-                    value={days}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setDays(e.target.value);
-                      setReportGenerated(false);
-                    }}
-                    type="number"
-                    placeholder="Enter days..."
-                    className={`w-full h-12 text-base border-2 ${
-                      validationErrors.days
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
-                    } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
-                  />
-                  {validationErrors.days && (
-                    <p className="mt-1 text-sm text-red-500">{validationErrors.days}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-            {/* Form Status Indicator */}
-            {!isInitialLoad && (
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
-                <div className="flex items-center gap-3">
-                  {isFormValid ? (
-                    <>
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                        <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                          All required fields completed
-                        </p>
-                        <p className="text-xs text-green-600 dark:text-green-400">
-                          Ready to generate report
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex-shrink-0 w-6 h-6 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
-                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                          Please complete all required fields
-                        </p>
-                        <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                          {Object.keys(validationErrors).length} field(s) need attention
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button
-                onClick={debouncedSendEmail}
-                disabled={!isFormValid || isLoadingReport || isInitialLoad || emailDisabled}
-                className="flex-1 h-14 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {emailDisabled ? (
-                  <>
-                    <Clock className="h-5 w-5 mr-3" />
-                    Please wait...
-                  </>
-                ) : isLoadingReport ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                    Generating Report...
-                  </>
-                ) : reportGenerated ? (
-                  <>
-                    <RefreshCw className="h-5 w-5 mr-3" />
-                    Regenerate Report
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-5 w-5 mr-3" />
-                    Generate Report
-                  </>
-                )}
-              </Button>
-              <Button
-                onClick={handleConvertRevenue}
-                disabled={!reportGenerated || isLoadingReport || isLoadingExchangeRate || selectedCurrencyCode === dashboardStats.targetCurrencyCode}
-                className="flex-1 h-14 bg-gradient-to-r from-emerald-500 via-green-600 to-teal-600 hover:from-emerald-600 hover:via-green-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {isLoadingExchangeRate ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin mr-3" />
-                    Converting...
-                  </>
-                ) : (
-                  <>
-                    <DollarSign className="h-5 w-5 mr-3" />
-                    Convert Revenue
-                  </>
-                )}
-              </Button>
-            </div>
-            {/* Email and Export Section */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-2xl p-6 border border-gray-200 dark:border-gray-600 shadow-inner">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                {/* Email Toggle */}
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      id="sendEmail"
-                      checked={sendEmail}
-                      onChange={(e) => {
-                        setSendEmail(e.target.checked);
-                        setReportGenerated(false);
-                      }}
-                      className="peer h-6 w-6 rounded-lg border-2 border-gray-300 text-blue-600 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 dark:border-gray-600 transition-all duration-200"
-                    />
-                    <Check className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                  </div>
-                  <label htmlFor="sendEmail" className="text-base font-semibold text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                    Send Email Notification
-                  </label>
-                </div>
-                {/* Email Input */}
-                {sendEmail && (
-                  <div className="flex-grow lg:max-w-md">
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        value={recipientEmail}
-                        onChange={(e) => {
-                          setRecipientEmail(e.target.value);
-                          setReportGenerated(false);
-                        }}
-                        placeholder="Enter recipient email..."
-                        type="email"
-                        className={`pl-12 h-12 text-base border-2 ${
-                          validationErrors.email
-                            ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-                            : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-blue-100 dark:focus:ring-blue-900'
-                        } rounded-xl transition-all duration-200 shadow-sm hover:shadow-md`}
-                      />
-                      {validationErrors.email && (
-                        <p className="mt-1 text-sm text-red-500">{validationErrors.email}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* Export Format */}
-                <div className="flex items-center gap-4 relative z-10">
-                  <label className="text-base font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                    Export Format:
-                  </label>
-                  <Select
-                    value={format}
-                    onChange={(value) => {
-                      setFormat(value);
-                      setReportGenerated(false);
-                    }}
-                    options={[
-                      { value: 'json', label: '📄 JSON' },
-                      { value: 'pdf', label: '📋 PDF' },
-                      { value: 'csv', label: '📊 CSV' }
-                    ]}
-                    className="w-40 h-12 text-base border-2 border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
-                    menuPortalTarget={document.body}
-                    menuPosition="fixed"
-                    styles={{
-                      menuPortal: (base) => ({ ...base, zIndex: 9996 }),
-                      menu: (base) => ({ ...base, zIndex: 9996 }),
-                      control: (base) => ({ ...base, width: '100%', minWidth: 0 })
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        {selectedCurrencyCode !== baseCurrencyCode && (
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center gap-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                <Globe className="h-6 w-6 text-blue-600" />
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Current Exchange Rate</p>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    1 {baseCurrencyCode} = {isLoadingExchangeRate ? '...' : dashboardStats.exchangeRate.toFixed(4)} {selectedCurrencyCode}
-                  </p>
-                </div>
-                <ArrowUpDown className="h-5 w-5 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        {error && (
-          <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
-                <AlertCircle className="h-5 w-5" />
-                <span>{error}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                    Original Revenue ({baseCurrencyCode})
-                  </p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {baseCurrencyCode === 'JPY' ? '¥' : '$'}
-                    {dashboardStats.originalRevenue.toLocaleString(undefined, {
-                      minimumFractionDigits: baseCurrencyCode === 'JPY' ? 0 : 2,
-                      maximumFractionDigits: baseCurrencyCode === 'JPY' ? 0 : 2
-                    })}
-                  </p>
-                </div>
-                <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                    Converted Revenue ({dashboardStats.targetCurrencyCode})
-                  </p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                    {dashboardStats.targetCurrencySymbol}
-                    {dashboardStats.totalRevenue.toLocaleString(undefined, {
-                      minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2,
-                      maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2
-                    })}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                  <DollarSign className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    Total Tickets Sold
-                  </p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {dashboardStats.totalTickets.toLocaleString()}
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                    Active Event
-                  </p>
-                  <p className="text-lg font-bold text-orange-700 dark:text-orange-300 truncate">
-                    {reportApiResponse?.event_info?.event_name || 'No Event Selected'}
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-                  <Calendar className="h-6 w-6 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        {dashboardStats.ticketBreakdown.length > 0 && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Ticket Sales by Type
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dashboardStats.ticketBreakdown}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis
-                        dataKey="name"
-                        className="text-sm"
-                        tick={{ fill: '#6B7280' }}
-                      />
-                      <YAxis
-                        className="text-sm"
-                        tick={{ fill: '#6B7280' }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#1F2937',
-                          border: 'none',
-                          borderRadius: '8px',
-                          color: '#F9FAFB'
-                        }}
-                        formatter={(value) => [`${value.toLocaleString()} tickets`, 'Quantity']}
-                      />
-                      <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Revenue Distribution ({dashboardStats.targetCurrencyCode})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={dashboardStats.ticketBreakdown}
-                        dataKey="revenue"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        innerRadius={40}
-                        label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {dashboardStats.ticketBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value) => [`${dashboardStats.targetCurrencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2, maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2 })}`, 'Revenue']}
-                        contentStyle={{
-                          backgroundColor: '#1F2937',
-                          border: 'none',
-                          borderRadius: '8px',
-                          color: '#F9FAFB'
-                        }}
-                      />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-        {reportApiResponse && dashboardStats.totalRevenue !== dashboardStats.originalRevenue && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ArrowUpDown className="h-5 w-5" />
-                Report Currency Conversion Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Original Total Revenue</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      ${dashboardStats.originalRevenue.toLocaleString()} {baseCurrencyCode}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Exchange Rate (USD to {selectedCurrencyCode})</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      1 {baseCurrencyCode} = {dashboardStats.exchangeRate.toFixed(4)} {selectedCurrencyCode}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Converted Total Revenue</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                      {dashboardStats.targetCurrencySymbol}
-                      {dashboardStats.totalRevenue.toLocaleString(undefined, {
-                        minimumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2,
-                        maximumFractionDigits: dashboardStats.targetCurrencyCode === 'JPY' ? 0 : 2
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  Conversion applied on report generation.
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        {/* Event Reports Section */}
-        <Card>
+      if (selectedOrganizer !== 'all') {
+        params.append('organizer_id', selectedOrganizer);
+      }
+      if (startDate) {
+        params.append('start_date', startDate);
+      }
+      if (endDate) {
+        params.append('end_date', endDate);
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/csv',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to export all reports (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = urlBlob;
+      link.download = `all_system_reports_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+
+      window.URL.revokeObjectURL(urlBlob);
+      document.body.removeChild(link);
+
+      toast({
+        title: "Success",
+        description: "All filtered reports exported successfully.",
+      });
+
+    } catch (error) {
+      console.error('Error exporting all reports:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to export all reports.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingAll(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle>Event Reports</CardTitle>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">Download PDF reports for each event</div>
+            <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+              <Loader2 className="h-5 w-5 animate-spin text-gray-600 dark:text-white" />
+              Loading System Reports...
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {reportApiResponse?.fresh_report_data?.event_summary?.events?.map((event) => (
-                <div key={event.event_id} className="flex justify-between items-center p-4 border rounded-lg">
+              {[...Array(3)].map((_, index) => (
+                <div key={index} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded p-2">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white p-4">
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-2xl text-gray-900 dark:text-white">
+                  <BarChart3 className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                  System Reports Dashboard
+                </CardTitle>
+                <CardDescription className="text-lg text-gray-600 dark:text-gray-400">
+                  {selectedOrganizer === 'all'
+                    ? 'Comprehensive analytics across all organizers'
+                    : `Analytics for selected organizer`}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {showFilters ? 'Hide' : 'Show'} Filters
+                </Button>
+                <Button
+                  onClick={() => setViewMode(viewMode === 'overview' ? 'detailed' : 'overview')}
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  {viewMode === 'overview' ? 'Detailed' : 'Overview'} View
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_FILTERS.map((filter) => (
+                <Button
+                  key={filter.label}
+                  onClick={() => applyQuickFilter(filter.days)}
+                  className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+            {showFilters && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="space-y-2">
+                  <Label htmlFor="organizer" className="text-gray-900 dark:text-white">Organizer</Label>
+                  <Select
+                    value={selectedOrganizer}
+                    onValueChange={setSelectedOrganizer}
+                    disabled={isLoadingOrganizers}
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectValue placeholder="Select organizer" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                      <SelectItem value="all">All Organizers</SelectItem>
+                      {organizers.map((organizer) => (
+                        <SelectItem key={organizer.id} value={organizer.id.toString()}>
+                          {organizer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="startDate" className="text-gray-900 dark:text-white">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    onChange={(e) => handleStartDateChange(e.target.value)}
+                    className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endDate" className="text-gray-900 dark:text-white">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    onChange={(e) => handleEndDateChange(e.target.value)}
+                    min={startDate}
+                    className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button
+                    onClick={fetchReports}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 dark:from-blue-600 dark:to-purple-700 dark:hover:from-blue-700 dark:hover:to-purple-800 text-white transition-all hover:scale-105"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Apply Filters
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={clearFilters}
+                    className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all hover:scale-105 border border-gray-300 dark:border-gray-600"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={exportAllReports}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 dark:from-green-600 dark:to-emerald-700 dark:hover:from-green-700 dark:hover:to-emerald-800 text-white transition-all hover:scale-105"
+                    disabled={isExportingAll || reports.length === 0}
+                  >
+                    {isExportingAll ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export All
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Reports</CardTitle>
+            <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalReports}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Generated reports</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Across all events</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Total Tickets</CardTitle>
+            <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalTickets}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Tickets sold</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:scale-105 hover:shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue/Event</CardTitle>
+            <BarChart3 className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              ${stats.reportsByEvent.length > 0 ? (stats.totalRevenue / stats.reportsByEvent.length).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Per event average</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {viewMode === 'detailed' && stats.timeSeriesData.length > 0 && (
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white">Revenue & Tickets Over Time</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Daily trends in revenue and ticket sales</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-gray-600" />
+                  <XAxis dataKey="date" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <YAxis yAxisId="left" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#64748b" className="dark:stroke-gray-300" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: '1px solid #e2e8f0',
+                      color: '#1f2937',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="revenue"
+                    stackId="1"
+                    stroke="#8884d8"
+                    fill="#8884d8"
+                    fillOpacity={0.6}
+                  />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="tickets"
+                    stackId="2"
+                    stroke="#82ca9d"
+                    fill="#82ca9d"
+                    fillOpacity={0.6}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white">Reports by Event</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Number of reports and revenue per event</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.reportsByEvent}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                    <XAxis
+                      dataKey="event_name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      interval={0}
+                      stroke="#ccc"
+                      fontSize={12}
+                    />
+                    <YAxis stroke="#ccc" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value, name) => [
+                        name === 'count' ? `${value} Reports` : `$${value.toLocaleString()}`,
+                        name === 'count' ? 'Reports' : 'Revenue'
+                      ]}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="#8884d8"
+                      name="count"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    {viewMode === 'detailed' && (
+                      <Bar
+                        dataKey="revenue"
+                        fill="#82ca9d"
+                        name="revenue"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No event data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-all hover:shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white">Revenue by Ticket Type</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Revenue distribution across ticket types</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              {stats.revenueByTicketType && stats.revenueByTicketType.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.revenueByTicketType}
+                      dataKey="amount"
+                      nameKey="ticket_type_name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={3}
+                      label={({ ticket_type_name, percent }) => `${ticket_type_name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {stats.revenueByTicketType.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS_BY_TICKET[entry.ticket_type_name] || FALLBACK_COLOR}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#333", border: 'none', color: 'white' }}
+                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">
+                  No revenue data available
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-gray-900 dark:text-white">Event Reports</CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">Download PDF reports for each event</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {stats.reportsByEvent && stats.reportsByEvent.length > 0 ? (
+              stats.reportsByEvent.map((event) => (
+                <div
+                  key={event.event_id}
+                  className={`flex justify-between items-center p-4 border rounded-lg transition-all hover:shadow-md cursor-pointer ${
+                    selectedEvent === event.event_id ? 'border-blue-400 bg-gray-700' : 'bg-gray-700 border-gray-600'
+                  }`}
+                  onClick={() => setSelectedEvent(event.event_id)}
+                >
                   <div className="flex items-center space-x-3">
-                    <FileText className="h-5 w-5 text-blue-500" />
+                    <FileText className="h-5 w-5 text-blue-400" />
                     <div>
-                      <p className="font-medium">{event.event_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {event.tickets_sold} tickets sold
+                      <p className="font-medium text-white">{event.event_name}</p>
+                      <p className="text-sm text-gray-400">
+                        {event.count} report{event.count !== 1 ? 's' : ''} available
                       </p>
                     </div>
                   </div>
                   <Button
-                    onClick={() => downloadPDF(event.event_id, event.event_name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      downloadPDF(event.event_id, event.event_name);
+                    }}
                     disabled={downloadingPdfs.has(event.event_id)}
-                    variant="outline"
+                    className="bg-gray-600 hover:bg-gray-500 text-white"
+                    size="sm"
                   >
                     {downloadingPdfs.has(event.event_id) ? (
                       <>
@@ -1249,11 +818,13 @@ const SystemReports = () => {
                     )}
                   </Button>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-400">No events with reports found for the current filters.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
