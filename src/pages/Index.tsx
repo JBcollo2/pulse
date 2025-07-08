@@ -143,90 +143,155 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pt-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white pt-16 transition-colors duration-300">
       <Navbar />
       
       <main>
-        <HeroSection onSearch={handleHeroSearch} />
+        <div className="animate-fadeIn">
+          <HeroSection onSearch={handleHeroSearch} />
+        </div>
         
-        <div className="container mx-auto px-4 py-8 md:py-16">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-center">Featured Event</h2>
+        {/* Featured Event Section */}
+        <div className="bg-white dark:bg-gray-800 transition-colors duration-300">
+          <div className="container mx-auto px-4 py-8 md:py-16">
+            <div className="animate-slideUp" style={{ animationDelay: '0.2s' }}>
+              <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-center text-gray-900 dark:text-white">
+                Featured Event
+              </h2>
+            </div>
+            
+            {isLoading ? (
+              <div className="max-w-4xl mx-auto animate-pulse">
+                <Skeleton className="h-64 md:h-[400px] w-full rounded-lg mb-4 bg-gray-200 dark:bg-gray-700" />
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700" />
+                  <Skeleton className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700" />
+                  <Skeleton className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700" />
+                </div>
+              </div>
+            ) : featuredEvent && (
+              <div className="animate-slideUp" style={{ animationDelay: '0.4s' }}>
+                <FeaturedEvent
+                  id={featuredEvent.id.toString()}
+                  title={featuredEvent.name}
+                  description={featuredEvent.description}
+                  date={new Date(featuredEvent.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                  time={`${featuredEvent.start_time} - ${featuredEvent.end_time || 'Till Late'}`}
+                  location={featuredEvent.location}
+                  image={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
+                  price="Starting from $129.99"
+                  onLike={() => handleLike(featuredEvent.id)}
+                  likesCount={featuredEvent.likes_count}
+                  isPast={new Date(featuredEvent.date) < currentDate}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Events Section */}
+        <div className="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
           {isLoading ? (
-            <div className="max-w-4xl mx-auto">
-              <Skeleton className="h-64 md:h-[400px] w-full rounded-lg mb-4" />
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-1/3" />
+            <div className="container mx-auto px-4 py-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {[...Array(6)].map((_, index) => (
+                  <div key={index} className="space-y-3 animate-pulse" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <Skeleton className="h-48 md:h-[200px] w-full rounded-lg bg-gray-200 dark:bg-gray-700" />
+                    <Skeleton className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700" />
+                    <Skeleton className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                ))}
               </div>
             </div>
-          ) : featuredEvent && (
-            <FeaturedEvent
-              id={featuredEvent.id.toString()}
-              title={featuredEvent.name}
-              description={featuredEvent.description}
-              date={new Date(featuredEvent.date).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-              time={`${featuredEvent.start_time} - ${featuredEvent.end_time || 'Till Late'}`}
-              location={featuredEvent.location}
-              image={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
-              price="Starting from $129.99"
-              onLike={() => handleLike(featuredEvent.id)}
-              likesCount={featuredEvent.likes_count}
-              isPast={new Date(featuredEvent.date) < currentDate}
-            />
+          ) : (
+            <div className="animate-slideUp" style={{ animationDelay: '0.6s' }}>
+              <EventsSection 
+                events={events.filter(event => new Date(event.date) >= currentDate)} 
+                onLike={handleLike}
+                showPastEvents={true}
+              />
+            </div>
           )}
         </div>
         
-        {isLoading ? (
-          <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {[...Array(6)].map((_, index) => (
-                <div key={index} className="space-y-3">
-                  <Skeleton className="h-48 md:h-[200px] w-full rounded-lg" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-              ))}
+        {/* Digital Tickets Section */}
+        <div className="bg-white dark:bg-gray-800 transition-colors duration-300">
+          <div className="container mx-auto px-4 py-8 md:py-16">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-6 md:mb-10 animate-slideUp" style={{ animationDelay: '0.8s' }}>
+                <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-white">
+                  Digital Tickets, Real Experiences
+                </h2>
+                <p className="text-base md:text-xl text-gray-600 dark:text-gray-300">
+                  Our tickets come to life with animations and secure QR codes for easy scanning at venues
+                </p>
+              </div>
+              
+              <div className="animate-slideUp" style={{ animationDelay: '1s' }}>
+                <TicketPreview
+                  eventName="Summer Music Festival"
+                  date="Sat, Jun 15, 2025"
+                  time="2:00 PM - 11:00 PM"
+                  location="Central Park, New York"
+                  ticketHolder="John Doe"
+                  ticketType="VIP Pass"
+                  ticketId="PULSE2025X7891"
+                />
+              </div>
             </div>
-          </div>
-        ) : (
-          <EventsSection 
-            events={events.filter(event => new Date(event.date) >= currentDate)} 
-            onLike={handleLike}
-            showPastEvents={true}
-          />
-        )}
-        
-        <div className="container mx-auto px-4 py-8 md:py-16">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-6 md:mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">Digital Tickets, Real Experiences</h2>
-              <p className="text-base md:text-xl text-muted-foreground">
-                Our tickets come to life with animations and secure QR codes for easy scanning at venues
-              </p>
-            </div>
-            
-            <TicketPreview
-              eventName="Summer Music Festival"
-              date="Sat, Jun 15, 2025"
-              time="2:00 PM - 11:00 PM"
-              location="Central Park, New York"
-              ticketHolder="John Doe"
-              ticketType="VIP Pass"
-              ticketId="PULSE2025X7891"
-            />
           </div>
         </div>
         
-        <CTASection />
+        <div className="animate-slideUp" style={{ animationDelay: '1.2s' }}>
+          <CTASection />
+        </div>
       </main>
       
       <Footer />
+      
+      {/* Custom Animation Styles */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes slideUp {
+            from { 
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to { 
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .animate-fadeIn {
+            animation: fadeIn 0.8s ease-out forwards;
+          }
+          
+          .animate-slideUp {
+            opacity: 0;
+            animation: slideUp 0.6s ease-out forwards;
+          }
+          
+          .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+          
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        `}
+      </style>
     </div>
   );
 };

@@ -42,11 +42,10 @@ const EventCard: React.FC<EventCardProps> = ({
   const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!onLike || isLiking) return;
-
     try {
       setIsLiking(true);
       await onLike();
-      setIsLiked(true);
+      setIsLiked(!isLiked);
     } catch (error) {
       console.error('Error liking event:', error);
     } finally {
@@ -55,58 +54,58 @@ const EventCard: React.FC<EventCardProps> = ({
   };
 
   return (
-    <Link to={`/event/${id}`} className="group">
-      <div className="bg-card rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300">
+    <Link to={`/event/${id}`} className="group block">
+      <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
         <div className="relative">
-          <img 
-            src={image} 
-            alt={title} 
+          <img
+            src={image}
+            alt={title}
             className="w-full h-48 object-cover"
           />
           <div className="absolute top-2 left-2">
-            <Badge className="bg-pulse-purple text-white">{category}</Badge>
+            <Badge className="bg-purple-600 text-white">{category}</Badge>
           </div>
           {showLikes && (
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700",
+                "absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 dark:text-gray-300",
                 isLiked && "text-purple-500"
               )}
               onClick={handleLike}
               disabled={isLiking}
             >
-              <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+              <Heart className={cn("h-5 w-5", isLiked && "fill-current text-purple-500")} />
             </Button>
           )}
         </div>
-        
+
         <div className="p-5">
-          <h3 className="text-xl font-bold line-clamp-2 mb-3 group-hover:text-pulse-purple transition-colors">
+          <h3 className="text-xl font-bold line-clamp-2 mb-3 group-hover:text-purple-600 transition-colors text-gray-900 dark:text-white">
             {title}
           </h3>
-          
+
           <div className="space-y-2 mb-5">
-            <div className="flex items-center text-muted-foreground">
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <Calendar className="h-4 w-4 mr-2" />
               <span className="text-sm">{date}</span>
             </div>
-            
-            <div className="flex items-center text-muted-foreground">
+
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <Clock className="h-4 w-4 mr-2" />
               <span className="text-sm">{time}</span>
             </div>
-            
-            <div className="flex items-center text-muted-foreground">
+
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <MapPin className="h-4 w-4 mr-2" />
               <span className="text-sm line-clamp-1">{location}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold">{price}</span>
-            <Button className="bg-pulse-purple hover:bg-pulse-deep-purple transition-all">
+            <span className="text-lg font-bold text-gray-900 dark:text-white">{price}</span>
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white transition-colors">
               Get Tickets
             </Button>
           </div>
