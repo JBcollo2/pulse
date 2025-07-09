@@ -6,10 +6,10 @@ const HeroSection: React.FC = () => {
   return (
     <div className="relative">
       {/* Hero Background Section - Half height on mobile */}
-      <div className="relative h-[50vh] md:h-[80vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-b-3xl md:rounded-b-[3rem]">
+      <div className="relative h-[50vh] md:h-[80vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 rounded-b-3xl md:rounded-b-[3rem]">
         {/* Animated geometric shapes */}
         <div className="absolute top-10 left-10 w-32 h-32 border-2 border-purple-400/30 rounded-full animate-spin-slow"></div>
-        <div className="absolute bottom-20 right-20 w-24 h-24 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-lg rotate-45 animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-24 h-24 bg-gradient-to-r from-pink-200/20 to-purple-500/20 rounded-lg rotate-45 animate-pulse"></div>
         <div className="absolute top-1/3 right-1/4 w-16 h-16 bg-yellow-400/30 rounded-full animate-bounce"></div>
         
         {/* Floating particles */}
@@ -37,7 +37,7 @@ const HeroSection: React.FC = () => {
 
           <h1 className="text-3xl md:text-6xl lg:text-7xl font-bold mb-4 md:mb-6 animate-fade-in text-white leading-tight">
               Your Gateway 
-            <span className="block bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-pink-200 to-purple-400 bg-clip-text text-transparent">
               to Unforgettable Events
             </span>
           </h1>
@@ -47,7 +47,7 @@ const HeroSection: React.FC = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center items-center animate-fade-in px-4" style={{ animationDelay: '0.4s' }}>
-            <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-3 md:px-8 md:py-4 rounded-full text-base md:text-lg font-semibold shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 group w-full sm:w-auto">
+            <Button className="bg-gradient-to-r from-pink-10 to-purple-600 hover:from-pink-200 hover:to-purple-700 text-white px-6 py-3 md:px-8 md:py-4 rounded-full text-base md:text-lg font-semibold shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105 group w-full sm:w-auto">
               Explore Events
               <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
