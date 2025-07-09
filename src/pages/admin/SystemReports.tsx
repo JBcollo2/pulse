@@ -268,7 +268,6 @@ const AdminReports: React.FC = () => {
         setActiveTab('results');
         showSuccess('Report generated successfully');
       } else {
-        // Handle file download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -423,7 +422,6 @@ const AdminReports: React.FC = () => {
                     key={organizer.organizer_id}
                     value={organizer.organizer_id.toString()}
                     className={cn(
-                      "dark:text-gray-200 text-gray-800",
                       selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white"
                     )}
                   >
@@ -488,7 +486,6 @@ const AdminReports: React.FC = () => {
                       key={event.event_id}
                       value={event.event_id.toString()}
                       className={cn(
-                        "dark:text-gray-200 text-gray-800",
                         selectedEvent === event.event_id.toString() && "bg-[#10b981] text-white"
                       )}
                     >
@@ -566,7 +563,6 @@ const AdminReports: React.FC = () => {
                         key={currency.id}
                         value={currency.code}
                         className={cn(
-                          "focus:bg-blue-100 dark:focus:bg-[#10b981]/20 dark:focus:text-[#10b981] data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white",
                           selectedCurrency === currency.code && "bg-[#10b981] text-white"
                         )}
                       >
@@ -730,55 +726,6 @@ const AdminReports: React.FC = () => {
     <div className="space-y-6">
       {reportData ? (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Tickets</p>
-                    <p className="text-2xl font-bold text-[#10b981]">{reportData.total_tickets_sold}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-[#10b981]" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-                    <p className="text-2xl font-bold text-[#10b981]">
-                      {reportData.currency_symbol}{reportData.total_revenue.toLocaleString()}
-                    </p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-[#10b981]" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Attendees</p>
-                    <p className="text-2xl font-bold text-[#10b981]">{reportData.total_attendees}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-[#10b981]" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Events</p>
-                    <p className="text-2xl font-bold text-[#10b981]">{reportData.event_count}</p>
-                  </div>
-                  <Calendar className="h-8 w-8 text-[#10b981]" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
           {/* Events Table */}
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
             <CardHeader>
@@ -845,23 +792,6 @@ const AdminReports: React.FC = () => {
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-500 to-[#10b981] bg-clip-text text-transparent">
-              Comprehensive Admin Reports
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Advanced reporting system with full API feature utilization
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1 dark:text-gray-200 text-gray-800">
-              <TrendingUp className="h-3 w-3" />
-              Enhanced Dashboard
-            </Badge>
-          </div>
-        </div>
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
