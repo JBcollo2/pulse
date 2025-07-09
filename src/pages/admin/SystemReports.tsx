@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, AlertCircle, FileText, RefreshCw, Globe } from "lucide-react";
+import { Loader2, AlertCircle, FileText, RefreshCw, Globe, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // --- Interfaces ---
