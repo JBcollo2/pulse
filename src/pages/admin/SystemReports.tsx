@@ -476,7 +476,6 @@ const AdminReports: React.FC = () => {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                  <SelectItem value="" className="dark:text-gray-200 text-gray-800">All Events</SelectItem>
                   {filteredEvents.map((event) => (
                     <SelectItem key={event.event_id} value={event.event_id.toString()} className="dark:text-gray-200 text-gray-800">
                       <div className="flex items-center justify-between w-full">
