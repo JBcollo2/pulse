@@ -88,6 +88,7 @@ interface AdminReport {
 
 const AdminReports: React.FC = () => {
   const { toast } = useToast();
+
   // --- State Variables ---
   const [reportData, setReportData] = useState<AdminReport | null>(null);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
@@ -255,13 +256,11 @@ const AdminReports: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
-
       if (reportFormat === 'json') {
         const data = await response.json();
         setReportData(data);
@@ -316,13 +315,11 @@ const AdminReports: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || `Failed to download ${format} report.`, errorData);
         return;
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -442,6 +439,7 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
       {/* Event Selection */}
       {selectedOrganizer && (
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -512,6 +510,7 @@ const AdminReports: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
@@ -677,6 +676,7 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
