@@ -353,10 +353,10 @@ const Venues: React.FC = () => {
   };
 
 return (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 font-inter">
+  <div className="min-h-screen  bg-gray-50 dark:bg-gray-900 m font-inter">
     <Navbar />
     <main>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto mt-6 px-4 py-12">
         <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white">Venues</h1>
         <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
           Explore our partner venues for your next unforgettable experience
