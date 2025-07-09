@@ -419,7 +419,14 @@ const AdminReports: React.FC = () => {
               </SelectTrigger>
               <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 {filteredOrganizers.map((organizer) => (
-                  <SelectItem key={organizer.organizer_id} value={organizer.organizer_id.toString()} className="dark:text-gray-200 text-gray-800">
+                  <SelectItem
+                    key={organizer.organizer_id}
+                    value={organizer.organizer_id.toString()}
+                    className={cn(
+                      "dark:text-gray-200 text-gray-800",
+                      selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white"
+                    )}
+                  >
                     <div className="flex items-center justify-between w-full">
                       <div>
                         <div className="font-medium">{organizer.name}</div>
@@ -477,7 +484,14 @@ const AdminReports: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                   {filteredEvents.map((event) => (
-                    <SelectItem key={event.event_id} value={event.event_id.toString()} className="dark:text-gray-200 text-gray-800">
+                    <SelectItem
+                      key={event.event_id}
+                      value={event.event_id.toString()}
+                      className={cn(
+                        "dark:text-gray-200 text-gray-800",
+                        selectedEvent === event.event_id.toString() && "bg-[#10b981] text-white"
+                      )}
+                    >
                       <div className="flex items-center justify-between w-full">
                         <div>
                           <div className="font-medium">{event.name}</div>
@@ -548,7 +562,14 @@ const AdminReports: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                     {currencies.map((currency) => (
-                      <SelectItem key={currency.id} value={currency.code} className="focus:bg-blue-100 dark:focus:bg-[#10b981]/20 dark:focus:text-[#10b981] data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white">
+                      <SelectItem
+                        key={currency.id}
+                        value={currency.code}
+                        className={cn(
+                          "focus:bg-blue-100 dark:focus:bg-[#10b981]/20 dark:focus:text-[#10b981] data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white",
+                          selectedCurrency === currency.code && "bg-[#10b981] text-white"
+                        )}
+                      >
                         <div className="flex items-center gap-2">
                           <span className="font-mono">{currency.symbol}</span>
                           <span className="font-medium">{currency.code}</span>
