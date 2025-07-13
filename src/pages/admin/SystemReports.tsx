@@ -462,58 +462,59 @@ const AdminReports: React.FC = () => {
         </CardContent>
       </Card>
       {/* Event Selection */}
-        {selectedOrganizer && (
-    <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-      <div>
-        <label className="block text-sm font-medium text-green-700 dark:text-green-300 mb-2">
-          Event Selection (Optional)
-        </label>
-        <p className="text-sm text-green-600 dark:text-green-400 mb-3">
-          Leave empty to generate report for all events
-        </p>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
-          <input
-            type="text"
-            placeholder="Search Events"
-            value={eventSearch}
-            onChange={(e) => setEventSearch(e.target.value)}
-            className={cn(
-              "pl-10 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-              "dark:bg-green-800 dark:border-green-600 dark:text-green-100 bg-green-100 border-green-300 text-green-800"
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="relative">
-        <select
-          value={selectedEvent}
-          onChange={(e) => setSelectedEvent(e.target.value)}
-          className={cn(
-            "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-            "dark:bg-green-800 dark:border-green-600 dark:text-green-100 bg-green-100 border-green-300 text-green-800"
-          )}
-        >
-          <option value="">Select Event</option>
-          {filteredEvents.map((event) => (
-            <option key={event.event_id} value={event.event_id.toString()}>
-              {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
-            </option>
-          ))}
-        </select>
-        
-        {selectedEvent && (
-          <div className="mt-2 p-2 bg-green-100 dark:bg-green-800/30 rounded-md">
-            <p className="text-sm text-green-700 dark:text-green-300">
-              Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+      {selectedOrganizer && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Event Selection (Optional)
+            </label>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Leave empty to generate report for all events
             </p>
+            
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search Events"
+                value={eventSearch}
+                onChange={(e) => setEventSearch(e.target.value)}
+                className={cn(
+                  "pl-10 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                )}
+              />
+            </div>
           </div>
-        )}
-      </div>
-    </div>
-  )}
+          <div className="relative">
+            <select
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              className={cn(
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500",
+                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+              )}
+            >
+              <option value="">Select Event</option>
+              {filteredEvents.map((event) => (
+                <option key={event.event_id} value={event.event_id.toString()}>
+                  {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+                </option>
+              ))}
+            </select>
+            
+            {selectedEvent && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+              
+        
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
