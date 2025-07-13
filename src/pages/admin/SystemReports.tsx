@@ -418,14 +418,14 @@ const AdminReports: React.FC = () => {
                 placeholder="Search by name or email..."
                 value={organizerSearch}
                 onChange={(e) => setOrganizerSearch(e.target.value)}
-                className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500")}
               />
             </div>
           </div>
           <div className="space-y-2">
             <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
             <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500">
                 <SelectValue placeholder="Choose an organizer">
                   {selectedOrganizer && (
                     <div className="flex items-center gap-2">
@@ -441,7 +441,7 @@ const AdminReports: React.FC = () => {
                     key={organizer.organizer_id}
                     value={organizer.organizer_id.toString()}
                     className={cn(
-                      selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white"
+                      selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
                     )}
                   >
                     <div className="flex items-center justify-between w-full">
@@ -479,7 +479,7 @@ const AdminReports: React.FC = () => {
                 value={selectedEvent}
                 onChange={(e) => setSelectedEvent(e.target.value)}
                 className={cn(
-                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500",
+                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
                   "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
                 )}
               >
