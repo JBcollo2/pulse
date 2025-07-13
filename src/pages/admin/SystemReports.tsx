@@ -402,106 +402,110 @@ const AdminReports: React.FC = () => {
   const renderConfigurationTab = () => (
     <div className="space-y-6">
       {/* Organizer Selection */}
-      <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-            <Users className="h-5 w-5" />
-            Organizer Selection
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by name or email..."
-                value={organizerSearch}
-                onChange={(e) => setOrganizerSearch(e.target.value)}
-                className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500")}
-              />
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <Users className="h-5 w-5" />
+              Organizer Selection
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={organizerSearch}
+                  onChange={(e) => setOrganizerSearch(e.target.value)}
+                  className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500")}
+                />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
-            <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500">
-                <SelectValue placeholder="Choose an organizer">
-                  {selectedOrganizer && (
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                {filteredOrganizers.map((organizer) => (
-                  <SelectItem
-                    key={organizer.organizer_id}
-                    value={organizer.organizer_id.toString()}
-                    className={cn(
-                      selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+            <div className="space-y-2">
+              <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
+              <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500">
+                  <SelectValue placeholder="Choose an organizer">
+                    {selectedOrganizer && (
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
+                      </div>
                     )}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div>
-                        <div className="font-medium">{organizer.name}</div>
-                        <div className="text-sm text-gray-500">{organizer.email}</div>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                  {filteredOrganizers.map((organizer) => (
+                    <SelectItem
+                      key={organizer.organizer_id}
+                      value={organizer.organizer_id.toString()}
+                      className={cn(
+                        "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
+                        selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                      )}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <div className="font-medium">{organizer.name}</div>
+                          <div className="text-sm text-gray-500">{organizer.email}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.event_count} events</Badge>
+                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.report_count} reports</Badge>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.event_count} events</Badge>
-                        <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.report_count} reports</Badge>
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-      {/* Event Selection */}
-      {selectedOrganizer && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Event Selection (Optional)
-              </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Leave empty to generate report for all events
-              </p>
-              
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Event Selection */}
+        {selectedOrganizer && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Event Selection (Optional)
+                </label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  Leave empty to generate report for all events
+                </p>
+                
 
-            </div>
-            <div className="relative">
-              <select
-                value={selectedEvent}
-                onChange={(e) => setSelectedEvent(e.target.value)}
-                className={cn(
-                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedEvent}
+                  onChange={(e) => setSelectedEvent(e.target.value)}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
+                    "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                    "[&>option]:hover:bg-green-50 [&>option]:hover:dark:bg-green-900/20",
+                    "[&>option:hover]:bg-green-50 [&>option:hover]:dark:bg-green-900/20",
+                    "[&>option:checked]:bg-green-50 [&>option:checked]:dark:bg-green-900/20"
+                  )}
+                  // style removed: React's style prop does not support custom CSS variables
+                >
+                  <option value="">Select Event</option>
+                  {events.map((event) => (
+                    <option key={event.event_id} value={event.event_id.toString()}>
+                      {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+                    </option>
+                  ))}
+                </select>
+                
+                {selectedEvent && (
+                  <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                    </p>
+                  </div>
                 )}
-              >
-                <option value="">Select Event</option>
-                {events.map((event) => (
-                  <option key={event.event_id} value={event.event_id.toString()}>
-                    {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
-                  </option>
-                ))}
-              </select>
-              
-              {selectedEvent && (
-                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
-                  </p>
-                </div>
-              )}
+              </div>
             </div>
-          </div>
-        )}
-        
+          )}
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
