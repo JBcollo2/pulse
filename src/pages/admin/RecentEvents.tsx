@@ -14,22 +14,21 @@ interface Event {
   image: string;
   organizer_id: number;
   organizer: {
-    company_name: string;
-    user_id: number;
-  };
-  ticket_types: {
     id: number;
-    type_name: string;
-    price: number;
-    quantity: number;
-  }[];
+    company_name: string;
+    company_description: string;
+  };
   tickets: {
     id: number;
     quantity: number;
     payment_status: string;
-    type_name?: string;
-    ticket_type_id?: number;
+    ticket_type: {
+      price: number;
+    };
   }[];
+  featured: boolean;
+  likes_count: number;
+  category: string | null;
 }
 
 interface Organizer {
@@ -81,16 +80,13 @@ const calculateStats = (events: Event[], organizers: Organizer[]): EventStats =>
 
   const totalTickets = events.reduce((sum, event) => {
     return sum + (event.tickets?.reduce((ticketSum, ticket) =>
-      ticket.payment_status === 'completed' ? ticketSum + (ticket.quantity || 0) : ticketSum, 0) || 0);
+      ticket.payment_status === 'paid' ? ticketSum + (ticket.quantity || 0) : ticketSum, 0) || 0);
   }, 0);
 
   const totalRevenue = events.reduce((sum, event) => {
     return sum + (event.tickets?.reduce((revenueSum, ticket) => {
-      if (ticket.payment_status === 'completed') {
-        const ticketType = event.ticket_types?.find(type => 
-          type.type_name === ticket.type_name || type.id === ticket.ticket_type_id
-        );
-        return revenueSum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+      if (ticket.payment_status === 'paid') {
+        return revenueSum + ((ticket.quantity || 0) * (ticket.ticket_type?.price || 0));
       }
       return revenueSum;
     }, 0) || 0);
@@ -114,11 +110,8 @@ const calculateStats = (events: Event[], organizers: Organizer[]): EventStats =>
   // Revenue by event
   const revenueByEvent = events.reduce((acc: Record<string, number>, event) => {
     const eventRevenue = event.tickets?.reduce((sum, ticket) => {
-      if (ticket.payment_status === 'completed') {
-        const ticketType = event.ticket_types?.find(type => 
-          type.type_name === ticket.type_name || type.id === ticket.ticket_type_id
-        );
-        return sum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+      if (ticket.payment_status === 'paid') {
+        return sum + ((ticket.quantity || 0) * (ticket.ticket_type?.price || 0));
       }
       return sum;
     }, 0) || 0;
@@ -135,11 +128,8 @@ const calculateStats = (events: Event[], organizers: Organizer[]): EventStats =>
   // Top organizers by revenue
   const organizerRevenue = events.reduce((acc: Record<string, { revenue: number; event_count: number }>, event) => {
     const eventRevenue = event.tickets?.reduce((sum, ticket) => {
-      if (ticket.payment_status === 'completed') {
-        const ticketType = event.ticket_types?.find(type => 
-          type.type_name === ticket.type_name || type.id === ticket.ticket_type_id
-        );
-        return sum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+      if (ticket.payment_status === 'paid') {
+        return sum + ((ticket.quantity || 0) * (ticket.ticket_type?.price || 0));
       }
       return sum;
     }, 0) || 0;
@@ -461,14 +451,11 @@ const RecentEvents = () => {
           <div className="space-y-4">
             {events.slice(0, 8).map((event) => {
               const ticketsSold = (event.tickets || []).reduce((sum, ticket) =>
-                ticket.payment_status === 'completed' ? sum + (ticket.quantity || 0) : sum, 0);
+                ticket.payment_status === 'paid' ? sum + (ticket.quantity || 0) : sum, 0);
 
               const revenue = (event.tickets || []).reduce((sum, ticket) => {
-                if (ticket.payment_status === 'completed') {
-                  const ticketType = event.ticket_types?.find(type => 
-                    type.type_name === ticket.type_name || type.id === ticket.ticket_type_id
-                  );
-                  return sum + ((ticket.quantity || 0) * (ticketType?.price || 0));
+                if (ticket.payment_status === 'paid') {
+                  return sum + ((ticket.quantity || 0) * (ticket.ticket_type?.price || 0));
                 }
                 return sum;
               }, 0);
