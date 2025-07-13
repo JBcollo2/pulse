@@ -50,6 +50,52 @@ const UserManagement: React.FC<UserManagementProps> = ({
     company_logo: null
   });
 
+  // Color configuration matching the navigation color grid
+  const viewColors = {
+    registerAdmin: {
+      primary: 'indigo',
+      gradient: 'from-indigo-500 to-purple-600',
+      button: 'bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700',
+      accent: 'border-indigo-500 dark:border-indigo-400',
+      focus: 'focus:ring-indigo-500 focus:border-indigo-500',
+      text: 'text-indigo-600 dark:text-indigo-400'
+    },
+    registerSecurity: {
+      primary: 'red',
+      gradient: 'from-red-500 to-pink-600',
+      button: 'bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700',
+      accent: 'border-red-500 dark:border-red-400',
+      focus: 'focus:ring-red-500 focus:border-red-500',
+      text: 'text-red-600 dark:text-red-400'
+    },
+    registerOrganizer: {
+      primary: 'yellow',
+      gradient: 'from-yellow-500 to-orange-600',
+      button: 'bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-600 dark:hover:bg-yellow-700',
+      accent: 'border-yellow-500 dark:border-yellow-400',
+      focus: 'focus:ring-yellow-500 focus:border-yellow-500',
+      text: 'text-yellow-600 dark:text-yellow-400'
+    },
+    viewAllUsers: {
+      primary: 'green',
+      gradient: 'from-green-500 to-emerald-600',
+      button: 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700',
+      accent: 'border-green-500 dark:border-green-400',
+      focus: 'focus:ring-green-500 focus:border-green-500',
+      text: 'text-green-600 dark:text-green-400'
+    },
+    nonAttendees: {
+      primary: 'orange',
+      gradient: 'from-orange-500 to-red-600',
+      button: 'bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700',
+      accent: 'border-orange-500 dark:border-orange-400',
+      focus: 'focus:ring-orange-500 focus:border-orange-500',
+      text: 'text-orange-600 dark:text-orange-400'
+    }
+  };
+
+  const currentColors = viewColors[view];
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, files } = e.target;
     if (files) {
@@ -72,11 +118,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   if (view === 'viewAllUsers' || view === 'nonAttendees') {
     return (
-      <Card className="w-full p-4 md:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <Card className={`w-full p-4 md:p-6 bg-white dark:bg-gray-800 border-2 ${currentColors.accent} shadow-lg`}>
         <CardHeader className="space-y-1">
-          <CardTitle className="text-xl md:text-2xl text-gray-800 dark:text-gray-200">
-            {view === 'viewAllUsers' ? 'All Users' : 'Non-Attendees'}
-          </CardTitle>
+          <div className={`inline-flex items-center gap-2 mb-2`}>
+            <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${currentColors.gradient}`}></div>
+            <CardTitle className={`text-xl md:text-2xl ${currentColors.text}`}>
+              {view === 'viewAllUsers' ? 'All Users' : 'Non-Attendees'}
+            </CardTitle>
+          </div>
           <CardDescription className="text-gray-500 dark:text-gray-400">
             {view === 'viewAllUsers' ? 'List of all users in the system' : 'List of non-attendee users'}
           </CardDescription>
@@ -90,8 +139,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
           )}
 
           {successMessage && (
-            <Alert variant="default" className="bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-700 text-green-800 dark:text-green-200">
-              <AlertDescription>{successMessage}</AlertDescription>
+            <Alert variant="default" className={`bg-gradient-to-r ${currentColors.gradient} bg-opacity-10 border-2 ${currentColors.accent} ${currentColors.text}`}>
+              <AlertDescription className="font-medium">{successMessage}</AlertDescription>
             </Alert>
           )}
 
@@ -101,7 +150,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 placeholder="Search by email..."
                 value={searchTerm || ''}
                 onChange={(e) => onSearchTermChange(e.target.value)}
-                className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
               />
             </div>
           )}
@@ -117,11 +166,12 @@ const UserManagement: React.FC<UserManagementProps> = ({
               )
             ) : (
               users?.map(user => (
-                <div key={user.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded shadow bg-white dark:bg-gray-800">
+                <div key={user.id} className={`border-2 ${currentColors.accent} p-4 rounded-lg shadow-sm bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200`}>
+                  <div className={`w-full h-1 bg-gradient-to-r ${currentColors.gradient} rounded-full mb-3`}></div>
                   <p className="text-gray-800 dark:text-gray-200"><strong>ID:</strong> {user.id}</p>
                   <p className="text-gray-800 dark:text-gray-200"><strong>Name:</strong> {user.full_name}</p>
                   <p className="text-gray-800 dark:text-gray-200"><strong>Email:</strong> {user.email}</p>
-                  <p className="text-gray-800 dark:text-gray-200"><strong>Role:</strong> {user.role}</p>
+                  <p className="text-gray-800 dark:text-gray-200"><strong>Role:</strong> <span className={`font-semibold ${currentColors.text}`}>{user.role}</span></p>
                   {user.phone_number && <p className="text-gray-800 dark:text-gray-200"><strong>Phone:</strong> {user.phone_number}</p>}
                 </div>
               ))
@@ -133,11 +183,14 @@ const UserManagement: React.FC<UserManagementProps> = ({
   }
 
   return (
-    <Card className="w-full p-4 md:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <Card className={`w-full p-4 md:p-6 bg-white dark:bg-gray-800 border-2 ${currentColors.accent} shadow-lg`}>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl md:text-2xl text-gray-800 dark:text-gray-200">
-          {view === 'registerAdmin' ? 'Register New Admin' : view === 'registerSecurity' ? 'Register New Security' : 'Register New Organizer'}
-        </CardTitle>
+        <div className={`inline-flex items-center gap-2 mb-2`}>
+          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${currentColors.gradient}`}></div>
+          <CardTitle className={`text-xl md:text-2xl ${currentColors.text}`}>
+            {view === 'registerAdmin' ? 'Register New Admin' : view === 'registerSecurity' ? 'Register New Security' : 'Register New Organizer'}
+          </CardTitle>
+        </div>
         <CardDescription className="text-gray-500 dark:text-gray-400">
           {view === 'registerAdmin' ? 'Create a new administrator account' : view === 'registerSecurity' ? 'Create a new security user account' : 'Create a new organizer account'}
         </CardDescription>
@@ -151,8 +204,8 @@ const UserManagement: React.FC<UserManagementProps> = ({
         )}
 
         {successMessage && (
-          <Alert variant="default" className="bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-700 text-green-800 dark:text-green-200">
-            <AlertDescription>{successMessage}</AlertDescription>
+          <Alert variant="default" className={`bg-gradient-to-r ${currentColors.gradient} bg-opacity-10 border-2 ${currentColors.accent} ${currentColors.text}`}>
+            <AlertDescription className="font-medium">{successMessage}</AlertDescription>
           </Alert>
         )}
 
@@ -160,82 +213,82 @@ const UserManagement: React.FC<UserManagementProps> = ({
           {view === 'registerOrganizer' && (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="user_id" className="text-gray-800 dark:text-gray-200">User ID</Label>
+                <Label htmlFor="user_id" className={`${currentColors.text} font-medium`}>User ID</Label>
                 <Input
                   id="user_id"
                   type="text"
                   value={formData.user_id}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company_name" className="text-gray-800 dark:text-gray-200">Company Name</Label>
+                <Label htmlFor="company_name" className={`${currentColors.text} font-medium`}>Company Name</Label>
                 <Input
                   id="company_name"
                   type="text"
                   value={formData.company_name}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company_description" className="text-gray-800 dark:text-gray-200">Company Description</Label>
+                <Label htmlFor="company_description" className={`${currentColors.text} font-medium`}>Company Description</Label>
                 <Input
                   id="company_description"
                   type="text"
                   value={formData.company_description}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="website" className="text-gray-800 dark:text-gray-200">Website</Label>
+                <Label htmlFor="website" className={`${currentColors.text} font-medium`}>Website</Label>
                 <Input
                   id="website"
                   type="text"
                   value={formData.website}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="business_registration_number" className="text-gray-800 dark:text-gray-200">Business Registration Number</Label>
+                <Label htmlFor="business_registration_number" className={`${currentColors.text} font-medium`}>Business Registration Number</Label>
                 <Input
                   id="business_registration_number"
                   type="text"
                   value={formData.business_registration_number}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="tax_id" className="text-gray-800 dark:text-gray-200">Tax ID</Label>
+                <Label htmlFor="tax_id" className={`${currentColors.text} font-medium`}>Tax ID</Label>
                 <Input
                   id="tax_id"
                   type="text"
                   value={formData.tax_id}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="address" className="text-gray-800 dark:text-gray-200">Address</Label>
+                <Label htmlFor="address" className={`${currentColors.text} font-medium`}>Address</Label>
                 <Input
                   id="address"
                   type="text"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="company_logo" className="text-gray-800 dark:text-gray-200">Company Logo</Label>
+                <Label htmlFor="company_logo" className={`${currentColors.text} font-medium`}>Company Logo</Label>
                 <Input
                   id="company_logo"
                   type="file"
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
             </>
@@ -243,52 +296,59 @@ const UserManagement: React.FC<UserManagementProps> = ({
           {(view === 'registerAdmin' || view === 'registerSecurity') && (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="full_name" className="text-gray-800 dark:text-gray-200">Full Name</Label>
+                <Label htmlFor="full_name" className={`${currentColors.text} font-medium`}>Full Name</Label>
                 <Input
                   id="full_name"
                   type="text"
-                  placeholder={view === 'registerAdmin' ? "John Doe" : "Jane Doe"}
+                  placeholder={view === 'registerAdmin' ? "John Kamau" : "Jane Agesa"}
                   value={formData.full_name}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email" className="text-gray-800 dark:text-gray-200">Email</Label>
+                <Label htmlFor="email" className={`${currentColors.text} font-medium`}>Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder={view === 'registerAdmin' ? "john@example.com" : "jane@example.com"}
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone_number" className="text-gray-800 dark:text-gray-200">Phone Number</Label>
+                <Label htmlFor="phone_number" className={`${currentColors.text} font-medium`}>Phone Number</Label>
                 <Input
                   id="phone_number"
                   type="tel"
                   placeholder="07xxxxxxxx"
                   value={formData.phone_number}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="password" className="text-gray-800 dark:text-gray-200">Password</Label>
+                <Label htmlFor="password" className={`${currentColors.text} font-medium`}>Password</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 ${currentColors.focus}`}
                 />
               </div>
             </>
           )}
-          <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-900" disabled={isLoading}>
-            {view === 'registerAdmin' ? 'Register Admin' : view === 'registerSecurity' ? 'Register Security User' : 'Register Organizer'}
+          <Button 
+            type="submit" 
+            className={`w-full ${currentColors.button} text-white shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] font-medium`}
+            disabled={isLoading}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <div className={`w-2 h-2 rounded-full bg-white`}></div>
+              {view === 'registerAdmin' ? 'Register Admin' : view === 'registerSecurity' ? 'Register Security User' : 'Register Organizer'}
+            </div>
           </Button>
         </form>
       </CardContent>
