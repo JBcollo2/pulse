@@ -418,14 +418,24 @@ const AdminReports: React.FC = () => {
                   placeholder="Search by name or email..."
                   value={organizerSearch}
                   onChange={(e) => setOrganizerSearch(e.target.value)}
-                  className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500")}
+                  className={cn(
+                    "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                    "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                    "focus:outline-none",
+                    "transition-colors duration-200"
+                  )}
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
               <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-green-500">
+                <SelectTrigger className={cn(
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                  "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                  "focus:outline-none",
+                  "transition-colors duration-200"
+                )}>
                   <SelectValue placeholder="Choose an organizer">
                     {selectedOrganizer && (
                       <div className="flex items-center gap-2">
@@ -442,6 +452,7 @@ const AdminReports: React.FC = () => {
                       value={organizer.organizer_id.toString()}
                       className={cn(
                         "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
+                        "focus:bg-green-50 focus:dark:bg-green-900/20",
                         selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
                       )}
                     >
@@ -463,7 +474,7 @@ const AdminReports: React.FC = () => {
           </CardContent>
         </Card>
         {/* Event Selection */}
-        {selectedOrganizer && (
+       {selectedOrganizer && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -479,28 +490,20 @@ const AdminReports: React.FC = () => {
                 onChange={(e) => setSelectedEvent(e.target.value)}
                 className={cn(
                   "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                  "hover:border-green-400 dark:hover:border-green-500",
-                  "transition-colors duration-200"
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
                 )}
                 style={{
-                  colorScheme: 'light dark'
+                  colorScheme: 'dark' // This helps with consistent styling in dark mode
                 }}
               >
-                <option value="" className="text-green-600 dark:text-green-400">
-                  Select Event
-                </option>
+                <option value="">Select Event</option>
                 {events.map((event) => (
-                  <option 
-                    key={event.event_id} 
-                    value={event.event_id.toString()}
-                    className="text-green-600 dark:text-green-400"
-                  >
+                  <option key={event.event_id} value={event.event_id.toString()}>
                     {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
                   </option>
                 ))}
               </select>
-              
+
               {selectedEvent && (
                 <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
                   <p className="text-sm text-green-700 dark:text-green-300">
