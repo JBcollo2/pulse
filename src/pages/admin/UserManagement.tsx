@@ -168,12 +168,18 @@ const UserManagement: React.FC<UserManagementProps> = ({
               )
             ) : (
               users?.map(user => (
-                <div key={user.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200">
-                  <p className="text-gray-800 dark:text-gray-200"><strong>ID:</strong> {user.id}</p>
-                  <p className="text-gray-800 dark:text-gray-200"><strong>Name:</strong> {user.full_name}</p>
-                  <p className="text-gray-800 dark:text-gray-200"><strong>Email:</strong> {user.email}</p>
-                  <p className="text-gray-800 dark:text-gray-200"><strong>Role:</strong> {user.role}</p>
-                  {user.phone_number && <p className="text-gray-800 dark:text-gray-200"><strong>Phone:</strong> {user.phone_number}</p>}
+                <div key={user.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200 relative">
+                  <div className="absolute top-2 right-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors.gradient} text-white shadow-sm`}>
+                      #{user.id}
+                    </span>
+                  </div>
+                  <div className="pr-16">
+                    <p className="text-gray-800 dark:text-gray-200"><strong>Name:</strong> {user.full_name}</p>
+                    <p className="text-gray-800 dark:text-gray-200"><strong>Email:</strong> {user.email}</p>
+                    <p className="text-gray-800 dark:text-gray-200"><strong>Role:</strong> {user.role}</p>
+                    {user.phone_number && <p className="text-gray-800 dark:text-gray-200"><strong>Phone:</strong> {user.phone_number}</p>}
+                  </div>
                 </div>
               ))
             )}
@@ -306,7 +312,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
                 <Input
                   id="full_name"
                   type="text"
-                  placeholder={view === 'registerAdmin' ? "John Doe" : "Jane Doe"}
+                  placeholder={view === 'registerAdmin' ? "John Kamau" : "Jane Agesa"}
                   value={formData.full_name}
                   onChange={handleChange}
                   className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 
