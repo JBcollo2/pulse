@@ -1,3 +1,6 @@
+// =============================================================================
+// IMPORTS
+// =============================================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -33,7 +36,9 @@ import {
   Settings
 } from "lucide-react";
 
-// --- Interfaces ---
+// =============================================================================
+// INTERFACES & TYPES
+// =============================================================================
 interface Currency {
   id: number;
   code: string;
@@ -86,17 +91,26 @@ interface AdminReport {
   }>;
 }
 
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
 const AdminReports: React.FC = () => {
+  // ---------------------------------------------------------------------------
+  // HOOKS & SETUP
+  // ---------------------------------------------------------------------------
   const { toast } = useToast();
 
-  // --- State Variables ---
+  // ---------------------------------------------------------------------------
+  // STATE VARIABLES
+  // ---------------------------------------------------------------------------
+  // Core Data State
   const [reportData, setReportData] = useState<AdminReport | null>(null);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
 
-  // Report Configuration
+  // Report Configuration State
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
@@ -115,13 +129,15 @@ const AdminReports: React.FC = () => {
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
-  // Search and Filter
+  // UI State
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('config');
 
-  // --- Helper Functions ---
+  // ---------------------------------------------------------------------------
+  // HELPER FUNCTIONS
+  // ---------------------------------------------------------------------------
   const handleError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -142,7 +158,9 @@ const AdminReports: React.FC = () => {
     });
   }, [toast]);
 
-  // --- API Functions ---
+  // ---------------------------------------------------------------------------
+  // API FUNCTIONS
+  // ---------------------------------------------------------------------------
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
@@ -252,7 +270,6 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
@@ -311,7 +328,6 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
@@ -337,7 +353,9 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedOrganizer, selectedEvent, targetCurrencyId, includeCharts, useLatestRates, handleError, showSuccess, toast]);
 
-  // --- Effects ---
+  // ---------------------------------------------------------------------------
+  // EFFECTS
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     fetchOrganizers();
     fetchCurrencies();
@@ -365,7 +383,9 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedCurrency, currencies]);
 
-  // --- Filter Functions ---
+  // ---------------------------------------------------------------------------
+  // FILTER FUNCTIONS
+  // ---------------------------------------------------------------------------
   const filteredOrganizers = organizers.filter(org =>
     org.name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
@@ -376,7 +396,9 @@ const AdminReports: React.FC = () => {
     event.location.toLowerCase().includes(eventSearch.toLowerCase())
   );
 
-  // --- Render Functions ---
+  // ---------------------------------------------------------------------------
+  // RENDER FUNCTIONS
+  // ---------------------------------------------------------------------------
   const renderConfigurationTab = () => (
     <div className="space-y-6">
       {/* Organizer Selection */}
@@ -439,78 +461,59 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Event Selection */}
-      {selectedOrganizer && (
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-              <Calendar className="h-5 w-5" />
-              Event Selection (Optional)
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400 text-gray-600">
-              Leave empty to generate report for all events
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="dark:text-gray-200 text-gray-800">Search Events</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search by name or location..."
-                  value={eventSearch}
-                  onChange={(e) => setEventSearch(e.target.value)}
-                  className={cn("pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="dark:text-gray-200 text-gray-800">Select Event</Label>
-              <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
-                  <SelectValue placeholder="All events (or select specific event)">
-                    {selectedEvent && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {events.find(e => e.event_id.toString() === selectedEvent)?.name}
-                      </div>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                  {filteredEvents.map((event) => (
-                    <SelectItem
-                      key={event.event_id}
-                      value={event.event_id.toString()}
-                      className={cn(
-                        selectedEvent === event.event_id.toString() && "bg-[#10b981] text-white"
-                      )}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div>
-                          <div className="font-medium">{event.name}</div>
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {event.location}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">
-                            {new Date(event.event_date).toLocaleDateString()}
-                          </Badge>
-                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{event.report_count} reports</Badge>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {selectedOrganizer && (
+    <div className="space-y-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+      <div>
+        <label className="block text-sm font-medium text-green-700 dark:text-green-300 mb-2">
+          Event Selection (Optional)
+        </label>
+        <p className="text-sm text-green-600 dark:text-green-400 mb-3">
+          Leave empty to generate report for all events
+        </p>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 h-4 w-4" />
+          <input
+            type="text"
+            placeholder="Search Events"
+            value={eventSearch}
+            onChange={(e) => setEventSearch(e.target.value)}
+            className={cn(
+              "pl-10 w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
+              "dark:bg-green-800 dark:border-green-600 dark:text-green-100 bg-green-100 border-green-300 text-green-800"
+            )}
+          />
+        </div>
+      </div>
 
+      <div className="relative">
+        <select
+          value={selectedEvent}
+          onChange={(e) => setSelectedEvent(e.target.value)}
+          className={cn(
+            "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
+            "dark:bg-green-800 dark:border-green-600 dark:text-green-100 bg-green-100 border-green-300 text-green-800"
+          )}
+        >
+          <option value="">Select Event</option>
+          {filteredEvents.map((event) => (
+            <option key={event.event_id} value={event.event_id.toString()}>
+              {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+            </option>
+          ))}
+        </select>
+        
+        {selectedEvent && (
+          <div className="mt-2 p-2 bg-green-100 dark:bg-green-800/30 rounded-md">
+            <p className="text-sm text-green-700 dark:text-green-300">
+              Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
@@ -676,7 +679,6 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
