@@ -704,7 +704,7 @@ const AdminReports: React.FC = () => {
               variant="outline"
               onClick={() => downloadReport('csv')}
               disabled={!selectedOrganizer || isDownloading}
-              className="bg-[#10b981] hover:bg-[#10b981] text-white flex items-center transition-all hover:scale-105"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
             >
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Download CSV
@@ -713,7 +713,7 @@ const AdminReports: React.FC = () => {
               variant="outline"
               onClick={() => downloadReport('pdf')}
               disabled={!selectedOrganizer || isDownloading}
-              className="bg-[#10b981] hover:bg-[#10b981] text-white flex items-center transition-all hover:scale-105"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
             >
               <File className="mr-2 h-4 w-4" />
               Download PDF
