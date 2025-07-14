@@ -815,17 +815,17 @@ const AdminReports: React.FC = () => {
         )}
         {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 gap-4 p-3 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+            <TabsList className="grid grid-cols-2 gap-4 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full">
               <TabsTrigger
                 value="config"
-                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
+                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Configuration
               </TabsTrigger>
               <TabsTrigger
                 value="results"
-                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
+                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Results
