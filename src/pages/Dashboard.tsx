@@ -406,12 +406,12 @@ const Dashboard = () => {
         if (user && (user.role === "ADMIN" || user.role === "ORGANIZER")) {
           return <MyEventsComponent />;
         }
-      //   return <UnauthorizedAccess />;
-      // // // case "organizers":
-      // // //   if (user && (user.role === "ADMIN" || user.role === "ORGANIZER")) {
-      // // //     return <ManageOrganizersPage />;
-      // //   }
-      //   return <UnauthorizedAccess />;
+        return <UnauthorizedAccess />;
+      case "organizers":
+        if (user && (user.role === "ADMIN" || user.role === "ORGANIZER")) {
+          return <ManageOrganizersPage />;
+        }
+        return <UnauthorizedAccess />;
       case "profile":
         return <UserProfile />;
       case "admin":

@@ -814,8 +814,8 @@ const AdminReports: React.FC = () => {
           </div>
         )}
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 gap-4 p-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 gap-6 p-3 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
               <TabsTrigger 
                 value="config" 
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
