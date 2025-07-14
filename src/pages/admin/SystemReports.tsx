@@ -791,8 +791,8 @@ const AdminReports: React.FC = () => {
     const events = extractEvents(reportData);
     const currencySymbol = extractCurrency(reportData);
     const validEvents = Array.isArray(events) ? events.filter(event => event && typeof event === 'object') : [];
-    const totalRevenue = validEvents.reduce((sum, event) => sum + (parseFloat(event.revenue) || 0), 0);
-    const totalAttendees = validEvents.reduce((sum, event) => sum + (parseInt(event.attendees) || 0), 0);
+    const totalRevenue = validEvents.reduce((sum, event) => sum + (event.revenue || 0), 0);
+    const totalAttendees = validEvents.reduce((sum, event) => sum + (event.attendees || 0), 0);
 
     console.log("✅ Parsed Events:", events);
     console.log("✅ Parsed Currency:", currencySymbol);
@@ -989,7 +989,7 @@ const AdminReports: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {validEvents.map((event, index) => (
-                    <div key={event.event_id != null ? event.event_id.toString() : `event-${index}`} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div key={event.event_id != null ? String(event.event_id) : `event-${index}`} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{event.event_name}</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -1037,7 +1037,7 @@ const AdminReports: React.FC = () => {
                     </thead>
                     <tbody>
                       {validEvents.map((event, index) => (
-                        <tr key={event.event_id != null ? event.event_id.toString() : `event-row-${index}`} className="hover:dark:bg-gray-700 hover:bg-gray-50">
+                        <tr key={event.event_id != null ? String(event.event_id) : `event-row-${index}`} className="hover:dark:bg-gray-700 hover:bg-gray-50">
                           <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.event_name}</td>
                           <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">
                             {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'N/A'}
