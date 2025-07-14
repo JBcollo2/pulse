@@ -814,8 +814,8 @@ const AdminReports: React.FC = () => {
           </div>
         )}
         {/* Main Content */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 gap-4 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-2 w-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-2 gap-4 w-full">
               <TabsTrigger
                 value="config"
                 className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
@@ -840,6 +840,7 @@ const AdminReports: React.FC = () => {
               {renderResultsTab()}
             </TabsContent>
           </Tabs>
+
 
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
