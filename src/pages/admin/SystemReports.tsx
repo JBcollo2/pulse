@@ -477,55 +477,55 @@ const AdminReports: React.FC = () => {
           </CardContent>
         </Card>
         {/* Event Selection */}
-        {selectedOrganizer && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Event Selection (Optional)
-              </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                Leave empty to generate report for all events
-              </p>
-            </div>
-            <div className="relative">
-              <select
-                value={selectedEvent}
-                onChange={(e) => setSelectedEvent(e.target.value)}
-                className={cn(
-                  "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                  // Add green background when event is selected
-                  selectedEvent && "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600"
-                )}
-                style={{
-                  colorScheme: 'dark' // This helps with consistent styling in dark mode
-                }}
-              >
-                <option value="">Select Event</option>
-                {events.map((event) => (
-                  <option key={event.event_id} value={event.event_id.toString()}>
-                    {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
-                  </option>
-                ))}
-              </select>
-
-              {selectedEvent && (
-                <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/10 rounded-md border border-green-200 dark:border-green-800/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-green-700 dark:text-green-200">
-                      Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
-                    </p>
-                  </div>
-                  <p className="text-xs text-green-600 dark:text-green-300 mt-1 ml-4">
-                    {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
-                    {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+       {selectedOrganizer && (
+  <div className="space-y-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        Event Selection (Optional)
+      </label>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+        Leave empty to generate report for all events
+      </p>
+    </div>
+    <div className="relative">
+      <select
+        value={selectedEvent}
+        onChange={(e) => setSelectedEvent(e.target.value)}
+        className={cn(
+          "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600",
+          "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+          // Use muted green accent when event is selected
+          selectedEvent && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-700"
         )}
+        style={{
+          colorScheme: 'dark'
+        }}
+      >
+        <option value="">Select Event</option>
+        {events.map((event) => (
+          <option key={event.event_id} value={event.event_id.toString()}>
+            {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+          </option>
+        ))}
+      </select>
+
+      {selectedEvent && (
+        <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+              Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+            </p>
+          </div>
+          <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 ml-4">
+            {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
+            {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
+          </p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
