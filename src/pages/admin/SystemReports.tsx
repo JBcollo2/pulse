@@ -493,7 +493,9 @@ const AdminReports: React.FC = () => {
                 onChange={(e) => setSelectedEvent(e.target.value)}
                 className={cn(
                   "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500",
-                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                  // Add green background when event is selected
+                  selectedEvent && "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600"
                 )}
                 style={{
                   colorScheme: 'dark' // This helps with consistent styling in dark mode
@@ -508,9 +510,16 @@ const AdminReports: React.FC = () => {
               </select>
 
               {selectedEvent && (
-                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    Selected: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                      Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 ml-4">
+                    {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
+                    {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
                   </p>
                 </div>
               )}
@@ -806,31 +815,31 @@ const AdminReports: React.FC = () => {
         )}
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 gap-2 p-1 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
-            <TabsTrigger 
-              value="config" 
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Configuration
-            </TabsTrigger>
-            <TabsTrigger 
-              value="results" 
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Results
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="config" className="mt-8">
-            {renderConfigurationTab()}
-          </TabsContent>
-          
-          <TabsContent value="results" className="mt-8">
-            {renderResultsTab()}
-          </TabsContent>
-        </Tabs>
+            <TabsList className="grid w-full grid-cols-2 gap-4 p-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
+              <TabsTrigger 
+                value="config" 
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Configuration
+              </TabsTrigger>
+              <TabsTrigger 
+                value="results" 
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Results
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="config" className="mt-8">
+              {renderConfigurationTab()}
+            </TabsContent>
+            
+            <TabsContent value="results" className="mt-8">
+              {renderResultsTab()}
+            </TabsContent>
+          </Tabs>
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
