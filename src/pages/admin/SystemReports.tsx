@@ -34,14 +34,14 @@ import {
   Filter,
   Search,
   Settings,
-  PieChart,
+  PieChart as PieChartIcon,
   Activity,
   Table
 } from "lucide-react";
 import {
   BarChart,
   LineChart,
-  PieChart as RePieChart,
+  PieChart,
   Bar,
   Line,
   Pie,
@@ -107,13 +107,26 @@ interface AdminReport {
     attendees: number;
     report_count: number;
   }>;
+  data?: {
+    events: Array<{
+      event_id: number;
+      event_name: string;
+      event_date: string;
+      location: string;
+      tickets_sold: number;
+      revenue: number;
+      attendees: number;
+      report_count: number;
+    }>;
+    currency_symbol: string;
+  };
 }
 
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
-  const COLORS = ['#10b981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c'];
 
   // ---------------------------------------------------------------------------
   // HOOKS & SETUP
@@ -290,14 +303,17 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
+
       if (reportFormat === 'json') {
         const data = await response.json();
         setReportData(data);
@@ -320,19 +336,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingReport(false);
     }
-  }, [
-    selectedOrganizer,
-    selectedEvent,
-    reportFormat,
-    targetCurrencyId,
-    includeCharts,
-    useLatestRates,
-    sendEmail,
-    recipientEmail,
-    handleError,
-    showSuccess,
-    toast
-  ]);
+  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess, toast]);
 
   const downloadReport = useCallback(async (format: string) => {
     if (!selectedOrganizer) {
@@ -348,14 +352,17 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || `Failed to download ${format} report.`, errorData);
         return;
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -521,7 +528,7 @@ const AdminReports: React.FC = () => {
             >
               <option value="">Select Event</option>
               {events.map((event) => (
-                <option key={event.event_id} value={event.event_id.toString()}>
+                <option key={String(event.event_id)} value={event.event_id.toString()}>
                   {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
                 </option>
               ))}
@@ -755,14 +762,19 @@ const AdminReports: React.FC = () => {
   );
 
   const renderResultsTab = () => {
-    const events = reportData?.events || [];
-    const currencySymbol = reportData?.currency_symbol || '$';
-    const totalRevenue = events.reduce((sum, event) => sum + (event.revenue || 0), 0);
-    const totalAttendees = events.reduce((sum, event) => sum + (event.attendees || 0), 0);
+    const events = reportData?.events || reportData?.data?.events || [];
+    const currencySymbol = reportData?.currency_symbol || reportData?.data?.currency_symbol || '$';
+    const validEvents = Array.isArray(events) ? events.filter(event => event && typeof event === 'object') : [];
+    const totalRevenue = validEvents.reduce((sum, event) => sum + (parseFloat(event.revenue) || 0), 0);
+    const totalAttendees = validEvents.reduce((sum, event) => sum + (parseInt(event.attendees) || 0), 0);
+
+    console.log('Report Data:', reportData);
+    console.log('Events:', validEvents);
+    console.log('Currency Symbol:', currencySymbol);
 
     return (
       <div className="space-y-6">
-        {reportData && events.length > 0 ? (
+        {reportData && validEvents.length > 0 ? (
           <>
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -771,7 +783,7 @@ const AdminReports: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Events</p>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{events.length}</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{validEvents.length}</p>
                     </div>
                     <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
                       <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -810,6 +822,7 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Revenue Chart */}
@@ -823,7 +836,7 @@ const AdminReports: React.FC = () => {
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={events}>
+                      <BarChart data={validEvents}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                         <XAxis
                           dataKey="event_name"
@@ -864,7 +877,7 @@ const AdminReports: React.FC = () => {
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={events}>
+                      <LineChart data={validEvents}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                         <XAxis
                           dataKey="event_name"
@@ -905,16 +918,16 @@ const AdminReports: React.FC = () => {
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
                 <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
+                  <PieChartIcon className="h-5 w-5" />
                   Revenue Distribution
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RePieChart>
+                    <PieChart>
                       <Pie
-                        data={events}
+                        data={validEvents}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -923,7 +936,7 @@ const AdminReports: React.FC = () => {
                         fill="#8884d8"
                         dataKey="revenue"
                       >
-                        {events.map((entry, index) => (
+                        {validEvents.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
@@ -936,7 +949,7 @@ const AdminReports: React.FC = () => {
                         }}
                       />
                       <Legend />
-                    </RePieChart>
+                    </PieChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -951,8 +964,8 @@ const AdminReports: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {events.map((event) => (
-                    <div key={event.event_id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  {validEvents.map((event, index) => (
+                    <div key={event.event_id != null ? event.event_id.toString() : `event-${index}`} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{event.event_name}</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -999,8 +1012,8 @@ const AdminReports: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {events.map((event) => (
-                        <tr key={event.event_id} className="hover:dark:bg-gray-700 hover:bg-gray-50">
+                      {validEvents.map((event, index) => (
+                        <tr key={event.event_id != null ? event.event_id.toString() : `event-row-${index}`} className="hover:dark:bg-gray-700 hover:bg-gray-50">
                           <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.event_name}</td>
                           <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">
                             {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'N/A'}
