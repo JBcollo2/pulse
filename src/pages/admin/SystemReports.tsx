@@ -815,31 +815,32 @@ const AdminReports: React.FC = () => {
         )}
         {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 gap-6 p-3 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
-              <TabsTrigger 
-                value="config" 
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+            <TabsList className="grid grid-cols-2 gap-4 p-3 bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg">
+              <TabsTrigger
+                value="config"
+                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Configuration
               </TabsTrigger>
-              <TabsTrigger 
-                value="results" 
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+              <TabsTrigger
+                value="results"
+                className="px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Results
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="config" className="mt-8">
               {renderConfigurationTab()}
             </TabsContent>
-            
+
             <TabsContent value="results" className="mt-8">
               {renderResultsTab()}
             </TabsContent>
           </Tabs>
+
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
