@@ -402,7 +402,7 @@ const AdminReports: React.FC = () => {
   const renderConfigurationTab = () => (
     <div className="space-y-6">
       {/* Organizer Selection */}
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
               <Users className="h-5 w-5" />
@@ -421,8 +421,11 @@ const AdminReports: React.FC = () => {
                   className={cn(
                     "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                     "focus:ring-2 focus:ring-green-500 focus:border-green-500",
-                    "focus:outline-none",
-                    "transition-colors duration-200"
+                    "focus:outline-none focus:ring-offset-0",
+                    "transition-colors duration-200",
+                    // Additional green focus styling to override any purple defaults
+                    "focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-green-500",
+                    "focus-visible:outline-none focus-visible:ring-offset-0"
                   )}
                 />
               </div>
@@ -433,7 +436,7 @@ const AdminReports: React.FC = () => {
                 <SelectTrigger className={cn(
                   "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                   "focus:ring-2 focus:ring-green-500 focus:border-green-500",
-                  "focus:outline-none",
+                  "focus:outline-none focus:ring-offset-0",
                   "transition-colors duration-200"
                 )}>
                   <SelectValue placeholder="Choose an organizer">
@@ -803,20 +806,28 @@ const AdminReports: React.FC = () => {
         )}
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
-            <TabsTrigger value="config" className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center">
+          <TabsList className="grid w-full grid-cols-2 gap-2 p-1 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
+            <TabsTrigger 
+              value="config" 
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+            >
               <Settings className="h-4 w-4 mr-2" />
               Configuration
             </TabsTrigger>
-            <TabsTrigger value="results" className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center">
+            <TabsTrigger 
+              value="results" 
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md"
+            >
               <BarChart3 className="h-4 w-4 mr-2" />
               Results
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="config" className="mt-6">
+          
+          <TabsContent value="config" className="mt-8">
             {renderConfigurationTab()}
           </TabsContent>
-          <TabsContent value="results" className="mt-6">
+          
+          <TabsContent value="results" className="mt-8">
             {renderResultsTab()}
           </TabsContent>
         </Tabs>
