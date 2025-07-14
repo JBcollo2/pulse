@@ -33,8 +33,26 @@ import {
   Eye,
   Filter,
   Search,
-  Settings
+  Settings,
+  PieChart,
+  Activity,
+  Table
 } from "lucide-react";
+import {
+  BarChart,
+  LineChart,
+  PieChart as RePieChart,
+  Bar,
+  Line,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
 // =============================================================================
 // INTERFACES & TYPES
@@ -95,6 +113,9 @@ interface AdminReport {
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
+  // Add these constants at the top of your component
+  const COLORS = ['#10b981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+
   // ---------------------------------------------------------------------------
   // HOOKS & SETUP
   // ---------------------------------------------------------------------------
@@ -402,130 +423,127 @@ const AdminReports: React.FC = () => {
   const renderConfigurationTab = () => (
     <div className="space-y-6">
       {/* Organizer Selection */}
-       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-              <Users className="h-5 w-5" />
-              Organizer Selection
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search by name or email..."
-                  value={organizerSearch}
-                  onChange={(e) => setOrganizerSearch(e.target.value)}
-                  className={cn(
-                    "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                    "focus:ring-2 focus:ring-green-500 focus:border-green-500",
-                    "focus:outline-none focus:ring-offset-0",
-                    "transition-colors duration-200",
-                    // Additional green focus styling to override any purple defaults
-                    "focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-green-500",
-                    "focus-visible:outline-none focus-visible:ring-offset-0"
-                  )}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
-              <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-                <SelectTrigger className={cn(
-                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+      <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+            <Users className="h-5 w-5" />
+            Organizer Selection
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by name or email..."
+                value={organizerSearch}
+                onChange={(e) => setOrganizerSearch(e.target.value)}
+                className={cn(
+                  "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                   "focus:ring-2 focus:ring-green-500 focus:border-green-500",
                   "focus:outline-none focus:ring-offset-0",
-                  "transition-colors duration-200"
-                )}>
-                  <SelectValue placeholder="Choose an organizer">
-                    {selectedOrganizer && (
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
-                      </div>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                  {filteredOrganizers.map((organizer) => (
-                    <SelectItem
-                      key={organizer.organizer_id}
-                      value={organizer.organizer_id.toString()}
-                      className={cn(
-                        "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
-                        "focus:bg-green-50 focus:dark:bg-green-900/20",
-                        selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
-                      )}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div>
-                          <div className="font-medium">{organizer.name}</div>
-                          <div className="text-sm text-gray-500">{organizer.email}</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.event_count} events</Badge>
-                          <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.report_count} reports</Badge>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  "transition-colors duration-200",
+                  "focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-green-500",
+                  "focus-visible:outline-none focus-visible:ring-offset-0"
+                )}
+              />
             </div>
-          </CardContent>
-        </Card>
-        {/* Event Selection */}
-       {selectedOrganizer && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Event Selection (Optional)
-      </label>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-        Leave empty to generate report for all events
-      </p>
-    </div>
-    <div className="relative">
-      <select
-        value={selectedEvent}
-        onChange={(e) => setSelectedEvent(e.target.value)}
-        className={cn(
-          "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600",
-          "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-          // Use muted green accent when event is selected
-          selectedEvent && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-700"
-        )}
-        style={{
-          colorScheme: 'dark'
-        }}
-      >
-        <option value="">Select Event</option>
-        {events.map((event) => (
-          <option key={event.event_id} value={event.event_id.toString()}>
-            {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
-          </option>
-        ))}
-      </select>
-
-      {selectedEvent && (
-        <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-md border border-emerald-200 dark:border-emerald-800/40">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
-            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-              Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+          </div>
+          <div className="space-y-2">
+            <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
+            <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
+              <SelectTrigger className={cn(
+                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                "focus:outline-none focus:ring-offset-0",
+                "transition-colors duration-200"
+              )}>
+                <SelectValue placeholder="Choose an organizer">
+                  {selectedOrganizer && (
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
+                    </div>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                {filteredOrganizers.map((organizer) => (
+                  <SelectItem
+                    key={organizer.organizer_id}
+                    value={organizer.organizer_id.toString()}
+                    className={cn(
+                      "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
+                      "focus:bg-green-50 focus:dark:bg-green-900/20",
+                      selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                    )}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div>
+                        <div className="font-medium">{organizer.name}</div>
+                        <div className="text-sm text-gray-500">{organizer.email}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.event_count} events</Badge>
+                        <Badge variant="outline" className="dark:text-gray-200 text-gray-800">{organizer.report_count} reports</Badge>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Event Selection */}
+      {selectedOrganizer && (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Event Selection (Optional)
+            </label>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+              Leave empty to generate report for all events
             </p>
           </div>
-          <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 ml-4">
-            {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
-            {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
-          </p>
+          <div className="relative">
+            <select
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              className={cn(
+                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600",
+                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                selectedEvent && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-700"
+              )}
+              style={{
+                colorScheme: 'dark'
+              }}
+            >
+              <option value="">Select Event</option>
+              {events.map((event) => (
+                <option key={event.event_id} value={event.event_id.toString()}>
+                  {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+                </option>
+              ))}
+            </select>
+            {selectedEvent && (
+              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-md border border-emerald-200 dark:border-emerald-800/40">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
+                  <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                    Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                  </p>
+                </div>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 ml-4">
+                  {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
+                  {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
@@ -640,7 +658,7 @@ const AdminReports: React.FC = () => {
           {/* Email Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings(Optional)</Label>
+              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings (Optional)</Label>
               <Switch
                 checked={sendEmail}
                 onCheckedChange={setSendEmail}
@@ -649,7 +667,7 @@ const AdminReports: React.FC = () => {
             </div>
             {sendEmail && (
               <div className="space-y-2">
-                <Label className="dark:text-gray-200 text-gray-800">Recipient Email(Leave to be send to your Account Email)</Label>
+                <Label className="dark:text-gray-200 text-gray-800">Recipient Email (Leave to be sent to your Account Email)</Label>
                 <Input
                   type="email"
                   placeholder="Enter recipient email"
@@ -741,10 +759,226 @@ const AdminReports: React.FC = () => {
     <div className="space-y-6">
       {reportData ? (
         <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Events</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{reportData.events.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                      {reportData.currency_symbol}{reportData.events.reduce((sum, event) => sum + event.revenue, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Attendees</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                      {reportData.events.reduce((sum, event) => sum + event.attendees, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Revenue Chart */}
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Revenue by Event
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData.events}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        dataKey="event_name"
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        stroke="#6B7280"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        stroke="#6B7280"
+                        tickFormatter={(value) => `${reportData.currency_symbol}${value.toLocaleString()}`}
+                      />
+                      <Tooltip
+                        formatter={(value) => [`${reportData.currency_symbol}${value.toLocaleString()}`, 'Revenue']}
+                        labelStyle={{ color: '#374151' }}
+                        contentStyle={{
+                          backgroundColor: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Attendees Chart */}
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Attendees by Event
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={reportData.events}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        dataKey="event_name"
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        stroke="#6B7280"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        stroke="#6B7280"
+                      />
+                      <Tooltip
+                        formatter={(value) => [value.toLocaleString(), 'Attendees']}
+                        labelStyle={{ color: '#374151' }}
+                        contentStyle={{
+                          backgroundColor: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="attendees"
+                        stroke="#3B82F6"
+                        strokeWidth={3}
+                        dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
+                        activeDot={{ r: 8, fill: '#1D4ED8' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          {/* Pie Chart for Revenue Distribution */}
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardHeader>
+              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                <PieChart className="h-5 w-5" />
+                Revenue Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart>
+                    <Pie
+                      data={reportData.events}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ event_name, percent }) => `${event_name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="revenue"
+                    >
+                      {reportData.events.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${reportData.currency_symbol}${value.toLocaleString()}`, 'Revenue']}
+                      contentStyle={{
+                        backgroundColor: '#F9FAFB',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Legend />
+                  </RePieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Performance Metrics */}
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardHeader>
+              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Performance Metrics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {reportData.events.map((event) => (
+                  <div key={event.event_id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{event.event_name}</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Tickets Sold:</span>
+                        <span className="font-medium">{event.tickets_sold}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Attendance Rate:</span>
+                        <span className="font-medium">
+                          {((event.attendees / event.tickets_sold) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Revenue per Attendee:</span>
+                        <span className="font-medium">
+                          {reportData.currency_symbol}{(event.revenue / event.attendees).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
           {/* Events Table */}
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
             <CardHeader>
-              <CardTitle className="dark:text-gray-200 text-gray-800">Event Details</CardTitle>
+              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                <Table className="h-5 w-5" />
+                Event Details
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -815,34 +1049,30 @@ const AdminReports: React.FC = () => {
           </div>
         )}
         {/* Main Content */}
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 gap-4 w-full">
-              <TabsTrigger
-                value="config"
-                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Configuration
-              </TabsTrigger>
-              <TabsTrigger
-                value="results"
-                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Results
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="config" className="mt-8">
-              {renderConfigurationTab()}
-            </TabsContent>
-
-            <TabsContent value="results" className="mt-8">
-              {renderResultsTab()}
-            </TabsContent>
-          </Tabs>
-
-
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 gap-4 w-full">
+            <TabsTrigger
+              value="config"
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Configuration
+            </TabsTrigger>
+            <TabsTrigger
+              value="results"
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-[#10b981] hover:scale-105 transition-all flex items-center justify-center rounded-md text-white font-semibold"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Results
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="config" className="mt-8">
+            {renderConfigurationTab()}
+          </TabsContent>
+          <TabsContent value="results" className="mt-8">
+            {renderResultsTab()}
+          </TabsContent>
+        </Tabs>
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
