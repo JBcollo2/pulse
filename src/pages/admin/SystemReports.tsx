@@ -554,7 +554,7 @@ const AdminReports: React.FC = () => {
               <div className="space-y-2">
                 <Label className="dark:text-gray-200 text-gray-800">Target Currency</Label>
                 <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]">
                     <SelectValue placeholder="Select currency">
                       {isLoadingCurrencies ? (
                         <div className="flex items-center gap-2">
@@ -577,6 +577,7 @@ const AdminReports: React.FC = () => {
                         key={currency.id}
                         value={currency.code}
                         className={cn(
+                          "focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
                           selectedCurrency === currency.code && "bg-[#10b981] text-white"
                         )}
                       >
@@ -639,7 +640,7 @@ const AdminReports: React.FC = () => {
           {/* Email Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings</Label>
+              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings(Optional)</Label>
               <Switch
                 checked={sendEmail}
                 onCheckedChange={setSendEmail}
@@ -648,13 +649,13 @@ const AdminReports: React.FC = () => {
             </div>
             {sendEmail && (
               <div className="space-y-2">
-                <Label className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                <Label className="dark:text-gray-200 text-gray-800">Recipient Email(Leave to be send to your Account Email)</Label>
                 <Input
                   type="email"
                   placeholder="Enter recipient email"
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
-                  className={cn("dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn("dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]")}
                 />
               </div>
             )}
@@ -664,23 +665,23 @@ const AdminReports: React.FC = () => {
           <div className="space-y-4">
             <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
             <Select value={reportFormat} onValueChange={setReportFormat}>
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                <SelectItem value="json" className="dark:text-gray-200 text-gray-800">
+                <SelectItem value="json" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
                   <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4" />
                     JSON (View in Dashboard)
                   </div>
                 </SelectItem>
-                <SelectItem value="csv" className="dark:text-gray-200 text-gray-800">
+                <SelectItem value="csv" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
                   <div className="flex items-center gap-2">
                     <FileSpreadsheet className="h-4 w-4" />
                     CSV (Download)
                   </div>
                 </SelectItem>
-                <SelectItem value="pdf" className="dark:text-gray-200 text-gray-800">
+                <SelectItem value="pdf" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
                   <div className="flex items-center gap-2">
                     <File className="h-4 w-4" />
                     PDF (Download)
