@@ -120,6 +120,19 @@ interface AdminReport {
     }>;
     currency_symbol: string;
   };
+  fresh_report_data?: {
+    events: Array<{
+      event_id: number;
+      event_name: string;
+      event_date: string;
+      location: string;
+      tickets_sold: number;
+      revenue: number;
+      attendees: number;
+      report_count: number;
+    }>;
+    currency_symbol: string;
+  };
 }
 
 // =============================================================================
@@ -127,6 +140,25 @@ interface AdminReport {
 // =============================================================================
 const AdminReports: React.FC = () => {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c'];
+
+  // Helper functions to extract data
+  function extractEvents(data: AdminReport | null) {
+    return (
+      data?.events ||
+      data?.data?.events ||
+      data?.fresh_report_data?.events ||
+      []
+    );
+  }
+
+  function extractCurrency(data: AdminReport | null) {
+    return (
+      data?.currency_symbol ||
+      data?.data?.currency_symbol ||
+      data?.fresh_report_data?.currency_symbol ||
+      '$'
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // HOOKS & SETUP
@@ -303,17 +335,14 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
-
       if (reportFormat === 'json') {
         const data = await response.json();
         setReportData(data);
@@ -352,17 +381,14 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || `Failed to download ${format} report.`, errorData);
         return;
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -762,15 +788,14 @@ const AdminReports: React.FC = () => {
   );
 
   const renderResultsTab = () => {
-    const events = reportData?.events || reportData?.data?.events || [];
-    const currencySymbol = reportData?.currency_symbol || reportData?.data?.currency_symbol || '$';
+    const events = extractEvents(reportData);
+    const currencySymbol = extractCurrency(reportData);
     const validEvents = Array.isArray(events) ? events.filter(event => event && typeof event === 'object') : [];
     const totalRevenue = validEvents.reduce((sum, event) => sum + (parseFloat(event.revenue) || 0), 0);
     const totalAttendees = validEvents.reduce((sum, event) => sum + (parseInt(event.attendees) || 0), 0);
 
-    console.log('Report Data:', reportData);
-    console.log('Events:', validEvents);
-    console.log('Currency Symbol:', currencySymbol);
+    console.log("✅ Parsed Events:", events);
+    console.log("✅ Parsed Currency:", currencySymbol);
 
     return (
       <div className="space-y-6">
@@ -822,7 +847,6 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
-
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Revenue Chart */}
@@ -849,10 +873,10 @@ const AdminReports: React.FC = () => {
                         <YAxis
                           tick={{ fontSize: 12 }}
                           stroke="#6B7280"
-                          tickFormatter={(value) => `${currencySymbol}${value.toLocaleString()}`}
+                          tickFormatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`}
                         />
                         <Tooltip
-                          formatter={(value) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
+                          formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
                           labelStyle={{ color: '#374151' }}
                           contentStyle={{
                             backgroundColor: '#F9FAFB',
@@ -892,7 +916,7 @@ const AdminReports: React.FC = () => {
                           stroke="#6B7280"
                         />
                         <Tooltip
-                          formatter={(value) => [value.toLocaleString(), 'Attendees']}
+                          formatter={(value: number) => [value.toLocaleString(), 'Attendees']}
                           labelStyle={{ color: '#374151' }}
                           contentStyle={{
                             backgroundColor: '#F9FAFB',
@@ -941,7 +965,7 @@ const AdminReports: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
+                        formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
                         contentStyle={{
                           backgroundColor: '#F9FAFB',
                           border: '1px solid #E5E7EB',
