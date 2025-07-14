@@ -477,7 +477,7 @@ const AdminReports: React.FC = () => {
           </CardContent>
         </Card>
         {/* Event Selection */}
-       {selectedOrganizer && (
+        {selectedOrganizer && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -510,14 +510,14 @@ const AdminReports: React.FC = () => {
               </select>
 
               {selectedEvent && (
-                <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-700">
+                <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/10 rounded-md border border-green-200 dark:border-green-800/30">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                    <p className="text-sm font-medium text-green-700 dark:text-green-200">
                       Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
                     </p>
                   </div>
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1 ml-4">
+                  <p className="text-xs text-green-600 dark:text-green-300 mt-1 ml-4">
                     {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
                     {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
                   </p>
