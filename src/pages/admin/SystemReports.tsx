@@ -113,7 +113,6 @@ interface AdminReport {
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
-  // Add these constants at the top of your component
   const COLORS = ['#10b981', '#3B82F6', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
   // ---------------------------------------------------------------------------
@@ -755,277 +754,284 @@ const AdminReports: React.FC = () => {
     </div>
   );
 
-  const renderResultsTab = () => (
-    <div className="space-y-6">
-      {reportData ? (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Events</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{reportData.events.length}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                      {reportData.currency_symbol}{reportData.events.reduce((sum, event) => sum + event.revenue, 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Attendees</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                      {reportData.events.reduce((sum, event) => sum + event.attendees, 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Revenue Chart */}
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardHeader>
-                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Revenue by Event
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={reportData.events}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis
-                        dataKey="event_name"
-                        tick={{ fontSize: 12 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
-                        stroke="#6B7280"
-                      />
-                      <YAxis
-                        tick={{ fontSize: 12 }}
-                        stroke="#6B7280"
-                        tickFormatter={(value) => `${reportData.currency_symbol}${value.toLocaleString()}`}
-                      />
-                      <Tooltip
-                        formatter={(value) => [`${reportData.currency_symbol}${value.toLocaleString()}`, 'Revenue']}
-                        labelStyle={{ color: '#374151' }}
-                        contentStyle={{
-                          backgroundColor: '#F9FAFB',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Attendees Chart */}
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardHeader>
-                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Attendees by Event
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={reportData.events}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis
-                        dataKey="event_name"
-                        tick={{ fontSize: 12 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
-                        stroke="#6B7280"
-                      />
-                      <YAxis
-                        tick={{ fontSize: 12 }}
-                        stroke="#6B7280"
-                      />
-                      <Tooltip
-                        formatter={(value) => [value.toLocaleString(), 'Attendees']}
-                        labelStyle={{ color: '#374151' }}
-                        contentStyle={{
-                          backgroundColor: '#F9FAFB',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="attendees"
-                        stroke="#3B82F6"
-                        strokeWidth={3}
-                        dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
-                        activeDot={{ r: 8, fill: '#1D4ED8' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          {/* Pie Chart for Revenue Distribution */}
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                <PieChart className="h-5 w-5" />
-                Revenue Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RePieChart>
-                    <Pie
-                      data={reportData.events}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ event_name, percent }) => `${event_name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="revenue"
-                    >
-                      {reportData.events.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value) => [`${reportData.currency_symbol}${value.toLocaleString()}`, 'Revenue']}
-                      contentStyle={{
-                        backgroundColor: '#F9FAFB',
-                        border: '1px solid #E5E7EB',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                  </RePieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Performance Metrics */}
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Performance Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {reportData.events.map((event) => (
-                  <div key={event.event_id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{event.event_name}</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Tickets Sold:</span>
-                        <span className="font-medium">{event.tickets_sold}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Attendance Rate:</span>
-                        <span className="font-medium">
-                          {((event.attendees / event.tickets_sold) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Revenue per Attendee:</span>
-                        <span className="font-medium">
-                          {reportData.currency_symbol}{(event.revenue / event.attendees).toFixed(2)}
-                        </span>
-                      </div>
+  const renderResultsTab = () => {
+    const events = reportData?.events || [];
+    const currencySymbol = reportData?.currency_symbol || '$';
+    const totalRevenue = events.reduce((sum, event) => sum + (event.revenue || 0), 0);
+    const totalAttendees = events.reduce((sum, event) => sum + (event.attendees || 0), 0);
+
+    return (
+      <div className="space-y-6">
+        {reportData && events.length > 0 ? (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Events</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{events.length}</p>
+                    </div>
+                    <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          {/* Events Table */}
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                <Table className="h-5 w-5" />
-                Event Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border dark:border-gray-700 border-gray-200">
-                  <thead>
-                    <tr className="dark:bg-gray-700 bg-gray-50">
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Event Name</th>
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Date</th>
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Location</th>
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Tickets</th>
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Revenue</th>
-                      <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Attendees</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.events.map((event) => (
-                      <tr key={event.event_id} className="hover:dark:bg-gray-700 hover:bg-gray-50">
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.event_name}</td>
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">
-                          {new Date(event.event_date).toLocaleDateString()}
-                        </td>
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.location}</td>
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">{event.tickets_sold}</td>
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">
-                          {reportData.currency_symbol}{event.revenue.toLocaleString()}
-                        </td>
-                        <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">{event.attendees}</td>
+                </CardContent>
+              </Card>
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        {currencySymbol}{totalRevenue.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Attendees</p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        {totalAttendees.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                      <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Revenue Chart */}
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Revenue by Event
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={events}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis
+                          dataKey="event_name"
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          stroke="#6B7280"
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12 }}
+                          stroke="#6B7280"
+                          tickFormatter={(value) => `${currencySymbol}${value.toLocaleString()}`}
+                        />
+                        <Tooltip
+                          formatter={(value) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
+                          labelStyle={{ color: '#374151' }}
+                          contentStyle={{
+                            backgroundColor: '#F9FAFB',
+                            border: '1px solid #E5E7EB',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Attendees Chart */}
+              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+                <CardHeader>
+                  <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Attendees by Event
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={events}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis
+                          dataKey="event_name"
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          stroke="#6B7280"
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12 }}
+                          stroke="#6B7280"
+                        />
+                        <Tooltip
+                          formatter={(value) => [value.toLocaleString(), 'Attendees']}
+                          labelStyle={{ color: '#374151' }}
+                          contentStyle={{
+                            backgroundColor: '#F9FAFB',
+                            border: '1px solid #E5E7EB',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="attendees"
+                          stroke="#3B82F6"
+                          strokeWidth={3}
+                          dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
+                          activeDot={{ r: 8, fill: '#1D4ED8' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            {/* Pie Chart for Revenue Distribution */}
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Revenue Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RePieChart>
+                      <Pie
+                        data={events}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ event_name, percent }) => `${event_name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="revenue"
+                      >
+                        {events.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
+                        contentStyle={{
+                          backgroundColor: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            {/* Performance Metrics */}
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Performance Metrics
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {events.map((event) => (
+                    <div key={event.event_id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{event.event_name}</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Tickets Sold:</span>
+                          <span className="font-medium">{event.tickets_sold || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Attendance Rate:</span>
+                          <span className="font-medium">
+                            {event.tickets_sold > 0 ? ((event.attendees / event.tickets_sold) * 100).toFixed(1) : 0}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">Revenue per Attendee:</span>
+                          <span className="font-medium">
+                            {currencySymbol}{event.attendees > 0 ? (event.revenue / event.attendees).toFixed(2) : '0.00'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            {/* Events Table */}
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                  <Table className="h-5 w-5" />
+                  Event Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border dark:border-gray-700 border-gray-200">
+                    <thead>
+                      <tr className="dark:bg-gray-700 bg-gray-50">
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Event Name</th>
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Date</th>
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-left dark:text-gray-200 text-gray-800">Location</th>
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Tickets</th>
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Revenue</th>
+                        <th className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">Attendees</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => (
+                        <tr key={event.event_id} className="hover:dark:bg-gray-700 hover:bg-gray-50">
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.event_name}</td>
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">
+                            {event.event_date ? new Date(event.event_date).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 dark:text-gray-200 text-gray-800">{event.location || 'N/A'}</td>
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">{event.tickets_sold || 0}</td>
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">
+                            {currencySymbol}{(event.revenue || 0).toLocaleString()}
+                          </td>
+                          <td className="border dark:border-gray-700 border-gray-200 p-2 text-right dark:text-gray-200 text-gray-800">{event.attendees || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardContent className="flex flex-col items-center justify-center h-64">
+              <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                No report data available. Generate a report from the Configuration tab.
+              </p>
             </CardContent>
           </Card>
-        </>
-      ) : (
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-          <CardContent className="flex flex-col items-center justify-center h-64">
-            <BarChart3 className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 text-center">
-              No report data available. Generate a report from the Configuration tab.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    );
+  };
 
   if (isLoadingCurrencies || isLoadingOrganizers) {
     return (
