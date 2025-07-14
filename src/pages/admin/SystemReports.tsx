@@ -1,3 +1,5 @@
+
+
 // =============================================================================
 // IMPORTS
 // =============================================================================
@@ -335,14 +337,17 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
+
       if (reportFormat === 'json') {
         const data = await response.json();
         setReportData(data);
@@ -381,14 +386,17 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || `Failed to download ${format} report.`, errorData);
         return;
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -528,6 +536,7 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
       {/* Event Selection */}
       {selectedOrganizer && (
         <div className="space-y-4">
@@ -576,6 +585,7 @@ const AdminReports: React.FC = () => {
           </div>
         </div>
       )}
+
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
@@ -742,6 +752,7 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
@@ -793,7 +804,6 @@ const AdminReports: React.FC = () => {
     const validEvents = Array.isArray(events) ? events.filter(event => event && typeof event === 'object') : [];
     const totalRevenue = validEvents.reduce((sum, event) => sum + (event.revenue || 0), 0);
     const totalAttendees = validEvents.reduce((sum, event) => sum + (event.attendees || 0), 0);
-
     console.log("✅ Parsed Events:", events);
     console.log("✅ Parsed Currency:", currencySymbol);
 
@@ -847,6 +857,7 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Revenue Chart */}
@@ -890,6 +901,7 @@ const AdminReports: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+
               {/* Attendees Chart */}
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
                 <CardHeader>
@@ -938,6 +950,7 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
             {/* Pie Chart for Revenue Distribution */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
@@ -978,6 +991,7 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
             {/* Performance Metrics */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
@@ -1014,6 +1028,7 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
             {/* Events Table */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
@@ -1091,6 +1106,7 @@ const AdminReports: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
+
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 gap-4 w-full">
@@ -1116,6 +1132,7 @@ const AdminReports: React.FC = () => {
             {renderResultsTab()}
           </TabsContent>
         </Tabs>
+
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
