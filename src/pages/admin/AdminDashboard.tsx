@@ -5,7 +5,6 @@ import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
-import StatsCard from '../../components/StatsCard';
 import { debounce } from 'lodash';
 import { cn } from "@/lib/utils";
 
@@ -26,14 +25,8 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
-  const stats = [
-    { title: "Total Users", value: "120", icon: Users, color: "bg-blue-100 dark:bg-blue-900" },
-    { title: "Total Events", value: "48", icon: CalendarDays, color: "bg-green-100 dark:bg-green-900" },
-    { title: "Revenue", value: "$4,327", icon: DollarSign, color: "bg-purple-100 dark:bg-purple-900" },
-    { title: "Active Sessions", value: "1,208", icon: Activity, color: "bg-amber-100 dark:bg-amber-900" },
-  ];
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const getHeaderContent = () => {
     switch (currentView) {
@@ -128,18 +121,15 @@ const AdminDashboard: React.FC = () => {
       } else if (currentView === 'registerOrganizer') {
         endpoint = '/auth/admin/register-organizer';
       }
-
       const formData = new FormData();
       Object.keys(data).forEach(key => {
         formData.append(key, data[key]);
       });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
-
       if (!response.ok) {
         await handleFetchError(response);
         return;
@@ -356,7 +346,6 @@ const AdminDashboard: React.FC = () => {
           <div className="space-y-6">
             {currentView === 'reports' && (
               <div className="space-y-6">
-                <StatsCard stats={stats} />
                 <SystemReports />
               </div>
             )}
