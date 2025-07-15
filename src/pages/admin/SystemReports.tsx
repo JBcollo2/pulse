@@ -27,7 +27,6 @@ import {
 // =============================================================================
 // INTERFACES & TYPES
 // =============================================================================
-
 interface Currency {
   id: number;
   code: string;
@@ -86,7 +85,6 @@ interface AdminReport {
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
-
 const AdminReports: React.FC = () => {
   // Hooks & Setup
   const { toast } = useToast();
@@ -96,7 +94,6 @@ const AdminReports: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
-
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('all-events');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
@@ -106,13 +103,11 @@ const AdminReports: React.FC = () => {
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [recipientEmail, setRecipientEmail] = useState<string>('');
-
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
-
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -173,7 +168,8 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setEvents(data);
+      console.log("Fetched Events:", data); // Optional logging for debugging
+      setEvents(data.events || []); // Set events to the array of events or an empty array if undefined
       showSuccess('Events loaded successfully');
     } catch (err) {
       handleError('Failed to fetch events', err);
@@ -250,7 +246,6 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('include_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
@@ -339,7 +334,6 @@ const AdminReports: React.FC = () => {
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Generate and download comprehensive reports for organizers and events</p>
         </div>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -347,7 +341,6 @@ const AdminReports: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Organizer and Event Selection */}
@@ -415,7 +408,6 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             {/* Event Selection */}
             {selectedOrganizer && (
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -462,7 +454,6 @@ const AdminReports: React.FC = () => {
               </Card>
             )}
           </div>
-
           {/* Right Column - Report Settings */}
           <div className="lg:col-span-2 space-y-6">
             {/* Report Settings */}
@@ -630,7 +621,6 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardContent className="p-6">
                 <Button
