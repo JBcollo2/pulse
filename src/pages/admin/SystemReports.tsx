@@ -99,7 +99,7 @@ const AdminReports: React.FC = () => {
 
   // Report Configuration State
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
-  const [selectedEvent, setSelectedEvent] = useState<string>('');
+  const [selectedEvent, setSelectedEvent] = useState<string>('all-events'); // Default to 'all-events'
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const [targetCurrencyId, setTargetCurrencyId] = useState<number | null>(null);
   const [reportFormat, setReportFormat] = useState<string>('csv');
@@ -248,7 +248,10 @@ const AdminReports: React.FC = () => {
     try {
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
-      if (selectedEvent) params.append('event_id', selectedEvent);
+      // Only append event_id if a specific event is selected (not "all-events")
+      if (selectedEvent && selectedEvent !== 'all-events') {
+        params.append('event_id', selectedEvent);
+      }
       params.append('format', reportFormat);
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
@@ -293,7 +296,7 @@ const AdminReports: React.FC = () => {
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent(''); // Reset event selection
+      setSelectedEvent('all-events'); // Reset event selection to 'all-events' when organizer changes
     }
   }, [selectedOrganizer, fetchEvents]);
 
@@ -454,7 +457,7 @@ const AdminReports: React.FC = () => {
                         <SelectValue placeholder="All events" />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                        <SelectItem value="" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">All Events</SelectItem> {/* Green highlight for "All Events" */}
+                        <SelectItem value="all-events" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">All Events</SelectItem> {/* Green highlight for "All Events" */}
                         {events.map((event) => (
                           <SelectItem
                             key={event.event_id}
