@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Search, X, Menu } from "lucide-react";
@@ -20,6 +20,8 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
   toggleMobileMenu,
   isMobileMenuOpen,
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const navigationItems = [
     { id: 'reports', label: 'System Reports', icon: BarChart2, description: 'View analytics & insights', category: 'Analytics', color: 'text-blue-500' },
     { id: 'events', label: 'Recent Events', icon: Calendar, description: 'Monitor event activity', category: 'Events', color: 'text-purple-500' },
@@ -30,9 +32,32 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     { id: 'registerOrganizer', label: 'Register Organizer', icon: UserPlus, description: 'Create organizer accounts', category: 'Administration', color: 'text-yellow-500' },
   ];
 
+  // Filter navigation items based on search query
+  const filteredNavigationItems = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return navigationItems;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    
+    return navigationItems.filter(item => 
+      item.label.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query)
+    );
+  }, [searchQuery, navigationItems]);
+
   const handleViewChange = (view: typeof currentView) => {
     onViewChange(view);
     toggleMobileMenu();
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   return (
@@ -79,51 +104,77 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             <input
               type="text"
               placeholder="Search menu..."
-              className="w-full pl-10 pr-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-10 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                 transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-colors"
+              >
+                <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+              </button>
+            )}
           </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navigationItems.map((item, index) => {
-            const isActive = currentView === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleViewChange(item.id as typeof currentView)}
-                className={cn(
-                  "group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl",
-                  "transition-all duration-300 ease-out transform hover:scale-[1.02]",
-                  isActive
-                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
-                    : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
-                )}
-                style={{ animationDelay: `${index * 50}ms` }}
-                disabled={isLoading}
-              >
-                <item.icon className={cn(
-                  "h-5 w-5 transition-all duration-300",
-                  isActive ? "text-white" : item.color
-                )} />
+          {filteredNavigationItems.length > 0 ? (
+            filteredNavigationItems.map((item, index) => {
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleViewChange(item.id as typeof currentView)}
+                  className={cn(
+                    "group relative w-full flex items-center gap-3 px-4 py-3.5 text-left text-sm rounded-xl",
+                    "transition-all duration-300 ease-out transform hover:scale-[1.02]",
+                    isActive
+                      ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  )}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                  disabled={isLoading}
+                >
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-all duration-300",
+                    isActive ? "text-white" : item.color
+                  )} />
 
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{item.label}</div>
-                  <div className={cn(
-                    "text-xs truncate transition-colors duration-300",
-                    isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"
-                  )}>
-                    {item.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{item.label}</div>
+                    <div className={cn(
+                      "text-xs truncate transition-colors duration-300",
+                      isActive ? "text-white/80" : "text-gray-500 dark:text-gray-400"
+                    )}>
+                      {item.description}
+                    </div>
                   </div>
-                </div>
 
-                {isActive && (
-                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80"></div>
-                )}
+                  {isActive && (
+                    <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80"></div>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Search className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No menu items found</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Try searching for "reports", "users", or "admin"
+              </p>
+              <button
+                onClick={clearSearch}
+                className="mt-3 text-xs text-blue-500 hover:text-blue-600 underline"
+              >
+                Clear search
               </button>
-            );
-          })}
+            </div>
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
