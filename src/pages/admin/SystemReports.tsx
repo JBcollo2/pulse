@@ -1,5 +1,3 @@
-
-
 // =============================================================================
 // IMPORTS
 // =============================================================================
@@ -21,7 +19,6 @@ import {
   FileText,
   RefreshCw,
   Globe,
-  BarChart3,
   Download,
   Mail,
   Users,
@@ -36,25 +33,9 @@ import {
   Filter,
   Search,
   Settings,
-  PieChart as PieChartIcon,
   Activity,
   Table
 } from "lucide-react";
-import {
-  BarChart,
-  LineChart,
-  PieChart,
-  Bar,
-  Line,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
 
 // =============================================================================
 // INTERFACES & TYPES
@@ -141,8 +122,6 @@ interface AdminReport {
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c'];
-
   // Helper functions to extract data
   function extractEvents(data: AdminReport | null) {
     return (
@@ -337,17 +316,14 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
-
       if (reportFormat === 'json') {
         const data = await response.json();
         setReportData(data);
@@ -386,17 +362,14 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || `Failed to download ${format} report.`, errorData);
         return;
       }
-
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -536,7 +509,6 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Event Selection */}
       {selectedOrganizer && (
         <div className="space-y-4">
@@ -585,7 +557,6 @@ const AdminReports: React.FC = () => {
           </div>
         </div>
       )}
-
       {/* Report Settings */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
@@ -752,7 +723,6 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
@@ -804,8 +774,6 @@ const AdminReports: React.FC = () => {
     const validEvents = Array.isArray(events) ? events.filter(event => event && typeof event === 'object') : [];
     const totalRevenue = validEvents.reduce((sum, event) => sum + (event.revenue || 0), 0);
     const totalAttendees = validEvents.reduce((sum, event) => sum + (event.attendees || 0), 0);
-    console.log("✅ Parsed Events:", events);
-    console.log("✅ Parsed Currency:", currencySymbol);
 
     return (
       <div className="space-y-6">
@@ -857,141 +825,6 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue Chart */}
-              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-                <CardHeader>
-                  <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Revenue by Event
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={validEvents}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis
-                          dataKey="event_name"
-                          tick={{ fontSize: 12 }}
-                          angle={-45}
-                          textAnchor="end"
-                          height={60}
-                          stroke="#6B7280"
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12 }}
-                          stroke="#6B7280"
-                          tickFormatter={(value: number) => `${currencySymbol}${value.toLocaleString()}`}
-                        />
-                        <Tooltip
-                          formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
-                          labelStyle={{ color: '#374151' }}
-                          contentStyle={{
-                            backgroundColor: '#F9FAFB',
-                            border: '1px solid #E5E7EB',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Attendees Chart */}
-              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-                <CardHeader>
-                  <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Attendees by Event
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={validEvents}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis
-                          dataKey="event_name"
-                          tick={{ fontSize: 12 }}
-                          angle={-45}
-                          textAnchor="end"
-                          height={60}
-                          stroke="#6B7280"
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12 }}
-                          stroke="#6B7280"
-                        />
-                        <Tooltip
-                          formatter={(value: number) => [value.toLocaleString(), 'Attendees']}
-                          labelStyle={{ color: '#374151' }}
-                          contentStyle={{
-                            backgroundColor: '#F9FAFB',
-                            border: '1px solid #E5E7EB',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="attendees"
-                          stroke="#3B82F6"
-                          strokeWidth={3}
-                          dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
-                          activeDot={{ r: 8, fill: '#1D4ED8' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Pie Chart for Revenue Distribution */}
-            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardHeader>
-                <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5" />
-                  Revenue Distribution
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={validEvents}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ event_name, percent }) => `${event_name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="revenue"
-                      >
-                        {validEvents.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) => [`${currencySymbol}${value.toLocaleString()}`, 'Revenue']}
-                        contentStyle={{
-                          backgroundColor: '#F9FAFB',
-                          border: '1px solid #E5E7EB',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Performance Metrics */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
@@ -1028,7 +861,6 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             {/* Events Table */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader>
@@ -1106,7 +938,6 @@ const AdminReports: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
-
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 gap-4 w-full">
@@ -1132,7 +963,6 @@ const AdminReports: React.FC = () => {
             {renderResultsTab()}
           </TabsContent>
         </Tabs>
-
         {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
