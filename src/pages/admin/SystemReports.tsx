@@ -59,8 +59,6 @@ interface ExchangeRates {
   source: string;
 }
 
-// Although AdminReport interface is defined, it's not directly used for state management of report data
-// in this component, as the report is downloaded as a file. Keeping it for reference/completeness.
 interface AdminReport {
   organizer_id: number;
   organizer_name: string;
@@ -207,7 +205,6 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       setCurrencies(data.data || []);
-      // Set default currency to USD if not already selected
       if (!selectedCurrency) {
         const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
         if (usdCurrency) {
@@ -246,7 +243,7 @@ const AdminReports: React.FC = () => {
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
-      handleError('Please select an organizer to generate a report.');
+      handleError('Please select an organizer');
       return;
     }
     setIsDownloading(true);
@@ -259,7 +256,7 @@ const AdminReports: React.FC = () => {
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
-      if (sendEmail && recipientEmail) params.append('recipient_email', recipientEmail);
+      if (recipientEmail) params.append('recipient_email', recipientEmail);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
@@ -298,20 +295,15 @@ const AdminReports: React.FC = () => {
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent(''); // Reset event selection when organizer changes
-    } else {
-      setEvents([]); // Clear events if no organizer is selected
+      setSelectedEvent(''); // Reset event selection
     }
   }, [selectedOrganizer, fetchEvents]);
 
   useEffect(() => {
-    // Only fetch rates if a currency is selected and it's not already USD (as USD is usually the base)
-    if (selectedCurrency && selectedCurrency !== 'USD' && useLatestRates) {
-      fetchExchangeRates('USD'); // Assuming USD is the base for exchange rates
-    } else if (selectedCurrency === 'USD') {
-      setExchangeRates(null); // Clear rates if USD is selected
+    if (selectedCurrency && selectedCurrency !== 'USD') {
+      fetchExchangeRates('USD');
     }
-  }, [selectedCurrency, fetchExchangeRates, useLatestRates]);
+  }, [selectedCurrency, fetchExchangeRates]);
 
   useEffect(() => {
     if (selectedCurrency) {
@@ -319,8 +311,6 @@ const AdminReports: React.FC = () => {
       if (currency) {
         setTargetCurrencyId(currency.id);
       }
-    } else {
-      setTargetCurrencyId(null);
     }
   }, [selectedCurrency, currencies]);
 
@@ -378,11 +368,10 @@ const AdminReports: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="organizer-search" className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
+              <Label className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  id="organizer-search"
                   placeholder="Search by name or email..."
                   value={organizerSearch}
                   onChange={(e) => setOrganizerSearch(e.target.value)}
@@ -394,9 +383,9 @@ const AdminReports: React.FC = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="select-organizer" className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
+              <Label className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
               <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-                <SelectTrigger id="select-organizer" className={cn(
+                <SelectTrigger className={cn(
                   "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                   "focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 )}>
@@ -410,11 +399,6 @@ const AdminReports: React.FC = () => {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                  {filteredOrganizers.length === 0 && (
-                    <SelectItem value="no-organizers" disabled>
-                      No organizers found.
-                    </SelectItem>
-                  )}
                   {filteredOrganizers.map((organizer) => (
                     <SelectItem
                       key={organizer.organizer_id}
@@ -430,12 +414,8 @@ const AdminReports: React.FC = () => {
                           <div className="text-sm text-gray-500">{organizer.email}</div>
                         </div>
                         <div className="flex gap-2">
-                          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                            {organizer.event_count} events
-                          </Badge>
-                          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-                            {organizer.report_count} reports
-                          </Badge>
+                          <Badge variant="outline">{organizer.event_count} events</Badge>
+                          <Badge variant="outline">{organizer.report_count} reports</Badge>
                         </div>
                       </div>
                     </SelectItem>
@@ -456,77 +436,24 @@ const AdminReports: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Leave empty to generate report for all events associated with the selected organizer.
+                Leave empty to generate report for all events
               </p>
-              <div className="space-y-2">
-                <Label htmlFor="event-search" className="dark:text-gray-200 text-gray-800">Search Events</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="event-search"
-                    placeholder="Search by name or location..."
-                    value={eventSearch}
-                    onChange={(e) => setEventSearch(e.target.value)}
-                    className={cn(
-                      "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                      "focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    )}
-                    disabled={isLoadingEvents}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="select-event" className="dark:text-gray-200 text-gray-800">Select Event</Label>
-                <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={isLoadingEvents}>
-                  <SelectTrigger id="select-event" className={cn(
-                    "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                    "focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  )}>
-                    <SelectValue placeholder={isLoadingEvents ? "Loading events..." : "Select an event (Optional)"}>
-                      {selectedEvent && (
-                        <div className="flex items-center gap-2">
-                          <FileSpreadsheet className="h-4 w-4" />
-                          {events.find(e => e.event_id.toString() === selectedEvent)?.name}
-                        </div>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                    <SelectItem value="">Select Event (Optional)</SelectItem>
-                    {isLoadingEvents ? (
-                      <SelectItem value="loading" disabled>
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" /> Loading events...
-                        </div>
-                      </SelectItem>
-                    ) : filteredEvents.length === 0 ? (
-                      <SelectItem value="no-events" disabled>
-                        No events found for this organizer or search.
-                      </SelectItem>
-                    ) : (
-                      filteredEvents.map((event) => (
-                        <SelectItem
-                          key={event.event_id}
-                          value={event.event_id.toString()}
-                          className={cn(
-                            "hover:bg-green-50 hover:dark:bg-green-900/20",
-                            selectedEvent === event.event_id.toString() && "bg-green-50 dark:bg-green-900/20"
-                          )}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
-                            <div className="font-medium">{event.name}</div>
-                            <div className="text-sm text-gray-500">
-                              {event.location} • {new Date(event.event_date).toLocaleDateString()}
-                              <Badge variant="outline" className="ml-2 dark:border-gray-600 dark:text-gray-300">
-                                {event.report_count} reports
-                              </Badge>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+              <div className="relative">
+                <select
+                  value={selectedEvent}
+                  onChange={(e) => setSelectedEvent(e.target.value)}
+                  className={cn(
+                    "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600",
+                    "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                  )}
+                >
+                  <option value="">Select Event (Optional)</option>
+                  {events.map((event) => (
+                    <option key={event.event_id} value={event.event_id.toString()}>
+                      {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
+                    </option>
+                  ))}
+                </select>
               </div>
             </CardContent>
           </Card>
@@ -543,13 +470,13 @@ const AdminReports: React.FC = () => {
           <CardContent className="space-y-6">
             {/* Currency Settings */}
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center justify-between">
                 <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Currency Settings</Label>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fetchExchangeRates('USD')}
-                  disabled={isLoadingRates || !useLatestRates} // Disable if not using latest rates
+                  disabled={isLoadingRates}
                   className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                 >
                   <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingRates && "animate-spin")} />
@@ -558,9 +485,9 @@ const AdminReports: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="target-currency" className="dark:text-gray-200 text-gray-800">Target Currency</Label>
+                  <Label className="dark:text-gray-200 text-gray-800">Target Currency</Label>
                   <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
-                    <SelectTrigger id="target-currency" className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
                       <SelectValue placeholder="Select currency">
                         {selectedCurrency && (
                           <div className="flex items-center gap-2">
@@ -571,28 +498,20 @@ const AdminReports: React.FC = () => {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                      {isLoadingCurrencies ? (
-                        <SelectItem value="loading" disabled>
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency.id} value={currency.code}>
                           <div className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" /> Loading currencies...
+                            <span className="font-mono">{currency.symbol}</span>
+                            <span className="font-medium">{currency.code}</span>
+                            <span className="text-gray-500">- {currency.name}</span>
                           </div>
                         </SelectItem>
-                      ) : (
-                        currencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono">{currency.symbol}</span>
-                              <span className="font-medium">{currency.code}</span>
-                              <span className="text-gray-500">- {currency.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 {/* Display Exchange Rate */}
-                {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && useLatestRates && (
+                {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
                   <div className="space-y-2">
                     <Label className="dark:text-gray-200 text-gray-800">Exchange Rate (USD → {selectedCurrency})</Label>
                     <div className="p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
@@ -616,11 +535,10 @@ const AdminReports: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label htmlFor="include-charts" className="dark:text-gray-200 text-gray-800">Include Charts</Label>
+                    <Label className="dark:text-gray-200 text-gray-800">Include Charts</Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Add visual charts to the report</p>
                   </div>
                   <Switch
-                    id="include-charts"
                     checked={includeCharts}
                     onCheckedChange={setIncludeCharts}
                     className="data-[state=checked]:bg-[#10b981]"
@@ -628,11 +546,10 @@ const AdminReports: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <Label htmlFor="use-latest-rates" className="dark:text-gray-200 text-gray-800">Use Latest Rates</Label>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Use real-time exchange rates for conversions</p>
+                    <Label className="dark:text-gray-200 text-gray-800">Use Latest Rates</Label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Use real-time exchange rates</p>
                   </div>
                   <Switch
-                    id="use-latest-rates"
                     checked={useLatestRates}
                     onCheckedChange={setUseLatestRates}
                     className="data-[state=checked]:bg-[#10b981]"
@@ -655,9 +572,8 @@ const AdminReports: React.FC = () => {
               </div>
               {sendEmail && (
                 <div className="space-y-2">
-                  <Label htmlFor="recipient-email" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                  <Label className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
                   <Input
-                    id="recipient-email"
                     type="email"
                     placeholder="Enter recipient email (optional)"
                     value={recipientEmail}
@@ -665,7 +581,7 @@ const AdminReports: React.FC = () => {
                     className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
                   />
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Leave empty to send the report to your account email.
+                    Leave empty to send to your account email
                   </p>
                 </div>
               )}
@@ -675,9 +591,9 @@ const AdminReports: React.FC = () => {
 
             {/* Format Selection */}
             <div className="space-y-4">
-              <Label htmlFor="report-format" className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
+              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
               <Select value={reportFormat} onValueChange={setReportFormat}>
-                <SelectTrigger id="report-format" className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
