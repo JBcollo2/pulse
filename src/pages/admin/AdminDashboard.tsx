@@ -33,7 +33,7 @@ const AdminDashboard: React.FC = () => {
       case 'reports':
         return {
           title: "System Reports",
-          description: "Access structured performance reports in spreadsheet or document formats. Visualizations may not be included in this version.",
+          description: "Create visually rich reports with detailed charts and analytics. Export in CSV or PDF and convert revenue into your preferred currency.",
           icon: <BarChart2 className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-blue-500 to-blue-700"
         };
