@@ -1,6 +1,3 @@
-// =============================================================================
-// IMPORTS
-// =============================================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,9 +45,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-// =============================================================================
-// INTERFACES & TYPES
-// =============================================================================
+// Interfaces and types
 interface Currency {
   id: number;
   code: string;
@@ -129,45 +124,36 @@ interface AdminReport {
   };
 }
 
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
+// Main Component
 const AdminReports: React.FC = () => {
   // Helper functions to extract data
-  function extractEvents(data: AdminReport | null) {
+  const extractEvents = (data: AdminReport | null) => {
     return (
       data?.events ||
       data?.data?.events ||
       data?.fresh_report_data?.events ||
       []
     );
-  }
+  };
 
-  function extractCurrency(data: AdminReport | null) {
+  const extractCurrency = (data: AdminReport | null) => {
     return (
       data?.currency_symbol ||
       data?.data?.currency_symbol ||
       data?.fresh_report_data?.currency_symbol ||
       '$'
     );
-  }
+  };
 
-  // ---------------------------------------------------------------------------
-  // HOOKS & SETUP
-  // ---------------------------------------------------------------------------
+  // Hooks and setup
   const { toast } = useToast();
 
-  // ---------------------------------------------------------------------------
-  // STATE VARIABLES
-  // ---------------------------------------------------------------------------
-  // Core Data State
+  // State variables
   const [reportData, setReportData] = useState<AdminReport | null>(null);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
-
-  // Report Configuration State
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
@@ -177,24 +163,18 @@ const AdminReports: React.FC = () => {
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [recipientEmail, setRecipientEmail] = useState<string>('');
-
-  // Loading States
   const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
-
-  // UI State
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('config');
 
-  // ---------------------------------------------------------------------------
-  // HELPER FUNCTIONS
-  // ---------------------------------------------------------------------------
+  // Error handling
   const handleError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -215,9 +195,7 @@ const AdminReports: React.FC = () => {
     });
   }, [toast]);
 
-  // ---------------------------------------------------------------------------
-  // API FUNCTIONS
-  // ---------------------------------------------------------------------------
+  // API functions
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
@@ -237,7 +215,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingOrganizers(false);
     }
-  }, [handleError, showSuccess, toast]);
+  }, [handleError, showSuccess]);
 
   const fetchEvents = useCallback(async (organizerId: string) => {
     if (!organizerId) return;
@@ -260,7 +238,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingEvents(false);
     }
-  }, [handleError, showSuccess, toast]);
+  }, [handleError, showSuccess]);
 
   const fetchCurrencies = useCallback(async () => {
     setIsLoadingCurrencies(true);
@@ -288,7 +266,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingCurrencies(false);
     }
-  }, [handleError, showSuccess, selectedCurrency, toast]);
+  }, [handleError, showSuccess, selectedCurrency]);
 
   const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
     setIsLoadingRates(true);
@@ -309,7 +287,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingRates(false);
     }
-  }, [handleError, showSuccess, toast]);
+  }, [handleError, showSuccess]);
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
@@ -357,7 +335,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingReport(false);
     }
-  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess, toast]);
+  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess]);
 
   const downloadReport = useCallback(async (format: string) => {
     if (!selectedOrganizer) {
@@ -396,11 +374,9 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsDownloading(false);
     }
-  }, [selectedOrganizer, selectedEvent, targetCurrencyId, includeCharts, useLatestRates, handleError, showSuccess, toast]);
+  }, [selectedOrganizer, selectedEvent, targetCurrencyId, includeCharts, useLatestRates, handleError, showSuccess]);
 
-  // ---------------------------------------------------------------------------
-  // EFFECTS
-  // ---------------------------------------------------------------------------
+  // Effects
   useEffect(() => {
     fetchOrganizers();
     fetchCurrencies();
@@ -409,7 +385,7 @@ const AdminReports: React.FC = () => {
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent(''); // Reset event selection
+      setSelectedEvent('');
     }
   }, [selectedOrganizer, fetchEvents]);
 
@@ -428,9 +404,7 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedCurrency, currencies]);
 
-  // ---------------------------------------------------------------------------
-  // FILTER FUNCTIONS
-  // ---------------------------------------------------------------------------
+  // Filter functions
   const filteredOrganizers = organizers.filter(org =>
     org.name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
@@ -441,12 +415,9 @@ const AdminReports: React.FC = () => {
     event.location.toLowerCase().includes(eventSearch.toLowerCase())
   );
 
-  // ---------------------------------------------------------------------------
-  // RENDER FUNCTIONS
-  // ---------------------------------------------------------------------------
+  // Render functions
   const renderConfigurationTab = () => (
     <div className="space-y-6">
-      {/* Organizer Selection */}
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
@@ -467,9 +438,7 @@ const AdminReports: React.FC = () => {
                   "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                   "focus:ring-2 focus:ring-green-500 focus:border-green-500",
                   "focus:outline-none focus:ring-offset-0",
-                  "transition-colors duration-200",
-                  "focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:border-green-500",
-                  "focus-visible:outline-none focus-visible:ring-offset-0"
+                  "transition-colors duration-200"
                 )}
               />
             </div>
@@ -520,55 +489,53 @@ const AdminReports: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      {/* Event Selection */}
+
       {selectedOrganizer && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Event Selection (Optional)
-            </label>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              Leave empty to generate report for all events
-            </p>
-          </div>
-          <div className="relative">
-            <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              className={cn(
-                "w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-600",
-                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                selectedEvent && "bg-emerald-50 dark:bg-emerald-900/10 border-emerald-400 dark:border-emerald-700"
-              )}
-              style={{
-                colorScheme: 'dark'
-              }}
-            >
-              <option value="">Select Event</option>
-              {events.map((event) => (
-                <option key={String(event.event_id)} value={event.event_id.toString()}>
-                  {event.name} - {event.location} - {new Date(event.event_date).toLocaleDateString()} ({event.report_count} reports)
-                </option>
-              ))}
-            </select>
-            {selectedEvent && (
-              <div className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-md border border-emerald-200 dark:border-emerald-800/40">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
-                  <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
-                    Selected Event: {events.find(e => e.event_id.toString() === selectedEvent)?.name}
-                  </p>
-                </div>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 ml-4">
-                  {events.find(e => e.event_id.toString() === selectedEvent)?.location} - {' '}
-                  {new Date(events.find(e => e.event_id.toString() === selectedEvent)?.event_date).toLocaleDateString()}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <Calendar className="h-5 w-5" />
+              Event Selection
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label className="dark:text-gray-200 text-gray-800">Select Event</Label>
+              <Select value={selectedEvent} onValueChange={setSelectedEvent}>
+                <SelectTrigger className={cn(
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                  "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                  "focus:outline-none focus:ring-offset-0",
+                  "transition-colors duration-200"
+                )}>
+                  <SelectValue placeholder="Choose an event" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                  {filteredEvents.map((event) => (
+                    <SelectItem
+                      key={event.event_id}
+                      value={event.event_id.toString()}
+                      className={cn(
+                        "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
+                        "focus:bg-green-50 focus:dark:bg-green-900/20",
+                        selectedEvent === event.event_id.toString() && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                      )}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <div className="font-medium">{event.name}</div>
+                          <div className="text-sm text-gray-500">{event.location}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
       )}
-      {/* Report Settings */}
+
       <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
@@ -576,165 +543,47 @@ const AdminReports: React.FC = () => {
             Report Settings
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Currency Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Currency Settings</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fetchExchangeRates('USD')}
-                disabled={isLoadingRates}
-                className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
-              >
-                <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingRates && "animate-spin")} />
-                Refresh Rates
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="dark:text-gray-200 text-gray-800">Target Currency</Label>
-                <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
-                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]">
-                    <SelectValue placeholder="Select currency">
-                      {isLoadingCurrencies ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading currencies...
-                        </div>
-                      ) : (
-                        selectedCurrency && (
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4" />
-                            {currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
-                          </div>
-                        )
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                    {currencies.map((currency) => (
-                      <SelectItem
-                        key={currency.id}
-                        value={currency.code}
-                        className={cn(
-                          "focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
-                          selectedCurrency === currency.code && "bg-[#10b981] text-white"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono">{currency.symbol}</span>
-                          <span className="font-medium">{currency.code}</span>
-                          <span className="text-gray-500">- {currency.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Display Exchange Rate */}
-              {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
-                <div className="space-y-2">
-                  <Label className="dark:text-gray-200 text-gray-800">Exchange Rate (USD → {selectedCurrency})</Label>
-                  <div className="p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
-                    <div className="text-lg font-semibold dark:text-gray-200 text-gray-800">
-                      1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Source: {exchangeRates.source}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <Separator className="dark:bg-gray-700 bg-gray-200" />
-          {/* Report Options */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Options</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label className="dark:text-gray-200 text-gray-800">Include Charts</Label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Add visual charts to the report</p>
-                </div>
-                <Switch
-                  checked={includeCharts}
-                  onCheckedChange={setIncludeCharts}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label className="dark:text-gray-200 text-gray-800">Use Latest Rates</Label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Use real-time exchange rates</p>
-                </div>
-                <Switch
-                  checked={useLatestRates}
-                  onCheckedChange={setUseLatestRates}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                />
-              </div>
-            </div>
-          </div>
-          <Separator className="dark:bg-gray-700 bg-gray-200" />
-          {/* Email Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings (Optional)</Label>
-              <Switch
-                checked={sendEmail}
-                onCheckedChange={setSendEmail}
-                className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-              />
-            </div>
-            {sendEmail && (
-              <div className="space-y-2">
-                <Label className="dark:text-gray-200 text-gray-800">Recipient Email (Leave to be sent to your Account Email)</Label>
-                <Input
-                  type="email"
-                  placeholder="Enter recipient email"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  className={cn("dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]")}
-                />
-              </div>
-            )}
-          </div>
-          <Separator className="dark:bg-gray-700 bg-gray-200" />
-          {/* Format Selection */}
-          <div className="space-y-4">
-            <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
-            <Select value={reportFormat} onValueChange={setReportFormat}>
-              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800 focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]">
-                <SelectValue />
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="dark:text-gray-200 text-gray-800">Currency</Label>
+            <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+              <SelectTrigger className={cn(
+                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                "focus:ring-2 focus:ring-green-500 focus:border-green-500",
+                "focus:outline-none focus:ring-offset-0",
+                "transition-colors duration-200"
+              )}>
+                <SelectValue placeholder="Choose a currency" />
               </SelectTrigger>
               <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                <SelectItem value="json" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
-                  <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    JSON (View in Dashboard)
-                  </div>
-                </SelectItem>
-                <SelectItem value="csv" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4" />
-                    CSV (Download)
-                  </div>
-                </SelectItem>
-                <SelectItem value="pdf" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
-                  <div className="flex items-center gap-2">
-                    <File className="h-4 w-4" />
-                    PDF (Download)
-                  </div>
-                </SelectItem>
+                {currencies.map((currency) => (
+                  <SelectItem
+                    key={currency.id}
+                    value={currency.code}
+                    className={cn(
+                      "hover:bg-green-50 hover:dark:bg-green-900/20 data-[highlighted]:bg-green-50 data-[highlighted]:dark:bg-green-900/20",
+                      "focus:bg-green-50 focus:dark:bg-green-900/20",
+                      selectedCurrency === currency.code && "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                    )}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div>
+                        <div className="font-medium">{currency.name}</div>
+                        <div className="text-sm text-gray-500">{currency.code}</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center space-x-2">
+            <Switch id="include-charts" checked={includeCharts} onCheckedChange={setIncludeCharts} />
+            <Label htmlFor="include-charts" className="dark:text-gray-200 text-gray-800">Include Charts</Label>
+          </div>
         </CardContent>
       </Card>
-      {/* Action Buttons */}
+
       <div className="flex flex-col sm:flex-row gap-4">
         <Button
           onClick={generateReport}
@@ -753,28 +602,6 @@ const AdminReports: React.FC = () => {
             </>
           )}
         </Button>
-        {reportFormat === 'json' && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => downloadReport('csv')}
-              disabled={!selectedOrganizer || isDownloading}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Download CSV
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => downloadReport('pdf')}
-              disabled={!selectedOrganizer || isDownloading}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
-            >
-              <File className="mr-2 h-4 w-4" />
-              Download PDF
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -792,8 +619,7 @@ const AdminReports: React.FC = () => {
       <div className="space-y-6">
         {reportData && validEvents.length > 0 ? (
           <>
-            {/* Summary Cards - Simplified */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -802,7 +628,6 @@ const AdminReports: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">Total Events</div>
                 </CardContent>
               </Card>
-
               <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -811,7 +636,6 @@ const AdminReports: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</div>
                 </CardContent>
               </Card>
-
               <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -820,7 +644,6 @@ const AdminReports: React.FC = () => {
                   <div className="text-sm text-gray-600 dark:text-gray-400">Total Attendees</div>
                 </CardContent>
               </Card>
-
               <Card className="shadow-md dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -830,7 +653,7 @@ const AdminReports: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
-            {/* Single Combined Chart */}
+
             <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
               <CardHeader>
                 <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
@@ -883,7 +706,7 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Quick Stats Grid */}
+
             <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
               <CardHeader>
                 <CardTitle className="dark:text-gray-200 text-gray-800 flex items-center gap-2">
@@ -929,7 +752,7 @@ const AdminReports: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-            {/* Performance Indicators */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                 <CardHeader>
@@ -1022,14 +845,12 @@ const AdminReports: React.FC = () => {
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
             <p>{error}</p>
           </div>
         )}
-        {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 gap-4 w-full">
             <TabsTrigger
@@ -1054,7 +875,6 @@ const AdminReports: React.FC = () => {
             {renderResultsTab()}
           </TabsContent>
         </Tabs>
-        {/* Quick Actions Footer */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
