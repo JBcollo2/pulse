@@ -2,6 +2,7 @@
 // IMPORTS
 // =============================================================================
 import React, { useState, useEffect, useCallback } from 'react';
+import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -135,6 +136,8 @@ interface AdminReport {
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
+  const { toast } = useToast();
+
   // Helper functions to extract data
   function extractEvents(data: AdminReport | null) {
     return (
@@ -158,8 +161,12 @@ const AdminReports: React.FC = () => {
   // HOOKS & SETUP
   // ---------------------------------------------------------------------------
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-    console.log(`${type.toUpperCase()}: ${message}`);
-  }, []);
+    toast({
+      title: type === 'success' ? "Success" : "Error",
+      description: message,
+      variant: type === 'success' ? "default" : "destructive",
+    });
+  }, [toast]);
 
   // ---------------------------------------------------------------------------
   // STATE VARIABLES
@@ -216,86 +223,21 @@ const AdminReports: React.FC = () => {
   }, [showToast]);
 
   // ---------------------------------------------------------------------------
-  // MOCK DATA FOR TESTING
-  // ---------------------------------------------------------------------------
-  const generateMockData = useCallback(() => {
-    const mockData: AdminReport = {
-      organizer_id: 1,
-      organizer_name: "Test Organizer",
-      total_tickets_sold: 150,
-      total_revenue: 15000,
-      total_attendees: 120,
-      event_count: 3,
-      report_count: 5,
-      currency: "USD",
-      currency_symbol: "$",
-      events: [
-        {
-          event_id: 1,
-          event_name: "Summer Music Festival",
-          event_date: "2024-07-15",
-          location: "Central Park, NYC",
-          tickets_sold: 75,
-          revenue: 7500,
-          attendees: 68,
-          report_count: 2
-        },
-        {
-          event_id: 2,
-          event_name: "Tech Conference 2024",
-          event_date: "2024-08-20",
-          location: "Convention Center, SF",
-          tickets_sold: 45,
-          revenue: 4500,
-          attendees: 42,
-          report_count: 2
-        },
-        {
-          event_id: 3,
-          event_name: "Food & Wine Expo",
-          event_date: "2024-09-10",
-          location: "Harbor View, LA",
-          tickets_sold: 30,
-          revenue: 3000,
-          attendees: 25,
-          report_count: 1
-        }
-      ]
-    };
-
-    setReportData(mockData);
-    setRawApiResponse(mockData);
-    setActiveTab('results');
-    showSuccess('Mock data generated successfully');
-  }, [showSuccess]);
-
-  // ---------------------------------------------------------------------------
   // API FUNCTIONS
   // ---------------------------------------------------------------------------
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
-      // Mock organizers data
-      const mockOrganizers: Organizer[] = [
-        {
-          organizer_id: 1,
-          name: "John Smith Events",
-          email: "john@eventsco.com",
-          phone: "+1234567890",
-          event_count: 5,
-          report_count: 12
-        },
-        {
-          organizer_id: 2,
-          name: "Sarah Johnson Productions",
-          email: "sarah@productions.com",
-          phone: "+1234567891",
-          event_count: 3,
-          report_count: 8
-        }
-      ];
-
-      setOrganizers(mockOrganizers);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || "Failed to fetch organizers.", errorData);
+        return;
+      }
+      const data = await response.json();
+      setOrganizers(data.organizers || []);
       showSuccess('Organizers loaded successfully');
     } catch (err: any) {
       handleError('Failed to fetch organizers', err);
@@ -308,25 +250,16 @@ const AdminReports: React.FC = () => {
     if (!organizerId) return;
     setIsLoadingEvents(true);
     try {
-      // Mock events data
-      const mockEvents: Event[] = [
-        {
-          event_id: 1,
-          name: "Summer Music Festival",
-          event_date: "2024-07-15",
-          location: "Central Park, NYC",
-          report_count: 2
-        },
-        {
-          event_id: 2,
-          name: "Tech Conference 2024",
-          event_date: "2024-08-20",
-          location: "Convention Center, SF",
-          report_count: 2
-        }
-      ];
-
-      setEvents(mockEvents);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || "Failed to fetch events.", errorData);
+        return;
+      }
+      const data = await response.json();
+      setEvents(data.events || []);
       showSuccess('Events loaded successfully');
     } catch (err: any) {
       handleError('Failed to fetch events', err);
@@ -339,18 +272,22 @@ const AdminReports: React.FC = () => {
   const fetchCurrencies = useCallback(async () => {
     setIsLoadingCurrencies(true);
     try {
-      // Mock currencies data
-      const mockCurrencies: Currency[] = [
-        { id: 1, code: 'USD', name: 'US Dollar', symbol: '$' },
-        { id: 2, code: 'EUR', name: 'Euro', symbol: '€' },
-        { id: 3, code: 'GBP', name: 'British Pound', symbol: '£' },
-        { id: 4, code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' }
-      ];
-
-      setCurrencies(mockCurrencies);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || "Failed to fetch currencies.", errorData);
+        return;
+      }
+      const data = await response.json();
+      setCurrencies(data.data || []);
       if (!selectedCurrency) {
-        setSelectedCurrency('USD');
-        setTargetCurrencyId(1);
+        const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
+        if (usdCurrency) {
+          setSelectedCurrency(usdCurrency.code);
+          setTargetCurrencyId(usdCurrency.id);
+        }
       }
       showSuccess('Currencies loaded successfully');
     } catch (err: any) {
@@ -363,19 +300,16 @@ const AdminReports: React.FC = () => {
   const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
     setIsLoadingRates(true);
     try {
-      // Mock exchange rates
-      const mockRates: ExchangeRates = {
-        base_currency: baseCurrency,
-        rates: {
-          USD: 1.0,
-          EUR: 0.85,
-          GBP: 0.73,
-          KES: 129.50
-        },
-        source: "Mock Exchange API"
-      };
-
-      setExchangeRates(mockRates);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || "Failed to fetch exchange rates.", errorData);
+        return;
+      }
+      const data = await response.json();
+      setExchangeRates(data.data);
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
     } catch (err: any) {
       handleError('Failed to fetch exchange rates', err);
@@ -390,16 +324,48 @@ const AdminReports: React.FC = () => {
       return;
     }
     setIsLoadingReport(true);
-
     try {
-      // For now, generate mock data
-      generateMockData();
+      const params = new URLSearchParams();
+      params.append('organizer_id', selectedOrganizer);
+      if (selectedEvent) params.append('event_id', selectedEvent);
+      if (reportFormat !== 'json') params.append('format', reportFormat);
+      if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
+      params.append('include_charts', includeCharts.toString());
+      params.append('use_latest_rates', useLatestRates.toString());
+      params.append('send_email', sendEmail.toString());
+      if (recipientEmail) params.append('recipient_email', recipientEmail);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || "Failed to generate report.", errorData);
+        return;
+      }
+      if (reportFormat === 'json') {
+        const data = await response.json();
+        setReportData(data);
+        setActiveTab('results');
+        showSuccess('Report generated successfully');
+      } else {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showSuccess(`${reportFormat.toUpperCase()} report downloaded successfully`);
+      }
     } catch (err: any) {
       handleError('Failed to generate report', err);
     } finally {
       setIsLoadingReport(false);
     }
-  }, [selectedOrganizer, generateMockData, handleError]);
+  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess]);
 
   const downloadReport = useCallback(async (format: string) => {
     if (!selectedOrganizer) {
@@ -407,17 +373,39 @@ const AdminReports: React.FC = () => {
       return;
     }
     setIsDownloading(true);
-
     try {
-      // Mock download functionality
-      const filename = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${format}`;
-      showSuccess(`${format.toUpperCase()} report would be downloaded as: ${filename}`);
+      const params = new URLSearchParams();
+      params.append('organizer_id', selectedOrganizer);
+      if (selectedEvent) params.append('event_id', selectedEvent);
+      params.append('format', format);
+      if (targetCurrencyId) params.append('currency_id', targetCurrencyId.toString());
+      params.append('include_charts', includeCharts.toString());
+      params.append('use_latest_rates', useLatestRates.toString());
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        handleError(errorData.message || `Failed to download ${format} report.`, errorData);
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showSuccess(`${format.toUpperCase()} report downloaded successfully`);
     } catch (err: any) {
       handleError(`Failed to download ${format} report`, err);
     } finally {
       setIsDownloading(false);
     }
-  }, [selectedOrganizer, handleError, showSuccess]);
+  }, [selectedOrganizer, selectedEvent, targetCurrencyId, includeCharts, useLatestRates, handleError, showSuccess]);
 
   // ---------------------------------------------------------------------------
   // EFFECTS
@@ -430,7 +418,7 @@ const AdminReports: React.FC = () => {
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent('');
+      setSelectedEvent(''); // Reset event selection
     }
   }, [selectedOrganizer, fetchEvents]);
 
@@ -505,25 +493,6 @@ const AdminReports: React.FC = () => {
         <Switch checked={debugMode} onCheckedChange={setDebugMode} />
       </div>
       {renderDebugInfo()}
-
-      {/* Test Data Button */}
-      <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Test Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={generateMockData}
-            variant="outline"
-            className="w-full"
-          >
-            Generate Mock Report Data
-          </Button>
-        </CardContent>
-      </Card>
 
       {/* Organizer Selection */}
       <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
