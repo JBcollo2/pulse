@@ -23,9 +23,7 @@ import {
   FileSpreadsheet,
   File,
   Search,
-  Settings,
-  ChevronDown,
-  ChevronUp
+  Settings
 } from "lucide-react";
 
 // =============================================================================
@@ -61,6 +59,8 @@ interface ExchangeRates {
   source: string;
 }
 
+// Although AdminReport interface is defined, it's not directly used for state management of report data
+// in this component, as the report is downloaded as a file. Keeping it for reference/completeness.
 interface AdminReport {
   organizer_id: number;
   organizer_name: string;
@@ -123,22 +123,10 @@ const AdminReports: React.FC = () => {
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
-    organizer: true,
-    event: true,
-    settings: true
-  });
 
   // ---------------------------------------------------------------------------
   // HELPER FUNCTIONS
   // ---------------------------------------------------------------------------
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
   const handleError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -219,6 +207,7 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       setCurrencies(data.data || []);
+      // Set default currency to USD if not already selected
       if (!selectedCurrency) {
         const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
         if (usdCurrency) {
@@ -257,7 +246,7 @@ const AdminReports: React.FC = () => {
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
-      handleError('Please select an organizer');
+      handleError('Please select an organizer to generate a report.');
       return;
     }
     setIsDownloading(true);
@@ -270,7 +259,7 @@ const AdminReports: React.FC = () => {
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
-      if (recipientEmail) params.append('recipient_email', recipientEmail);
+      if (sendEmail && recipientEmail) params.append('recipient_email', recipientEmail);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
@@ -309,15 +298,20 @@ const AdminReports: React.FC = () => {
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent(''); // Reset event selection
+      setSelectedEvent(''); // Reset event selection when organizer changes
+    } else {
+      setEvents([]); // Clear events if no organizer is selected
     }
   }, [selectedOrganizer, fetchEvents]);
 
   useEffect(() => {
-    if (selectedCurrency && selectedCurrency !== 'USD') {
-      fetchExchangeRates('USD');
+    // Only fetch rates if a currency is selected and it's not already USD (as USD is usually the base)
+    if (selectedCurrency && selectedCurrency !== 'USD' && useLatestRates) {
+      fetchExchangeRates('USD'); // Assuming USD is the base for exchange rates
+    } else if (selectedCurrency === 'USD') {
+      setExchangeRates(null); // Clear rates if USD is selected
     }
-  }, [selectedCurrency, fetchExchangeRates]);
+  }, [selectedCurrency, fetchExchangeRates, useLatestRates]);
 
   useEffect(() => {
     if (selectedCurrency) {
@@ -325,6 +319,8 @@ const AdminReports: React.FC = () => {
       if (currency) {
         setTargetCurrencyId(currency.id);
       }
+    } else {
+      setTargetCurrencyId(null);
     }
   }, [selectedCurrency, currencies]);
 
@@ -346,337 +342,370 @@ const AdminReports: React.FC = () => {
   // ---------------------------------------------------------------------------
   if (isLoadingCurrencies || isLoadingOrganizers) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="h-12 w-12 animate-spin text-[#10b981]" />
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading initial data...</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className={cn("max-w-3xl mx-auto my-8 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+        <CardContent className="flex flex-col items-center justify-center h-64">
+          <Loader2 className="h-12 w-12 animate-spin text-[#10b981]" />
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading initial data...</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-6 space-y-6 max-w-6xl">
+    <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-            Generate and download comprehensive reports for organizers and events
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
+          <p className="text-gray-600 dark:text-gray-400">Generate and download comprehensive reports for organizers and events</p>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
-            </div>
+          <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
           </div>
         )}
 
         {/* Organizer Selection */}
-        <Card className="shadow-lg">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => toggleSection('organizer')}
-          >
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Users className="h-5 w-5" />
-                Organizer Selection
-              </CardTitle>
-              {expandedSections.organizer ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </div>
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <Users className="h-5 w-5" />
+              Organizer Selection
+            </CardTitle>
           </CardHeader>
-          {expandedSections.organizer && (
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Search Organizers</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name or email..."
-                    value={organizerSearch}
-                    onChange={(e) => setOrganizerSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="organizer-search" className="dark:text-gray-200 text-gray-800">Search Organizers</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  id="organizer-search"
+                  placeholder="Search by name or email..."
+                  value={organizerSearch}
+                  onChange={(e) => setOrganizerSearch(e.target.value)}
+                  className={cn(
+                    "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                    "focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  )}
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Select Organizer</Label>
-                <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose an organizer">
-                      {selectedOrganizer && (
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span className="truncate">
-                            {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
-                          </span>
-                        </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="select-organizer" className="dark:text-gray-200 text-gray-800">Select Organizer</Label>
+              <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
+                <SelectTrigger id="select-organizer" className={cn(
+                  "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                  "focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                )}>
+                  <SelectValue placeholder="Choose an organizer">
+                    {selectedOrganizer && (
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                  {filteredOrganizers.length === 0 && (
+                    <SelectItem value="no-organizers" disabled>
+                      No organizers found.
+                    </SelectItem>
+                  )}
+                  {filteredOrganizers.map((organizer) => (
+                    <SelectItem
+                      key={organizer.organizer_id}
+                      value={organizer.organizer_id.toString()}
+                      className={cn(
+                        "hover:bg-green-50 hover:dark:bg-green-900/20",
+                        selectedOrganizer === organizer.organizer_id.toString() && "bg-green-50 dark:bg-green-900/20"
                       )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredOrganizers.map((organizer) => (
-                      <SelectItem
-                        key={organizer.organizer_id}
-                        value={organizer.organizer_id.toString()}
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full min-w-0">
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium truncate">{organizer.name}</div>
-                            <div className="text-sm text-gray-500 truncate">{organizer.email}</div>
-                          </div>
-                          <div className="flex gap-2 mt-1 sm:mt-0">
-                            <Badge variant="outline" className="text-xs">
-                              {organizer.event_count} events
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {organizer.report_count} reports
-                            </Badge>
-                          </div>
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div>
+                          <div className="font-medium">{organizer.name}</div>
+                          <div className="text-sm text-gray-500">{organizer.email}</div>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          )}
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+                            {organizer.event_count} events
+                          </Badge>
+                          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+                            {organizer.report_count} reports
+                          </Badge>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
         </Card>
 
         {/* Event Selection */}
         {selectedOrganizer && (
-          <Card className="shadow-lg">
-            <CardHeader 
-              className="cursor-pointer"
-              onClick={() => toggleSection('event')}
-            >
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg sm:text-xl">
-                  Event Selection (Optional)
-                </CardTitle>
-                {expandedSections.event ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </div>
-            </CardHeader>
-            {expandedSections.event && (
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Leave empty to generate report for all events
-                </p>
-                <div className="space-y-2">
-                  <Label>Search Events</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search events..."
-                      value={eventSearch}
-                      onChange={(e) => setEventSearch(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select value={selectedEvent} onValueChange={setSelectedEvent}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Event (Optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredEvents.map((event) => (
-                      <SelectItem key={event.event_id} value={event.event_id.toString()}>
-                        <div className="flex flex-col w-full">
-                          <div className="font-medium truncate">{event.name}</div>
-                          <div className="text-sm text-gray-500 truncate">
-                            {event.location} - {new Date(event.event_date).toLocaleDateString()} 
-                            ({event.report_count} reports)
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            )}
-          </Card>
-        )}
-
-        {/* Report Settings */}
-        <Card className="shadow-lg">
-          <CardHeader 
-            className="cursor-pointer"
-            onClick={() => toggleSection('settings')}
-          >
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <Settings className="h-5 w-5" />
-                Report Settings
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                Event Selection (Optional)
               </CardTitle>
-              {expandedSections.settings ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </div>
-          </CardHeader>
-          {expandedSections.settings && (
-            <CardContent className="space-y-6">
-              {/* Currency Settings */}
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <Label className="text-base font-medium">Currency Settings</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchExchangeRates('USD')}
-                    disabled={isLoadingRates}
-                    className="w-full sm:w-auto"
-                  >
-                    <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingRates && "animate-spin")} />
-                    Refresh Rates
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Target Currency</Label>
-                    <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency">
-                          {selectedCurrency && (
-                            <div className="flex items-center gap-2">
-                              <Globe className="h-4 w-4" />
-                              <span>{currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}</span>
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.id} value={currency.code}>
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono">{currency.symbol}</span>
-                              <span className="font-medium">{currency.code}</span>
-                              <span className="text-gray-500 hidden sm:inline">- {currency.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Display Exchange Rate */}
-                  {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
-                    <div className="space-y-2">
-                      <Label>Exchange Rate (USD → {selectedCurrency})</Label>
-                      <div className="p-3 rounded-lg border bg-gray-50 dark:bg-gray-800">
-                        <div className="text-base sm:text-lg font-semibold">
-                          1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Source: {exchangeRates.source}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Report Options */}
-              <div className="space-y-4">
-                <Label className="text-base font-medium">Report Options</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <Label>Include Charts</Label>
-                      <p className="text-sm text-gray-500">Add visual charts to the report</p>
-                    </div>
-                    <Switch
-                      checked={includeCharts}
-                      onCheckedChange={setIncludeCharts}
-                      className="data-[state=checked]:bg-[#10b981]"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <Label>Use Latest Rates</Label>
-                      <p className="text-sm text-gray-500">Use real-time exchange rates</p>
-                    </div>
-                    <Switch
-                      checked={useLatestRates}
-                      onCheckedChange={setUseLatestRates}
-                      className="data-[state=checked]:bg-[#10b981]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Email Settings */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="space-y-1">
-                    <Label className="text-base font-medium">Email Settings (Optional)</Label>
-                    <p className="text-sm text-gray-500">Send report via email</p>
-                  </div>
-                  <Switch
-                    checked={sendEmail}
-                    onCheckedChange={setSendEmail}
-                    className="data-[state=checked]:bg-[#10b981]"
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Leave empty to generate report for all events associated with the selected organizer.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="event-search" className="dark:text-gray-200 text-gray-800">Search Events</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="event-search"
+                    placeholder="Search by name or location..."
+                    value={eventSearch}
+                    onChange={(e) => setEventSearch(e.target.value)}
+                    className={cn(
+                      "pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                      "focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    )}
+                    disabled={isLoadingEvents}
                   />
                 </div>
-                {sendEmail && (
-                  <div className="space-y-2">
-                    <Label>Recipient Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="Enter recipient email (optional)"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                    />
-                    <p className="text-sm text-gray-500">
-                      Leave empty to send to your account email
-                    </p>
-                  </div>
-                )}
               </div>
-
-              <Separator />
-
-              {/* Format Selection */}
-              <div className="space-y-4">
-                <Label className="text-base font-medium">Report Format</Label>
-                <Select value={reportFormat} onValueChange={setReportFormat}>
-                  <SelectTrigger>
-                    <SelectValue />
+              <div className="space-y-2">
+                <Label htmlFor="select-event" className="dark:text-gray-200 text-gray-800">Select Event</Label>
+                <Select value={selectedEvent} onValueChange={setSelectedEvent} disabled={isLoadingEvents}>
+                  <SelectTrigger id="select-event" className={cn(
+                    "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                    "focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  )}>
+                    <SelectValue placeholder={isLoadingEvents ? "Loading events..." : "Select an event (Optional)"}>
+                      {selectedEvent && (
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4" />
+                          {events.find(e => e.event_id.toString() === selectedEvent)?.name}
+                        </div>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="csv">
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4" />
-                        CSV (Spreadsheet)
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="pdf">
-                      <div className="flex items-center gap-2">
-                        <File className="h-4 w-4" />
-                        PDF (Document)
-                      </div>
-                    </SelectItem>
+                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                    <SelectItem value="">Select Event (Optional)</SelectItem>
+                    {isLoadingEvents ? (
+                      <SelectItem value="loading" disabled>
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" /> Loading events...
+                        </div>
+                      </SelectItem>
+                    ) : filteredEvents.length === 0 ? (
+                      <SelectItem value="no-events" disabled>
+                        No events found for this organizer or search.
+                      </SelectItem>
+                    ) : (
+                      filteredEvents.map((event) => (
+                        <SelectItem
+                          key={event.event_id}
+                          value={event.event_id.toString()}
+                          className={cn(
+                            "hover:bg-green-50 hover:dark:bg-green-900/20",
+                            selectedEvent === event.event_id.toString() && "bg-green-50 dark:bg-green-900/20"
+                          )}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full text-left">
+                            <div className="font-medium">{event.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {event.location} • {new Date(event.event_date).toLocaleDateString()}
+                              <Badge variant="outline" className="ml-2 dark:border-gray-600 dark:text-gray-300">
+                                {event.report_count} reports
+                              </Badge>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
             </CardContent>
-          )}
+          </Card>
+        )}
+
+        {/* Report Settings */}
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <Settings className="h-5 w-5" />
+              Report Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Currency Settings */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Currency Settings</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchExchangeRates('USD')}
+                  disabled={isLoadingRates || !useLatestRates} // Disable if not using latest rates
+                  className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
+                >
+                  <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingRates && "animate-spin")} />
+                  Refresh Rates
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="target-currency" className="dark:text-gray-200 text-gray-800">Target Currency</Label>
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
+                    <SelectTrigger id="target-currency" className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                      <SelectValue placeholder="Select currency">
+                        {selectedCurrency && (
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4" />
+                            {currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                      {isLoadingCurrencies ? (
+                        <SelectItem value="loading" disabled>
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Loading currencies...
+                          </div>
+                        </SelectItem>
+                      ) : (
+                        currencies.map((currency) => (
+                          <SelectItem key={currency.id} value={currency.code}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono">{currency.symbol}</span>
+                              <span className="font-medium">{currency.code}</span>
+                              <span className="text-gray-500">- {currency.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Display Exchange Rate */}
+                {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && useLatestRates && (
+                  <div className="space-y-2">
+                    <Label className="dark:text-gray-200 text-gray-800">Exchange Rate (USD → {selectedCurrency})</Label>
+                    <div className="p-3 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                      <div className="text-lg font-semibold dark:text-gray-200 text-gray-800">
+                        1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Source: {exchangeRates.source}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator className="dark:bg-gray-700 bg-gray-200" />
+
+            {/* Report Options */}
+            <div className="space-y-4">
+              <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Options</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="include-charts" className="dark:text-gray-200 text-gray-800">Include Charts</Label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Add visual charts to the report</p>
+                  </div>
+                  <Switch
+                    id="include-charts"
+                    checked={includeCharts}
+                    onCheckedChange={setIncludeCharts}
+                    className="data-[state=checked]:bg-[#10b981]"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="use-latest-rates" className="dark:text-gray-200 text-gray-800">Use Latest Rates</Label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Use real-time exchange rates for conversions</p>
+                  </div>
+                  <Switch
+                    id="use-latest-rates"
+                    checked={useLatestRates}
+                    onCheckedChange={setUseLatestRates}
+                    className="data-[state=checked]:bg-[#10b981]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Separator className="dark:bg-gray-700 bg-gray-200" />
+
+            {/* Email Settings */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings (Optional)</Label>
+                <Switch
+                  checked={sendEmail}
+                  onCheckedChange={setSendEmail}
+                  className="data-[state=checked]:bg-[#10b981]"
+                />
+              </div>
+              {sendEmail && (
+                <div className="space-y-2">
+                  <Label htmlFor="recipient-email" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                  <Input
+                    id="recipient-email"
+                    type="email"
+                    placeholder="Enter recipient email (optional)"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800"
+                  />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Leave empty to send the report to your account email.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <Separator className="dark:bg-gray-700 bg-gray-200" />
+
+            {/* Format Selection */}
+            <div className="space-y-4">
+              <Label htmlFor="report-format" className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
+              <Select value={reportFormat} onValueChange={setReportFormat}>
+                <SelectTrigger id="report-format" className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                  <SelectItem value="csv">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      CSV (Spreadsheet)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="pdf">
+                    <div className="flex items-center gap-2">
+                      <File className="h-4 w-4" />
+                      PDF (Document)
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
         </Card>
 
         {/* Generate Report Button */}
-        <Card className="shadow-lg">
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-6">
             <Button
               onClick={generateReport}
               disabled={!selectedOrganizer || isDownloading}
-              className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105 disabled:scale-100"
+              className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 hover:scale-105"
             >
               {isDownloading ? (
                 <>
@@ -694,13 +723,13 @@ const AdminReports: React.FC = () => {
         </Card>
 
         {/* Quick Actions Footer */}
-        <Card className="shadow-lg">
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Globe className="h-4 w-4" />
-                <span className="text-center sm:text-left">
-                  {currencies.length} currencies • {organizers.length} organizers
+                <span>
+                  {currencies.length} currencies available • {organizers.length} organizers loaded
                 </span>
               </div>
               <Button
@@ -708,7 +737,7 @@ const AdminReports: React.FC = () => {
                 size="sm"
                 onClick={fetchOrganizers}
                 disabled={isLoadingOrganizers}
-                className="w-full sm:w-auto"
+                className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
               >
                 <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingOrganizers && "animate-spin")} />
                 Refresh Data
