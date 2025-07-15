@@ -168,8 +168,13 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      console.log("Fetched Events:", data); // Optional logging for debugging
-      setEvents(data.events || []); // Set events to the array of events or an empty array if undefined
+      console.log("Fetched Events:", data);
+      setEvents(data.events || []);
+
+      // Log a sample event to verify its structure
+      if (data.events && data.events.length > 0) {
+        console.log("Sample Event:", data.events[0]);
+      }
       showSuccess('Events loaded successfully');
     } catch (err) {
       handleError('Failed to fetch events', err);
@@ -305,10 +310,11 @@ const AdminReports: React.FC = () => {
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
   );
 
-  const filteredEvents = events.filter(event =>
-    event.event_name.toLowerCase().includes(eventSearch.toLowerCase()) ||
-    event.location.toLowerCase().includes(eventSearch.toLowerCase())
-  );
+  const filteredEvents = events.filter(event => {
+    const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
+    const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
+    return nameMatch || locationMatch;
+  });
 
   // Render
   if (isLoadingCurrencies || isLoadingOrganizers) {
