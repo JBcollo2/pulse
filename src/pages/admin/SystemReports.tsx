@@ -113,6 +113,27 @@ const AdminReports: React.FC = () => {
     });
   }, [toast]);
 
+  const safeExtractArray = (data: any, key: string, fallback: any[] = []): any[] => {
+    if (!data) return fallback;
+
+    if (data[key] && Array.isArray(data[key])) {
+      return data[key];
+    }
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (typeof data === 'object' && Object.keys(data).length > 0) {
+      const firstKey = Object.keys(data)[0];
+      if (Array.isArray(data[firstKey])) {
+        return data[firstKey];
+      }
+    }
+
+    return fallback;
+  };
+
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
@@ -127,16 +148,25 @@ const AdminReports: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
         handleError(errorData.message || "Failed to fetch organizers.", errorData);
         return;
       }
 
       const data = await response.json();
-      setOrganizers(data.organizers || []);
-      showSuccess(`Loaded ${data.organizers?.length || 0} organizers successfully`);
+      console.log('Organizers API response:', data);
+
+      const organizersArray = safeExtractArray(data, 'organizers', []);
+      setOrganizers(organizersArray);
+      showSuccess(`Loaded ${organizersArray.length} organizers successfully`);
     } catch (err) {
       handleError('Failed to fetch organizers', err);
+      setOrganizers([]);
     } finally {
       setIsLoadingOrganizers(false);
     }
@@ -157,14 +187,22 @@ const AdminReports: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
         handleError(errorData.message || "Failed to fetch events.", errorData);
         return;
       }
 
       const data = await response.json();
-      setEvents(data.events || []);
-      showSuccess(`Loaded ${data.events?.length || 0} events successfully`);
+      console.log('Events API response:', data);
+
+      const eventsArray = safeExtractArray(data, 'events', []);
+      setEvents(eventsArray);
+      showSuccess(`Loaded ${eventsArray.length} events successfully`);
     } catch (err) {
       handleError('Failed to fetch events', err);
       setEvents([]);
@@ -179,18 +217,28 @@ const AdminReports: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
         handleError(errorData.message || "Failed to fetch currencies.", errorData);
         return;
       }
-      const data = await response.json();
-      setCurrencies(data.data || []);
 
-      if (!selectedCurrency) {
-        const kesCurrency = data.data?.find((c: Currency) => c.code === 'KES');
-        const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
-        const defaultCurrency = kesCurrency || usdCurrency;
+      const data = await response.json();
+      console.log('Currencies API response:', data);
+
+      const currenciesArray = safeExtractArray(data, 'data', []);
+      setCurrencies(currenciesArray);
+
+      if (!selectedCurrency && currenciesArray.length > 0) {
+        const kesCurrency = currenciesArray.find((c: Currency) => c.code === 'KES');
+        const usdCurrency = currenciesArray.find((c: Currency) => c.code === 'USD');
+        const defaultCurrency = kesCurrency || usdCurrency || currenciesArray[0];
 
         if (defaultCurrency) {
           setSelectedCurrency(defaultCurrency.code);
@@ -201,6 +249,7 @@ const AdminReports: React.FC = () => {
       showSuccess('Currencies loaded successfully');
     } catch (err) {
       handleError('Failed to fetch currencies', err);
+      setCurrencies([]);
     } finally {
       setIsLoadingCurrencies(false);
     }
@@ -212,16 +261,33 @@ const AdminReports: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
         handleError(errorData.message || "Failed to fetch exchange rates.", errorData);
         return;
       }
+
       const data = await response.json();
-      setExchangeRates(data.data);
+      console.log('Exchange rates API response:', data);
+
+      let ratesData = null;
+      if (data && data.data) {
+        ratesData = data.data;
+      } else if (data && data.rates) {
+        ratesData = data;
+      }
+
+      setExchangeRates(ratesData);
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
     } catch (err) {
       handleError('Failed to fetch exchange rates', err);
+      setExchangeRates(null);
     } finally {
       setIsLoadingRates(false);
     }
@@ -260,7 +326,12 @@ const AdminReports: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
@@ -339,8 +410,8 @@ const AdminReports: React.FC = () => {
   }, [targetCurrencyId, fetchOrganizers, fetchEvents, selectedOrganizer]);
 
   const filteredOrganizers = organizers.filter(org =>
-    org.name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
-    org.email.toLowerCase().includes(organizerSearch.toLowerCase())
+    org.name?.toLowerCase().includes(organizerSearch.toLowerCase()) ||
+    org.email?.toLowerCase().includes(organizerSearch.toLowerCase())
   );
 
   const filteredEvents = events.filter(event => {
@@ -437,9 +508,9 @@ const AdminReports: React.FC = () => {
                               <div className="text-sm text-gray-500 truncate">{organizer.email}</div>
                               <div className="text-xs text-gray-400 flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {organizer.event_count} events
+                                {organizer.event_count || 0} events
                                 <DollarSign className="h-3 w-3 ml-2" />
-                                {organizer.metrics.currency_symbol}{organizer.metrics.total_revenue.toLocaleString()}
+                                {organizer.metrics?.currency_symbol || '$'}{(organizer.metrics?.total_revenue || 0).toLocaleString()}
                               </div>
                             </div>
                           </div>
@@ -508,9 +579,9 @@ const AdminReports: React.FC = () => {
                               </div>
                               <div className="text-xs text-gray-400 flex items-center gap-1">
                                 <Users className="h-3 w-3" />
-                                {event.metrics.tickets_sold} tickets
+                                {event.metrics?.tickets_sold || 0} tickets
                                 <DollarSign className="h-3 w-3 ml-1" />
-                                {event.metrics.currency_symbol}{event.metrics.revenue.toLocaleString()}
+                                {event.metrics?.currency_symbol || '$'}{(event.metrics?.revenue || 0).toLocaleString()}
                               </div>
                             </div>
                           </SelectItem>
