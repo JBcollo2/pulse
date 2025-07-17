@@ -92,7 +92,6 @@ const REPORT_FORMATS = [
 ];
 
 const DEFAULT_CURRENCY = 'KES';
-const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // =============================================================================
 // CUSTOM HOOKS
@@ -132,7 +131,7 @@ async function makeApiRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `HTTP ${response.status}`);
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const contentType = response.headers.get('content-type');
@@ -223,7 +222,7 @@ const AdminReports: React.FC = () => {
     setIsLoadingOrganizers(true);
     setError(null);
     try {
-      const url = new URL(`${API_BASE_URL}/admin/organizers`);
+      const url = new URL(`${import.meta.env.VITE_API_URL}/admin/organizers`);
       if (targetCurrencyId) {
         url.searchParams.append('currency_id', targetCurrencyId.toString());
       }
@@ -246,7 +245,7 @@ const AdminReports: React.FC = () => {
     setIsLoadingEvents(true);
     setError(null);
     try {
-      const url = new URL(`${API_BASE_URL}/admin/organizers/${organizerId}/events`);
+      const url = new URL(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`);
       if (targetCurrencyId) {
         url.searchParams.append('currency_id', targetCurrencyId.toString());
       }
@@ -265,7 +264,7 @@ const AdminReports: React.FC = () => {
     setIsLoadingCurrencies(true);
     setError(null);
     try {
-      const response = await makeApiRequest<Currency[]>(`${API_BASE_URL}/api/currency/list`);
+      const response = await makeApiRequest<Currency[]>(`${import.meta.env.VITE_API_URL}/api/currency/list`);
       const fetchedCurrencies = Array.isArray(response.data) ? response.data : [];
       setCurrencies(fetchedCurrencies);
       if (!selectedCurrency && fetchedCurrencies.length > 0) {
@@ -279,7 +278,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingCurrencies(false);
     }
-  }, [selectedCurrency, makeApiRequest, handleError, showSuccess]);
+  }, [selectedCurrency, handleError, showSuccess]);
 
   const fetchExchangeRates = useCallback(async (baseCurrency: string = DEFAULT_CURRENCY) => {
     if (baseCurrency === selectedCurrency) {
@@ -289,7 +288,7 @@ const AdminReports: React.FC = () => {
     setIsLoadingRates(true);
     try {
       const response = await makeApiRequest<ExchangeRates>(
-        `${API_BASE_URL}/api/currency/latest?base=${baseCurrency}`
+        `${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`
       );
       setExchangeRates(response.data || null);
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
@@ -299,7 +298,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingRates(false);
     }
-  }, [selectedCurrency, makeApiRequest, handleError, showSuccess]);
+  }, [selectedCurrency, handleError, showSuccess]);
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
@@ -325,16 +324,13 @@ const AdminReports: React.FC = () => {
       if (sendEmail && recipientEmail) {
         params.append('recipient_email', recipientEmail);
       }
-
-      const response = await fetch(`${API_BASE_URL}/admin/reports?${params.toString()}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       if (reportFormat.toLowerCase() === 'json') {
         const reportData = await response.json();
         console.log("JSON Report Data:", reportData);
@@ -468,7 +464,6 @@ const AdminReports: React.FC = () => {
             Generate and download comprehensive reports for organizers and events
           </p>
         </div>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -476,7 +471,6 @@ const AdminReports: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Selection */}
@@ -567,7 +561,6 @@ const AdminReports: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-
             {/* Event Selection */}
             {selectedOrganizer && (
               <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
@@ -666,7 +659,6 @@ const AdminReports: React.FC = () => {
               </Card>
             )}
           </div>
-
           {/* Right Column - Report Settings */}
           <div className="lg:col-span-2 space-y-6">
             <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
@@ -865,7 +857,6 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             {/* Report Preview/Summary */}
             {selectedOrganizerData && (
               <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
