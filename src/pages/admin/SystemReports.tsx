@@ -1,6 +1,3 @@
-// =============================================================================
-// IMPORTS
-// =============================================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-// import { Switch } from "@/components/ui/switch";
-// import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
@@ -28,9 +25,6 @@ import {
   TrendingUp
 } from "lucide-react";
 
-// =============================================================================
-// INTERFACES & TYPES
-// =============================================================================
 interface Currency {
   id: number;
   code: string;
@@ -74,14 +68,9 @@ interface ExchangeRates {
   source: string;
 }
 
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
 const AdminReports: React.FC = () => {
-  // Hooks & Setup
   const { toast } = useToast();
 
-  // State Variables
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -91,10 +80,10 @@ const AdminReports: React.FC = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
   const [targetCurrencyId, setTargetCurrencyId] = useState<number | null>(null);
   const [reportFormat, setReportFormat] = useState<string>('csv');
-  const [includeCharts] = useState<boolean>(true);
-  const [useLatestRates] = useState<boolean>(true);
-  const [sendEmail] = useState<boolean>(false);
-  const [recipientEmail] = useState<string>('');
+  const [includeCharts, setIncludeCharts] = useState<boolean>(true);
+  const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
+  const [sendEmail, setSendEmail] = useState<boolean>(false);
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
@@ -104,7 +93,6 @@ const AdminReports: React.FC = () => {
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
-  // Helper Functions
   const handleError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -125,7 +113,6 @@ const AdminReports: React.FC = () => {
     });
   }, [toast]);
 
-  // API Functions
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
@@ -134,17 +121,17 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) {
         params.append('currency_id', targetCurrencyId.toString());
       }
-      
+
       const response = await fetch(`${url}${params.toString() ? `?${params.toString()}` : ''}`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch organizers.", errorData);
         return;
       }
-      
+
       const data = await response.json();
       setOrganizers(data.organizers || []);
       showSuccess(`Loaded ${data.organizers?.length || 0} organizers successfully`);
@@ -164,17 +151,17 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) {
         params.append('currency_id', targetCurrencyId.toString());
       }
-      
+
       const response = await fetch(`${url}${params.toString() ? `?${params.toString()}` : ''}`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch events.", errorData);
         return;
       }
-      
+
       const data = await response.json();
       setEvents(data.events || []);
       showSuccess(`Loaded ${data.events?.length || 0} events successfully`);
@@ -199,19 +186,18 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       setCurrencies(data.data || []);
-      
-      // Set default currency to KES if available, otherwise USD
+
       if (!selectedCurrency) {
         const kesCurrency = data.data?.find((c: Currency) => c.code === 'KES');
         const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
         const defaultCurrency = kesCurrency || usdCurrency;
-        
+
         if (defaultCurrency) {
           setSelectedCurrency(defaultCurrency.code);
           setTargetCurrencyId(defaultCurrency.id);
         }
       }
-      
+
       showSuccess('Currencies loaded successfully');
     } catch (err) {
       handleError('Failed to fetch currencies', err);
@@ -250,36 +236,35 @@ const AdminReports: React.FC = () => {
     try {
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
-      
+
       if (selectedEvent && selectedEvent !== 'all-events') {
         params.append('event_id', selectedEvent);
       }
-      
+
       params.append('format', reportFormat);
-      
+
       if (targetCurrencyId) {
         params.append('currency_id', targetCurrencyId.toString());
       }
-      
+
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('send_email', sendEmail.toString());
-      
+
       if (recipientEmail) {
         params.append('recipient_email', recipientEmail);
       }
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
 
-      // Handle JSON response (when email is sent)
       if (response.headers.get('content-type')?.includes('application/json')) {
         const jsonData = await response.json();
         if (jsonData.email_status === 'sent') {
@@ -290,21 +275,20 @@ const AdminReports: React.FC = () => {
         return;
       }
 
-      // Handle file download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      
+
       const selectedOrganizerName = organizers.find(org => org.organizer_id.toString() === selectedOrganizer)?.name || selectedOrganizer;
       const eventSuffix = selectedEvent !== 'all-events' ? `_event${selectedEvent}` : '';
       a.download = `admin_report_${selectedOrganizerName.replace(/\s+/g, '_')}${eventSuffix}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
-      
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      
+
       showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
     } catch (err) {
       handleError('Failed to generate report', err);
@@ -313,7 +297,6 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess, organizers]);
 
-  // Effects
   useEffect(() => {
     fetchCurrencies();
   }, [fetchCurrencies]);
@@ -346,7 +329,6 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedCurrency, currencies]);
 
-  // Refresh data when currency changes
   useEffect(() => {
     if (targetCurrencyId && organizers.length > 0) {
       fetchOrganizers();
@@ -356,7 +338,6 @@ const AdminReports: React.FC = () => {
     }
   }, [targetCurrencyId, fetchOrganizers, fetchEvents, selectedOrganizer]);
 
-  // Filter Functions
   const filteredOrganizers = organizers.filter(org =>
     org.name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
@@ -368,7 +349,6 @@ const AdminReports: React.FC = () => {
     return nameMatch || locationMatch;
   });
 
-  // Render
   if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
     return (
       <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800">
@@ -387,13 +367,11 @@ const AdminReports: React.FC = () => {
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-full px-4 md:px-6 lg:px-8 space-y-6">
-        {/* Header */}
         <div className="text-center space-y-2 mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Generate and download comprehensive reports for organizers and events</p>
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
             <AlertCircle className="h-5 w-5" />
@@ -401,11 +379,8 @@ const AdminReports: React.FC = () => {
           </div>
         )}
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Organizer and Event Selection */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Organizer Selection */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg">
@@ -476,7 +451,6 @@ const AdminReports: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Event Selection */}
             {selectedOrganizer && (
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
                 <CardHeader className="pb-4">
@@ -549,9 +523,7 @@ const AdminReports: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column - Report Settings */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Report Settings */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg">
@@ -623,9 +595,60 @@ const AdminReports: React.FC = () => {
                     )}
                   </div>
                 </div>
-
                 <Separator className="dark:bg-gray-700 bg-gray-200" />
-
+                <div className="space-y-4">
+                  <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Options</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                      <div className="space-y-1">
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Include Charts</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Add visual charts to the report</p>
+                      </div>
+                      <Switch
+                        checked={includeCharts}
+                        onCheckedChange={setIncludeCharts}
+                        className="dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                      <div className="space-y-1">
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Use Latest Rates</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Apply the most recent exchange rates</p>
+                      </div>
+                      <Switch
+                        checked={useLatestRates}
+                        onCheckedChange={setUseLatestRates}
+                        className="dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                      <div className="space-y-1">
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Email Report</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Send the report via email</p>
+                      </div>
+                      <Switch
+                        checked={sendEmail}
+                        onCheckedChange={setSendEmail}
+                        className="dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300"
+                      />
+                    </div>
+                    {sendEmail && (
+                      <div className="space-y-2">
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Recipient Email</Label>
+                        <Input
+                          placeholder="Enter recipient email"
+                          value={recipientEmail}
+                          onChange={(e) => setRecipientEmail(e.target.value)}
+                          className={cn(
+                            "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                            "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981] h-11"
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Separator className="dark:bg-gray-700 bg-gray-200" />
                 <div className="space-y-4">
                   <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
