@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import {
@@ -34,52 +33,67 @@ interface Currency {
   symbol: string;
 }
 
+// Adjusted to match the AdminOrganizerListResource API response
 interface Organizer {
-  id: number;
-  full_name: string;
+  organizer_id: number; // Changed from 'id' to 'organizer_id'
+  name: string; // Changed from 'full_name' to 'name'
   email: string;
-  phone_number: string;
-  registration_date: string;
+  phone: string; // Changed from 'phone_number' to 'phone'
+  event_count: number; // Added from API response
+  metrics: { // Added from API response
+    total_tickets_sold: number;
+    total_revenue: number;
+    total_attendees: number;
+    currency: string;
+    currency_symbol: string;
+  };
 }
 
+// Adjusted to match the AdminEventListResource API response
 interface Event {
   event_id: number;
-  event_name: string;
+  name: string; // Changed from 'event_name' to 'name'
   event_date: string;
   location: string;
-  description: string;
-  total_tickets: number;
-  tickets_available: number;
-  price_per_ticket: number;
-  created_at: string;
-}
-
-interface ExchangeRates {
-  base_currency: string;
-  rates: { [key: string]: number };
-  source: string;
-}
-
-interface AdminReport {
-  organizer_id: number;
-  organizer_name: string;
-  total_tickets_sold: number;
-  total_revenue: number;
-  total_attendees: number;
-  event_count: number;
-  report_count: number;
-  currency: string;
-  currency_symbol: string;
-  events: Array<{
-    event_id: number;
-    event_name: string;
-    event_date: string;
-    location: string;
+  status: string; // Added from API response (Event status)
+  metrics: { // Added from API response
     tickets_sold: number;
     revenue: number;
     attendees: number;
-    report_count: number;
-  }>;
+    currency: string;
+    currency_symbol: string;
+  };
+}
+
+// This interface seems to be for a general report data structure, not directly for API responses.
+// It might be used for displaying aggregated data if you fetch and combine reports on the frontend.
+// Given the current API structure, we'll mostly work with Organizer[] and Event[].
+// interface AdminReport {
+//   organizer_id: number;
+//   organizer_name: string;
+//   total_tickets_sold: number;
+//   total_revenue: number;
+//   total_attendees: number;
+//   event_count: number;
+//   report_count: number;
+//   currency: string;
+//   currency_symbol: string;
+//   events: Array<{
+//     event_id: number;
+//     event_name: string;
+//     event_date: string;
+//     location: string;
+//     tickets_sold: number;
+//     revenue: number;
+//     attendees: number;
+//     report_count: number;
+//   }>;
+// }
+
+interface ExchangeRates {
+  base: string; // Changed from 'base_currency' to 'base'
+  rates: { [key: string]: number };
+  source: string;
 }
 
 // =============================================================================
@@ -96,13 +110,13 @@ const AdminReports: React.FC = () => {
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('all-events');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('KES'); // Default to KES as per backend logic
   const [targetCurrencyId, setTargetCurrencyId] = useState<number | null>(null);
   const [reportFormat, setReportFormat] = useState<string>('csv');
   const [includeCharts, setIncludeCharts] = useState<boolean>(true);
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
-  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [recipientEmail, setRecipientEmail] = useState<string>(''); // This might be auto-filled from user context if available
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
@@ -137,29 +151,44 @@ const AdminReports: React.FC = () => {
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
-        credentials: 'include'
+      // Ensure VITE_API_URL is correctly defined in your .env file (e.g., VITE_API_URL=http://localhost:5000)
+      const url = new URL(`${import.meta.env.VITE_API_URL}/admin/organizers`);
+      if (targetCurrencyId) {
+        url.searchParams.append('currency_id', targetCurrencyId.toString());
+      }
+      const response = await fetch(url.toString(), {
+        credentials: 'include' // Important for sending cookies/JWT
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch organizers.", errorData);
         return;
       }
       const data = await response.json();
-      setOrganizers(data);
+      // The backend returns { "organizers": [], "total_count": ..., "currency_info": ... }
+      setOrganizers(data.organizers || []);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
+      setOrganizers([]); // Clear organizers on error
     } finally {
       setIsLoadingOrganizers(false);
     }
-  }, [handleError, showSuccess]);
+  }, [handleError, showSuccess, targetCurrencyId]); // Dependency on targetCurrencyId for currency conversion
 
   const fetchEvents = useCallback(async (organizerId: string) => {
-    if (!organizerId) return;
+    if (!organizerId) {
+      setEvents([]); // Clear events if no organizer selected
+      return;
+    }
     setIsLoadingEvents(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`, {
+      const url = new URL(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`);
+      if (targetCurrencyId) {
+        url.searchParams.append('currency_id', targetCurrencyId.toString());
+      }
+      const response = await fetch(url.toString(), {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -168,13 +197,8 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      console.log("Fetched Events:", data);
+      // The backend returns { "events": [], "organizer_name": ..., "summary": ..., "currency_info": ... }
       setEvents(data.events || []);
-
-      // Log a sample event to verify its structure
-      if (data.events && data.events.length > 0) {
-        console.log("Sample Event:", data.events[0]);
-      }
       showSuccess('Events loaded successfully');
     } catch (err) {
       handleError('Failed to fetch events', err);
@@ -182,7 +206,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingEvents(false);
     }
-  }, [handleError, showSuccess]);
+  }, [handleError, showSuccess, targetCurrencyId]); // Dependency on targetCurrencyId
 
   const fetchCurrencies = useCallback(async () => {
     setIsLoadingCurrencies(true);
@@ -197,24 +221,31 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       setCurrencies(data.data || []);
-      if (!selectedCurrency) {
-        const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
-        if (usdCurrency) {
-          setSelectedCurrency(usdCurrency.code);
-          setTargetCurrencyId(usdCurrency.id);
+      // Set a default currency if not already selected
+      if (!selectedCurrency && data.data && data.data.length > 0) {
+        // Try to find KES or fallback to the first currency
+        const kesCurrency = data.data.find((c: Currency) => c.code === 'KES');
+        if (kesCurrency) {
+          setSelectedCurrency(kesCurrency.code);
+          setTargetCurrencyId(kesCurrency.id);
+        } else {
+          setSelectedCurrency(data.data[0].code);
+          setTargetCurrencyId(data.data[0].id);
         }
       }
       showSuccess('Currencies loaded successfully');
     } catch (err) {
       handleError('Failed to fetch currencies', err);
+      setCurrencies([]);
     } finally {
       setIsLoadingCurrencies(false);
     }
   }, [handleError, showSuccess, selectedCurrency]);
 
-  const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
+  const fetchExchangeRates = useCallback(async (baseCurrency: string = 'KES') => { // Default to KES as your backend seems to be KSH/KES based
     setIsLoadingRates(true);
     try {
+      // Assuming your backend supports a 'base' query parameter for exchange rates
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`, {
         credentials: 'include'
       });
@@ -224,10 +255,11 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setExchangeRates(data.data);
+      setExchangeRates(data.data); // Backend returns { "data": { base: "USD", rates: {...}, source: "..." } }
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
     } catch (err) {
       handleError('Failed to fetch exchange rates', err);
+      setExchangeRates(null);
     } finally {
       setIsLoadingRates(false);
     }
@@ -235,46 +267,79 @@ const AdminReports: React.FC = () => {
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
-      handleError('Please select an organizer');
+      handleError('Please select an organizer to generate a report.');
       return;
     }
     setIsDownloading(true);
     try {
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
+
       if (selectedEvent && selectedEvent !== 'all-events') {
         params.append('event_id', selectedEvent);
       }
       params.append('format', reportFormat);
-      if (targetCurrencyId) params.append('target_currency_id', targetCurrencyId.toString());
+
+      // Only append currency params if a target currency is selected and it's not the default KES (if KES is the base for backend)
+      // The backend implies KES is the internal base for calculations, then converts.
+      // So sending target_currency_id or code is for conversion.
+      if (targetCurrencyId && currencies.find(c => c.id === targetCurrencyId)?.code !== 'KES') {
+        params.append('currency_id', targetCurrencyId.toString());
+      }
+
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-      params.append('include_email', sendEmail.toString());
-      if (recipientEmail) params.append('recipient_email', recipientEmail);
+      params.append('send_email', sendEmail.toString()); // The backend expects 'send_email', not 'include_email'
+      if (sendEmail && recipientEmail) { // Only send recipient_email if sendEmail is true
+        params.append('recipient_email', recipientEmail);
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
         credentials: 'include'
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
+
+      // Handle different content types based on reportFormat
+      if (reportFormat.toLowerCase() === 'json') {
+        const reportData = await response.json();
+        console.log("JSON Report Data:", reportData);
+        showSuccess('JSON report generated successfully. Check console for data.');
+        // If you want to display JSON data on the UI, you'd need another state variable for it.
+        // For now, it's just logged.
+      } else {
+        // For CSV and PDF, download the blob
+        const blob = await response.blob();
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
+          }
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
+      }
+
     } catch (err) {
       handleError('Failed to generate report', err);
     } finally {
       setIsDownloading(false);
     }
-  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess]);
+  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess, currencies]);
 
   // Effects
   useEffect(() => {
@@ -282,36 +347,56 @@ const AdminReports: React.FC = () => {
     fetchCurrencies();
   }, [fetchOrganizers, fetchCurrencies]);
 
-  useEffect(() => {
-    if (selectedOrganizer) {
-      fetchEvents(selectedOrganizer);
-      setSelectedEvent('all-events');
-    }
-  }, [selectedOrganizer, fetchEvents]);
-
-  useEffect(() => {
-    if (selectedCurrency && selectedCurrency !== 'USD') {
-      fetchExchangeRates('USD');
-    }
-  }, [selectedCurrency, fetchExchangeRates]);
-
+  // When selectedCurrency changes, update targetCurrencyId and possibly fetch rates
   useEffect(() => {
     if (selectedCurrency) {
       const currency = currencies.find(c => c.code === selectedCurrency);
       if (currency) {
         setTargetCurrencyId(currency.id);
+        // If the selected currency is not KES (your presumed base), fetch rates from KES to it
+        // Or if you always want USD as base for rates display, keep USD
+        // Backend's `convert_revenue_to_currency` implies KES is internal,
+        // so fetching rates from KES to target might be more accurate for display if needed.
+        if (selectedCurrency !== 'KES') {
+          fetchExchangeRates('KES'); // Fetch rates with KES as base
+        } else {
+          setExchangeRates(null); // Clear rates if KES is selected, as no conversion needed
+        }
       }
+    } else {
+      setTargetCurrencyId(null);
+      setExchangeRates(null);
     }
-  }, [selectedCurrency, currencies]);
+  }, [selectedCurrency, currencies, fetchExchangeRates]);
+
+
+  useEffect(() => {
+    // Refetch organizers with new currency setting
+    fetchOrganizers();
+    if (selectedOrganizer) {
+      // Refetch events for the selected organizer with new currency setting
+      fetchEvents(selectedOrganizer);
+    }
+  }, [targetCurrencyId]); // Re-run when targetCurrencyId changes
+
+  useEffect(() => {
+    if (selectedOrganizer) {
+      fetchEvents(selectedOrganizer);
+      setSelectedEvent('all-events'); // Reset event selection when organizer changes
+    } else {
+      setEvents([]); // Clear events if no organizer is selected
+      setSelectedEvent('all-events'); // Reset event selection
+    }
+  }, [selectedOrganizer, fetchEvents]); // Only refetch events when selectedOrganizer changes
 
   // Filter Functions
   const filteredOrganizers = organizers.filter(org =>
-    org.full_name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
+    org.name.toLowerCase().includes(organizerSearch.toLowerCase()) || // Changed from full_name to name
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
   );
 
   const filteredEvents = events.filter(event => {
-    const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
+    const nameMatch = event.name && event.name.toLowerCase().includes(eventSearch.toLowerCase()); // Changed from event_name to name
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
@@ -386,7 +471,8 @@ const AdminReports: React.FC = () => {
                         {selectedOrganizer && (
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            {organizers.find(o => o.id.toString() === selectedOrganizer)?.full_name}
+                            {/* Changed from 'id' to 'organizer_id' and 'full_name' to 'name' */}
+                            {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
                           </div>
                         )}
                       </SelectValue>
@@ -394,16 +480,16 @@ const AdminReports: React.FC = () => {
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                       {filteredOrganizers.map((organizer) => (
                         <SelectItem
-                          key={organizer.id}
-                          value={organizer.id.toString()}
+                          key={organizer.organizer_id} // Changed from 'id' to 'organizer_id'
+                          value={organizer.organizer_id.toString()} // Changed from 'id' to 'organizer_id'
                           className={cn(
                             "dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
-                            selectedOrganizer === organizer.id.toString() && "bg-[#10b981] text-white"
+                            selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white" // Changed from 'id' to 'organizer_id'
                           )}
                         >
                           <div className="flex items-center justify-between w-full">
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{organizer.full_name}</div>
+                              <div className="font-medium truncate">{organizer.name}</div> {/* Changed from full_name to name */}
                               <div className="text-sm text-gray-500 truncate">{organizer.email}</div>
                             </div>
                           </div>
@@ -446,7 +532,7 @@ const AdminReports: React.FC = () => {
                             className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
                           >
                             <div className="flex flex-col items-start py-1">
-                              <div className="font-medium">{event.event_name}</div>
+                              <div className="font-medium">{event.name}</div> {/* Changed from event_name to name */}
                               <div className="text-sm text-gray-500">
                                 {event.location} • {new Date(event.event_date).toLocaleDateString()}
                               </div>
@@ -477,7 +563,7 @@ const AdminReports: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => fetchExchangeRates('USD')}
+                      onClick={() => fetchExchangeRates(selectedCurrency || 'KES')} 
                       disabled={isLoadingRates}
                       className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                     >
@@ -519,12 +605,12 @@ const AdminReports: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
+                    {exchangeRates && selectedCurrency && selectedCurrency !== exchangeRates.base && (
                       <div className="space-y-2">
-                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Exchange Rate (USD → {selectedCurrency})</Label>
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Exchange Rate ({exchangeRates.base} → {selectedCurrency})</Label>
                         <div className="p-4 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                           <div className="text-lg font-semibold dark:text-gray-200 text-gray-800">
-                            1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
+                            1 {exchangeRates.base} = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Source: {exchangeRates.source}
@@ -621,6 +707,16 @@ const AdminReports: React.FC = () => {
                             PDF (Document)
                           </div>
                         </SelectItem>
+                        {/* Only offer JSON if you plan to display it directly on the UI and not download */}
+                        {/* <SelectItem
+                          value="json"
+                          className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Code className="h-4 w-4" />
+                            JSON (API Response)
+                          </div>
+                        </SelectItem> */}
                       </SelectContent>
                     </Select>
                   </div>
