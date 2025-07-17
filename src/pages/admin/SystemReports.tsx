@@ -116,7 +116,6 @@ const useDebounce = (value: string, delay: number) => {
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
-// Move this function outside the component
 async function makeApiRequest<T>(
   url: string,
   options: RequestInit = {}
@@ -136,7 +135,6 @@ async function makeApiRequest<T>(
       throw new Error(errorData.message || `HTTP ${response.status}`);
     }
 
-    // Handle different response types
     const contentType = response.headers.get('content-type');
     if (contentType?.includes('application/json')) {
       return await response.json();
@@ -229,7 +227,6 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) {
         url.searchParams.append('currency_id', targetCurrencyId.toString());
       }
-
       const response = await makeApiRequest<{ organizers: Organizer[] }>(url.toString());
       setOrganizers(response.data?.organizers || []);
       showSuccess(`Loaded ${response.data?.organizers?.length || 0} organizers`);
@@ -246,7 +243,6 @@ const AdminReports: React.FC = () => {
       setEvents([]);
       return;
     }
-
     setIsLoadingEvents(true);
     setError(null);
     try {
@@ -254,7 +250,6 @@ const AdminReports: React.FC = () => {
       if (targetCurrencyId) {
         url.searchParams.append('currency_id', targetCurrencyId.toString());
       }
-
       const response = await makeApiRequest<{ events: Event[] }>(url.toString());
       setEvents(response.data?.events || []);
       showSuccess(`Loaded ${response.data?.events?.length || 0} events`);
@@ -273,13 +268,10 @@ const AdminReports: React.FC = () => {
       const response = await makeApiRequest<Currency[]>(`${API_BASE_URL}/api/currency/list`);
       const fetchedCurrencies = Array.isArray(response.data) ? response.data : [];
       setCurrencies(fetchedCurrencies);
-
-      // Set default currency if not selected
       if (!selectedCurrency && fetchedCurrencies.length > 0) {
         const defaultCurrency = fetchedCurrencies.find(c => c.code === DEFAULT_CURRENCY) || fetchedCurrencies[0];
         setSelectedCurrency(defaultCurrency.code);
       }
-
       showSuccess(`Loaded ${fetchedCurrencies.length} currencies`);
     } catch (err: any) {
       handleError('Failed to fetch currencies', err);
@@ -294,7 +286,6 @@ const AdminReports: React.FC = () => {
       setExchangeRates(null);
       return;
     }
-
     setIsLoadingRates(true);
     try {
       const response = await makeApiRequest<ExchangeRates>(
@@ -315,10 +306,8 @@ const AdminReports: React.FC = () => {
       handleError('Please select an organizer to generate a report.');
       return;
     }
-
     setIsDownloading(true);
     setError(null);
-
     try {
       const params = new URLSearchParams({
         organizer_id: selectedOrganizer,
@@ -327,15 +316,12 @@ const AdminReports: React.FC = () => {
         use_latest_rates: useLatestRates.toString(),
         send_email: sendEmail.toString(),
       });
-
       if (selectedEvent && selectedEvent !== 'all-events') {
         params.append('event_id', selectedEvent);
       }
-
       if (targetCurrencyId && selectedCurrency !== DEFAULT_CURRENCY) {
         params.append('currency_id', targetCurrencyId.toString());
       }
-
       if (sendEmail && recipientEmail) {
         params.append('recipient_email', recipientEmail);
       }
@@ -349,12 +335,9 @@ const AdminReports: React.FC = () => {
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      // Handle different response types
       if (reportFormat.toLowerCase() === 'json') {
         const reportData = await response.json();
         console.log("JSON Report Data:", reportData);
-
-        // Create downloadable JSON file
         const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -364,21 +347,17 @@ const AdminReports: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-
         showSuccess('JSON report generated and downloaded successfully');
       } else {
-        // Handle binary file downloads (CSV, PDF)
         const blob = await response.blob();
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
-
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
           if (filenameMatch && filenameMatch[1]) {
             filename = filenameMatch[1].replace(/['"]/g, '');
           }
         }
-
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -387,7 +366,6 @@ const AdminReports: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-
         showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
       }
     } catch (err: any) {
@@ -524,7 +502,6 @@ const AdminReports: React.FC = () => {
                     />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Select Organizer</Label>
                   <Select value={selectedOrganizer} onValueChange={setSelectedOrganizer}>
@@ -561,7 +538,6 @@ const AdminReports: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 {/* Organizer Metrics */}
                 {selectedOrganizerData && (
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-2">
@@ -605,7 +581,6 @@ const AdminReports: React.FC = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Select a specific event or generate report for all events
                   </p>
-
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Search Events</Label>
                     <div className="relative">
@@ -618,7 +593,6 @@ const AdminReports: React.FC = () => {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Select Event</Label>
                     <Select value={selectedEvent} onValueChange={setSelectedEvent}>
@@ -654,7 +628,6 @@ const AdminReports: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-
                   {/* Event Metrics */}
                   {selectedEventData && (
                     <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-2">
@@ -718,7 +691,6 @@ const AdminReports: React.FC = () => {
                       Refresh Rates
                     </Button>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Target Currency</Label>
@@ -746,7 +718,6 @@ const AdminReports: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-
                     {exchangeRates && selectedCurrency !== exchangeRates.base && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">
@@ -766,9 +737,7 @@ const AdminReports: React.FC = () => {
                     )}
                   </div>
                 </div>
-
                 <Separator />
-
                 {/* Report Format Settings */}
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Report Format</Label>
@@ -812,9 +781,7 @@ const AdminReports: React.FC = () => {
                     })}
                   </div>
                 </div>
-
                 <Separator />
-
                 {/* Report Options */}
                 <div className="space-y-4">
                   <Label className="text-base font-medium">Report Options</Label>
@@ -830,7 +797,6 @@ const AdminReports: React.FC = () => {
                           onCheckedChange={setIncludeCharts}
                         />
                       </div>
-
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm font-medium">Use Latest Exchange Rates</Label>
@@ -853,7 +819,6 @@ const AdminReports: React.FC = () => {
                           onCheckedChange={setSendEmail}
                         />
                       </div>
-
                       {sendEmail && (
                         <div className="space-y-2">
                           <Label className="text-sm font-medium">Recipient Email</Label>
@@ -872,9 +837,7 @@ const AdminReports: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
                 <Separator />
-
                 {/* Generate Report Button */}
                 <div className="pt-4">
                   <Button
@@ -894,7 +857,6 @@ const AdminReports: React.FC = () => {
                       </>
                     )}
                   </Button>
-
                   {!selectedOrganizer && (
                     <p className="text-sm text-gray-500 text-center mt-2">
                       Please select an organizer to generate a report
@@ -928,7 +890,6 @@ const AdminReports: React.FC = () => {
                         <Users className="h-8 w-8 text-blue-600" />
                       </div>
                     </div>
-
                     <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
@@ -945,7 +906,6 @@ const AdminReports: React.FC = () => {
                         <Calendar className="h-8 w-8 text-green-600" />
                       </div>
                     </div>
-
                     <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
@@ -960,7 +920,6 @@ const AdminReports: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <h4 className="font-medium mb-2">Report will include:</h4>
                     <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
