@@ -33,14 +33,13 @@ interface Currency {
   symbol: string;
 }
 
-// Adjusted to match the AdminOrganizerListResource API response
 interface Organizer {
-  organizer_id: number; // Changed from 'id' to 'organizer_id'
-  name: string; // Changed from 'full_name' to 'name'
+  organizer_id: number;
+  name: string;
   email: string;
-  phone: string; // Changed from 'phone_number' to 'phone'
-  event_count: number; // Added from API response
-  metrics: { // Added from API response
+  phone: string;
+  event_count: number;
+  metrics: {
     total_tickets_sold: number;
     total_revenue: number;
     total_attendees: number;
@@ -49,14 +48,13 @@ interface Organizer {
   };
 }
 
-// Adjusted to match the AdminEventListResource API response
 interface Event {
   event_id: number;
-  name: string; // Changed from 'event_name' to 'name'
+  name: string;
   event_date: string;
   location: string;
-  status: string; // Added from API response (Event status)
-  metrics: { // Added from API response
+  status: string;
+  metrics: {
     tickets_sold: number;
     revenue: number;
     attendees: number;
@@ -65,33 +63,8 @@ interface Event {
   };
 }
 
-// This interface seems to be for a general report data structure, not directly for API responses.
-// It might be used for displaying aggregated data if you fetch and combine reports on the frontend.
-// Given the current API structure, we'll mostly work with Organizer[] and Event[].
-// interface AdminReport {
-//   organizer_id: number;
-//   organizer_name: string;
-//   total_tickets_sold: number;
-//   total_revenue: number;
-//   total_attendees: number;
-//   event_count: number;
-//   report_count: number;
-//   currency: string;
-//   currency_symbol: string;
-//   events: Array<{
-//     event_id: number;
-//     event_name: string;
-//     event_date: string;
-//     location: string;
-//     tickets_sold: number;
-//     revenue: number;
-//     attendees: number;
-//     report_count: number;
-//   }>;
-// }
-
 interface ExchangeRates {
-  base: string; // Changed from 'base_currency' to 'base'
+  base: string;
   rates: { [key: string]: number };
   source: string;
 }
@@ -110,13 +83,13 @@ const AdminReports: React.FC = () => {
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('all-events');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('KES'); // Default to KES as per backend logic
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('KES');
   const [targetCurrencyId, setTargetCurrencyId] = useState<number | null>(null);
   const [reportFormat, setReportFormat] = useState<string>('csv');
   const [includeCharts, setIncludeCharts] = useState<boolean>(true);
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
-  const [recipientEmail, setRecipientEmail] = useState<string>(''); // This might be auto-filled from user context if available
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
@@ -151,13 +124,12 @@ const AdminReports: React.FC = () => {
   const fetchOrganizers = useCallback(async () => {
     setIsLoadingOrganizers(true);
     try {
-      // Ensure VITE_API_URL is correctly defined in your .env file (e.g., VITE_API_URL=http://localhost:5000)
       const url = new URL(`${import.meta.env.VITE_API_URL}/admin/organizers`);
       if (targetCurrencyId) {
         url.searchParams.append('currency_id', targetCurrencyId.toString());
       }
       const response = await fetch(url.toString(), {
-        credentials: 'include' // Important for sending cookies/JWT
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -166,20 +138,19 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      // The backend returns { "organizers": [], "total_count": ..., "currency_info": ... }
       setOrganizers(data.organizers || []);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
-      setOrganizers([]); // Clear organizers on error
+      setOrganizers([]);
     } finally {
       setIsLoadingOrganizers(false);
     }
-  }, [handleError, showSuccess, targetCurrencyId]); // Dependency on targetCurrencyId for currency conversion
+  }, [handleError, showSuccess, targetCurrencyId]);
 
   const fetchEvents = useCallback(async (organizerId: string) => {
     if (!organizerId) {
-      setEvents([]); // Clear events if no organizer selected
+      setEvents([]);
       return;
     }
     setIsLoadingEvents(true);
@@ -197,7 +168,6 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      // The backend returns { "events": [], "organizer_name": ..., "summary": ..., "currency_info": ... }
       setEvents(data.events || []);
       showSuccess('Events loaded successfully');
     } catch (err) {
@@ -206,7 +176,7 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingEvents(false);
     }
-  }, [handleError, showSuccess, targetCurrencyId]); // Dependency on targetCurrencyId
+  }, [handleError, showSuccess, targetCurrencyId]);
 
   const fetchCurrencies = useCallback(async () => {
     setIsLoadingCurrencies(true);
@@ -220,17 +190,19 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setCurrencies(data.data || []);
+      // Ensure data.data is an array or default to an empty array
+      const fetchedCurrencies = Array.isArray(data.data) ? data.data : [];
+      setCurrencies(fetchedCurrencies);
+
       // Set a default currency if not already selected
-      if (!selectedCurrency && data.data && data.data.length > 0) {
-        // Try to find KES or fallback to the first currency
-        const kesCurrency = data.data.find((c: Currency) => c.code === 'KES');
+      if (!selectedCurrency && fetchedCurrencies.length > 0) {
+        const kesCurrency = fetchedCurrencies.find((c: Currency) => c.code === 'KES');
         if (kesCurrency) {
           setSelectedCurrency(kesCurrency.code);
           setTargetCurrencyId(kesCurrency.id);
         } else {
-          setSelectedCurrency(data.data[0].code);
-          setTargetCurrencyId(data.data[0].id);
+          setSelectedCurrency(fetchedCurrencies[0].code);
+          setTargetCurrencyId(fetchedCurrencies[0].id);
         }
       }
       showSuccess('Currencies loaded successfully');
@@ -242,10 +214,9 @@ const AdminReports: React.FC = () => {
     }
   }, [handleError, showSuccess, selectedCurrency]);
 
-  const fetchExchangeRates = useCallback(async (baseCurrency: string = 'KES') => { // Default to KES as your backend seems to be KSH/KES based
+  const fetchExchangeRates = useCallback(async (baseCurrency: string = 'KES') => {
     setIsLoadingRates(true);
     try {
-      // Assuming your backend supports a 'base' query parameter for exchange rates
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`, {
         credentials: 'include'
       });
@@ -255,7 +226,7 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setExchangeRates(data.data); // Backend returns { "data": { base: "USD", rates: {...}, source: "..." } }
+      setExchangeRates(data.data);
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
     } catch (err) {
       handleError('Failed to fetch exchange rates', err);
@@ -280,17 +251,14 @@ const AdminReports: React.FC = () => {
       }
       params.append('format', reportFormat);
 
-      // Only append currency params if a target currency is selected and it's not the default KES (if KES is the base for backend)
-      // The backend implies KES is the internal base for calculations, then converts.
-      // So sending target_currency_id or code is for conversion.
       if (targetCurrencyId && currencies.find(c => c.id === targetCurrencyId)?.code !== 'KES') {
         params.append('currency_id', targetCurrencyId.toString());
       }
 
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-      params.append('send_email', sendEmail.toString()); // The backend expects 'send_email', not 'include_email'
-      if (sendEmail && recipientEmail) { // Only send recipient_email if sendEmail is true
+      params.append('send_email', sendEmail.toString());
+      if (sendEmail && recipientEmail) {
         params.append('recipient_email', recipientEmail);
       }
 
@@ -304,15 +272,11 @@ const AdminReports: React.FC = () => {
         return;
       }
 
-      // Handle different content types based on reportFormat
       if (reportFormat.toLowerCase() === 'json') {
         const reportData = await response.json();
         console.log("JSON Report Data:", reportData);
         showSuccess('JSON report generated successfully. Check console for data.');
-        // If you want to display JSON data on the UI, you'd need another state variable for it.
-        // For now, it's just logged.
       } else {
-        // For CSV and PDF, download the blob
         const blob = await response.blob();
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
@@ -347,22 +311,35 @@ const AdminReports: React.FC = () => {
     fetchCurrencies();
   }, [fetchOrganizers, fetchCurrencies]);
 
-  // When selectedCurrency changes, update targetCurrencyId and possibly fetch rates
   useEffect(() => {
-    if (selectedCurrency) {
+    // Add a check to ensure currencies is an array before trying to find.
+    // This is the primary change to address the TypeError.
+    if (selectedCurrency && Array.isArray(currencies) && currencies.length > 0) {
       const currency = currencies.find(c => c.code === selectedCurrency);
       if (currency) {
         setTargetCurrencyId(currency.id);
-        // If the selected currency is not KES (your presumed base), fetch rates from KES to it
-        // Or if you always want USD as base for rates display, keep USD
-        // Backend's `convert_revenue_to_currency` implies KES is internal,
-        // so fetching rates from KES to target might be more accurate for display if needed.
         if (selectedCurrency !== 'KES') {
-          fetchExchangeRates('KES'); // Fetch rates with KES as base
+          fetchExchangeRates('KES');
         } else {
-          setExchangeRates(null); // Clear rates if KES is selected, as no conversion needed
+          setExchangeRates(null);
         }
+      } else {
+        // If selectedCurrency doesn't match any currency in the list (e.g., after a refresh),
+        // reset targetCurrencyId and potentially default selectedCurrency.
+        setTargetCurrencyId(null);
+        setExchangeRates(null);
+        // You might want to re-select a default here, or let the initial fetchCurrencies handle it.
       }
+    } else if (!selectedCurrency && Array.isArray(currencies) && currencies.length > 0) {
+        // This block handles the initial setting if selectedCurrency is empty but currencies are loaded
+        const kesCurrency = currencies.find((c: Currency) => c.code === 'KES');
+        if (kesCurrency) {
+          setSelectedCurrency(kesCurrency.code);
+          setTargetCurrencyId(kesCurrency.id);
+        } else {
+          setSelectedCurrency(currencies[0].code);
+          setTargetCurrencyId(currencies[0].id);
+        }
     } else {
       setTargetCurrencyId(null);
       setExchangeRates(null);
@@ -377,26 +354,26 @@ const AdminReports: React.FC = () => {
       // Refetch events for the selected organizer with new currency setting
       fetchEvents(selectedOrganizer);
     }
-  }, [targetCurrencyId]); // Re-run when targetCurrencyId changes
+  }, [targetCurrencyId]);
 
   useEffect(() => {
     if (selectedOrganizer) {
       fetchEvents(selectedOrganizer);
-      setSelectedEvent('all-events'); // Reset event selection when organizer changes
+      setSelectedEvent('all-events');
     } else {
-      setEvents([]); // Clear events if no organizer is selected
-      setSelectedEvent('all-events'); // Reset event selection
+      setEvents([]);
+      setSelectedEvent('all-events');
     }
-  }, [selectedOrganizer, fetchEvents]); // Only refetch events when selectedOrganizer changes
+  }, [selectedOrganizer, fetchEvents]);
 
   // Filter Functions
   const filteredOrganizers = organizers.filter(org =>
-    org.name.toLowerCase().includes(organizerSearch.toLowerCase()) || // Changed from full_name to name
+    org.name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
     org.email.toLowerCase().includes(organizerSearch.toLowerCase())
   );
 
   const filteredEvents = events.filter(event => {
-    const nameMatch = event.name && event.name.toLowerCase().includes(eventSearch.toLowerCase()); // Changed from event_name to name
+    const nameMatch = event.name && event.name.toLowerCase().includes(eventSearch.toLowerCase());
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
@@ -471,7 +448,6 @@ const AdminReports: React.FC = () => {
                         {selectedOrganizer && (
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            {/* Changed from 'id' to 'organizer_id' and 'full_name' to 'name' */}
                             {organizers.find(o => o.organizer_id.toString() === selectedOrganizer)?.name}
                           </div>
                         )}
@@ -480,16 +456,16 @@ const AdminReports: React.FC = () => {
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                       {filteredOrganizers.map((organizer) => (
                         <SelectItem
-                          key={organizer.organizer_id} // Changed from 'id' to 'organizer_id'
-                          value={organizer.organizer_id.toString()} // Changed from 'id' to 'organizer_id'
+                          key={organizer.organizer_id}
+                          value={organizer.organizer_id.toString()}
                           className={cn(
                             "dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
-                            selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white" // Changed from 'id' to 'organizer_id'
+                            selectedOrganizer === organizer.organizer_id.toString() && "bg-[#10b981] text-white"
                           )}
                         >
                           <div className="flex items-center justify-between w-full">
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{organizer.name}</div> {/* Changed from full_name to name */}
+                              <div className="font-medium truncate">{organizer.name}</div>
                               <div className="text-sm text-gray-500 truncate">{organizer.email}</div>
                             </div>
                           </div>
@@ -532,7 +508,7 @@ const AdminReports: React.FC = () => {
                             className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
                           >
                             <div className="flex flex-col items-start py-1">
-                              <div className="font-medium">{event.name}</div> {/* Changed from event_name to name */}
+                              <div className="font-medium">{event.name}</div>
                               <div className="text-sm text-gray-500">
                                 {event.location} • {new Date(event.event_date).toLocaleDateString()}
                               </div>
@@ -563,7 +539,7 @@ const AdminReports: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => fetchExchangeRates(selectedCurrency || 'KES')} 
+                      onClick={() => fetchExchangeRates(selectedCurrency || 'KES')}
                       disabled={isLoadingRates}
                       className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                     >
@@ -583,13 +559,14 @@ const AdminReports: React.FC = () => {
                             {selectedCurrency && (
                               <div className="flex items-center gap-2">
                                 <Globe className="h-4 w-4" />
-                                {currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
+                                {/* Ensure currencies is an array and find returns a value before accessing symbol */}
+                                {Array.isArray(currencies) && currencies.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
                               </div>
                             )}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                          {currencies.map((currency) => (
+                          {Array.isArray(currencies) && currencies.map((currency) => (
                             <SelectItem
                               key={currency.id}
                               value={currency.code}
@@ -707,16 +684,6 @@ const AdminReports: React.FC = () => {
                             PDF (Document)
                           </div>
                         </SelectItem>
-                        {/* Only offer JSON if you plan to display it directly on the UI and not download */}
-                        {/* <SelectItem
-                          value="json"
-                          className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Code className="h-4 w-4" />
-                            JSON (API Response)
-                          </div>
-                        </SelectItem> */}
                       </SelectContent>
                     </Select>
                   </div>
