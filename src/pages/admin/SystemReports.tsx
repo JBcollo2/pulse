@@ -146,7 +146,10 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setOrganizers(data);
+
+      // Fix: Handle the correct API response structure
+      // The API returns { organizers: [...], total_count: ..., currency_info: {...} }
+      setOrganizers(data.organizers || []);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
@@ -169,8 +172,10 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       console.log("Fetched Events:", data);
-      setEvents(data.events || []);
 
+      // Fix: Handle the correct API response structure
+      // The API returns { events: [...], total_count: ..., summary: {...}, currency_info: {...} }
+      setEvents(data.events || []);
       // Log a sample event to verify its structure
       if (data.events && data.events.length > 0) {
         console.log("Sample Event:", data.events[0]);
@@ -196,9 +201,14 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setCurrencies(data.data || []);
-      if (!selectedCurrency) {
-        const usdCurrency = data.data?.find((c: Currency) => c.code === 'USD');
+
+      // Fix: Handle both possible response structures
+      // Try data.data first, then fallback to data itself if it's an array
+      const currenciesArray = data.data || (Array.isArray(data) ? data : []);
+      setCurrencies(currenciesArray);
+
+      if (!selectedCurrency && currenciesArray.length > 0) {
+        const usdCurrency = currenciesArray.find((c) => c.code === 'USD');
         if (usdCurrency) {
           setSelectedCurrency(usdCurrency.code);
           setTargetCurrencyId(usdCurrency.id);
@@ -305,10 +315,13 @@ const AdminReports: React.FC = () => {
   }, [selectedCurrency, currencies]);
 
   // Filter Functions
-  const filteredOrganizers = organizers.filter(org =>
-    org.full_name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
-    org.email.toLowerCase().includes(organizerSearch.toLowerCase())
-  );
+  const filteredOrganizers = organizers.filter(org => {
+    // Use full_name as the organizer name
+    const name = org.full_name || '';
+    const email = org.email || '';
+    return name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
+           email.toLowerCase().includes(organizerSearch.toLowerCase());
+  });
 
   const filteredEvents = events.filter(event => {
     const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
@@ -316,27 +329,28 @@ const AdminReports: React.FC = () => {
     return nameMatch || locationMatch;
   });
 
- // Skeleton loading mimics the actual content structure
-if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-  return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 bg-gray-50">
-      <div className="max-w-full px-4 md:px-6 lg:px-8">
-        <Card className="shadow-lg dark:bg-gray-800 bg-white">
-          <CardContent className="p-6">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+  // Skeleton loading mimics the actual content structure
+  if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
+    return (
+      <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 bg-gray-50">
+        <div className="max-w-full px-4 md:px-6 lg:px-8">
+          <Card className="shadow-lg dark:bg-gray-800 bg-white">
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-full px-4 md:px-6 lg:px-8 space-y-6">
