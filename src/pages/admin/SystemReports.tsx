@@ -1,5 +1,5 @@
 // =============================================================================
-// IMPROVED ADMIN REPORTS WITH REQUEST OPTIMIZATION
+// OPTIMIZED ADMIN REPORTS - REMOVED CONVERSION API CALLS
 // =============================================================================
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
@@ -34,15 +34,6 @@ interface Currency {
   code: string;
   name: string;
   symbol: string;
-  exchange_rate_from_ksh?: number;
-  rate_source?: string;
-}
-
-interface ExchangeRates {
-  base_currency: string;
-  rates: { [key: string]: number };
-  source: string;
-  timestamp?: string;
 }
 
 // =============================================================================
@@ -50,7 +41,7 @@ interface ExchangeRates {
 // =============================================================================
 class RequestCache {
   private cache = new Map();
-  private readonly cacheDuration = 60000; // 1 minute cache
+  private readonly cacheDuration = 300000; // 5 minutes cache for currencies
 
   get(key: string) {
     const cached = this.cache.get(key);
@@ -72,24 +63,6 @@ class RequestCache {
   }
 }
 
-// Debounce utility function
-function useDebounce<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  
-  return useCallback((...args: Parameters<T>) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      callback(...args);
-    }, delay);
-  }, [callback, delay]) as T;
-}
-
 // Rate limiter for API calls
 class RateLimiter {
   private lastCall = 0;
@@ -98,13 +71,13 @@ class RateLimiter {
   async throttle<T>(apiCall: () => Promise<T>): Promise<T> {
     const now = Date.now();
     const timeSinceLastCall = now - this.lastCall;
-    
+
     if (timeSinceLastCall < this.minInterval) {
-      await new Promise(resolve => 
+      await new Promise(resolve =>
         setTimeout(resolve, this.minInterval - timeSinceLastCall)
       );
     }
-    
+
     this.lastCall = Date.now();
     return apiCall();
   }
@@ -115,46 +88,42 @@ class RateLimiter {
 // =============================================================================
 const AdminReports: React.FC = () => {
   const { toast } = useToast();
-  
+
   // Create instances for caching and rate limiting
   const cacheRef = useRef(new RequestCache());
   const rateLimiterRef = useRef(new RateLimiter());
-  
+
   // State Variables
   const [organizers, setOrganizers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('all-events');
-  const [selectedCurrency, setSelectedCurrency] = useState<string>('');
-  const [targetCurrencyId, setTargetCurrencyId] = useState<number | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('KES'); // Default to KES
   const [reportFormat, setReportFormat] = useState<string>('csv');
   const [includeCharts, setIncludeCharts] = useState<boolean>(true);
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [recipientEmail, setRecipientEmail] = useState<string>('');
-  
+  const [groupByOrganizer, setGroupByOrganizer] = useState<boolean>(false);
+
   // Loading states
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
-  const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
-  
+
   // Search states
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  
+
   // Cache status
   const [cacheStatus, setCacheStatus] = useState<{
     currencies: boolean;
-    rates: boolean;
     timestamp?: Date;
   }>({
-    currencies: false,
-    rates: false
+    currencies: false
   });
 
   // =============================================================================
@@ -186,12 +155,11 @@ const AdminReports: React.FC = () => {
   const fetchOrganizers = useCallback(async () => {
     const cacheKey = 'organizers';
     const cached = cacheRef.current.get(cacheKey);
-    
+
     if (cached) {
       setOrganizers(cached);
       return;
     }
-
     setIsLoadingOrganizers(true);
     try {
       const response = await rateLimiterRef.current.throttle(async () => {
@@ -199,13 +167,11 @@ const AdminReports: React.FC = () => {
           credentials: 'include'
         });
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch organizers.", errorData);
         return;
       }
-
       const data = await response.json();
       const mappedOrganizers = (data.organizers || []).map(org => ({
         id: org.organizer_id,
@@ -215,7 +181,6 @@ const AdminReports: React.FC = () => {
         event_count: org.event_count,
         metrics: org.metrics
       }));
-
       setOrganizers(mappedOrganizers);
       cacheRef.current.set(cacheKey, mappedOrganizers);
       showSuccess('Organizers loaded successfully');
@@ -228,15 +193,13 @@ const AdminReports: React.FC = () => {
 
   const fetchEvents = useCallback(async (organizerId: string) => {
     if (!organizerId) return;
-
     const cacheKey = `events-${organizerId}`;
     const cached = cacheRef.current.get(cacheKey);
-    
+
     if (cached) {
       setEvents(cached);
       return;
     }
-
     setIsLoadingEvents(true);
     try {
       const response = await rateLimiterRef.current.throttle(async () => {
@@ -244,13 +207,11 @@ const AdminReports: React.FC = () => {
           credentials: 'include'
         });
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch events.", errorData);
         return;
       }
-
       const data = await response.json();
       const mappedEvents = (data.events || []).map(event => ({
         event_id: event.event_id,
@@ -265,7 +226,6 @@ const AdminReports: React.FC = () => {
         status: event.status,
         metrics: event.metrics
       }));
-
       setEvents(mappedEvents);
       cacheRef.current.set(cacheKey, mappedEvents);
       showSuccess('Events loaded successfully');
@@ -280,13 +240,12 @@ const AdminReports: React.FC = () => {
   const fetchCurrencies = useCallback(async () => {
     const cacheKey = 'currencies';
     const cached = cacheRef.current.get(cacheKey);
-    
+
     if (cached) {
       setCurrencies(cached);
       setCacheStatus(prev => ({ ...prev, currencies: true, timestamp: new Date() }));
       return;
     }
-
     setIsLoadingCurrencies(true);
     try {
       const response = await rateLimiterRef.current.throttle(async () => {
@@ -294,16 +253,13 @@ const AdminReports: React.FC = () => {
           credentials: 'include'
         });
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch currencies.", errorData);
         return;
       }
-
       const data = await response.json();
       let currenciesArray = [];
-
       if (data.data && data.data.currencies) {
         currenciesArray = data.data.currencies;
       } else if (Array.isArray(data.data)) {
@@ -315,7 +271,6 @@ const AdminReports: React.FC = () => {
         handleError("Invalid currency data format received from server");
         return;
       }
-
       const validCurrencies = currenciesArray.filter(currency =>
         currency &&
         typeof currency.id !== 'undefined' &&
@@ -323,23 +278,9 @@ const AdminReports: React.FC = () => {
         currency.code &&
         currency.name
       );
-
       setCurrencies(validCurrencies);
       cacheRef.current.set(cacheKey, validCurrencies);
       setCacheStatus(prev => ({ ...prev, currencies: true, timestamp: new Date() }));
-
-      // Set default currency to KES if available
-      if (!selectedCurrency && validCurrencies.length > 0) {
-        const kesCurrency = validCurrencies.find((c) => c.code === 'KES');
-        if (kesCurrency) {
-          setSelectedCurrency(kesCurrency.code);
-          setTargetCurrencyId(kesCurrency.id);
-        } else {
-          // Fallback to first currency
-          setSelectedCurrency(validCurrencies[0].code);
-          setTargetCurrencyId(validCurrencies[0].id);
-        }
-      }
       showSuccess('Currencies loaded successfully');
     } catch (err) {
       console.error("Currency fetch error:", err);
@@ -347,110 +288,83 @@ const AdminReports: React.FC = () => {
     } finally {
       setIsLoadingCurrencies(false);
     }
-  }, [handleError, showSuccess, selectedCurrency]);
-
-  // Debounced currency rate fetch - only fetch when really needed
-  const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
-    // Don't fetch rates if we're using KES as both base and target
-    if (selectedCurrency === 'KES' && baseCurrency === 'KES') {
-      return;
-    }
-
-    const cacheKey = `exchange-rates-${baseCurrency}`;
-    const cached = cacheRef.current.get(cacheKey);
-    
-    if (cached) {
-      setExchangeRates(cached);
-      setCacheStatus(prev => ({ ...prev, rates: true, timestamp: new Date() }));
-      return;
-    }
-
-    setIsLoadingRates(true);
-    try {
-      const response = await rateLimiterRef.current.throttle(async () => {
-        return fetch(`${import.meta.env.VITE_API_URL}/api/currency/convert?amount=1&to_currency=${selectedCurrency}`, {
-          credentials: 'include'
-        });
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        handleError(errorData.message || "Failed to fetch exchange rates.", errorData);
-        return;
-      }
-
-      const data = await response.json();
-      const rateData = {
-        base_currency: baseCurrency,
-        rates: {
-          [selectedCurrency]: data.data?.converted_amount || 1
-        },
-        source: data.data?.source || 'cached',
-        timestamp: new Date().toISOString()
-      };
-
-      setExchangeRates(rateData);
-      cacheRef.current.set(cacheKey, rateData);
-      setCacheStatus(prev => ({ ...prev, rates: true, timestamp: new Date() }));
-      showSuccess(`Exchange rates updated for ${baseCurrency}`);
-    } catch (err) {
-      handleError('Failed to fetch exchange rates', err);
-    } finally {
-      setIsLoadingRates(false);
-    }
-  }, [handleError, showSuccess, selectedCurrency]);
-
-  // Debounced rate fetching - only fetch after user stops changing currency for 1 second
-  const debouncedFetchRates = useDebounce(fetchExchangeRates, 1000);
+  }, [handleError, showSuccess]);
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
       handleError('Please select an organizer');
       return;
     }
-
     setIsDownloading(true);
     try {
       const params = new URLSearchParams();
       params.append('organizer_id', selectedOrganizer);
+
       if (selectedEvent && selectedEvent !== 'all-events') {
         params.append('event_id', selectedEvent);
       }
+
       params.append('format', reportFormat);
-      if (targetCurrencyId) params.append('target_currency_id', targetCurrencyId.toString());
+
+      // Pass currency code directly to the report API
+      if (selectedCurrency) {
+        params.append('currency_code', selectedCurrency);
+      }
+
       params.append('include_charts', includeCharts.toString());
       params.append('use_latest_rates', useLatestRates.toString());
-      params.append('include_email', sendEmail.toString());
-      if (recipientEmail) params.append('recipient_email', recipientEmail);
+      params.append('send_email', sendEmail.toString());
+      params.append('group_by_organizer', groupByOrganizer.toString());
 
+      if (recipientEmail) {
+        params.append('recipient_email', recipientEmail);
+      }
       const response = await rateLimiterRef.current.throttle(async () => {
         return fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
           credentials: 'include'
         });
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
+      // Handle different response types
+      if (reportFormat === 'json') {
+        const data = await response.json();
+        console.log('Report data:', data);
+        showSuccess('Report generated successfully');
+      } else {
+        // Handle file download for CSV/PDF
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `admin_report_${selectedOrganizer}_${new Date().toISOString().split('T')[0]}.${reportFormat}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showSuccess(`${reportFormat.toUpperCase()} report generated and downloaded successfully`);
+      }
     } catch (err) {
       handleError('Failed to generate report', err);
     } finally {
       setIsDownloading(false);
     }
-  }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess]);
+  }, [
+    selectedOrganizer,
+    selectedEvent,
+    reportFormat,
+    selectedCurrency,
+    includeCharts,
+    useLatestRates,
+    sendEmail,
+    recipientEmail,
+    groupByOrganizer,
+    handleError,
+    showSuccess
+  ]);
 
   // =============================================================================
   // EFFECTS WITH OPTIMIZED LOADING
@@ -468,29 +382,12 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedOrganizer, fetchEvents]);
 
-  // Only fetch rates when currency changes and it's not KES
-  useEffect(() => {
-    if (selectedCurrency && selectedCurrency !== 'KES') {
-      debouncedFetchRates('KES');
-    }
-  }, [selectedCurrency, debouncedFetchRates]);
-
-  useEffect(() => {
-    if (selectedCurrency) {
-      const currency = currencies.find(c => c.code === selectedCurrency);
-      if (currency) {
-        setTargetCurrencyId(currency.id);
-      }
-    }
-  }, [selectedCurrency, currencies]);
-
   // Clear cache periodically
   useEffect(() => {
     const interval = setInterval(() => {
       cacheRef.current.clear();
-      setCacheStatus({ currencies: false, rates: false });
+      setCacheStatus({ currencies: false });
     }, 300000); // Clear cache every 5 minutes
-
     return () => clearInterval(interval);
   }, []);
 
@@ -529,16 +426,12 @@ const AdminReports: React.FC = () => {
         <div className="text-center space-y-2 mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Generate and download comprehensive reports for organizers and events</p>
-          
+
           {/* Cache Status Indicator */}
           <div className="flex justify-center gap-4 text-sm">
             <Badge variant={cacheStatus.currencies ? "default" : "secondary"} className="flex items-center gap-1">
               {cacheStatus.currencies ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
               Currencies {cacheStatus.currencies ? 'Cached' : 'Loading'}
-            </Badge>
-            <Badge variant={cacheStatus.rates ? "default" : "secondary"} className="flex items-center gap-1">
-              {cacheStatus.rates ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-              Exchange Rates {cacheStatus.rates ? 'Cached' : 'Loading'}
             </Badge>
             {cacheStatus.timestamp && (
               <Badge variant="outline" className="text-xs">
@@ -556,11 +449,10 @@ const AdminReports: React.FC = () => {
           </div>
         )}
 
-        {/* Rest of your component remains the same but with optimized currency selection */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Organizer and Event Selection */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Organizer Selection - Same as before */}
+            {/* Organizer Selection */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg">
@@ -624,7 +516,7 @@ const AdminReports: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Event Selection - Same as before */}
+            {/* Event Selection */}
             {selectedOrganizer && (
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
                 <CardHeader className="pb-4">
@@ -670,6 +562,7 @@ const AdminReports: React.FC = () => {
               </Card>
             )}
           </div>
+
           {/* Right Column - Report Settings */}
           <div className="lg:col-span-2 space-y-6">
             {/* Report Settings */}
@@ -687,12 +580,12 @@ const AdminReports: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => fetchExchangeRates('USD')}
-                      disabled={isLoadingRates}
+                      onClick={() => fetchCurrencies()}
+                      disabled={isLoadingCurrencies}
                       className="dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 bg-gray-200 text-gray-800 hover:bg-gray-300"
                     >
-                      <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingRates && "animate-spin")} />
-                      Refresh Rates
+                      <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingCurrencies && "animate-spin")} />
+                      Refresh
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -729,22 +622,22 @@ const AdminReports: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    {exchangeRates && selectedCurrency && selectedCurrency !== 'USD' && (
-                      <div className="space-y-2">
-                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Exchange Rate (USD → {selectedCurrency})</Label>
-                        <div className="p-4 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
-                          <div className="text-lg font-semibold dark:text-gray-200 text-gray-800">
-                            1 USD = {exchangeRates.rates[selectedCurrency]?.toFixed(4) || 'N/A'} {selectedCurrency}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Source: {exchangeRates.source}
-                          </div>
+                    <div className="space-y-2">
+                      <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Exchange Rate Info</Label>
+                      <div className="p-4 rounded-lg border dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {selectedCurrency === 'KES' ?
+                            'No conversion needed (base currency)' :
+                            `Conversion will be handled by the report API using latest ${selectedCurrency} rates`
+                          }
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
+
                 <Separator className="dark:bg-gray-700 bg-gray-200" />
+
                 <div className="space-y-4">
                   <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Options</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -770,96 +663,191 @@ const AdminReports: React.FC = () => {
                         className="data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981]"
                       />
                     </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                      <div className="space-y-1">
+                        <Label className="dark:text-gray-200 text-gray-800 font-medium">Group by Organizer</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Group reports by organizer</p>
+                      </div>
+                      <Switch
+                        checked={groupByOrganizer}
+                        onCheckedChange={setGroupByOrganizer}
+                        className="data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981]"
+                      />
+                    </div>
                   </div>
                 </div>
+
                 <Separator className="dark:bg-gray-700 bg-gray-200" />
+
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings</Label>
-                    <Switch
-                      checked={sendEmail}
-                      onCheckedChange={setSendEmail}
-                      className="data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981]"
-                    />
-                  </div>
-                  {sendEmail && (
-                    <div className="space-y-2 p-4 border rounded-lg dark:border-gray-600 border-gray-300">
-                      <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Recipient Email</Label>
-                      <Input
-                        type="email"
-                        placeholder="Enter recipient email (optional)"
-                        value={recipientEmail}
-                        onChange={(e) => setRecipientEmail(e.target.value)}
-                        className={cn(
+                  <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Output Format</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Format</Label>
+                      <Select value={reportFormat} onValueChange={setReportFormat}>
+                        <SelectTrigger className={cn(
                           "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
                           "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981] h-11"
-                        )}
-                      />
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Leave empty to send to your account email
-                      </p>
+                        )}>
+                          <SelectValue placeholder="Select format">
+                            {reportFormat && (
+                              <div className="flex items-center gap-2">
+                                {reportFormat === 'csv' && <FileSpreadsheet className="h-4 w-4" />}
+                                {reportFormat === 'pdf' && <File className="h-4 w-4" />}
+                                {reportFormat === 'json' && <File className="h-4 w-4" />}
+                                {reportFormat.toUpperCase()}
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+                          <SelectItem value="csv" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
+                            <div className="flex items-center gap-2">
+                              <FileSpreadsheet className="h-4 w-4" />
+                              CSV
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="pdf" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
+                            <div className="flex items-center gap-2">
+                              <File className="h-4 w-4" />
+                              PDF
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="json" className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white">
+                            <div className="flex items-center gap-2">
+                              <File className="h-4 w-4" />
+                              JSON
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
+                  </div>
                 </div>
+
                 <Separator className="dark:bg-gray-700 bg-gray-200" />
+
                 <div className="space-y-4">
-                  <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Report Format</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select value={reportFormat} onValueChange={setReportFormat}>
-                      <SelectTrigger className={cn(
-                        "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
-                        "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981] h-11"
-                      )}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-                        <SelectItem
-                          value="csv"
-                          className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
-                        >
-                          <div className="flex items-center gap-2">
-                            <FileSpreadsheet className="h-4 w-4" />
-                            CSV (Spreadsheet)
-                          </div>
-                        </SelectItem>
-                        <SelectItem
-                          value="pdf"
-                          className="dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white"
-                        >
-                          <div className="flex items-center gap-2">
-                            <File className="h-4 w-4" />
-                            PDF (Document)
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <Label className="text-base font-medium dark:text-gray-200 text-gray-800">Email Settings</Label>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                      <div className="space-y-1">
+                        <Label className="dark:text-gray-200 text-gray-800 font-medium">Send via Email</Label>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Email the report to a recipient</p>
+                      </div>
+                      <Switch
+                        checked={sendEmail}
+                        onCheckedChange={setSendEmail}
+                        className="data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981]"
+                      />
+                    </div>
+
+                    {sendEmail && (
+                      <div className="space-y-2">
+                        <Label className="dark:text-gray-200 text-gray-800 text-sm font-medium">Recipient Email</Label>
+                        <Input
+                          type="email"
+                          placeholder="Enter email address"
+                          value={recipientEmail}
+                          onChange={(e) => setRecipientEmail(e.target.value)}
+                          className={cn(
+                            "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                            "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981] h-11"
+                          )}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Generate Report Button */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-              <CardContent className="p-6">
-                <Button
-                  onClick={generateReport}
-                  disabled={!selectedOrganizer || isDownloading}
-                  className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
-                >
-                  {isDownloading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Generating Report...
-                    </>
-                  ) : (
-                    <>
-                      <FileSpreadsheet className="mr-2 h-5 w-5" />
-                      Generate Report
-                    </>
+              <CardContent className="pt-6">
+                <div className="flex flex-col space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold dark:text-gray-200 text-gray-800 mb-2">Generate Report</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {selectedOrganizer ?
+                        `Ready to generate report for ${organizers.find(o => o.id.toString() === selectedOrganizer)?.full_name}` :
+                        'Please select an organizer to generate report'
+                      }
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={generateReport}
+                    disabled={!selectedOrganizer || isDownloading}
+                    className={cn(
+                      "w-full h-12 text-lg font-medium transition-all duration-200",
+                      "bg-[#10b981] hover:bg-[#059669] text-white border-none",
+                      "disabled:opacity-50 disabled:cursor-not-allowed",
+                      "dark:bg-[#10b981] dark:hover:bg-[#059669] dark:text-white"
+                    )}
+                  >
+                    {isDownloading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Generating Report...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-5 w-5" />
+                        Generate {reportFormat.toUpperCase()} Report
+                      </div>
+                    )}
+                  </Button>
+
+                  {selectedCurrency && selectedCurrency !== 'KES' && (
+                    <div className="text-center">
+                      <Badge variant="outline" className="text-xs">
+                        <Globe className="h-3 w-3 mr-1" />
+                        Report will be generated in {selectedCurrency}
+                      </Badge>
+                    </div>
                   )}
-                </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Summary Card */}
+        {selectedOrganizer && (
+          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
+            <CardHeader>
+              <CardTitle className="dark:text-gray-200 text-gray-800">Selected Organizer Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(() => {
+                  const organizer = organizers.find(o => o.id.toString() === selectedOrganizer);
+                  return organizer ? (
+                    <>
+                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                        <div className="text-2xl font-bold text-[#10b981]">{organizer.full_name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Organizer Name</div>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                        <div className="text-2xl font-bold text-[#10b981]">{organizer.email}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Email</div>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                        <div className="text-2xl font-bold text-[#10b981]">{organizer.event_count || 0}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Total Events</div>
+                      </div>
+                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
+                        <div className="text-2xl font-bold text-[#10b981]">{events.length}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Loaded Events</div>
+                      </div>
+                    </>
+                  ) : null;
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
