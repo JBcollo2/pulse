@@ -34,6 +34,8 @@ interface Currency {
   code: string;
   name: string;
   symbol: string;
+  exchange_rate_from_ksh: number;
+  description: string;
 }
 
 // =============================================================================
@@ -628,7 +630,7 @@ const AdminReports: React.FC = () => {
                         <div className="text-sm text-gray-600 dark:text-gray-400">
                           {selectedCurrency === 'KES' ?
                             'No conversion needed (base currency)' :
-                            `Conversion will be handled by the report API using latest ${selectedCurrency} rates`
+                            currencies.find(currency => currency.code === selectedCurrency)?.description || `Conversion will be handled by the report API using latest ${selectedCurrency} rates`
                           }
                         </div>
                       </div>
@@ -780,10 +782,7 @@ const AdminReports: React.FC = () => {
                     onClick={generateReport}
                     disabled={!selectedOrganizer || isDownloading}
                     className={cn(
-                      "w-full h-12 text-lg font-medium transition-all duration-200",
-                      "bg-[#10b981] hover:bg-[#059669] text-white border-none",
-                      "disabled:opacity-50 disabled:cursor-not-allowed",
-                      "dark:bg-[#10b981] dark:hover:bg-[#059669] dark:text-white"
+                      "w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
                     )}
                   >
                     {isDownloading ? (
@@ -812,42 +811,6 @@ const AdminReports: React.FC = () => {
             </Card>
           </div>
         </div>
-
-        {/* Summary Card */}
-        {selectedOrganizer && (
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardHeader>
-              <CardTitle className="dark:text-gray-200 text-gray-800">Selected Organizer Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(() => {
-                  const organizer = organizers.find(o => o.id.toString() === selectedOrganizer);
-                  return organizer ? (
-                    <>
-                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
-                        <div className="text-2xl font-bold text-[#10b981]">{organizer.full_name}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Organizer Name</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
-                        <div className="text-2xl font-bold text-[#10b981]">{organizer.email}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Email</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
-                        <div className="text-2xl font-bold text-[#10b981]">{organizer.event_count || 0}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Total Events</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg dark:border-gray-600 border-gray-300">
-                        <div className="text-2xl font-bold text-[#10b981]">{events.length}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Loaded Events</div>
-                      </div>
-                    </>
-                  ) : null;
-                })()}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
