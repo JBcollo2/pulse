@@ -1,3 +1,4 @@
+
 // =============================================================================
 // IMPORTS
 // =============================================================================
@@ -147,9 +148,17 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
 
-      // Fix: Handle the correct API response structure
-      // The API returns { organizers: [...], total_count: ..., currency_info: {...} }
-      setOrganizers(data.organizers || []);
+      // Fix: Handle the correct API response structure and validate data
+      const organizersData = data.organizers || [];
+      // Filter out any invalid organizers
+      const validOrganizers = organizersData.filter(org => 
+        org && 
+        typeof org.id !== 'undefined' && 
+        org.id !== null && 
+        org.full_name
+      );
+      
+      setOrganizers(validOrganizers);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
@@ -173,12 +182,20 @@ const AdminReports: React.FC = () => {
       const data = await response.json();
       console.log("Fetched Events:", data);
 
-      // Fix: Handle the correct API response structure
-      // The API returns { events: [...], total_count: ..., summary: {...}, currency_info: {...} }
-      setEvents(data.events || []);
+      // Fix: Handle the correct API response structure and validate data
+      const eventsData = data.events || [];
+      // Filter out any invalid events
+      const validEvents = eventsData.filter(event => 
+        event && 
+        typeof event.event_id !== 'undefined' && 
+        event.event_id !== null && 
+        event.event_name
+      );
+      
+      setEvents(validEvents);
       // Log a sample event to verify its structure
-      if (data.events && data.events.length > 0) {
-        console.log("Sample Event:", data.events[0]);
+      if (validEvents.length > 0) {
+        console.log("Sample Event:", validEvents[0]);
       }
       showSuccess('Events loaded successfully');
     } catch (err) {
@@ -202,13 +219,21 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
 
-      // Fix: Handle both possible response structures
-      // Try data.data first, then fallback to data itself if it's an array
+      // Fix: Handle both possible response structures and validate data
       const currenciesArray = data.data || (Array.isArray(data) ? data : []);
-      setCurrencies(currenciesArray);
+      // Filter out any invalid currencies
+      const validCurrencies = currenciesArray.filter(currency => 
+        currency && 
+        typeof currency.id !== 'undefined' && 
+        currency.id !== null && 
+        currency.code && 
+        currency.name
+      );
+      
+      setCurrencies(validCurrencies);
 
-      if (!selectedCurrency && currenciesArray.length > 0) {
-        const usdCurrency = currenciesArray.find((c) => c.code === 'USD');
+      if (!selectedCurrency && validCurrencies.length > 0) {
+        const usdCurrency = validCurrencies.find((c) => c.code === 'USD');
         if (usdCurrency) {
           setSelectedCurrency(usdCurrency.code);
           setTargetCurrencyId(usdCurrency.id);
@@ -316,7 +341,7 @@ const AdminReports: React.FC = () => {
 
   // Filter Functions
   const filteredOrganizers = organizers.filter(org => {
-    // Use full_name as the organizer name
+    if (!org || !org.full_name) return false;
     const name = org.full_name || '';
     const email = org.email || '';
     return name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
@@ -324,27 +349,28 @@ const AdminReports: React.FC = () => {
   });
 
   const filteredEvents = events.filter(event => {
+    if (!event || !event.event_name) return false;
     const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
 
- // Clean and minimal
-if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-  return (
-    <div className="min-h-screen flex items-center justify-center dark:bg-gray-900 bg-gray-50">
-      <div className="text-center">
-        <div className="relative">
-          <Loader2 className="h-16 w-16 animate-spin text-[#10b981] mx-auto" />
-          <div className="absolute inset-0 h-16 w-16 border-4 border-[#10b981]/20 rounded-full animate-ping mx-auto"></div>
+  // Clean and minimal loading state
+  if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900 bg-gray-50">
+        <div className="text-center">
+          <div className="relative">
+            <Loader2 className="h-16 w-16 animate-spin text-[#10b981] mx-auto" />
+            <div className="absolute inset-0 h-16 w-16 border-4 border-[#10b981]/20 rounded-full animate-ping mx-auto"></div>
+          </div>
+          <p className="mt-4 text-xl font-medium text-gray-700 dark:text-gray-300">
+            Loading...
+          </p>
         </div>
-        <p className="mt-4 text-xl font-medium text-gray-700 dark:text-gray-300">
-          Loading...
-        </p>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
