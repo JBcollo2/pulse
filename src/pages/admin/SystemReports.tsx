@@ -1,4 +1,3 @@
-
 // =============================================================================
 // IMPORTS
 // =============================================================================
@@ -148,17 +147,9 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
 
-      // Fix: Handle the correct API response structure and validate data
-      const organizersData = data.organizers || [];
-      // Filter out any invalid organizers
-      const validOrganizers = organizersData.filter(org => 
-        org && 
-        typeof org.id !== 'undefined' && 
-        org.id !== null && 
-        org.full_name
-      );
-      
-      setOrganizers(validOrganizers);
+      // Fix: Handle the correct API response structure
+      // The API returns { organizers: [...], total_count: ..., currency_info: {...} }
+      setOrganizers(data.organizers || []);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
@@ -182,20 +173,12 @@ const AdminReports: React.FC = () => {
       const data = await response.json();
       console.log("Fetched Events:", data);
 
-      // Fix: Handle the correct API response structure and validate data
-      const eventsData = data.events || [];
-      // Filter out any invalid events
-      const validEvents = eventsData.filter(event => 
-        event && 
-        typeof event.event_id !== 'undefined' && 
-        event.event_id !== null && 
-        event.event_name
-      );
-      
-      setEvents(validEvents);
+      // Fix: Handle the correct API response structure
+      // The API returns { events: [...], total_count: ..., summary: {...}, currency_info: {...} }
+      setEvents(data.events || []);
       // Log a sample event to verify its structure
-      if (validEvents.length > 0) {
-        console.log("Sample Event:", validEvents[0]);
+      if (data.events && data.events.length > 0) {
+        console.log("Sample Event:", data.events[0]);
       }
       showSuccess('Events loaded successfully');
     } catch (err) {
@@ -218,18 +201,43 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
+      console.log("Raw currency API response:", data); // Debug log
 
-      // Fix: Handle both possible response structures and validate data
-      const currenciesArray = data.data || (Array.isArray(data) ? data : []);
+      // Fix: Handle the correct API response structure
+      let currenciesArray = [];
+
+      if (data.data && data.data.currencies) {
+        // Handle the expected structure from CurrencyListResource
+        currenciesArray = data.data.currencies;
+      } else if (Array.isArray(data.data)) {
+        // Handle if data.data is directly an array
+        currenciesArray = data.data;
+      } else if (Array.isArray(data)) {
+        // Handle if data is directly an array
+        currenciesArray = data;
+      } else {
+        console.error("Unexpected currency API response structure:", data);
+        handleError("Invalid currency data format received from server");
+        return;
+      }
+
+      // Validate that we have an array
+      if (!Array.isArray(currenciesArray)) {
+        console.error("Currency data is not an array:", currenciesArray);
+        handleError("Invalid currency data format - expected array");
+        return;
+      }
+
       // Filter out any invalid currencies
-      const validCurrencies = currenciesArray.filter(currency => 
-        currency && 
-        typeof currency.id !== 'undefined' && 
-        currency.id !== null && 
-        currency.code && 
+      const validCurrencies = currenciesArray.filter(currency =>
+        currency &&
+        typeof currency.id !== 'undefined' &&
+        currency.id !== null &&
+        currency.code &&
         currency.name
       );
-      
+
+      console.log("Valid currencies processed:", validCurrencies.length);
       setCurrencies(validCurrencies);
 
       if (!selectedCurrency && validCurrencies.length > 0) {
@@ -241,6 +249,7 @@ const AdminReports: React.FC = () => {
       }
       showSuccess('Currencies loaded successfully');
     } catch (err) {
+      console.error("Currency fetch error:", err);
       handleError('Failed to fetch currencies', err);
     } finally {
       setIsLoadingCurrencies(false);
@@ -341,7 +350,7 @@ const AdminReports: React.FC = () => {
 
   // Filter Functions
   const filteredOrganizers = organizers.filter(org => {
-    if (!org || !org.full_name) return false;
+    // Handle both possible field name formats
     const name = org.full_name || '';
     const email = org.email || '';
     return name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
@@ -349,28 +358,21 @@ const AdminReports: React.FC = () => {
   });
 
   const filteredEvents = events.filter(event => {
-    if (!event || !event.event_name) return false;
     const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
 
-  // Clean and minimal loading state
   if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-gray-900 bg-gray-50">
-        <div className="text-center">
-          <div className="relative">
-            <Loader2 className="h-16 w-16 animate-spin text-[#10b981] mx-auto" />
-            <div className="absolute inset-0 h-16 w-16 border-4 border-[#10b981]/20 rounded-full animate-ping mx-auto"></div>
-          </div>
-          <p className="mt-4 text-xl font-medium text-gray-700 dark:text-gray-300">
-            Loading...
-          </p>
-        </div>
+  return (
+    <div className="min-h-[400px] flex items-center justify-center">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
