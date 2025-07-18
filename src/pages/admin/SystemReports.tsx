@@ -39,7 +39,14 @@ interface Organizer {
   full_name: string;
   email: string;
   phone_number: string;
-  registration_date: string;
+  event_count: number;
+  metrics: {
+    total_tickets_sold: number;
+    total_revenue: number;
+    total_attendees: number;
+    currency: string;
+    currency_symbol: string;
+  };
 }
 
 interface Event {
@@ -52,6 +59,8 @@ interface Event {
   tickets_available: number;
   price_per_ticket: number;
   created_at: string;
+  status: string;
+  metrics: any;
 }
 
 interface ExchangeRates {
@@ -146,10 +155,16 @@ const AdminReports: React.FC = () => {
         return;
       }
       const data = await response.json();
-
-      // Fix: Handle the correct API response structure
-      // The API returns { organizers: [...], total_count: ..., currency_info: {...} }
-      setOrganizers(data.organizers || []);
+      // Map the API response structure to match frontend expectations
+      const mappedOrganizers = (data.organizers || []).map(org => ({
+        id: org.organizer_id,           // Map organizer_id to id
+        full_name: org.name,            // Map name to full_name
+        email: org.email,
+        phone_number: org.phone,        // Map phone to phone_number
+        event_count: org.event_count,
+        metrics: org.metrics
+      }));
+      setOrganizers(mappedOrganizers);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
@@ -172,14 +187,21 @@ const AdminReports: React.FC = () => {
       }
       const data = await response.json();
       console.log("Fetched Events:", data);
-
-      // Fix: Handle the correct API response structure
-      // The API returns { events: [...], total_count: ..., summary: {...}, currency_info: {...} }
-      setEvents(data.events || []);
-      // Log a sample event to verify its structure
-      if (data.events && data.events.length > 0) {
-        console.log("Sample Event:", data.events[0]);
-      }
+      // Map the API response structure to match frontend expectations
+      const mappedEvents = (data.events || []).map(event => ({
+        event_id: event.event_id,
+        event_name: event.name,           // Map name to event_name
+        event_date: event.event_date,
+        location: event.location,
+        description: event.description,
+        total_tickets: event.total_tickets,
+        tickets_available: event.tickets_available,
+        price_per_ticket: event.price_per_ticket,
+        created_at: event.created_at,
+        status: event.status,
+        metrics: event.metrics
+      }));
+      setEvents(mappedEvents);
       showSuccess('Events loaded successfully');
     } catch (err) {
       handleError('Failed to fetch events', err);
@@ -350,7 +372,7 @@ const AdminReports: React.FC = () => {
 
   // Filter Functions
   const filteredOrganizers = organizers.filter(org => {
-    // Handle both possible field name formats
+    if (!org || !org.id) return false; // Add null check
     const name = org.full_name || '';
     const email = org.email || '';
     return name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
@@ -358,21 +380,33 @@ const AdminReports: React.FC = () => {
   });
 
   const filteredEvents = events.filter(event => {
+    if (!event || !event.event_id) return false; // Add null check
     const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
 
+  // Skeleton loading mimics the actual content structure
   if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-  return (
-    <div className="min-h-[400px] flex items-center justify-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
+    return (
+      <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 bg-gray-50">
+        <div className="max-w-full px-4 md:px-6 lg:px-8">
+          <Card className="shadow-lg dark:bg-gray-800 bg-white">
+            <CardContent className="p-6">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
@@ -428,7 +462,7 @@ const AdminReports: React.FC = () => {
                         {selectedOrganizer && (
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            {organizers.find(o => o.id.toString() === selectedOrganizer)?.full_name}
+                            {organizers.find(o => o.id && o.id.toString() === selectedOrganizer)?.full_name}
                           </div>
                         )}
                       </SelectValue>
