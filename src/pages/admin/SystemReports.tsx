@@ -316,22 +316,27 @@ const AdminReports: React.FC = () => {
     return nameMatch || locationMatch;
   });
 
-  // Render
-  if (isLoadingCurrencies || isLoadingOrganizers) {
-    return (
-      <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800">
-        <div className="max-w-full px-4 md:px-6 lg:px-8">
-          <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-            <CardContent className="flex flex-col items-center justify-center h-64">
-              <Loader2 className="h-12 w-12 animate-spin text-[#10b981]" />
-              <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading initial data...</p>
-            </CardContent>
-          </Card>
-        </div>
+ // Skeleton loading mimics the actual content structure
+if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
+  return (
+    <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 bg-gray-50">
+      <div className="max-w-full px-4 md:px-6 lg:px-8">
+        <Card className="shadow-lg dark:bg-gray-800 bg-white">
+          <CardContent className="p-6">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    );
-  }
-
+    </div>
+  );
+}
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
       <div className="max-w-full px-4 md:px-6 lg:px-8 space-y-6">
