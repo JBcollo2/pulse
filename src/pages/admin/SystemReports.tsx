@@ -329,27 +329,22 @@ const AdminReports: React.FC = () => {
     return nameMatch || locationMatch;
   });
 
-  // Skeleton loading mimics the actual content structure
-  if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-    return (
-      <div className="min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 bg-gray-50">
-        <div className="max-w-full px-4 md:px-6 lg:px-8">
-          <Card className="shadow-lg dark:bg-gray-800 bg-white">
-            <CardContent className="p-6">
-              <div className="animate-pulse">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-                <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+ // Clean and minimal
+if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
+  return (
+    <div className="min-h-screen flex items-center justify-center dark:bg-gray-900 bg-gray-50">
+      <div className="text-center">
+        <div className="relative">
+          <Loader2 className="h-16 w-16 animate-spin text-[#10b981] mx-auto" />
+          <div className="absolute inset-0 h-16 w-16 border-4 border-[#10b981]/20 rounded-full animate-ping mx-auto"></div>
         </div>
+        <p className="mt-4 text-xl font-medium text-gray-700 dark:text-gray-300">
+          Loading...
+        </p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
