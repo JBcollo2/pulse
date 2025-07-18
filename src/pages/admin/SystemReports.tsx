@@ -1,7 +1,7 @@
 // =============================================================================
-// IMPORTS
+// IMPROVED ADMIN REPORTS WITH REQUEST OPTIMIZATION
 // =============================================================================
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,9 @@ import {
   FileSpreadsheet,
   File,
   Search,
-  Settings
+  Settings,
+  Clock,
+  CheckCircle
 } from "lucide-react";
 
 // =============================================================================
@@ -32,75 +34,95 @@ interface Currency {
   code: string;
   name: string;
   symbol: string;
-}
-
-interface Organizer {
-  id: number;
-  full_name: string;
-  email: string;
-  phone_number: string;
-  event_count: number;
-  metrics: {
-    total_tickets_sold: number;
-    total_revenue: number;
-    total_attendees: number;
-    currency: string;
-    currency_symbol: string;
-  };
-}
-
-interface Event {
-  event_id: number;
-  event_name: string;
-  event_date: string;
-  location: string;
-  description: string;
-  total_tickets: number;
-  tickets_available: number;
-  price_per_ticket: number;
-  created_at: string;
-  status: string;
-  metrics: any;
+  exchange_rate_from_ksh?: number;
+  rate_source?: string;
 }
 
 interface ExchangeRates {
   base_currency: string;
   rates: { [key: string]: number };
   source: string;
+  timestamp?: string;
 }
 
-interface AdminReport {
-  organizer_id: number;
-  organizer_name: string;
-  total_tickets_sold: number;
-  total_revenue: number;
-  total_attendees: number;
-  event_count: number;
-  report_count: number;
-  currency: string;
-  currency_symbol: string;
-  events: Array<{
-    event_id: number;
-    event_name: string;
-    event_date: string;
-    location: string;
-    tickets_sold: number;
-    revenue: number;
-    attendees: number;
-    report_count: number;
-  }>;
+// =============================================================================
+// REQUEST DEBOUNCING & CACHING UTILITIES
+// =============================================================================
+class RequestCache {
+  private cache = new Map();
+  private readonly cacheDuration = 60000; // 1 minute cache
+
+  get(key: string) {
+    const cached = this.cache.get(key);
+    if (cached && (Date.now() - cached.timestamp) < this.cacheDuration) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  set(key: string, data: any) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+// Debounce utility function
+function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  
+  return useCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, [callback, delay]) as T;
+}
+
+// Rate limiter for API calls
+class RateLimiter {
+  private lastCall = 0;
+  private readonly minInterval = 1000; // 1 second minimum between calls
+
+  async throttle<T>(apiCall: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const timeSinceLastCall = now - this.lastCall;
+    
+    if (timeSinceLastCall < this.minInterval) {
+      await new Promise(resolve => 
+        setTimeout(resolve, this.minInterval - timeSinceLastCall)
+      );
+    }
+    
+    this.lastCall = Date.now();
+    return apiCall();
+  }
 }
 
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 const AdminReports: React.FC = () => {
-  // Hooks & Setup
   const { toast } = useToast();
-
+  
+  // Create instances for caching and rate limiting
+  const cacheRef = useRef(new RequestCache());
+  const rateLimiterRef = useRef(new RateLimiter());
+  
   // State Variables
-  const [organizers, setOrganizers] = useState<Organizer[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [organizers, setOrganizers] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [exchangeRates, setExchangeRates] = useState<ExchangeRates | null>(null);
   const [selectedOrganizer, setSelectedOrganizer] = useState<string>('');
@@ -112,16 +134,32 @@ const AdminReports: React.FC = () => {
   const [useLatestRates, setUseLatestRates] = useState<boolean>(true);
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [recipientEmail, setRecipientEmail] = useState<string>('');
+  
+  // Loading states
   const [isLoadingOrganizers, setIsLoadingOrganizers] = useState<boolean>(false);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(false);
   const [isLoadingCurrencies, setIsLoadingCurrencies] = useState<boolean>(false);
   const [isLoadingRates, setIsLoadingRates] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  
+  // Search states
   const [organizerSearch, setOrganizerSearch] = useState<string>('');
   const [eventSearch, setEventSearch] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  
+  // Cache status
+  const [cacheStatus, setCacheStatus] = useState<{
+    currencies: boolean;
+    rates: boolean;
+    timestamp?: Date;
+  }>({
+    currencies: false,
+    rates: false
+  });
 
-  // Helper Functions
+  // =============================================================================
+  // HELPER FUNCTIONS
+  // =============================================================================
   const handleError = useCallback((message: string, err?: any) => {
     console.error('Operation error:', message, err);
     setError(message);
@@ -142,29 +180,44 @@ const AdminReports: React.FC = () => {
     });
   }, [toast]);
 
-  // API Functions
+  // =============================================================================
+  // OPTIMIZED API FUNCTIONS
+  // =============================================================================
   const fetchOrganizers = useCallback(async () => {
+    const cacheKey = 'organizers';
+    const cached = cacheRef.current.get(cacheKey);
+    
+    if (cached) {
+      setOrganizers(cached);
+      return;
+    }
+
     setIsLoadingOrganizers(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
-        credentials: 'include'
+      const response = await rateLimiterRef.current.throttle(async () => {
+        return fetch(`${import.meta.env.VITE_API_URL}/admin/organizers`, {
+          credentials: 'include'
+        });
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch organizers.", errorData);
         return;
       }
+
       const data = await response.json();
-      // Map the API response structure to match frontend expectations
       const mappedOrganizers = (data.organizers || []).map(org => ({
-        id: org.organizer_id,           // Map organizer_id to id
-        full_name: org.name,            // Map name to full_name
+        id: org.organizer_id,
+        full_name: org.name,
         email: org.email,
-        phone_number: org.phone,        // Map phone to phone_number
+        phone_number: org.phone,
         event_count: org.event_count,
         metrics: org.metrics
       }));
+
       setOrganizers(mappedOrganizers);
+      cacheRef.current.set(cacheKey, mappedOrganizers);
       showSuccess('Organizers loaded successfully');
     } catch (err) {
       handleError('Failed to fetch organizers', err);
@@ -175,22 +228,33 @@ const AdminReports: React.FC = () => {
 
   const fetchEvents = useCallback(async (organizerId: string) => {
     if (!organizerId) return;
+
+    const cacheKey = `events-${organizerId}`;
+    const cached = cacheRef.current.get(cacheKey);
+    
+    if (cached) {
+      setEvents(cached);
+      return;
+    }
+
     setIsLoadingEvents(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`, {
-        credentials: 'include'
+      const response = await rateLimiterRef.current.throttle(async () => {
+        return fetch(`${import.meta.env.VITE_API_URL}/admin/organizers/${organizerId}/events`, {
+          credentials: 'include'
+        });
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch events.", errorData);
         return;
       }
+
       const data = await response.json();
-      console.log("Fetched Events:", data);
-      // Map the API response structure to match frontend expectations
       const mappedEvents = (data.events || []).map(event => ({
         event_id: event.event_id,
-        event_name: event.name,           // Map name to event_name
+        event_name: event.name,
         event_date: event.event_date,
         location: event.location,
         description: event.description,
@@ -201,7 +265,9 @@ const AdminReports: React.FC = () => {
         status: event.status,
         metrics: event.metrics
       }));
+
       setEvents(mappedEvents);
+      cacheRef.current.set(cacheKey, mappedEvents);
       showSuccess('Events loaded successfully');
     } catch (err) {
       handleError('Failed to fetch events', err);
@@ -212,30 +278,37 @@ const AdminReports: React.FC = () => {
   }, [handleError, showSuccess]);
 
   const fetchCurrencies = useCallback(async () => {
+    const cacheKey = 'currencies';
+    const cached = cacheRef.current.get(cacheKey);
+    
+    if (cached) {
+      setCurrencies(cached);
+      setCacheStatus(prev => ({ ...prev, currencies: true, timestamp: new Date() }));
+      return;
+    }
+
     setIsLoadingCurrencies(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
-        credentials: 'include'
+      const response = await rateLimiterRef.current.throttle(async () => {
+        return fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+          credentials: 'include'
+        });
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch currencies.", errorData);
         return;
       }
-      const data = await response.json();
-      console.log("Raw currency API response:", data); // Debug log
 
-      // Fix: Handle the correct API response structure
+      const data = await response.json();
       let currenciesArray = [];
 
       if (data.data && data.data.currencies) {
-        // Handle the expected structure from CurrencyListResource
         currenciesArray = data.data.currencies;
       } else if (Array.isArray(data.data)) {
-        // Handle if data.data is directly an array
         currenciesArray = data.data;
       } else if (Array.isArray(data)) {
-        // Handle if data is directly an array
         currenciesArray = data;
       } else {
         console.error("Unexpected currency API response structure:", data);
@@ -243,14 +316,6 @@ const AdminReports: React.FC = () => {
         return;
       }
 
-      // Validate that we have an array
-      if (!Array.isArray(currenciesArray)) {
-        console.error("Currency data is not an array:", currenciesArray);
-        handleError("Invalid currency data format - expected array");
-        return;
-      }
-
-      // Filter out any invalid currencies
       const validCurrencies = currenciesArray.filter(currency =>
         currency &&
         typeof currency.id !== 'undefined' &&
@@ -259,14 +324,20 @@ const AdminReports: React.FC = () => {
         currency.name
       );
 
-      console.log("Valid currencies processed:", validCurrencies.length);
       setCurrencies(validCurrencies);
+      cacheRef.current.set(cacheKey, validCurrencies);
+      setCacheStatus(prev => ({ ...prev, currencies: true, timestamp: new Date() }));
 
+      // Set default currency to KES if available
       if (!selectedCurrency && validCurrencies.length > 0) {
-        const usdCurrency = validCurrencies.find((c) => c.code === 'USD');
-        if (usdCurrency) {
-          setSelectedCurrency(usdCurrency.code);
-          setTargetCurrencyId(usdCurrency.id);
+        const kesCurrency = validCurrencies.find((c) => c.code === 'KES');
+        if (kesCurrency) {
+          setSelectedCurrency(kesCurrency.code);
+          setTargetCurrencyId(kesCurrency.id);
+        } else {
+          // Fallback to first currency
+          setSelectedCurrency(validCurrencies[0].code);
+          setTargetCurrencyId(validCurrencies[0].id);
         }
       }
       showSuccess('Currencies loaded successfully');
@@ -278,32 +349,66 @@ const AdminReports: React.FC = () => {
     }
   }, [handleError, showSuccess, selectedCurrency]);
 
+  // Debounced currency rate fetch - only fetch when really needed
   const fetchExchangeRates = useCallback(async (baseCurrency: string = 'USD') => {
+    // Don't fetch rates if we're using KES as both base and target
+    if (selectedCurrency === 'KES' && baseCurrency === 'KES') {
+      return;
+    }
+
+    const cacheKey = `exchange-rates-${baseCurrency}`;
+    const cached = cacheRef.current.get(cacheKey);
+    
+    if (cached) {
+      setExchangeRates(cached);
+      setCacheStatus(prev => ({ ...prev, rates: true, timestamp: new Date() }));
+      return;
+    }
+
     setIsLoadingRates(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/latest?base=${baseCurrency}`, {
-        credentials: 'include'
+      const response = await rateLimiterRef.current.throttle(async () => {
+        return fetch(`${import.meta.env.VITE_API_URL}/api/currency/convert?amount=1&to_currency=${selectedCurrency}`, {
+          credentials: 'include'
+        });
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to fetch exchange rates.", errorData);
         return;
       }
+
       const data = await response.json();
-      setExchangeRates(data.data);
+      const rateData = {
+        base_currency: baseCurrency,
+        rates: {
+          [selectedCurrency]: data.data?.converted_amount || 1
+        },
+        source: data.data?.source || 'cached',
+        timestamp: new Date().toISOString()
+      };
+
+      setExchangeRates(rateData);
+      cacheRef.current.set(cacheKey, rateData);
+      setCacheStatus(prev => ({ ...prev, rates: true, timestamp: new Date() }));
       showSuccess(`Exchange rates updated for ${baseCurrency}`);
     } catch (err) {
       handleError('Failed to fetch exchange rates', err);
     } finally {
       setIsLoadingRates(false);
     }
-  }, [handleError, showSuccess]);
+  }, [handleError, showSuccess, selectedCurrency]);
+
+  // Debounced rate fetching - only fetch after user stops changing currency for 1 second
+  const debouncedFetchRates = useDebounce(fetchExchangeRates, 1000);
 
   const generateReport = useCallback(async () => {
     if (!selectedOrganizer) {
       handleError('Please select an organizer');
       return;
     }
+
     setIsDownloading(true);
     try {
       const params = new URLSearchParams();
@@ -317,14 +422,19 @@ const AdminReports: React.FC = () => {
       params.append('use_latest_rates', useLatestRates.toString());
       params.append('include_email', sendEmail.toString());
       if (recipientEmail) params.append('recipient_email', recipientEmail);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
-        credentials: 'include'
+
+      const response = await rateLimiterRef.current.throttle(async () => {
+        return fetch(`${import.meta.env.VITE_API_URL}/admin/reports?${params.toString()}`, {
+          credentials: 'include'
+        });
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         handleError(errorData.message || "Failed to generate report.", errorData);
         return;
       }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -342,8 +452,11 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedOrganizer, selectedEvent, reportFormat, targetCurrencyId, includeCharts, useLatestRates, sendEmail, recipientEmail, handleError, showSuccess]);
 
-  // Effects
+  // =============================================================================
+  // EFFECTS WITH OPTIMIZED LOADING
+  // =============================================================================
   useEffect(() => {
+    // Load organizers and currencies on mount
     fetchOrganizers();
     fetchCurrencies();
   }, [fetchOrganizers, fetchCurrencies]);
@@ -355,11 +468,12 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedOrganizer, fetchEvents]);
 
+  // Only fetch rates when currency changes and it's not KES
   useEffect(() => {
-    if (selectedCurrency && selectedCurrency !== 'USD') {
-      fetchExchangeRates('USD');
+    if (selectedCurrency && selectedCurrency !== 'KES') {
+      debouncedFetchRates('KES');
     }
-  }, [selectedCurrency, fetchExchangeRates]);
+  }, [selectedCurrency, debouncedFetchRates]);
 
   useEffect(() => {
     if (selectedCurrency) {
@@ -370,9 +484,19 @@ const AdminReports: React.FC = () => {
     }
   }, [selectedCurrency, currencies]);
 
+  // Clear cache periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      cacheRef.current.clear();
+      setCacheStatus({ currencies: false, rates: false });
+    }, 300000); // Clear cache every 5 minutes
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Filter Functions
   const filteredOrganizers = organizers.filter(org => {
-    if (!org || !org.id) return false; // Add null check
+    if (!org || !org.id) return false;
     const name = org.full_name || '';
     const email = org.email || '';
     return name.toLowerCase().includes(organizerSearch.toLowerCase()) ||
@@ -380,23 +504,23 @@ const AdminReports: React.FC = () => {
   });
 
   const filteredEvents = events.filter(event => {
-    if (!event || !event.event_id) return false; // Add null check
+    if (!event || !event.event_id) return false;
     const nameMatch = event.event_name && event.event_name.toLowerCase().includes(eventSearch.toLowerCase());
     const locationMatch = event.location && event.location.toLowerCase().includes(eventSearch.toLowerCase());
     return nameMatch || locationMatch;
   });
 
- 
+  // Loading screen
   if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-  return (
-    <div className="min-h-[400px] flex items-center justify-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
@@ -405,7 +529,25 @@ const AdminReports: React.FC = () => {
         <div className="text-center space-y-2 mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100">Admin Reports</h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg">Generate and download comprehensive reports for organizers and events</p>
+          
+          {/* Cache Status Indicator */}
+          <div className="flex justify-center gap-4 text-sm">
+            <Badge variant={cacheStatus.currencies ? "default" : "secondary"} className="flex items-center gap-1">
+              {cacheStatus.currencies ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+              Currencies {cacheStatus.currencies ? 'Cached' : 'Loading'}
+            </Badge>
+            <Badge variant={cacheStatus.rates ? "default" : "secondary"} className="flex items-center gap-1">
+              {cacheStatus.rates ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+              Exchange Rates {cacheStatus.rates ? 'Cached' : 'Loading'}
+            </Badge>
+            {cacheStatus.timestamp && (
+              <Badge variant="outline" className="text-xs">
+                Last Updated: {cacheStatus.timestamp.toLocaleTimeString()}
+              </Badge>
+            )}
+          </div>
         </div>
+
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -413,11 +555,12 @@ const AdminReports: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
-        {/* Main Content Grid */}
+
+        {/* Rest of your component remains the same but with optimized currency selection */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Organizer and Event Selection */}
           <div className="lg:col-span-1 space-y-6">
-            {/* Organizer Selection */}
+            {/* Organizer Selection - Same as before */}
             <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg">
@@ -480,7 +623,8 @@ const AdminReports: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Event Selection */}
+
+            {/* Event Selection - Same as before */}
             {selectedOrganizer && (
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
                 <CardHeader className="pb-4">
