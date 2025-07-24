@@ -176,19 +176,27 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
         credentials: 'include'
       });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error("Response is not in JSON format");
+      }
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = data;
         handleOperationError(errorData.message || "Failed to fetch exchange rates.", errorData);
         return;
       }
-      const data = await response.json();
+
       setExchangeRates(data.data);
       toast({
         title: "Exchange Rates Updated",
         description: `Latest rates for ${data.data.base_currency} fetched successfully.`,
         variant: "default",
       });
-    } catch (err: any) {
+    } catch (err) {
       handleOperationError("An unexpected error occurred while fetching exchange rates.", err);
     } finally {
       setIsLoadingRates(false);
@@ -202,30 +210,33 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
         credentials: 'include'
       });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error("Response is not in JSON format");
+      }
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = data;
         handleOperationError(errorData.message || "Failed to fetch currencies.", errorData);
         return;
       }
-      const data = await response.json();
 
-      // Updated to handle the new API response structure
       const currenciesData = data.data?.currencies || [];
       setCurrencies(currenciesData);
-
-      // Also set exchange rates from the same response
       setExchangeRates(data.data);
 
-      // Set KES as default if available, otherwise use first currency
       if (!selectedCurrency && currenciesData.length > 0) {
-        const kesCurrency = currenciesData.find((c: Currency) => c.code === 'KES');
+        const kesCurrency = currenciesData.find((c) => c.code === 'KES');
         if (kesCurrency) {
           setSelectedCurrency('KES');
         } else {
           setSelectedCurrency(currenciesData[0].code);
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       handleOperationError("An unexpected error occurred while fetching currencies.", err);
     } finally {
       setIsLoadingCurrencies(false);
@@ -243,23 +254,30 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (!getAll) params.append('limit', limit.toString());
       params.append('get_all', getAll.toString());
 
-      // Updated URL to match the new API endpoint structure
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
       });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error("Response is not in JSON format");
+      }
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = data;
         handleOperationError(errorData.error || "Failed to fetch reports.", errorData);
         return;
       }
-      const data = await response.json();
+
       setReports(data.reports || []);
       toast({
         title: "Reports Fetched",
         description: `Successfully fetched ${data.reports.length} reports.`,
         variant: "default",
       });
-    } catch (err: any) {
+    } catch (err) {
       handleOperationError("An unexpected error occurred while fetching reports.", err);
     } finally {
       setIsLoadingReport(false);
@@ -315,10 +333,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setGeneratedReport(null);
     setReportData(null);
     try {
-      // Updated request body to match the new API structure
       const requestBody: any = {
         event_id: eventId,
-        target_currency: selectedCurrency, // Changed from target_currency_id to target_currency
+        target_currency: selectedCurrency,
         send_email: sendEmail,
       };
 
@@ -333,7 +350,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         requestBody.recipient_email = recipientEmail;
       }
 
-      // Updated URL to match the new API endpoint structure
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -343,16 +359,21 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         body: JSON.stringify(requestBody),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error("Response is not in JSON format");
+      }
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = data;
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
 
-      const data = await response.json();
       setGeneratedReport(data);
 
-      // Fetch detailed report data after generation (optional - for charts)
       const params = new URLSearchParams();
       if (useSpecificDate) {
         params.append('specific_date', specificDate);
@@ -361,21 +382,24 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         params.append('end_date', endDate);
       }
 
-      // Try to fetch detailed report for charts (this might not be available in your API)
       try {
         const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
         const detailedResponse = await fetch(detailedReportUrl, {
           credentials: 'include'
         });
-        if (detailedResponse.ok) {
-          const detailedData = await detailedResponse.json();
-          setReportData(detailedData);
-          toast({
-            title: "Detailed Report Updated",
-            description: "Chart data has been refreshed.",
-            variant: "default",
-          });
+
+        const detailedContentType = detailedResponse.headers.get('content-type');
+        if (!detailedContentType || !detailedContentType.includes('application/json')) {
+          throw new Error("Response is not in JSON format");
         }
+
+        const detailedData = await detailedResponse.json();
+        setReportData(detailedData);
+        toast({
+          title: "Detailed Report Updated",
+          description: "Chart data has been refreshed.",
+          variant: "default",
+        });
       } catch (detailErr) {
         console.warn("Could not fetch detailed report for charts after generation:", detailErr);
       }
@@ -393,7 +417,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           variant: "default",
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       handleOperationError("An unexpected error occurred while generating the report.", err);
     } finally {
       setIsGeneratingReport(false);
@@ -404,16 +428,23 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const downloadReportFromUrl = useCallback(async (reportId: string, format: string) => {
     setIsLoadingDownload(true);
     try {
-      // Updated URL to match the new API endpoint structure
       const url = `${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}&currency=${selectedCurrency}`;
       const response = await fetch(url, {
         credentials: 'include'
       });
+
       if (!response.ok) {
-        const errorData = await response.json();
+        const contentType = response.headers.get('content-type');
+        let errorData;
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          errorData = { error: `Failed to download report: Server returned non-JSON response` };
+        }
         handleOperationError(errorData.error || `Failed to download report.`, errorData);
         return;
       }
+
       const blob = await response.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -428,7 +459,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         description: `Report downloaded successfully!`,
         variant: "default",
       });
-    } catch (err: any) {
+    } catch (err) {
       handleOperationError(`An unexpected error occurred while downloading the report.`, err);
     } finally {
       setIsLoadingDownload(false);
