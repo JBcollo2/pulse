@@ -173,7 +173,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsLoadingRates(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -199,7 +199,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsLoadingCurrencies(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -208,14 +208,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return;
       }
       const data = await response.json();
-      
+
       // Updated to handle the new API response structure
       const currenciesData = data.data?.currencies || [];
       setCurrencies(currenciesData);
-      
+
       // Also set exchange rates from the same response
       setExchangeRates(data.data);
-      
+
       // Set KES as default if available, otherwise use first currency
       if (!selectedCurrency && currenciesData.length > 0) {
         const kesCurrency = currenciesData.find((c: Currency) => c.code === 'KES');
@@ -242,7 +242,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (specificDate) params.append('specific_date', specificDate);
       if (!getAll) params.append('limit', limit.toString());
       params.append('get_all', getAll.toString());
-      
+
       // Updated URL to match the new API endpoint structure
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
@@ -321,18 +321,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         target_currency: selectedCurrency, // Changed from target_currency_id to target_currency
         send_email: sendEmail,
       };
-      
+
       if (useSpecificDate) {
         requestBody.specific_date = specificDate;
       } else {
         requestBody.start_date = startDate;
         requestBody.end_date = endDate;
       }
-      
+
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-      
+
       // Updated URL to match the new API endpoint structure
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
@@ -342,16 +342,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-      
+
       const data = await response.json();
       setGeneratedReport(data);
-      
+
       // Fetch detailed report data after generation (optional - for charts)
       const params = new URLSearchParams();
       if (useSpecificDate) {
@@ -360,7 +360,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         params.append('start_date', startDate);
         params.append('end_date', endDate);
       }
-      
+
       // Try to fetch detailed report for charts (this might not be available in your API)
       try {
         const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
@@ -379,13 +379,13 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       } catch (detailErr) {
         console.warn("Could not fetch detailed report for charts after generation:", detailErr);
       }
-      
+
       toast({
         title: "Report Generated",
         description: data.message,
         variant: "default",
       });
-      
+
       if (data.email_sent) {
         toast({
           title: "Email Initiated",
@@ -552,7 +552,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     );
   }
 
-  
   // --- Main Component Render ---
   return (
     <div className={cn("min-h-screen p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800")}>
@@ -586,7 +585,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </div>
         </div>
-
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -664,7 +662,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
-
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -727,7 +724,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </div>
                 </div>
               )}
-
               {/* Email Configuration Checkbox */}
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -743,7 +739,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   Send report via email
                 </label>
               </div>
-
               {/* Recipient Email Input - Only visible if sendEmail is checked */}
               {sendEmail && (
                 <div className="space-y-2">
@@ -762,7 +757,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-
             {/* Limit Configuration */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Limit</Label>
@@ -793,7 +787,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-
             {/* Generate and Fetch Report Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
@@ -815,7 +808,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -823,7 +815,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <p>{error}</p>
           </div>
         )}
-
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -884,7 +875,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
-
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="tickets" className="w-full">
@@ -902,7 +892,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
-
             <TabsContent value="tickets" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -948,7 +937,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="revenue" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -997,7 +985,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="attendees" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1043,7 +1030,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             <TabsContent value="payments" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1091,7 +1077,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         )}
-
         {/* Existing Reports Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
