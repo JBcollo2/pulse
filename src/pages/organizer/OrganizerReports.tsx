@@ -173,7 +173,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsLoadingRates(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
 
@@ -207,7 +207,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsLoadingCurrencies(true);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/currency/list`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
 
