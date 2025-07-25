@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from 'recharts';
 import {
   Loader2, AlertCircle, FileText, Download, Mail, PieChart as PieChartIcon,
@@ -585,7 +585,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 style={{ backgroundColor: entry.color }}
               />
               <span className="text-sm dark:text-gray-200 text-gray-800">
-                {entry.name}: {entry.name.toLowerCase().includes('revenue') ? `${currencySymbol}${entry.value.toLocaleString()}` : entry.value}
+                {entry.name}: {entry.name.toLowerCase().includes('revenue') ? `${currencySymbol}${entry.value?.toLocaleString()}` : entry.value}
               </span>
             </div>
           ))}
@@ -615,20 +615,39 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     );
   };
 
-  // New component to display individual report cards with enhanced data
+  // Fixed ReportCard component with proper null checks
   const ReportCard: React.FC<{
     report: Report;
     onDownload: (reportId: string, format: string) => void;
     isDownloading: boolean
   }> = ({ report, onDownload, isDownloading }) => {
+    const totalTicketsSold = report.total_tickets_sold || 0;
+    const numberOfAttendees = report.number_of_attendees || 0;
+    const totalRevenueOriginal = report.total_revenue_original || 0;
+    const totalRevenueConverted = report.total_revenue_converted || 0;
+
     const attendanceRate = report.attendance_rate ||
-      (report.total_tickets_sold > 0 ? (report.number_of_attendees / report.total_tickets_sold) * 100 : 0);
+      (totalTicketsSold > 0 ? (numberOfAttendees / totalTicketsSold) * 100 : 0);
 
     const currencySymbol = report.currency_conversion?.target_currency
       ? currencies.find(c => c.code === report.currency_conversion?.target_currency)?.symbol || ''
       : currencies.find(c => c.code === report.currency_code)?.symbol || '';
-    const displayRevenue = report.total_revenue_converted || report.total_revenue_original;
+
+    const displayRevenue = totalRevenueConverted || totalRevenueOriginal;
     const revenueCurrency = report.currency_conversion?.target_currency || report.currency_code;
+
+    const formatDate = (dateString: string) => {
+      try {
+        return new Date(dateString).toLocaleDateString();
+      } catch {
+        return dateString || 'N/A';
+      }
+    };
+
+    const reportData: Report['report_data'] = report.report_data || {} as Report['report_data'];
+    const eventName = reportData.event_name || 'Unknown Event';
+    const eventDate = reportData.event_date || report.report_date || '';
+    const eventLocation = reportData.event_location || '';
 
     return (
       <Card className={cn("shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
@@ -636,28 +655,26 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-lg dark:text-gray-200 text-gray-800">
-                Report #{report.id}
+                Report #{report.id || 'N/A'}
               </CardTitle>
               <CardDescription className="dark:text-gray-400 text-gray-600">
-                Generated on {new Date(report.created_at).toLocaleDateString()}
+                Generated on {formatDate(report.created_at)}
               </CardDescription>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500 dark:text-gray-400">Event Date</p>
               <p className="text-sm font-medium dark:text-gray-200 text-gray-800">
-                {new Date(report.report_data.event_date).toLocaleDateString()}
+                {formatDate(eventDate)}
               </p>
             </div>
           </div>
         </CardHeader>
-
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Tickets Sold</p>
-              <p className="text-lg font-bold text-[#10b981]">{report.total_tickets_sold.toLocaleString()}</p>
+              <p className="text-lg font-bold text-[#10b981]">{totalTicketsSold.toLocaleString()}</p>
             </div>
-
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
               <p className="text-lg font-bold text-[#10b981]">
@@ -669,31 +686,27 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </p>
               )}
             </div>
-
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendees</p>
-              <p className="text-lg font-bold text-[#10b981]">{report.number_of_attendees.toLocaleString()}</p>
+              <p className="text-lg font-bold text-[#10b981]">{numberOfAttendees.toLocaleString()}</p>
             </div>
-
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendance Rate</p>
               <p className="text-lg font-bold text-[#10b981]">{attendanceRate.toFixed(1)}%</p>
             </div>
           </div>
-
           <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="text-sm dark:text-gray-300 text-gray-700">{report.report_data.event_name}</span>
+              <span className="text-sm dark:text-gray-300 text-gray-700">{eventName}</span>
             </div>
-            {report.report_data.event_location && (
+            {eventLocation && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm dark:text-gray-300 text-gray-700">{report.report_data.event_location}</span>
+                <span className="text-sm dark:text-gray-300 text-gray-700">{eventLocation}</span>
               </div>
             )}
           </div>
-
           <div className="flex gap-2 pt-2">
             <Button
               onClick={() => onDownload(report.id.toString(), 'pdf')}
@@ -715,93 +728,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               CSV
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Updated Reports List Section with enhanced display
-  const ReportsListSection = () => {
-    if (isLoadingReport) {
-      return (
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-          <CardContent className="flex flex-col items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Fetching latest reports...</p>
-          </CardContent>
-        </Card>
-      );
-    }
-    if (reports.length === 0) {
-      return (
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-              <FileText className="h-5 w-5" />
-              Recent Reports
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400 text-gray-600">
-              Latest 5 reports for this event
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center py-8">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400 mb-4">No reports found for this event</p>
-            <Button
-              onClick={fetchReports}
-              variant="outline"
-              className="dark:border-gray-600 dark:text-gray-200"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-          </CardContent>
-        </Card>
-      );
-    }
-    return (
-      <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-                <FileText className="h-5 w-5" />
-                Recent Reports ({reports.length})
-              </CardTitle>
-              <CardDescription className="dark:text-gray-400 text-gray-600">
-                Latest reports for this event (showing most recent first)
-              </CardDescription>
-            </div>
-            <Button
-              onClick={fetchReports}
-              variant="outline"
-              size="sm"
-              disabled={isLoadingReport}
-              className="dark:border-gray-600 dark:text-gray-200"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {reports.map((report) => (
-            <ReportCard
-              key={report.id}
-              report={report}
-              onDownload={downloadReportFromUrl}
-              isDownloading={isLoadingDownload}
-            />
-          ))}
-
-          {reports.length === 5 && (
-            <div className="text-center pt-4 border-t dark:border-gray-700 border-gray-200">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Showing latest 5 reports. Generate a new report to see more recent data.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     );
@@ -1198,7 +1124,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
                           <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
                           <YAxis
-                            tickFormatter={(value) => `${generatedReport?.report_data_summary?.currency_symbol || '$'}${value.toLocaleString()}`}
+                            tickFormatter={(value) => `${generatedReport?.report_data_summary?.currency_symbol || '$'}${value?.toLocaleString()}`}
                             className="dark:text-gray-200 text-gray-800"
                           />
                           <Tooltip content={<CustomTooltip />} />
@@ -1327,7 +1253,81 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
         {/* Reports List Section */}
         <div className="space-y-6">
-          <ReportsListSection />
+          {isLoadingReport ? (
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+              <CardContent className="flex flex-col items-center justify-center h-48">
+                <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Fetching latest reports...</p>
+              </CardContent>
+            </Card>
+          ) : reports.length === 0 ? (
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                  <FileText className="h-5 w-5" />
+                  Recent Reports
+                </CardTitle>
+                <CardDescription className="dark:text-gray-400 text-gray-600">
+                  Latest 5 reports for this event
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 mb-4">No reports found for this event</p>
+                <Button
+                  onClick={fetchReports}
+                  variant="outline"
+                  className="dark:border-gray-600 dark:text-gray-200"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                      <FileText className="h-5 w-5" />
+                      Recent Reports ({reports.length})
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400 text-gray-600">
+                      Latest reports for this event (showing most recent first)
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={fetchReports}
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoadingReport}
+                    className="dark:border-gray-600 dark:text-gray-200"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {reports.map((report) => (
+                  <ReportCard
+                    key={report.id}
+                    report={report}
+                    onDownload={downloadReportFromUrl}
+                    isDownloading={isLoadingDownload}
+                  />
+                ))}
+                {reports.length === 5 && (
+                  <div className="text-center pt-4 border-t dark:border-gray-700 border-gray-200">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      Showing latest 5 reports. Generate a new report to see more recent data.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
