@@ -53,14 +53,44 @@ interface EventReport {
 }
 
 interface Report {
-  report_id: number;
+  id: number;
   event_id: number;
-  total_tickets_sold: number;
-  total_revenue: number;
-  number_of_attendees: number;
+  organizer_id: number;
+  created_at: string;
+  updated_at: string;
   report_date: string;
-  pdf_download_url: string;
-  csv_download_url: string;
+  total_tickets_sold: number;
+  total_revenue_original: number;
+  total_revenue_converted?: number;
+  number_of_attendees: number;
+  attendance_rate?: number;
+  currency_code: string;
+  pdf_download_url?: string;
+  csv_download_url?: string;
+  report_data: {
+    total_tickets_sold: number;
+    total_revenue: number;
+    number_of_attendees: number;
+    attendee_count: number;
+    attendance_rate?: number;
+    event_name: string;
+    event_date: string;
+    event_location: string;
+    tickets_sold_by_type: { [key: string]: number };
+    revenue_by_ticket_type: { [key: string]: number };
+    attendees_by_ticket_type: { [key: string]: number };
+    payment_method_usage: { [key: string]: number };
+    debug_info?: {
+      event_scans_count?: number;
+      [key: string]: any;
+    };
+  };
+  currency_conversion?: {
+    original_currency: string;
+    target_currency: string;
+    conversion_rate: number;
+    conversion_successful: boolean;
+  };
 }
 
 interface ReportGenerationResponse {
@@ -99,6 +129,27 @@ interface ReportGenerationResponse {
   email_sent: boolean;
 }
 
+interface EventReportsResponse {
+  event_id: number;
+  event_name: string;
+  organizer_name: string;
+  total_reports_found: number;
+  reports: Report[];
+  request_info: {
+    requested_by_user_id: number;
+    requested_by_role: string | null;
+    requested_by_organizer_id: number | null;
+    target_currency_id: number | null;
+    request_timestamp: string;
+    report_ids_returned: number[];
+  };
+  currency_conversion?: {
+    target_currency_id: number;
+    target_currency_code: string;
+    conversion_applied: boolean;
+  };
+}
+
 interface OrganizerReportsProps {
   eventId: number;
   eventReport?: EventReport | null;
@@ -125,8 +176,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [recipientEmail, setRecipientEmail] = useState<string>('');
   const [sendEmail, setSendEmail] = useState<boolean>(false);
   const [reports, setReports] = useState<Report[]>([]);
-  const [limit, setLimit] = useState<number>(5);
-  const [getAll, setGetAll] = useState<boolean>(false);
 
   // Loading states
   const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
@@ -176,20 +225,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
-
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
-
       const data = await response.json();
-
       if (!response.ok) {
         const errorData = data;
         handleOperationError(errorData.message || "Failed to fetch exchange rates.", errorData);
         return;
       }
-
       setExchangeRates(data.data);
       toast({
         title: "Exchange Rates Updated",
@@ -210,24 +255,19 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/currency/list`, {
         credentials: 'include'
       });
-
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
-
       const data = await response.json();
-
       if (!response.ok) {
         const errorData = data;
         handleOperationError(errorData.message || "Failed to fetch currencies.", errorData);
         return;
       }
-
       const currenciesData = data.data?.currencies || [];
       setCurrencies(currenciesData);
       setExchangeRates(data.data);
-
       if (!selectedCurrency && currenciesData.length > 0) {
         const kesCurrency = currenciesData.find((c) => c.code === 'KES');
         if (kesCurrency) {
@@ -248,41 +288,55 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setError(null);
     try {
       const params = new URLSearchParams();
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
-      if (specificDate) params.append('specific_date', specificDate);
-      if (!getAll) params.append('limit', limit.toString());
-      params.append('get_all', getAll.toString());
-
+      if (selectedCurrency) {
+        const selectedCurrencyObj = currencies.find(c => c.code === selectedCurrency);
+        if (selectedCurrencyObj) {
+          params.append('target_currency_id', selectedCurrencyObj.id.toString());
+        }
+      }
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`, {
         credentials: 'include'
       });
-
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
-
       const data = await response.json();
-
       if (!response.ok) {
-        const errorData = data;
-        handleOperationError(errorData.error || "Failed to fetch reports.", errorData);
+        handleOperationError(data.error || "Failed to fetch reports.", data);
         return;
       }
+      const reportsData = data.reports || [];
+      setReports(reportsData);
 
-      setReports(data.reports || []);
-      toast({
-        title: "Reports Fetched",
-        description: `Successfully fetched ${data.reports.length} reports.`,
-        variant: "default",
+      if (data.event_name && data.organizer_name) {
+        toast({
+          title: "Reports Fetched",
+          description: `Successfully fetched ${reportsData.length} reports for ${data.event_name} by ${data.organizer_name}.`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Reports Fetched",
+          description: `Successfully fetched ${reportsData.length} reports.`,
+          variant: "default",
+        });
+      }
+      console.log('Event Reports Response:', {
+        event_id: data.event_id,
+        event_name: data.event_name,
+        organizer_name: data.organizer_name,
+        total_reports_found: data.total_reports_found,
+        report_ids: data.request_info?.report_ids_returned || [],
+        currency_conversion: data.currency_conversion,
+        request_info: data.request_info
       });
     } catch (err) {
       handleOperationError("An unexpected error occurred while fetching reports.", err);
     } finally {
       setIsLoadingReport(false);
     }
-  }, [eventId, startDate, endDate, specificDate, limit, getAll, handleOperationError, toast]);
+  }, [eventId, selectedCurrency, currencies, handleOperationError, toast]);
 
   // Fetch currencies on component mount (this also fetches exchange rates)
   useEffect(() => {
@@ -338,18 +392,15 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         target_currency: selectedCurrency,
         send_email: sendEmail,
       };
-
       if (useSpecificDate) {
         requestBody.specific_date = specificDate;
       } else {
         requestBody.start_date = startDate;
         requestBody.end_date = endDate;
       }
-
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -358,22 +409,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
-
       const data = await response.json();
-
       if (!response.ok) {
         const errorData = data;
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-
       setGeneratedReport(data);
-
       const params = new URLSearchParams();
       if (useSpecificDate) {
         params.append('specific_date', specificDate);
@@ -381,18 +427,15 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         params.append('start_date', startDate);
         params.append('end_date', endDate);
       }
-
       try {
         const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
         const detailedResponse = await fetch(detailedReportUrl, {
           credentials: 'include'
         });
-
         const detailedContentType = detailedResponse.headers.get('content-type');
         if (!detailedContentType || !detailedContentType.includes('application/json')) {
           throw new Error("Response is not in JSON format");
         }
-
         const detailedData = await detailedResponse.json();
         setReportData(detailedData);
         toast({
@@ -403,13 +446,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       } catch (detailErr) {
         console.warn("Could not fetch detailed report for charts after generation:", detailErr);
       }
-
       toast({
         title: "Report Generated",
         description: data.message,
         variant: "default",
       });
-
       if (data.email_sent) {
         toast({
           title: "Email Initiated",
@@ -428,23 +469,29 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const downloadReportFromUrl = useCallback(async (reportId: string, format: string) => {
     setIsLoadingDownload(true);
     try {
-      const url = `${import.meta.env.VITE_API_URL}/reports/${reportId}/export?format=${format}&currency=${selectedCurrency}`;
+      const targetCurrencyId = selectedCurrency ?
+        currencies.find(c => c.code === selectedCurrency)?.id : null;
+
+      const params = new URLSearchParams();
+      params.append('format', format);
+      if (targetCurrencyId) {
+        params.append('target_currency_id', targetCurrencyId.toString());
+      }
+      const url = `${import.meta.env.VITE_API_URL}/reports/${reportId}/export?${params.toString()}`;
       const response = await fetch(url, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         const contentType = response.headers.get('content-type');
         let errorData;
         if (contentType && contentType.includes('application/json')) {
           errorData = await response.json();
         } else {
-          errorData = { error: `Failed to download report: Server returned non-JSON response` };
+          errorData = { error: `Failed to download report: Server returned status ${response.status}` };
         }
         handleOperationError(errorData.error || `Failed to download report.`, errorData);
         return;
       }
-
       const blob = await response.blob();
       const urlBlob = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -454,9 +501,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       a.click();
       a.remove();
       window.URL.revokeObjectURL(urlBlob);
+
       toast({
         title: "Download Successful",
-        description: `Report downloaded successfully!`,
+        description: `Report downloaded successfully in ${format.toUpperCase()} format!`,
         variant: "default",
       });
     } catch (err) {
@@ -464,7 +512,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     } finally {
       setIsLoadingDownload(false);
     }
-  }, [handleOperationError, toast, selectedCurrency]);
+  }, [handleOperationError, toast, selectedCurrency, currencies]);
 
   // Updated download handlers for generated reports
   const downloadGeneratedReportPDF = useCallback(() => {
@@ -567,6 +615,198 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     );
   };
 
+  // New component to display individual report cards with enhanced data
+  const ReportCard: React.FC<{
+    report: Report;
+    onDownload: (reportId: string, format: string) => void;
+    isDownloading: boolean
+  }> = ({ report, onDownload, isDownloading }) => {
+    const attendanceRate = report.attendance_rate ||
+      (report.total_tickets_sold > 0 ? (report.number_of_attendees / report.total_tickets_sold) * 100 : 0);
+
+    const currencySymbol = report.currency_conversion?.target_currency
+      ? currencies.find(c => c.code === report.currency_conversion?.target_currency)?.symbol || ''
+      : currencies.find(c => c.code === report.currency_code)?.symbol || '';
+    const displayRevenue = report.total_revenue_converted || report.total_revenue_original;
+    const revenueCurrency = report.currency_conversion?.target_currency || report.currency_code;
+
+    return (
+      <Card className={cn("shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg dark:text-gray-200 text-gray-800">
+                Report #{report.id}
+              </CardTitle>
+              <CardDescription className="dark:text-gray-400 text-gray-600">
+                Generated on {new Date(report.created_at).toLocaleDateString()}
+              </CardDescription>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Event Date</p>
+              <p className="text-sm font-medium dark:text-gray-200 text-gray-800">
+                {new Date(report.report_data.event_date).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Tickets Sold</p>
+              <p className="text-lg font-bold text-[#10b981]">{report.total_tickets_sold.toLocaleString()}</p>
+            </div>
+
+            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
+              <p className="text-lg font-bold text-[#10b981]">
+                {currencySymbol}{displayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              {report.currency_conversion && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Converted to {revenueCurrency}
+                </p>
+              )}
+            </div>
+
+            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendees</p>
+              <p className="text-lg font-bold text-[#10b981]">{report.number_of_attendees.toLocaleString()}</p>
+            </div>
+
+            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendance Rate</p>
+              <p className="text-lg font-bold text-[#10b981]">{attendanceRate.toFixed(1)}%</p>
+            </div>
+          </div>
+
+          <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span className="text-sm dark:text-gray-300 text-gray-700">{report.report_data.event_name}</span>
+            </div>
+            {report.report_data.event_location && (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <span className="text-sm dark:text-gray-300 text-gray-700">{report.report_data.event_location}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              onClick={() => onDownload(report.id.toString(), 'pdf')}
+              disabled={isDownloading}
+              size="sm"
+              className="flex-1 bg-[#10b981] hover:bg-[#059669] text-white"
+            >
+              <Download className="mr-1 h-3 w-3" />
+              PDF
+            </Button>
+            <Button
+              onClick={() => onDownload(report.id.toString(), 'csv')}
+              disabled={isDownloading}
+              size="sm"
+              variant="outline"
+              className="flex-1 dark:border-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Download className="mr-1 h-3 w-3" />
+              CSV
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Updated Reports List Section with enhanced display
+  const ReportsListSection = () => {
+    if (isLoadingReport) {
+      return (
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+          <CardContent className="flex flex-col items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Fetching latest reports...</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    if (reports.length === 0) {
+      return (
+        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+              <FileText className="h-5 w-5" />
+              Recent Reports
+            </CardTitle>
+            <CardDescription className="dark:text-gray-400 text-gray-600">
+              Latest 5 reports for this event
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center py-8">
+            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 mb-4">No reports found for this event</p>
+            <Button
+              onClick={fetchReports}
+              variant="outline"
+              className="dark:border-gray-600 dark:text-gray-200"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
+                <FileText className="h-5 w-5" />
+                Recent Reports ({reports.length})
+              </CardTitle>
+              <CardDescription className="dark:text-gray-400 text-gray-600">
+                Latest reports for this event (showing most recent first)
+              </CardDescription>
+            </div>
+            <Button
+              onClick={fetchReports}
+              variant="outline"
+              size="sm"
+              disabled={isLoadingReport}
+              className="dark:border-gray-600 dark:text-gray-200"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {reports.map((report) => (
+            <ReportCard
+              key={report.id}
+              report={report}
+              onDownload={downloadReportFromUrl}
+              isDownloading={isLoadingDownload}
+            />
+          ))}
+
+          {reports.length === 5 && (
+            <div className="text-center pt-4 border-t dark:border-gray-700 border-gray-200">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                Showing latest 5 reports. Generate a new report to see more recent data.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   // --- Initial Loading Spinner ---
   if (isLoadingCurrencies && !currencies.length) {
     return (
@@ -616,6 +856,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </div>
         </div>
+
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -693,6 +934,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
+
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -788,36 +1030,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-            {/* Limit Configuration */}
-            <div className="space-y-4">
-              <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Limit</Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="getAll"
-                  checked={getAll}
-                  onCheckedChange={(checked: boolean) => setGetAll(checked)}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                />
-                <label
-                  htmlFor="getAll"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
-                >
-                  Get All Reports
-                </label>
-              </div>
-              {!getAll && (
-                <div className="space-y-2">
-                  <Label htmlFor="limit" className="dark:text-gray-200 text-gray-800">Limit</Label>
-                  <Input
-                    id="limit"
-                    type="number"
-                    value={limit}
-                    onChange={(e) => setLimit(Number(e.target.value))}
-                    className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
-                  />
-                </div>
-              )}
-            </div>
+
             {/* Generate and Fetch Report Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
@@ -839,6 +1052,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
+
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -846,6 +1060,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <p>{error}</p>
           </div>
         )}
+
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -906,6 +1121,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
+
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="tickets" className="w-full">
@@ -1108,55 +1324,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         )}
-        {/* Existing Reports Section */}
-        <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800">
-              <FileText className="h-5 w-5" />
-              Previously Generated Reports
-            </CardTitle>
-            <CardDescription className="dark:text-gray-400 text-gray-600">
-              View and download previously generated reports.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {reports.length > 0 ? (
-              <div className="space-y-4">
-                {reports.map((report) => (
-                  <div key={report.report_id} className="flex flex-col sm:flex-row items-center justify-between p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
-                    <div className="text-sm dark:text-gray-200 text-gray-800">
-                      <p className="font-semibold">Report #: {report.report_id}</p>
-                      <p>Date: {new Date(report.report_date).toLocaleDateString()}</p>
-                      <p>Tickets Sold: {report.total_tickets_sold}</p>
-                      <p>Revenue: {report.total_revenue?.toLocaleString()}</p>
-                      <p>Attendees: {report.number_of_attendees}</p>
-                    </div>
-                    <div className="flex gap-2 mt-3 sm:mt-0">
-                      <Button
-                        onClick={() => downloadReportFromUrl(report.report_id.toString(), 'pdf')}
-                        disabled={isLoadingDownload}
-                        className="bg-[#10b981] hover:bg-[#10b981] text-white flex items-center transition-all hover:scale-105"
-                      >
-                        <Download className="mr-2 h-4 w-4" /> PDF
-                      </Button>
-                      <Button
-                        onClick={() => downloadReportFromUrl(report.report_id.toString(), 'csv')}
-                        disabled={isLoadingDownload}
-                        className="bg-[#10b981] hover:bg-[#10b981] text-white flex items-center transition-all hover:scale-105"
-                      >
-                        <Download className="mr-2 h-4 w-4" /> CSV
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center p-6 text-gray-500 dark:text-gray-400">
-                No reports found. Generate a new report above!
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+        {/* Reports List Section */}
+        <div className="space-y-6">
+          <ReportsListSection />
+        </div>
       </div>
     </div>
   );
