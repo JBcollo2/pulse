@@ -36,6 +36,16 @@ interface ExchangeRates {
   failed_currencies?: string[] | null;
 }
 
+interface ReportData {
+  total_revenue: number;
+  event_name?: string;
+  event_date?: string;
+  event_location?: string;
+  currency?: string;
+  currency_symbol?: string;
+  [key: string]: any;
+}
+
 interface EventReport {
   event_id: number;
   event_name: string;
@@ -60,36 +70,19 @@ interface Report {
   updated_at: string;
   report_date: string;
   total_tickets_sold: number;
-  total_revenue_original: number;
-  total_revenue_converted?: number;
+  total_revenue: number;
   number_of_attendees: number;
-  attendance_rate?: number;
   currency_code: string;
-  pdf_download_url?: string;
-  csv_download_url?: string;
-  report_data: {
-    total_tickets_sold: number;
-    total_revenue: number;
-    number_of_attendees: number;
-    attendee_count: number;
-    attendance_rate?: number;
-    event_name: string;
-    event_date: string;
-    event_location: string;
-    tickets_sold_by_type: { [key: string]: number };
-    revenue_by_ticket_type: { [key: string]: number };
-    attendees_by_ticket_type: { [key: string]: number };
-    payment_method_usage: { [key: string]: number };
-    debug_info?: {
-      event_scans_count?: number;
-      [key: string]: any;
-    };
-  };
+  currency?: string;
+  attendance_rate?: number;
+  report_data: ReportData;
   currency_conversion?: {
     original_currency: string;
     target_currency: string;
     conversion_rate: number;
     conversion_successful: boolean;
+    converted_amount?: number;
+    converted_currency?: string;
   };
 }
 
@@ -160,6 +153,28 @@ const CHART_COLORS = [
   '#10b981', '#059669', '#047857', '#065f46',
   '#064e3b', '#1f2937', '#374151', '#4b5563', '#6b7280'
 ];
+
+// --- Helper Functions ---
+const extractRevenueData = (report: Report) => {
+  const revenue = report.report_data?.total_revenue ?? report.total_revenue ?? 0;
+  if (revenue === 0) {
+    console.warn('No revenue found for report:', {
+      reportId: report.id,
+      report_data_revenue: report.report_data?.total_revenue,
+      top_level_revenue: report.total_revenue,
+      available_keys: Object.keys(report)
+    });
+  }
+  return revenue;
+};
+
+const extractCurrencyData = (report: Report, currencies: Currency[]) => {
+  const currencyCode = report.report_data?.currency ?? report.currency ?? report.currency_code ?? 'KES';
+  const currencySymbol = report.report_data?.currency_symbol ??
+                        currencies.find(c => c.code === currencyCode)?.symbol ??
+                        'KSh';
+  return { currencyCode, currencySymbol };
+};
 
 // --- OrganizerReports Component ---
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
@@ -308,7 +323,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       }
       const reportsData = data.reports || [];
       setReports(reportsData);
-
       if (data.event_name && data.organizer_name) {
         toast({
           title: "Reports Fetched",
@@ -322,15 +336,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           variant: "default",
         });
       }
-      console.log('Event Reports Response:', {
-        event_id: data.event_id,
-        event_name: data.event_name,
-        organizer_name: data.organizer_name,
-        total_reports_found: data.total_reports_found,
-        report_ids: data.request_info?.report_ids_returned || [],
-        currency_conversion: data.currency_conversion,
-        request_info: data.request_info
-      });
     } catch (err) {
       handleOperationError("An unexpected error occurred while fetching reports.", err);
     } finally {
@@ -471,7 +476,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     try {
       const targetCurrencyId = selectedCurrency ?
         currencies.find(c => c.code === selectedCurrency)?.id : null;
-
       const params = new URLSearchParams();
       params.append('format', format);
       if (targetCurrencyId) {
@@ -501,7 +505,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       a.click();
       a.remove();
       window.URL.revokeObjectURL(urlBlob);
-
       toast({
         title: "Download Successful",
         description: `Report downloaded successfully in ${format.toUpperCase()} format!`,
@@ -615,47 +618,45 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     );
   };
 
-  // Fixed ReportCard component with proper null checks
+  // --- ReportCard Component ---
   const ReportCard: React.FC<{
     report: Report;
     onDownload: (reportId: string, format: string) => void;
-    isDownloading: boolean
-  }> = ({ report, onDownload, isDownloading }) => {
-    const totalTicketsSold = report.total_tickets_sold || 0;
-    const numberOfAttendees = report.number_of_attendees || 0;
-    const totalRevenueOriginal = report.total_revenue_original || 0;
-    const totalRevenueConverted = report.total_revenue_converted || 0;
-
-    const attendanceRate = report.attendance_rate ||
+    isDownloading: boolean;
+    currencies: Currency[];
+  }> = ({ report, onDownload, isDownloading, currencies }) => {
+    const totalTicketsSold = report.total_tickets_sold ?? 0;
+    const numberOfAttendees = report.number_of_attendees ?? 0;
+    const totalRevenue = extractRevenueData(report);
+    const hasConversion = report.currency_conversion?.conversion_successful ?? false;
+    const convertedRevenue = hasConversion ? report.currency_conversion?.converted_amount ?? 0 : 0;
+    const displayRevenue = hasConversion && convertedRevenue > 0 ? convertedRevenue : totalRevenue;
+    const { currencyCode, currencySymbol } = extractCurrencyData(report, currencies);
+    const displayCurrencyCode = hasConversion ? report.currency_conversion?.converted_currency ?? report.currency_conversion?.target_currency : currencyCode;
+    const displayCurrencySymbol = hasConversion ?
+      currencies.find(c => c.code === displayCurrencyCode)?.symbol ?? currencySymbol :
+      currencySymbol;
+    const attendanceRate = report.attendance_rate ??
       (totalTicketsSold > 0 ? (numberOfAttendees / totalTicketsSold) * 100 : 0);
 
-    const currencySymbol = report.currency_conversion?.target_currency
-      ? currencies.find(c => c.code === report.currency_conversion?.target_currency)?.symbol || ''
-      : currencies.find(c => c.code === report.currency_code)?.symbol || '';
-
-    const displayRevenue = totalRevenueConverted || totalRevenueOriginal;
-    const revenueCurrency = report.currency_conversion?.target_currency || report.currency_code;
-
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString: string | undefined) => {
+      if (!dateString) return 'N/A';
       try {
         return new Date(dateString).toLocaleDateString();
       } catch {
-        return dateString || 'N/A';
+        return dateString;
       }
     };
 
-    const reportData: Report['report_data'] = report.report_data || {} as Report['report_data'];
-    const eventName = reportData.event_name || 'Unknown Event';
-    const eventDate = reportData.event_date || report.report_date || '';
-    const eventLocation = reportData.event_location || '';
+    const { event_name = 'Unknown Event', event_date, event_location } = report.report_data || {};
 
     return (
-      <Card className={cn("shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
+      <Card className="shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-lg dark:text-gray-200 text-gray-800">
-                Report #{report.id || 'N/A'}
+                Report #{report.id}
               </CardTitle>
               <CardDescription className="dark:text-gray-400 text-gray-600">
                 Generated on {formatDate(report.created_at)}
@@ -664,7 +665,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <div className="text-right">
               <p className="text-sm text-gray-500 dark:text-gray-400">Event Date</p>
               <p className="text-sm font-medium dark:text-gray-200 text-gray-800">
-                {formatDate(eventDate)}
+                {formatDate(event_date ?? report.report_date)}
               </p>
             </div>
           </div>
@@ -678,11 +679,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
               <p className="text-lg font-bold text-[#10b981]">
-                {currencySymbol}{displayRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {displayCurrencySymbol}{displayRevenue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
               </p>
-              {report.currency_conversion && (
+              {hasConversion && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Converted to {revenueCurrency}
+                  Converted to {displayCurrencyCode}
                 </p>
               )}
             </div>
@@ -698,12 +702,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="text-sm dark:text-gray-300 text-gray-700">{eventName}</span>
+              <span className="text-sm dark:text-gray-300 text-gray-700">{event_name}</span>
             </div>
-            {eventLocation && (
+            {event_location && (
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm dark:text-gray-300 text-gray-700">{eventLocation}</span>
+                <span className="text-sm dark:text-gray-300 text-gray-700">{event_location}</span>
               </div>
             )}
           </div>
@@ -782,7 +786,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </div>
         </div>
-
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -860,7 +863,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
-
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -923,40 +925,39 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   </div>
                 </div>
               )}
-              {/* Email Configuration Checkbox */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sendEmail"
-                  checked={sendEmail}
-                  onCheckedChange={(checked: boolean) => setSendEmail(checked)}
-                  className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
-                />
-                <label
-                  htmlFor="sendEmail"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
-                >
-                  Send report via email
-                </label>
-              </div>
-              {/* Recipient Email Input - Only visible if sendEmail is checked */}
-              {sendEmail && (
-                <div className="space-y-2">
-                  <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
-                  <Input
-                    id="recipientEmail"
-                    type="email"
-                    placeholder="e.g., reports@example.com"
-                    value={recipientEmail}
-                    onChange={(e) => setRecipientEmail(e.target.value)}
-                    className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Leave blank to send to your account's primary email address.
-                  </p>
-                </div>
-              )}
             </div>
-
+            {/* Email Configuration Checkbox */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="sendEmail"
+                checked={sendEmail}
+                onCheckedChange={(checked: boolean) => setSendEmail(checked)}
+                className="dark:border-gray-500 dark:bg-gray-700 data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:text-white"
+              />
+              <label
+                htmlFor="sendEmail"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200 text-gray-800"
+              >
+                Send report via email
+              </label>
+            </div>
+            {/* Recipient Email Input - Only visible if sendEmail is checked */}
+            {sendEmail && (
+              <div className="space-y-2">
+                <Label htmlFor="recipientEmail" className="dark:text-gray-200 text-gray-800">Recipient Email</Label>
+                <Input
+                  id="recipientEmail"
+                  type="email"
+                  placeholder="e.g., reports@example.com"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Leave blank to send to your account's primary email address.
+                </p>
+              </div>
+            )}
             {/* Generate and Fetch Report Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
@@ -978,7 +979,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -986,7 +986,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <p>{error}</p>
           </div>
         )}
-
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -1047,7 +1046,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
-
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="tickets" className="w-full">
@@ -1250,7 +1248,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         )}
-
         {/* Reports List Section */}
         <div className="space-y-6">
           {isLoadingReport ? (
@@ -1316,6 +1313,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     report={report}
                     onDownload={downloadReportFromUrl}
                     isDownloading={isLoadingDownload}
+                    currencies={currencies}
                   />
                 ))}
                 {reports.length === 5 && (
