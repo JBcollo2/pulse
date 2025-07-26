@@ -225,23 +225,40 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   // Enhanced formatChartData function with better error handling
   const formatChartData = useCallback((data: { [key: string]: number } | undefined, debugLabel = '') => {
     console.log(`${debugLabel} - Chart data input:`, data);
+
     if (!data || typeof data !== 'object') {
       console.warn(`${debugLabel} - Invalid chart data: not an object`);
       return [];
     }
-    const entries = Object.entries(data).filter(([key, value]) => {
-      return key && value != null && !isNaN(Number(value)) && Number(value) > 0;
-    });
-    if (entries.length === 0) {
-      console.warn(`${debugLabel} - No valid chart entries found`);
+
+    // Check if it's an empty object
+    if (Object.keys(data).length === 0) {
+      console.log(`${debugLabel} - Empty chart data object (no keys found)`);
       return [];
     }
-    return entries.map(([label, value], index) => ({
+
+    const entries = Object.entries(data).filter(([key, value]) => {
+      const isValid = key && value != null && !isNaN(Number(value)) && Number(value) > 0;
+      if (!isValid) {
+        console.log(`${debugLabel} - Filtering out invalid entry:`, { key, value });
+      }
+      return isValid;
+    });
+
+    if (entries.length === 0) {
+      console.log(`${debugLabel} - No valid chart entries found after filtering`);
+      return [];
+    }
+
+    const result = entries.map(([label, value], index) => ({
       name: label,
       value: Number(value) || 0,
       color: CHART_COLORS[index % CHART_COLORS.length],
       percentage: 0
     }));
+
+    console.log(`${debugLabel} - Successfully formatted chart data:`, result);
+    return result;
   }, []);
 
   const calculatePercentages = useCallback((data: any[]) => {
@@ -251,11 +268,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
     }));
   }, []);
-
-  // Simplified data source handling for charts
-  const getChartDataSource = useCallback(() => {
-    return reportData || initialReport;
-  }, [reportData, initialReport]);
 
   // --- API Fetching Callbacks ---
   const fetchExchangeRates = useCallback(async () => {
@@ -391,32 +403,32 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
   // Updated memoized chart data with better data sourcing
   const ticketsSoldChartData = useMemo(() => {
-    const dataSource = getChartDataSource();
-    const rawData = dataSource?.tickets_sold_by_type;
+    console.log('Tickets sold - Data source:', reportData);
+    const rawData = reportData?.tickets_sold_by_type;
     console.log('Tickets sold raw data:', rawData);
     return calculatePercentages(formatChartData(rawData, 'Tickets Sold'));
-  }, [getChartDataSource, formatChartData, calculatePercentages]);
+  }, [reportData, formatChartData, calculatePercentages]);
 
   const revenueChartData = useMemo(() => {
-    const dataSource = getChartDataSource();
-    const rawData = dataSource?.revenue_by_ticket_type;
+    console.log('Revenue - Data source:', reportData);
+    const rawData = reportData?.revenue_by_ticket_type;
     console.log('Revenue raw data:', rawData);
     return calculatePercentages(formatChartData(rawData, 'Revenue'));
-  }, [getChartDataSource, formatChartData, calculatePercentages]);
+  }, [reportData, formatChartData, calculatePercentages]);
 
   const paymentMethodChartData = useMemo(() => {
-    const dataSource = getChartDataSource();
-    const rawData = dataSource?.payment_method_usage;
+    console.log('Payment method - Data source:', reportData);
+    const rawData = reportData?.payment_method_usage;
     console.log('Payment method raw data:', rawData);
     return calculatePercentages(formatChartData(rawData, 'Payment Methods'));
-  }, [getChartDataSource, formatChartData, calculatePercentages]);
+  }, [reportData, formatChartData, calculatePercentages]);
 
   const attendeesByTicketTypeData = useMemo(() => {
-    const dataSource = getChartDataSource();
-    const rawData = dataSource?.attendees_by_ticket_type;
+    console.log('Attendees - Data source:', reportData);
+    const rawData = reportData?.attendees_by_ticket_type;
     console.log('Attendees raw data:', rawData);
     return calculatePercentages(formatChartData(rawData, 'Attendees'));
-  }, [getChartDataSource, formatChartData, calculatePercentages]);
+  }, [reportData, formatChartData, calculatePercentages]);
 
   // Enhanced generateReport function
   const generateReport = useCallback(async () => {
