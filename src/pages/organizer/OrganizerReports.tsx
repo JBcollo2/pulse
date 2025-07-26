@@ -60,6 +60,9 @@ interface EventReport {
   payment_method_usage: { [key: string]: number };
   filter_start_date?: string;
   filter_end_date?: string;
+  has_detailed_data?: boolean;
+  currency?: string;
+  currency_symbol?: string;
 }
 
 interface Report {
@@ -120,6 +123,12 @@ interface ReportGenerationResponse {
     csv_url: string;
   };
   email_sent: boolean;
+  chart_data: {
+    tickets_sold_by_type: { [key: string]: number };
+    revenue_by_ticket_type: { [key: string]: number };
+    attendees_by_ticket_type: { [key: string]: number };
+    payment_method_usage: { [key: string]: number };
+  };
 }
 
 interface EventReportsResponse {
@@ -179,12 +188,24 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<string>('bar');
-
   const { toast } = useToast();
 
-  // 1. FIXED: Data extraction and initialization - Add better data handling
+  // Data validation useEffect
   useEffect(() => {
-    // Initialize reportData from initialReport if available
+    if (reportData) {
+      console.log('Report data validation:');
+      console.log('- Has tickets_sold_by_type:', !!reportData.tickets_sold_by_type);
+      console.log('- Has revenue_by_ticket_type:', !!reportData.revenue_by_ticket_type);
+      console.log('- Has attendees_by_ticket_type:', !!reportData.attendees_by_ticket_type);
+      console.log('- Has payment_method_usage:', !!reportData.payment_method_usage);
+      console.log('- Has detailed data flag:', reportData.has_detailed_data);
+      console.log('- Currency:', reportData.currency);
+      console.log('- Total revenue:', reportData.total_revenue);
+    }
+  }, [reportData]);
+
+  // Initialize reportData from initialReport if available
+  useEffect(() => {
     if (initialReport && !reportData) {
       setReportData(initialReport);
     }
@@ -201,23 +222,20 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     });
   }, [toast]);
 
-  // 2. FIXED: Enhanced formatChartData function with better error handling
-  const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
-    console.log('Chart data input:', data); // Debug log
+  // Enhanced formatChartData function with better error handling
+  const formatChartData = useCallback((data: { [key: string]: number } | undefined, debugLabel = '') => {
+    console.log(`${debugLabel} - Chart data input:`, data);
     if (!data || typeof data !== 'object') {
-      console.warn('Invalid chart data:', data);
+      console.warn(`${debugLabel} - Invalid chart data: not an object`);
       return [];
     }
-
     const entries = Object.entries(data).filter(([key, value]) => {
       return key && value != null && !isNaN(Number(value)) && Number(value) > 0;
     });
-
     if (entries.length === 0) {
-      console.warn('No valid chart entries found');
+      console.warn(`${debugLabel} - No valid chart entries found`);
       return [];
     }
-
     return entries.map(([label, value], index) => ({
       name: label,
       value: Number(value) || 0,
@@ -234,12 +252,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }));
   }, []);
 
-  // 3. FIXED: Better data source handling for charts
+  // Simplified data source handling for charts
   const getChartDataSource = useCallback(() => {
-    // Priority: reportData -> initialReport -> null
-    const dataSource = reportData || initialReport;
-    console.log('Chart data source:', dataSource); // Debug log
-    return dataSource;
+    return reportData || initialReport;
   }, [reportData, initialReport]);
 
   // --- API Fetching Callbacks ---
@@ -353,7 +368,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [eventId, selectedCurrency, currencies, handleOperationError, toast]);
 
-  // Fetch currencies on component mount (this also fetches exchange rates)
+  // Fetch currencies on component mount
   useEffect(() => {
     fetchCurrencies();
   }, [fetchCurrencies]);
@@ -374,36 +389,36 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     return start <= end;
   }, [startDate, endDate, specificDate, useSpecificDate, selectedCurrency]);
 
-  // 4. FIXED: Updated memoized chart data with better data sourcing
+  // Updated memoized chart data with better data sourcing
   const ticketsSoldChartData = useMemo(() => {
     const dataSource = getChartDataSource();
     const rawData = dataSource?.tickets_sold_by_type;
-    console.log('Tickets sold raw data:', rawData); // Debug log
-    return calculatePercentages(formatChartData(rawData));
+    console.log('Tickets sold raw data:', rawData);
+    return calculatePercentages(formatChartData(rawData, 'Tickets Sold'));
   }, [getChartDataSource, formatChartData, calculatePercentages]);
 
   const revenueChartData = useMemo(() => {
     const dataSource = getChartDataSource();
     const rawData = dataSource?.revenue_by_ticket_type;
-    console.log('Revenue raw data:', rawData); // Debug log
-    return calculatePercentages(formatChartData(rawData));
+    console.log('Revenue raw data:', rawData);
+    return calculatePercentages(formatChartData(rawData, 'Revenue'));
   }, [getChartDataSource, formatChartData, calculatePercentages]);
 
   const paymentMethodChartData = useMemo(() => {
     const dataSource = getChartDataSource();
     const rawData = dataSource?.payment_method_usage;
-    console.log('Payment method raw data:', rawData); // Debug log
-    return calculatePercentages(formatChartData(rawData));
+    console.log('Payment method raw data:', rawData);
+    return calculatePercentages(formatChartData(rawData, 'Payment Methods'));
   }, [getChartDataSource, formatChartData, calculatePercentages]);
 
   const attendeesByTicketTypeData = useMemo(() => {
     const dataSource = getChartDataSource();
     const rawData = dataSource?.attendees_by_ticket_type;
-    console.log('Attendees raw data:', rawData); // Debug log
-    return calculatePercentages(formatChartData(rawData));
+    console.log('Attendees raw data:', rawData);
+    return calculatePercentages(formatChartData(rawData, 'Attendees'));
   }, [getChartDataSource, formatChartData, calculatePercentages]);
 
-  // 5. FIXED: Enhanced generateReport function - don't clear reportData immediately
+  // Enhanced generateReport function
   const generateReport = useCallback(async () => {
     if (!canGenerateReport) {
       const message = useSpecificDate
@@ -429,8 +444,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
-    // Don't clear reportData immediately - keep existing data while loading
-    // setReportData(null); // Removed this line
 
     try {
       const requestBody: any = {
@@ -447,6 +460,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -455,57 +469,73 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
+
       const data = await response.json();
       if (!response.ok) {
         const errorData = data;
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
+
+      // Create a structured report data object that matches what charts expect
+      if (data.chart_data) {
+        console.log('Chart data received from backend:', data.chart_data);
+
+        const structuredReportData: EventReport = {
+          event_id: eventId,
+          event_name: data.event_name || 'Unknown Event',
+          total_tickets_sold: data.report_data_summary?.total_tickets_sold || 0,
+          number_of_attendees: data.report_data_summary?.number_of_attendees || 0,
+          total_revenue: data.report_data_summary?.total_revenue_converted || 0,
+          event_date: data.report_period.start_date,
+          event_location: data.event_location || 'Unknown Location',
+          tickets_sold_by_type: data.chart_data.tickets_sold_by_type || {},
+          revenue_by_ticket_type: data.chart_data.revenue_by_ticket_type || {},
+          attendees_by_ticket_type: data.chart_data.attendees_by_ticket_type || {},
+          payment_method_usage: data.chart_data.payment_method_usage || {},
+          has_detailed_data: true,
+          currency: data.report_data_summary?.target_currency || 'KES',
+          currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
+        };
+
+        setReportData(structuredReportData);
+        console.log('Structured report data set:', structuredReportData);
+      } else {
+        console.warn('No chart_data in response, using summary data only');
+
+        const fallbackReportData: EventReport = {
+          event_id: eventId,
+          event_name: 'Unknown Event',
+          total_tickets_sold: data.report_data_summary?.total_tickets_sold || 0,
+          number_of_attendees: data.report_data_summary?.number_of_attendees || 0,
+          total_revenue: data.report_data_summary?.total_revenue_converted || 0,
+          event_date: data.report_period.start_date,
+          event_location: 'Unknown Location',
+          tickets_sold_by_type: {},
+          revenue_by_ticket_type: {},
+          attendees_by_ticket_type: {},
+          payment_method_usage: {},
+          has_detailed_data: false,
+          currency: data.report_data_summary?.target_currency || 'KES',
+          currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
+        };
+
+        setReportData(fallbackReportData);
+      }
+
       setGeneratedReport(data);
 
-      // Enhanced detailed report fetching with better error handling
-      const params = new URLSearchParams();
-      if (useSpecificDate) {
-        params.append('specific_date', specificDate);
-      } else {
-        params.append('start_date', startDate);
-        params.append('end_date', endDate);
-      }
-      try {
-        const detailedReportUrl = `${import.meta.env.VITE_API_URL}/reports/events/${eventId}?${params.toString()}`;
-        const detailedResponse = await fetch(detailedReportUrl, {
-          credentials: 'include'
-        });
-        const detailedContentType = detailedResponse.headers.get('content-type');
-        if (!detailedContentType || !detailedContentType.includes('application/json')) {
-          throw new Error("Response is not in JSON format");
-        }
-        const detailedData = await detailedResponse.json();
-        console.log('Detailed report data:', detailedData); // Debug log
-        setReportData(detailedData);
-        toast({
-          title: "Detailed Report Updated",
-          description: "Chart data has been refreshed.",
-          variant: "default",
-        });
-      } catch (detailErr) {
-        console.warn("Could not fetch detailed report for charts after generation:", detailErr);
-        // Don't leave charts empty - keep existing data or show message
-        toast({
-          title: "Chart Data Warning",
-          description: "Report generated but chart data may not reflect latest changes.",
-          variant: "default",
-        });
-      }
       toast({
         title: "Report Generated",
         description: data.message,
         variant: "default",
       });
+
       if (data.email_sent) {
         toast({
           title: "Email Initiated",
@@ -667,6 +697,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       currencySymbol;
     const attendanceRate = report.attendance_rate ??
       (totalTicketsSold > 0 ? (numberOfAttendees / totalTicketsSold) * 100 : 0);
+
     const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       try {
@@ -675,7 +706,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return dateString;
       }
     };
+
     const { event_name = 'Unknown Event', event_date, event_location } = report.report_data || {};
+
     return (
       <Card className="shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
         <CardHeader className="pb-3">
