@@ -676,7 +676,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               onClick={() => onDownload(report.id.toString(), 'pdf')}
               disabled={isDownloading}
               size="sm"
-              className="flex-1 bg-[#10b981] hover:bg-[#059669] text-white"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
             >
               <Download className="mr-1 h-3 w-3" />
               PDF
@@ -685,8 +685,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
               onClick={() => onDownload(report.id.toString(), 'csv')}
               disabled={isDownloading}
               size="sm"
-              variant="outline"
-              className="flex-1 dark:border-gray-600 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
             >
               <Download className="mr-1 h-3 w-3" />
               CSV
