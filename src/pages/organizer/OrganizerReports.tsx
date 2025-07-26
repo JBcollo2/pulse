@@ -1248,36 +1248,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       Latest reports for this event (showing most recent first)
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={fetchReports}
-                      variant="outline"
-                      size="sm"
-                      disabled={isLoadingReport}
-                      className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 dark:text-gray-200 border-gray-600 text-gray-200"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh
-                    </Button>
-                    {/* PDF Download Button */}
-                    <Button
-                      onClick={() => {/* Add your PDF download logic here */}}
-                      className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
-                      size="sm"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      PDF
-                    </Button>
-                    {/* CSV Download Button */}
-                    <Button
-                      onClick={() => {/* Add your CSV download logic here */}}
-                      className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white dark:text-gray-200 hover:scale-105 transition-all flex items-center"
-                      size="sm"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      CSV
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={fetchReports}
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoadingReport}
+                    className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 dark:text-gray-200 border-gray-600 text-gray-200"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
