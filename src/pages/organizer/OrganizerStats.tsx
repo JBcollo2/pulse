@@ -168,7 +168,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl md:text-3xl font-bold text-green-600">${overallSummary.total_revenue_across_all_events}</div>
+              <div className="text-2xl md:text-3xl font-bold text-green-600">KSH {overallSummary.total_revenue_across_all_events}</div>
               <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 15% increase
@@ -237,8 +237,6 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
         )}
       </div>
 
-      ---
-
       {/* --- Event Breakdowns --- */}
       <h2 className="text-2xl font-bold tracking-tight mt-8">Individual Event Performance</h2>
       {overallSummary.events_summary && overallSummary.events_summary.length > 0 ? (
@@ -267,7 +265,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-sm font-medium">Tickets Sold: <span className="font-bold text-blue-500">{event.tickets_sold.toLocaleString()}</span></p>
-                  <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-500">${event.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                  <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-500">KSH {event.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -276,8 +274,6 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
       ) : (
         <p className="text-center py-8 text-gray-600 dark:text-gray-400">No detailed event breakdowns available. Create an event to see more!</p>
       )}
-
-      ---
 
       {/* --- Monthly Trends --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -339,13 +335,13 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
                     <BarChart data={overallSummary.revenue_monthly_trend} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgb(229 231 235)" className="dark:!stroke-gray-700" />
                       <XAxis dataKey="month" tick={{ fill: 'rgb(75 85 99)' }} style={{ fontSize: '12px' }} className="dark:!fill-gray-200" />
-                      <YAxis tickFormatter={(value: number) => `$${value}`} tick={{ fill: 'rgb(75 85 99)' }} className="dark:!fill-gray-200" />
+                      <YAxis tickFormatter={(value: number) => `KSH ${value}`} tick={{ fill: 'rgb(75 85 99)' }} className="dark:!fill-gray-200" />
                       <Tooltip
                         cursor={{ fill: 'rgba(0,0,0,0.1)' }}
                         contentStyle={{ backgroundColor: "hsl(var(--card))", border: '1px solid hsl(var(--border))', borderRadius: "8px", fontSize: '14px', padding: '8px' }}
                         itemStyle={{ color: 'hsl(var(--foreground))' }}
                         labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-                        formatter={(value: number) => [`$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
+                        formatter={(value: number) => [`KSH ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Revenue']}
                       />
                       <Legend wrapperStyle={{ fill: 'rgb(75 85 99)' }} className="dark:!fill-gray-200" />
                       <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" radius={[4, 4, 0, 0]} className="dark:!fill-blue-400" />
@@ -371,7 +367,7 @@ const OrganizerStats: React.FC<OrganizerStatsProps> = ({ overallSummary, isLoadi
             </CardHeader>
             <CardContent>
               <p className="text-sm font-medium">Tickets Sold: <span className="font-bold text-blue-500">{selectedEvent.tickets_sold.toLocaleString()}</span></p>
-              <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-500">${selectedEvent.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+              <p className="text-sm font-medium">Revenue: <span className="font-bold text-green-500">KSH {selectedEvent.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
             </CardContent>
             <CardFooter className="flex justify-end">
               <Button onClick={() => setSelectedEvent(null)} className="bg-blue-500 hover:bg-blue-600 text-white dark:bg-blue-600 dark:hover:bg-blue-700">Close</Button>
