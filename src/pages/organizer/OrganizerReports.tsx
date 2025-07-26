@@ -199,15 +199,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     if (!data || typeof data !== 'object') {
       return [];
     }
-
     if (Object.keys(data).length === 0) {
       return [];
     }
-
     const entries = Object.entries(data).filter(([_, value]) => {
       return value != null && !isNaN(Number(value)) && Number(value) > 0;
     });
-
     return entries.map(([label, value], index) => ({
       name: label,
       value: Number(value) || 0,
@@ -393,7 +390,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
-
     try {
       const requestBody: any = {
         event_id: eventId,
@@ -409,7 +405,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       if (sendEmail && recipientEmail) {
         requestBody.recipient_email = recipientEmail;
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/reports/generate`, {
         method: 'POST',
         headers: {
@@ -418,19 +413,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         credentials: 'include',
         body: JSON.stringify(requestBody),
       });
-
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error("Response is not in JSON format");
       }
-
       const data = await response.json();
       if (!response.ok) {
         const errorData = data;
         handleOperationError(errorData.error || "Failed to generate report.", errorData);
         return;
       }
-
       if (data.chart_data) {
         const structuredReportData: EventReport = {
           event_id: eventId,
@@ -443,7 +435,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           currency: data.report_data_summary?.target_currency || 'KES',
           currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
         };
-
         setReportData(structuredReportData);
       } else {
         const fallbackReportData: EventReport = {
@@ -457,18 +448,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           currency: data.report_data_summary?.target_currency || 'KES',
           currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
         };
-
         setReportData(fallbackReportData);
       }
-
       setGeneratedReport(data);
-
       toast({
         title: "Report Generated",
         description: data.message,
         variant: "default",
       });
-
       if (data.email_sent) {
         toast({
           title: "Email Initiated",
@@ -626,7 +613,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     const displayCurrencySymbol = hasConversion ?
       currencies.find(c => c.code === displayCurrencyCode)?.symbol ?? currencySymbol :
       currencySymbol;
-
     const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       try {
@@ -635,9 +621,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return dateString;
       }
     };
-
     const { event_name = 'Unknown Event', event_date, event_location } = report.report_data || {};
-
     return (
       <Card className="shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
         <CardHeader className="pb-3">
@@ -762,7 +746,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </div>
         </div>
-
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -816,9 +799,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </SelectTrigger>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                       {currencies.map((currency) => (
-                        <SelectItem 
-                          key={currency.id} 
-                          value={currency.code} 
+                        <SelectItem
+                          key={currency.id}
+                          value={currency.code}
                           className={cn(
                             "dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
                             "data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white"
@@ -850,7 +833,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
-
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -926,7 +908,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
-
             {/* Email Configuration Checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -942,7 +923,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 Send report via email
               </label>
             </div>
-
             {/* Recipient Email Input - Only visible if sendEmail is checked */}
             {sendEmail && (
               <div className="space-y-2">
@@ -964,7 +944,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </p>
               </div>
             )}
-
             {/* Generate and Fetch Report Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
@@ -986,7 +965,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -994,7 +972,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <p>{error}</p>
           </div>
         )}
-
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -1045,11 +1022,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
-
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="revenue" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
+            <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
               <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
                 <DollarSign className="h-4 w-4 mr-2" /> Revenue
               </TabsTrigger>
@@ -1057,7 +1033,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
-
             {/* Revenue Tab */}
             <TabsContent value="revenue" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
@@ -1073,38 +1048,57 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </div>
                   ) : revenueChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      {activeChart === 'bar' ? (
-                        <BarChart data={revenueChartData}>
-                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
-                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
-                          <YAxis
-                            tickFormatter={(value) => `${generatedReport?.report_data_summary?.currency_symbol || '$'}${value?.toLocaleString()}`}
-                            className="dark:text-gray-200 text-gray-800"
-                          />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar dataKey="value" fill="#10b981" name="Revenue" />
-                        </BarChart>
-                      ) : (
-                        <PieChart>
-                          <Pie
-                            data={revenueChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={renderPieLabel}
-                          >
-                            {revenueChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      )}
+                      <BarChart
+                        data={revenueChartData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
+                        <defs>
+                          <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#065f46" stopOpacity={0.3} />
+                          </linearGradient>
+                          <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.3" />
+                          </filter>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="2 4"
+                          stroke="#374151"
+                          strokeOpacity={0.3}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9CA3AF', fontSize: 12, fontWeight: 500 }}
+                          dy={10}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9CA3AF', fontSize: 11, fontWeight: 400 }}
+                          tickFormatter={(value) => `${generatedReport?.report_data_summary?.currency_symbol || '$'}${value?.toLocaleString()}`}
+                          width={80}
+                        />
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          cursor={{ fill: 'rgba(16, 185, 129, 0.1)', radius: 4 }}
+                        />
+                        <Legend
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          iconType="rect"
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="url(#revenueGradient)"
+                          name="Revenue"
+                          radius={[8, 8, 0, 0]}
+                          filter="url(#dropShadow)"
+                          animationDuration={1500}
+                          animationBegin={0}
+                        />
+                      </BarChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
@@ -1116,7 +1110,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </CardContent>
               </Card>
             </TabsContent>
-
             {/* Payment Methods Tab */}
             <TabsContent value="payments" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
@@ -1132,35 +1125,69 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </div>
                   ) : paymentMethodChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      {activeChart === 'bar' ? (
-                        <BarChart data={paymentMethodChartData}>
-                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
-                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
-                          <YAxis className="dark:text-gray-200 text-gray-800" />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar dataKey="value" fill="#10b981" name="Transactions" />
-                        </BarChart>
-                      ) : (
-                        <PieChart>
-                          <Pie
-                            data={paymentMethodChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={renderPieLabel}
-                          >
-                            {paymentMethodChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      )}
+                      <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <defs>
+                          <filter id="pieShadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#000000" floodOpacity="0.25" />
+                          </filter>
+                        </defs>
+                        <Pie
+                          data={paymentMethodChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={90}
+                          innerRadius={30}
+                          paddingAngle={3}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={renderPieLabel}
+                          filter="url(#pieShadow)"
+                          animationBegin={0}
+                          animationDuration={1200}
+                        >
+                          {paymentMethodChartData.map((entry, index) => {
+                            const colors = [
+                              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                              'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                              'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                              'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                              'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                            ];
+                            const solidColors = ['#667eea', '#f5576c', '#4facfe', '#43e97b', '#fa709a', '#a8edea'];
+                            return (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={solidColors[index % solidColors.length]}
+                                stroke="#1F2937"
+                                strokeWidth={2}
+                                style={{
+                                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))',
+                                  transition: 'all 0.3s ease'
+                                }}
+                              />
+                            );
+                          })}
+                        </Pie>
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          wrapperStyle={{
+                            backgroundColor: 'rgba(31, 41, 55, 0.95)',
+                            border: '1px solid #374151',
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.25)'
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{
+                            paddingTop: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}
+                          iconType="circle"
+                        />
+                      </PieChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
@@ -1174,7 +1201,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </TabsContent>
           </Tabs>
         )}
-
         {/* Reports List Section */}
         <div className="space-y-6">
           {isLoadingReport ? (
