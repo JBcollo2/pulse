@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import {
   Loader2, AlertCircle, FileText, Download, Mail, PieChart as PieChartIcon,
-  TrendingUp, Users, DollarSign, Calendar, MapPin, Filter, BarChart3,
+  TrendingUp, DollarSign, Calendar, MapPin, Filter, BarChart3,
   Eye, EyeOff, RefreshCw, Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,18 +49,13 @@ interface ReportData {
 interface EventReport {
   event_id: number;
   event_name: string;
-  total_tickets_sold: number;
-  number_of_attendees: number;
   total_revenue: number;
   event_date: string;
   event_location: string;
-  tickets_sold_by_type: { [key: string]: number };
   revenue_by_ticket_type: { [key: string]: number };
-  attendees_by_ticket_type: { [key: string]: number };
   payment_method_usage: { [key: string]: number };
   filter_start_date?: string;
   filter_end_date?: string;
-  has_detailed_data?: boolean;
   currency?: string;
   currency_symbol?: string;
 }
@@ -72,12 +67,9 @@ interface Report {
   created_at: string;
   updated_at: string;
   report_date: string;
-  total_tickets_sold: number;
   total_revenue: number;
-  number_of_attendees: number;
   currency_code: string;
   currency?: string;
-  attendance_rate?: number;
   report_data: ReportData;
   currency_conversion?: {
     original_currency: string;
@@ -93,10 +85,8 @@ interface ReportGenerationResponse {
   message: string;
   report_id: string;
   report_data_summary: {
-    total_tickets_sold: number;
     total_revenue_original: number;
     total_revenue_converted: number;
-    number_of_attendees: number;
     original_currency: string;
     target_currency: string;
     currency_symbol: string;
@@ -124,9 +114,7 @@ interface ReportGenerationResponse {
   };
   email_sent: boolean;
   chart_data: {
-    tickets_sold_by_type: { [key: string]: number };
     revenue_by_ticket_type: { [key: string]: number };
-    attendees_by_ticket_type: { [key: string]: number };
     payment_method_usage: { [key: string]: number };
   };
 }
@@ -190,20 +178,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [activeChart, setActiveChart] = useState<string>('bar');
   const { toast } = useToast();
 
-  // Data validation useEffect
-  useEffect(() => {
-    if (reportData) {
-      console.log('Report data validation:');
-      console.log('- Has tickets_sold_by_type:', !!reportData.tickets_sold_by_type);
-      console.log('- Has revenue_by_ticket_type:', !!reportData.revenue_by_ticket_type);
-      console.log('- Has attendees_by_ticket_type:', !!reportData.attendees_by_ticket_type);
-      console.log('- Has payment_method_usage:', !!reportData.payment_method_usage);
-      console.log('- Has detailed data flag:', reportData.has_detailed_data);
-      console.log('- Currency:', reportData.currency);
-      console.log('- Total revenue:', reportData.total_revenue);
-    }
-  }, [reportData]);
-
   // Initialize reportData from initialReport if available
   useEffect(() => {
     if (initialReport && !reportData) {
@@ -213,7 +187,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
   // --- Helper Callbacks for Error Handling and Data Formatting ---
   const handleOperationError = useCallback((message: string, err?: any) => {
-    console.error('Operation error:', message, err);
     setError(message);
     toast({
       title: "Error",
@@ -222,43 +195,25 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     });
   }, [toast]);
 
-  // Enhanced formatChartData function with better error handling
-  const formatChartData = useCallback((data: { [key: string]: number } | undefined, debugLabel = '') => {
-    console.log(`${debugLabel} - Chart data input:`, data);
-
+  const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
     if (!data || typeof data !== 'object') {
-      console.warn(`${debugLabel} - Invalid chart data: not an object`);
       return [];
     }
 
-    // Check if it's an empty object
     if (Object.keys(data).length === 0) {
-      console.log(`${debugLabel} - Empty chart data object (no keys found)`);
       return [];
     }
 
-    const entries = Object.entries(data).filter(([key, value]) => {
-      const isValid = key && value != null && !isNaN(Number(value)) && Number(value) > 0;
-      if (!isValid) {
-        console.log(`${debugLabel} - Filtering out invalid entry:`, { key, value });
-      }
-      return isValid;
+    const entries = Object.entries(data).filter(([_, value]) => {
+      return value != null && !isNaN(Number(value)) && Number(value) > 0;
     });
 
-    if (entries.length === 0) {
-      console.log(`${debugLabel} - No valid chart entries found after filtering`);
-      return [];
-    }
-
-    const result = entries.map(([label, value], index) => ({
+    return entries.map(([label, value], index) => ({
       name: label,
       value: Number(value) || 0,
       color: CHART_COLORS[index % CHART_COLORS.length],
       percentage: 0
     }));
-
-    console.log(`${debugLabel} - Successfully formatted chart data:`, result);
-    return result;
   }, []);
 
   const calculatePercentages = useCallback((data: any[]) => {
@@ -402,32 +357,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   }, [startDate, endDate, specificDate, useSpecificDate, selectedCurrency]);
 
   // Updated memoized chart data with better data sourcing
-  const ticketsSoldChartData = useMemo(() => {
-    console.log('Tickets sold - Data source:', reportData);
-    const rawData = reportData?.tickets_sold_by_type;
-    console.log('Tickets sold raw data:', rawData);
-    return calculatePercentages(formatChartData(rawData, 'Tickets Sold'));
-  }, [reportData, formatChartData, calculatePercentages]);
-
   const revenueChartData = useMemo(() => {
-    console.log('Revenue - Data source:', reportData);
     const rawData = reportData?.revenue_by_ticket_type;
-    console.log('Revenue raw data:', rawData);
-    return calculatePercentages(formatChartData(rawData, 'Revenue'));
+    return calculatePercentages(formatChartData(rawData));
   }, [reportData, formatChartData, calculatePercentages]);
 
   const paymentMethodChartData = useMemo(() => {
-    console.log('Payment method - Data source:', reportData);
     const rawData = reportData?.payment_method_usage;
-    console.log('Payment method raw data:', rawData);
-    return calculatePercentages(formatChartData(rawData, 'Payment Methods'));
-  }, [reportData, formatChartData, calculatePercentages]);
-
-  const attendeesByTicketTypeData = useMemo(() => {
-    console.log('Attendees - Data source:', reportData);
-    const rawData = reportData?.attendees_by_ticket_type;
-    console.log('Attendees raw data:', rawData);
-    return calculatePercentages(formatChartData(rawData, 'Attendees'));
+    return calculatePercentages(formatChartData(rawData));
   }, [reportData, formatChartData, calculatePercentages]);
 
   // Enhanced generateReport function
@@ -494,45 +431,29 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return;
       }
 
-      // Create a structured report data object that matches what charts expect
       if (data.chart_data) {
-        console.log('Chart data received from backend:', data.chart_data);
-
         const structuredReportData: EventReport = {
           event_id: eventId,
           event_name: data.event_name || 'Unknown Event',
-          total_tickets_sold: data.report_data_summary?.total_tickets_sold || 0,
-          number_of_attendees: data.report_data_summary?.number_of_attendees || 0,
           total_revenue: data.report_data_summary?.total_revenue_converted || 0,
           event_date: data.report_period.start_date,
           event_location: data.event_location || 'Unknown Location',
-          tickets_sold_by_type: data.chart_data.tickets_sold_by_type || {},
           revenue_by_ticket_type: data.chart_data.revenue_by_ticket_type || {},
-          attendees_by_ticket_type: data.chart_data.attendees_by_ticket_type || {},
           payment_method_usage: data.chart_data.payment_method_usage || {},
-          has_detailed_data: true,
           currency: data.report_data_summary?.target_currency || 'KES',
           currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
         };
 
         setReportData(structuredReportData);
-        console.log('Structured report data set:', structuredReportData);
       } else {
-        console.warn('No chart_data in response, using summary data only');
-
         const fallbackReportData: EventReport = {
           event_id: eventId,
           event_name: 'Unknown Event',
-          total_tickets_sold: data.report_data_summary?.total_tickets_sold || 0,
-          number_of_attendees: data.report_data_summary?.number_of_attendees || 0,
           total_revenue: data.report_data_summary?.total_revenue_converted || 0,
           event_date: data.report_period.start_date,
           event_location: 'Unknown Location',
-          tickets_sold_by_type: {},
           revenue_by_ticket_type: {},
-          attendees_by_ticket_type: {},
           payment_method_usage: {},
-          has_detailed_data: false,
           currency: data.report_data_summary?.target_currency || 'KES',
           currency_symbol: data.report_data_summary?.currency_symbol || 'KSh',
         };
@@ -696,8 +617,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     isDownloading: boolean;
     currencies: Currency[];
   }> = ({ report, onDownload, isDownloading, currencies }) => {
-    const totalTicketsSold = report.total_tickets_sold ?? 0;
-    const numberOfAttendees = report.number_of_attendees ?? 0;
     const totalRevenue = extractRevenueData(report);
     const hasConversion = report.currency_conversion?.conversion_successful ?? false;
     const convertedRevenue = hasConversion ? report.currency_conversion?.converted_amount ?? 0 : 0;
@@ -707,8 +626,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     const displayCurrencySymbol = hasConversion ?
       currencies.find(c => c.code === displayCurrencyCode)?.symbol ?? currencySymbol :
       currencySymbol;
-    const attendanceRate = report.attendance_rate ??
-      (totalTicketsSold > 0 ? (numberOfAttendees / totalTicketsSold) * 100 : 0);
 
     const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
@@ -744,10 +661,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Tickets Sold</p>
-              <p className="text-lg font-bold text-[#10b981]">{totalTicketsSold.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
               <p className="text-lg font-bold text-[#10b981]">
                 {displayCurrencySymbol}{displayRevenue.toLocaleString(undefined, {
@@ -760,14 +673,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   Converted to {displayCurrencyCode}
                 </p>
               )}
-            </div>
-            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendees</p>
-              <p className="text-lg font-bold text-[#10b981]">{numberOfAttendees.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Attendance Rate</p>
-              <p className="text-lg font-bold text-[#10b981]">{attendanceRate.toFixed(1)}%</p>
             </div>
           </div>
           <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
@@ -889,7 +794,10 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <div className="space-y-2">
                   <Label htmlFor="currency" className="dark:text-gray-200 text-gray-800">Target Currency</Label>
                   <Select value={selectedCurrency} onValueChange={setSelectedCurrency} disabled={isLoadingCurrencies}>
-                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800">
+                    <SelectTrigger className={cn(
+                      "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                      "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981] h-11"
+                    )}>
                       <SelectValue placeholder="Select currency">
                         {isLoadingCurrencies ? (
                           <div className="flex items-center gap-2">
@@ -908,7 +816,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     </SelectTrigger>
                     <SelectContent className="dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
                       {currencies.map((currency) => (
-                        <SelectItem key={currency.id} value={currency.code} className="focus:bg-blue-100 dark:focus:bg-[#10b981]/20 dark:focus:text-[#10b981] data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white">
+                        <SelectItem 
+                          key={currency.id} 
+                          value={currency.code} 
+                          className={cn(
+                            "dark:text-gray-200 text-gray-800 focus:bg-[#10b981] focus:text-white hover:bg-[#10b981] hover:text-white",
+                            "data-[state=checked]:bg-[#10b981] data-[state=checked]:text-white dark:data-[state=checked]:bg-[#10b981] dark:data-[state=checked]:text-white"
+                          )}
+                        >
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{currency.symbol}</span>
                             <span className="font-medium">{currency.code}</span>
@@ -969,7 +884,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     type="date"
                     value={specificDate}
                     onChange={(e) => setSpecificDate(e.target.value)}
-                    className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                    className={cn(
+                      "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                      "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]",
+                      "hover:border-[#10b981] dark:hover:border-[#10b981] transition-all w-full h-11"
+                    )}
                   />
                 </div>
               ) : (
@@ -981,7 +900,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                      className={cn(
+                        "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                        "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]",
+                        "hover:border-[#10b981] dark:hover:border-[#10b981] transition-all w-full h-11"
+                      )}
                       max={endDate || undefined}
                     />
                   </div>
@@ -992,7 +915,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                      className={cn(
+                        "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                        "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]",
+                        "hover:border-[#10b981] dark:hover:border-[#10b981] transition-all w-full h-11"
+                      )}
                       min={startDate || undefined}
                     />
                   </div>
@@ -1026,7 +953,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   placeholder="e.g., reports@example.com"
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
-                  className={cn("transition-all hover:border-[#10b981] focus:border-[#10b981] w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800")}
+                  className={cn(
+                    "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-200 border-gray-300 text-gray-800",
+                    "focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] dark:focus:ring-[#10b981] dark:focus:border-[#10b981]",
+                    "hover:border-[#10b981] dark:hover:border-[#10b981] transition-all w-full h-11"
+                  )}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Leave blank to send to your account's primary email address.
@@ -1078,11 +1009,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Tickets Sold</p>
-                <p className="text-2xl font-bold text-[#10b981]">{generatedReport.report_data_summary.total_tickets_sold}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">For {generatedReport.report_period.is_single_day ? generatedReport.report_period.start_date : `${generatedReport.report_period.start_date} to ${generatedReport.report_period.end_date}`}</p>
-              </div>
-              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Converted Revenue</p>
                 <p className="text-2xl font-bold text-[#10b981]">
                   {generatedReport.report_data_summary.currency_symbol} {generatedReport.report_data_summary.total_revenue_converted?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1095,11 +1021,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   {currencies.find(c => c.code === generatedReport.currency_conversion.original_currency)?.symbol || ''} {generatedReport.report_data_summary.total_revenue_original?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">In original event currency</p>
-              </div>
-              <div className="p-4 border rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-100 border-gray-300">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Attendees</p>
-                <p className="text-2xl font-bold text-[#10b981]">{generatedReport.report_data_summary.number_of_attendees}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{generatedReport.report_data_summary.total_tickets_sold > 0 ? ((generatedReport.report_data_summary.number_of_attendees / generatedReport.report_data_summary.total_tickets_sold) * 100).toFixed(1) : 'NaN'}% attendance rate</p>
               </div>
             </CardContent>
             <CardContent>
@@ -1127,77 +1048,15 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
 
         {/* Detailed Report Visualizations */}
         {reportData && (
-          <Tabs defaultValue="tickets" className="w-full">
+          <Tabs defaultValue="revenue" className="w-full">
             <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
-              <TabsTrigger value="tickets" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
-                <FileText className="h-4 w-4 mr-2" /> Tickets Sold
-              </TabsTrigger>
               <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
                 <DollarSign className="h-4 w-4 mr-2" /> Revenue
-              </TabsTrigger>
-              <TabsTrigger value="attendees" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
-                <Users className="h-4 w-4 mr-2" /> Attendees
               </TabsTrigger>
               <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
-
-            {/* Tickets Sold Tab */}
-            <TabsContent value="tickets" className="mt-4">
-              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-                <CardHeader>
-                  <CardTitle className="dark:text-gray-200 text-gray-800">Tickets Sold by Type</CardTitle>
-                  <CardDescription className="dark:text-gray-400 text-gray-600">Distribution of tickets sold across different ticket categories.</CardDescription>
-                </CardHeader>
-                <CardContent className="h-80">
-                  {isGeneratingReport && !ticketsSoldChartData.length ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
-                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
-                    </div>
-                  ) : ticketsSoldChartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      {activeChart === 'bar' ? (
-                        <BarChart data={ticketsSoldChartData}>
-                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
-                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
-                          <YAxis className="dark:text-gray-200 text-gray-800" />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar dataKey="value" fill="#10b981" name="Tickets Sold" />
-                        </BarChart>
-                      ) : (
-                        <PieChart>
-                          <Pie
-                            data={ticketsSoldChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={renderPieLabel}
-                          >
-                            {ticketsSoldChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      )}
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                      <FileText className="h-8 w-8 mb-2" />
-                      <p>No ticket sales data available for this period.</p>
-                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             {/* Revenue Tab */}
             <TabsContent value="revenue" className="mt-4">
@@ -1251,62 +1110,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
                       <FileText className="h-8 w-8 mb-2" />
                       <p>No revenue data available for this period.</p>
-                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Attendees Tab */}
-            <TabsContent value="attendees" className="mt-4">
-              <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
-                <CardHeader>
-                  <CardTitle className="dark:text-gray-200 text-gray-800">Attendees by Ticket Type</CardTitle>
-                  <CardDescription className="dark:text-gray-400 text-gray-600">Number of attendees based on their ticket types.</CardDescription>
-                </CardHeader>
-                <CardContent className="h-80">
-                  {isGeneratingReport && !attendeesByTicketTypeData.length ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
-                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
-                    </div>
-                  ) : attendeesByTicketTypeData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      {activeChart === 'bar' ? (
-                        <BarChart data={attendeesByTicketTypeData}>
-                          <CartesianGrid strokeDasharray="3 3" className="dark:stroke-gray-700 stroke-gray-300" />
-                          <XAxis dataKey="name" className="dark:text-gray-200 text-gray-800" />
-                          <YAxis className="dark:text-gray-200 text-gray-800" />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar dataKey="value" fill="#10b981" name="Attendees" />
-                        </BarChart>
-                      ) : (
-                        <PieChart>
-                          <Pie
-                            data={attendeesByTicketTypeData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={80}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={renderPieLabel}
-                          >
-                            {attendeesByTicketTypeData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                        </PieChart>
-                      )}
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                      <FileText className="h-8 w-8 mb-2" />
-                      <p>No attendee data available for this period.</p>
                       <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
                     </div>
                   )}
