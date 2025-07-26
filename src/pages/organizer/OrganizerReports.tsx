@@ -154,28 +154,6 @@ const CHART_COLORS = [
   '#064e3b', '#1f2937', '#374151', '#4b5563', '#6b7280'
 ];
 
-// --- Helper Functions ---
-const extractRevenueData = (report: Report) => {
-  const revenue = report.report_data?.total_revenue ?? report.total_revenue ?? 0;
-  if (revenue === 0) {
-    console.warn('No revenue found for report:', {
-      reportId: report.id,
-      report_data_revenue: report.report_data?.total_revenue,
-      top_level_revenue: report.total_revenue,
-      available_keys: Object.keys(report)
-    });
-  }
-  return revenue;
-};
-
-const extractCurrencyData = (report: Report, currencies: Currency[]) => {
-  const currencyCode = report.report_data?.currency ?? report.currency ?? report.currency_code ?? 'KES';
-  const currencySymbol = report.report_data?.currency_symbol ??
-                        currencies.find(c => c.code === currencyCode)?.symbol ??
-                        'KSh';
-  return { currencyCode, currencySymbol };
-};
-
 // --- OrganizerReports Component ---
 const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventReport: initialReport = null }) => {
   // --- State Variables ---
@@ -201,7 +179,16 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
   const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<string>('bar');
+
   const { toast } = useToast();
+
+  // 1. FIXED: Data extraction and initialization - Add better data handling
+  useEffect(() => {
+    // Initialize reportData from initialReport if available
+    if (initialReport && !reportData) {
+      setReportData(initialReport);
+    }
+  }, [initialReport, reportData]);
 
   // --- Helper Callbacks for Error Handling and Data Formatting ---
   const handleOperationError = useCallback((message: string, err?: any) => {
@@ -214,11 +201,26 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     });
   }, [toast]);
 
+  // 2. FIXED: Enhanced formatChartData function with better error handling
   const formatChartData = useCallback((data: { [key: string]: number } | undefined) => {
-    if (!data) return [];
-    return Object.entries(data).map(([label, value], index) => ({
+    console.log('Chart data input:', data); // Debug log
+    if (!data || typeof data !== 'object') {
+      console.warn('Invalid chart data:', data);
+      return [];
+    }
+
+    const entries = Object.entries(data).filter(([key, value]) => {
+      return key && value != null && !isNaN(Number(value)) && Number(value) > 0;
+    });
+
+    if (entries.length === 0) {
+      console.warn('No valid chart entries found');
+      return [];
+    }
+
+    return entries.map(([label, value], index) => ({
       name: label,
-      value,
+      value: Number(value) || 0,
       color: CHART_COLORS[index % CHART_COLORS.length],
       percentage: 0
     }));
@@ -231,6 +233,14 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0
     }));
   }, []);
+
+  // 3. FIXED: Better data source handling for charts
+  const getChartDataSource = useCallback(() => {
+    // Priority: reportData -> initialReport -> null
+    const dataSource = reportData || initialReport;
+    console.log('Chart data source:', dataSource); // Debug log
+    return dataSource;
+  }, [reportData, initialReport]);
 
   // --- API Fetching Callbacks ---
   const fetchExchangeRates = useCallback(async () => {
@@ -364,7 +374,36 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     return start <= end;
   }, [startDate, endDate, specificDate, useSpecificDate, selectedCurrency]);
 
-  // --- Updated Report Generation Function ---
+  // 4. FIXED: Updated memoized chart data with better data sourcing
+  const ticketsSoldChartData = useMemo(() => {
+    const dataSource = getChartDataSource();
+    const rawData = dataSource?.tickets_sold_by_type;
+    console.log('Tickets sold raw data:', rawData); // Debug log
+    return calculatePercentages(formatChartData(rawData));
+  }, [getChartDataSource, formatChartData, calculatePercentages]);
+
+  const revenueChartData = useMemo(() => {
+    const dataSource = getChartDataSource();
+    const rawData = dataSource?.revenue_by_ticket_type;
+    console.log('Revenue raw data:', rawData); // Debug log
+    return calculatePercentages(formatChartData(rawData));
+  }, [getChartDataSource, formatChartData, calculatePercentages]);
+
+  const paymentMethodChartData = useMemo(() => {
+    const dataSource = getChartDataSource();
+    const rawData = dataSource?.payment_method_usage;
+    console.log('Payment method raw data:', rawData); // Debug log
+    return calculatePercentages(formatChartData(rawData));
+  }, [getChartDataSource, formatChartData, calculatePercentages]);
+
+  const attendeesByTicketTypeData = useMemo(() => {
+    const dataSource = getChartDataSource();
+    const rawData = dataSource?.attendees_by_ticket_type;
+    console.log('Attendees raw data:', rawData); // Debug log
+    return calculatePercentages(formatChartData(rawData));
+  }, [getChartDataSource, formatChartData, calculatePercentages]);
+
+  // 5. FIXED: Enhanced generateReport function - don't clear reportData immediately
   const generateReport = useCallback(async () => {
     if (!canGenerateReport) {
       const message = useSpecificDate
@@ -390,7 +429,9 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     setIsGeneratingReport(true);
     setError(null);
     setGeneratedReport(null);
-    setReportData(null);
+    // Don't clear reportData immediately - keep existing data while loading
+    // setReportData(null); // Removed this line
+
     try {
       const requestBody: any = {
         event_id: eventId,
@@ -425,6 +466,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return;
       }
       setGeneratedReport(data);
+
+      // Enhanced detailed report fetching with better error handling
       const params = new URLSearchParams();
       if (useSpecificDate) {
         params.append('specific_date', specificDate);
@@ -442,6 +485,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
           throw new Error("Response is not in JSON format");
         }
         const detailedData = await detailedResponse.json();
+        console.log('Detailed report data:', detailedData); // Debug log
         setReportData(detailedData);
         toast({
           title: "Detailed Report Updated",
@@ -450,6 +494,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         });
       } catch (detailErr) {
         console.warn("Could not fetch detailed report for charts after generation:", detailErr);
+        // Don't leave charts empty - keep existing data or show message
+        toast({
+          title: "Chart Data Warning",
+          description: "Report generated but chart data may not reflect latest changes.",
+          variant: "default",
+        });
       }
       toast({
         title: "Report Generated",
@@ -550,27 +600,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
     }
   }, [generatedReport, toast]);
 
-  // --- Memoized Chart Data ---
-  const ticketsSoldChartData = useMemo(() =>
-    calculatePercentages(formatChartData(reportData?.tickets_sold_by_type)),
-    [reportData, formatChartData, calculatePercentages]
-  );
-
-  const revenueChartData = useMemo(() =>
-    calculatePercentages(formatChartData(reportData?.revenue_by_ticket_type)),
-    [reportData, formatChartData, calculatePercentages]
-  );
-
-  const paymentMethodChartData = useMemo(() =>
-    calculatePercentages(formatChartData(reportData?.payment_method_usage)),
-    [reportData, formatChartData, calculatePercentages]
-  );
-
-  const attendeesByTicketTypeData = useMemo(() =>
-    calculatePercentages(formatChartData(reportData?.attendees_by_ticket_type)),
-    [reportData, formatChartData, calculatePercentages]
-  );
-
   // --- Recharts Custom Components ---
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -638,7 +667,6 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       currencySymbol;
     const attendanceRate = report.attendance_rate ??
       (totalTicketsSold > 0 ? (numberOfAttendees / totalTicketsSold) * 100 : 0);
-
     const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       try {
@@ -647,9 +675,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         return dateString;
       }
     };
-
     const { event_name = 'Unknown Event', event_date, event_location } = report.report_data || {};
-
     return (
       <Card className="shadow-md hover:shadow-lg transition-all dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
         <CardHeader className="pb-3">
@@ -786,6 +812,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             )}
           </div>
         </div>
+
         {/* Report Configuration Section */}
         <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
           <CardHeader>
@@ -863,6 +890,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 )}
               </div>
             </div>
+
             {/* Date Preference */}
             <div className="space-y-4">
               <Label className="dark:text-gray-200 text-gray-800 text-base font-medium">Report Period</Label>
@@ -926,6 +954,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </div>
               )}
             </div>
+
             {/* Email Configuration Checkbox */}
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -941,6 +970,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 Send report via email
               </label>
             </div>
+
             {/* Recipient Email Input - Only visible if sendEmail is checked */}
             {sendEmail && (
               <div className="space-y-2">
@@ -958,6 +988,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 </p>
               </div>
             )}
+
             {/* Generate and Fetch Report Buttons */}
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <Button
@@ -979,6 +1010,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </CardContent>
         </Card>
+
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -986,6 +1018,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             <p>{error}</p>
           </div>
         )}
+
         {/* Generated Report Summary */}
         {generatedReport && (
           <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 bg-white border-gray-200")}>
@@ -1046,6 +1079,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </CardContent>
           </Card>
         )}
+
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="tickets" className="w-full">
@@ -1063,6 +1097,8 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
+
+            {/* Tickets Sold Tab */}
             <TabsContent value="tickets" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1070,7 +1106,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <CardDescription className="dark:text-gray-400 text-gray-600">Distribution of tickets sold across different ticket categories.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80">
-                  {ticketsSoldChartData.length > 0 ? (
+                  {isGeneratingReport && !ticketsSoldChartData.length ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
+                    </div>
+                  ) : ticketsSoldChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={ticketsSoldChartData}>
@@ -1103,11 +1144,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No ticket sales data available for this period.</div>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No ticket sales data available for this period.</p>
+                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Revenue Tab */}
             <TabsContent value="revenue" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1115,7 +1162,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <CardDescription className="dark:text-gray-400 text-gray-600">Breakdown of revenue generated from each ticket category.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80">
-                  {revenueChartData.length > 0 ? (
+                  {isGeneratingReport && !revenueChartData.length ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
+                    </div>
+                  ) : revenueChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={revenueChartData}>
@@ -1151,11 +1203,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No revenue data available for this period.</div>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No revenue data available for this period.</p>
+                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Attendees Tab */}
             <TabsContent value="attendees" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1163,7 +1221,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <CardDescription className="dark:text-gray-400 text-gray-600">Number of attendees based on their ticket types.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80">
-                  {attendeesByTicketTypeData.length > 0 ? (
+                  {isGeneratingReport && !attendeesByTicketTypeData.length ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
+                    </div>
+                  ) : attendeesByTicketTypeData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={attendeesByTicketTypeData}>
@@ -1196,11 +1259,17 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No attendee data available for this period.</div>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No attendee data available for this period.</p>
+                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Payment Methods Tab */}
             <TabsContent value="payments" className="mt-4">
               <Card className={cn("shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200")}>
                 <CardHeader>
@@ -1208,7 +1277,12 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                   <CardDescription className="dark:text-gray-400 text-gray-600">Overview of how attendees paid for their tickets.</CardDescription>
                 </CardHeader>
                 <CardContent className="h-80">
-                  {paymentMethodChartData.length > 0 ? (
+                  {isGeneratingReport && !paymentMethodChartData.length ? (
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="h-8 w-8 animate-spin text-[#10b981]" />
+                      <span className="ml-2 text-gray-500 dark:text-gray-400">Loading chart data...</span>
+                    </div>
+                  ) : paymentMethodChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       {activeChart === 'bar' ? (
                         <BarChart data={paymentMethodChartData}>
@@ -1241,13 +1315,18 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       )}
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">No payment method data available for this period.</div>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                      <FileText className="h-8 w-8 mb-2" />
+                      <p>No payment method data available for this period.</p>
+                      <p className="text-sm mt-1">Try generating a report or selecting a different date range.</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
         )}
+
         {/* Reports List Section */}
         <div className="space-y-6">
           {isLoadingReport ? (
@@ -1330,6 +1409,28 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
       </div>
     </div>
   );
+};
+
+// Helper functions
+const extractRevenueData = (report: Report) => {
+  const revenue = report.report_data?.total_revenue ?? report.total_revenue ?? 0;
+  if (revenue === 0) {
+    console.warn('No revenue found for report:', {
+      reportId: report.id,
+      report_data_revenue: report.report_data?.total_revenue,
+      top_level_revenue: report.total_revenue,
+      available_keys: Object.keys(report)
+    });
+  }
+  return revenue;
+};
+
+const extractCurrencyData = (report: Report, currencies: Currency[]) => {
+  const currencyCode = report.report_data?.currency ?? report.currency ?? report.currency_code ?? 'KES';
+  const currencySymbol = report.report_data?.currency_symbol ??
+                        currencies.find(c => c.code === currencyCode)?.symbol ??
+                        'KSh';
+  return { currencyCode, currencySymbol };
 };
 
 export default OrganizerReports;
