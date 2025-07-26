@@ -1025,11 +1025,11 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
         {/* Detailed Report Visualizations */}
         {reportData && (
           <Tabs defaultValue="revenue" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300">
-              <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+            <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1">
+              <TabsTrigger value="revenue" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium">
                 <DollarSign className="h-4 w-4 mr-2" /> Revenue
               </TabsTrigger>
-              <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800">
+              <TabsTrigger value="payments" className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium">
                 <Mail className="h-4 w-4 mr-2" /> Payment Methods
               </TabsTrigger>
             </TabsList>
@@ -1136,35 +1136,33 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          outerRadius={90}
-                          innerRadius={30}
-                          paddingAngle={3}
+                          outerRadius={110}
+                          innerRadius={45}
+                          paddingAngle={6}
                           fill="#8884d8"
                           dataKey="value"
                           label={renderPieLabel}
                           filter="url(#pieShadow)"
                           animationBegin={0}
-                          animationDuration={1200}
+                          animationDuration={1800}
+                          animationEasing="ease-out"
                         >
                           {paymentMethodChartData.map((entry, index) => {
-                            const colors = [
-                              'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                              'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                              'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                              'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                              'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
+                            // Optimized colors for Mpesa (green) and Paystack (blue)
+                            const paymentColors = [
+                              '#00D924', // Mpesa Green
+                              '#0EA5E9'  // Paystack Blue
                             ];
-                            const solidColors = ['#667eea', '#f5576c', '#4facfe', '#43e97b', '#fa709a', '#a8edea'];
                             return (
                               <Cell
                                 key={`cell-${index}`}
-                                fill={solidColors[index % solidColors.length]}
+                                fill={paymentColors[index % paymentColors.length]}
                                 stroke="#1F2937"
-                                strokeWidth={2}
+                                strokeWidth={4}
                                 style={{
-                                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))',
-                                  transition: 'all 0.3s ease'
+                                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.25))',
+                                  transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  transformOrigin: 'center'
                                 }}
                               />
                             );
@@ -1173,19 +1171,22 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                         <Tooltip
                           content={<CustomTooltip />}
                           wrapperStyle={{
-                            backgroundColor: 'rgba(31, 41, 55, 0.95)',
-                            border: '1px solid #374151',
-                            borderRadius: '8px',
-                            boxShadow: '0 10px 25px rgba(0,0,0,0.25)'
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            border: '2px solid #10b981',
+                            borderRadius: '12px',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                            backdropFilter: 'blur(10px)'
                           }}
                         />
                         <Legend
                           wrapperStyle={{
-                            paddingTop: '20px',
-                            fontSize: '12px',
-                            fontWeight: '500'
+                            paddingTop: '24px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#E5E7EB'
                           }}
                           iconType="circle"
+                          iconSize={12}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -1227,7 +1228,7 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                 <Button
                   onClick={fetchReports}
                   variant="outline"
-                  className="dark:border-gray-600 dark:text-gray-200"
+                  className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 dark:text-gray-200 border-gray-600 text-gray-200"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh
@@ -1247,16 +1248,36 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
                       Latest reports for this event (showing most recent first)
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={fetchReports}
-                    variant="outline"
-                    size="sm"
-                    disabled={isLoadingReport}
-                    className="dark:border-gray-600 dark:text-gray-200"
-                  >
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={fetchReports}
+                      variant="outline"
+                      size="sm"
+                      disabled={isLoadingReport}
+                      className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 dark:text-gray-200 border-gray-600 text-gray-200"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Refresh
+                    </Button>
+                    {/* PDF Download Button */}
+                    <Button
+                      onClick={() => {/* Add your PDF download logic here */}}
+                      className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
+                      size="sm"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      PDF
+                    </Button>
+                    {/* CSV Download Button */}
+                    <Button
+                      onClick={() => {/* Add your CSV download logic here */}}
+                      className="bg-gray-700 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white dark:text-gray-200 hover:scale-105 transition-all flex items-center"
+                      size="sm"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      CSV
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
