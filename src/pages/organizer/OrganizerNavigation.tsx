@@ -84,18 +84,6 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       badge: null,
     },
     {
-      id: "myTeam",
-      label: "My Team",
-      icon: Users,
-      color: "text-teal-500",
-      description: "Manage your team",
-      badge: null,
-      subItems: [
-        { id: "teamMembers", label: "Team Members", icon: User, color: "text-cyan-500", description: "View all team members", badge: null },
-        { id: "rolesPermissions", label: "Roles & Permissions", icon: Settings, color: "text-indigo-500", description: "Define user roles", badge: null },
-      ],
-    },
-    {
       id: "overallStats",
       label: "Overall Stats",
       icon: BarChart2,
