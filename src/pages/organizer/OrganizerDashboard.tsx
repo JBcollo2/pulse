@@ -274,10 +274,16 @@ const OrganizerDashboard: React.FC = () => {
   const headerContent = getHeaderContent();
 
   const stats = [
-    { title: "Total Events", value: organizerEvents.length.toString(), icon: LayoutDashboard, color: "bg-blue-100 dark:bg-blue-900" },
-    { title: "Upcoming Events", value: upcomingEvents.length.toString(), icon: CalendarDays, color: "bg-green-100 dark:bg-green-900" },
-    { title: "Past Events", value: pastEvents.length.toString(), icon: CheckCircle, color: "bg-purple-100 dark:bg-purple-900" },
-    { title: "Total Revenue", value: overallSummary?.total_revenue_across_all_events || '$0', icon: DollarSign, color: "bg-amber-100 dark:bg-amber-900" },
+    { title: "Total Events", value: organizerEvents.length.toString(), icon: LayoutDashboard, color: "relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden" },
+    { title: "Upcoming Events", value: upcomingEvents.length.toString(), icon: CalendarDays, color: "relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden" },
+    { title: "Past Events", value: pastEvents.length.toString(), icon: CheckCircle, color: "relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden" },
+    { 
+  title: "Total Revenue", 
+  value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
+  icon: () => <span className="text-xl font-bold">Ksh</span>, 
+  color: "relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden" 
+}
+
   ];
 
   return (
