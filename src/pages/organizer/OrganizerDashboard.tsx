@@ -275,16 +275,31 @@ const OrganizerDashboard: React.FC = () => {
 
 
   const stats = [
-    { title: "Total Events", value: organizerEvents.length.toString(), icon: LayoutDashboard, color: "bg-blue-100 dark:bg-blue-900" },
-    { title: "Upcoming Events", value: upcomingEvents.length.toString(), icon: CalendarDays, color: "bg-green-100 dark:bg-green-900" },
-    { title: "Past Events", value: pastEvents.length.toString(), icon: CheckCircle, color: "bg-purple-100 dark:bg-purple-900" },
-    { 
-  title: "Total Revenue", 
-  value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
-  icon: () => <span className="text-xl font-bold">Ksh</span>, 
-  color: "bg-amber-100 dark:bg-amber-900" 
-}
-  ];
+  { 
+    title: "Total Events", 
+    value: organizerEvents.length.toString(), 
+    icon: LayoutDashboard, 
+    color: "bg-gray-100 dark:bg-gray-800" 
+  },
+  { 
+    title: "Upcoming Events", 
+    value: upcomingEvents.length.toString(), 
+    icon: CalendarDays, 
+    color: "bg-gray-100 dark:bg-gray-800" 
+  },
+  { 
+    title: "Past Events", 
+    value: pastEvents.length.toString(), 
+    icon: CheckCircle, 
+    color: "bg-gray-100 dark:bg-gray-800" 
+  },
+  { 
+    title: "Total Revenue", 
+    value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
+    icon: () => <span className="text-xl font-bold">Ksh</span>, 
+    color: "bg-gray-100 dark:bg-gray-800" 
+  }
+];
 
 
   return (
