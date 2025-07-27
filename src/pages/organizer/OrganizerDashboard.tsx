@@ -274,30 +274,30 @@ const OrganizerDashboard: React.FC = () => {
   const headerContent = getHeaderContent();
 
 
-  const stats = [
+const stats = [
   { 
     title: "Total Events", 
     value: organizerEvents.length.toString(), 
     icon: LayoutDashboard, 
-    color: "bg-gray-100 dark:bg-gray-800" 
+    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
   },
   { 
     title: "Upcoming Events", 
     value: upcomingEvents.length.toString(), 
     icon: CalendarDays, 
-    color: "bg-gray-100 dark:bg-gray-800" 
+    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
   },
   { 
     title: "Past Events", 
     value: pastEvents.length.toString(), 
     icon: CheckCircle, 
-    color: "bg-gray-100 dark:bg-gray-800" 
+    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
   },
   { 
     title: "Total Revenue", 
     value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
     icon: () => <span className="text-xl font-bold">Ksh</span>, 
-    color: "bg-gray-100 dark:bg-gray-800" 
+    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
   }
 ];
 
