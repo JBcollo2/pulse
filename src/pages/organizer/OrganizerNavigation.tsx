@@ -219,11 +219,11 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
         />
       )}
 
-      {/* Floating Menu Button for Collapsed Desktop Sidebar */}
+      {/* Floating Menu Button for Collapsed Desktop Sidebar - Moved Higher */}
       {!isMobile && !isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
-          className="fixed left-4 top-20 z-40 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          className="fixed left-4 top-6 z-40 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
           aria-label="Expand navigation menu"
         >
           <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
@@ -414,6 +414,8 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
                 onClick={() => setIsExpanded(true)}
                 className="p-3 rounded-lg transition-all duration-200 group relative bg-gray-100 dark:bg-gray-700/50 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label="Expand menu to access user options"
+                onMouseEnter={() => setHoveredItem('user')}
+                onMouseLeave={() => setHoveredItem(null)}
               >
                 <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                 {hoveredItem === 'user' && (
@@ -523,7 +525,3 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
 };
 
 export default OrganizerNavigation;
-
-
-
-
