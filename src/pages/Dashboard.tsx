@@ -330,14 +330,14 @@ const Dashboard = () => {
                   <User className="h-4 w-4" />
                   Organizer:
                 </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.organizerName}</span>
+                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.full_name}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
                   <Building className="h-4 w-4" />
                   Company:
                 </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.organizerCompany}</span>
+                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.company_name}</span>
               </div>
             </div>
 

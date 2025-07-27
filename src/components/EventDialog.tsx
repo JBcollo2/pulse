@@ -750,7 +750,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
       </div>
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
-        <p className="text-gray-800 dark:text-gray-200 font-medium">${ticket.price}</p>
+        <p className="text-gray-800 dark:text-gray-200 font-medium">Ksh{ticket.price}</p>
       </div>
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
