@@ -23,7 +23,9 @@ import {
   Eye,
   Trash2,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  User,
+  Building,
 } from 'lucide-react';
 import Overview from './Overview';
 import Tickets from './Tickets';
@@ -325,28 +327,17 @@ const Dashboard = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <Ticket className="h-4 w-4" />
-                  Tickets Sold:
+                  <User className="h-4 w-4" />
+                  Organizer:
                 </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.ticketsSold}/{event.totalTickets}</span>
+                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.organizerName}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Revenue:
+                  <Building className="h-4 w-4" />
+                  Company:
                 </span>
-                <span className="text-green-600 dark:text-green-400 font-semibold">${event.revenue?.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                <span>Progress</span>
-                <span>{((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full"
-                  style={{width: `${((event.ticketsSold / event.totalTickets) * 100).toFixed(0)}%`}}></div>
+                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.organizerCompany}</span>
               </div>
             </div>
 
