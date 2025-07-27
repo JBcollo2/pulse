@@ -642,55 +642,53 @@ const OrganizerReports: React.FC<OrganizerReportsProps> = ({ eventId, eventRepor
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
-              <p className="text-lg font-bold text-[#10b981]">
-                {displayCurrencySymbol}{displayRevenue.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
-              </p>
-              {hasConversion && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Converted to {displayCurrencyCode}
+      <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg dark:bg-gray-700 dark:border-gray-600 bg-gray-50 border border-gray-200">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Revenue</p>
+                <p className="text-lg font-bold text-[#10b981]">
+                  {displayCurrencySymbol}{displayRevenue.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
                 </p>
+                {hasConversion && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Converted to {displayCurrencyCode}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="text-sm dark:text-gray-300 text-gray-700">{event_name}</span>
+              </div>
+              {event_location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm dark:text-gray-300 text-gray-700">{event_location}</span>
+                </div>
               )}
             </div>
-          </div>
-          <div className="border-t pt-3 dark:border-gray-700 border-gray-200">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="text-sm dark:text-gray-300 text-gray-700">{event_name}</span>
+            <div className="flex gap-2 pt-2">
+              <Button
+                onClick={() => onDownload(report.id.toString(), 'pdf')}
+                disabled={isDownloading}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                PDF
+              </Button>
+              <Button
+                onClick={() => onDownload(report.id.toString(), 'csv')}
+                disabled={isDownloading}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                CSV
+              </Button>
             </div>
-            {event_location && (
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm dark:text-gray-300 text-gray-700">{event_location}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 pt-2">
-            <Button
-              onClick={() => onDownload(report.id.toString(), 'pdf')}
-              disabled={isDownloading}
-              size="sm"
-              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-            >
-              <Download className="mr-1 h-3 w-3" />
-              PDF
-            </Button>
-            <Button
-              onClick={() => onDownload(report.id.toString(), 'csv')}
-              disabled={isDownloading}
-              size="sm"
-              className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-            >
-              <Download className="mr-1 h-3 w-3" />
-              CSV
-            </Button>
-          </div>
         </CardContent>
       </Card>
     );
