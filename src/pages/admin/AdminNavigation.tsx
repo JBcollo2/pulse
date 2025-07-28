@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Search, X, Menu } from "lucide-react";
+import { LogOut, BarChart2, Calendar, Users, Shield, UserPlus, Activity, Search, X, Menu, Tags } from "lucide-react";
 
 interface AdminNavigationProps {
-  currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer';
-  onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer') => void;
+  currentView: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories';
+  onViewChange: (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories') => void;
   onLogout: () => void;
   isLoading: boolean;
   toggleMobileMenu: () => void;
@@ -30,6 +30,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     { id: 'registerAdmin', label: 'Register Admin', icon: UserPlus, description: 'Create admin accounts', category: 'Administration', color: 'text-indigo-500' },
     { id: 'registerSecurity', label: 'Register Security', icon: Shield, description: 'Create security accounts', category: 'Administration', color: 'text-red-500' },
     { id: 'registerOrganizer', label: 'Register Organizer', icon: UserPlus, description: 'Create organizer accounts', category: 'Administration', color: 'text-yellow-500' },
+    { id: 'manageCategories', label: 'Manage Categories', icon: Tags, description: 'Create & manage event categories', category: 'Events', color: 'text-pink-500' },
   ];
 
   // Filter navigation items based on search query
@@ -58,6 +59,10 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
 
   const clearSearch = () => {
     setSearchQuery('');
+  };
+
+  const handleManageCategories = () => {
+    handleViewChange('manageCategories');
   };
 
   return (
@@ -165,7 +170,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
               <Search className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No menu items found</p>
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                Try searching for "reports", "users", or "admin"
+                Try searching for "reports", "users", "categories", or "admin"
               </p>
               <button
                 onClick={clearSearch}
@@ -182,6 +187,16 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
             Quick Actions
           </h3>
           <div className="space-y-2">
+            <button
+              onClick={handleManageCategories}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200
+                hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400
+                rounded-lg transition-all duration-200 group"
+              disabled={isLoading}
+            >
+              <Tags className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+              Manage Categories
+            </button>
             <button
               onClick={onLogout}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200
