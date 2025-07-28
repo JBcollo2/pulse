@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -240,7 +240,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <div
                   key={category.id}
                   className={cn(
-                    "p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 hover:shadow-md transition-all duration-300 group"
+                    "p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 hover:shadow-md transition-all duration-300"
                   )}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -251,22 +251,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
                         {category.name}
                       </h3>
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-                      >
-                        <Edit className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
-                      </Button>
                     </div>
                   </div>
                   
