@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield, Menu, X } from 'lucide-react';
+import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield, Menu, X, Tags } from 'lucide-react';
 import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
+import CategoryManagement from './CategoryManagement';
 import { debounce } from 'lodash';
 import { cn } from "@/lib/utils";
 
@@ -16,12 +17,20 @@ interface User {
   phone_number?: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+  created_at: string;
+}
+
 const AdminDashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer'>('reports');
+  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories'>('reports');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -79,6 +88,13 @@ const AdminDashboard: React.FC = () => {
           icon: <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-yellow-500 to-yellow-700"
         };
+      case 'manageCategories':
+        return {
+          title: "Manage Categories",
+          description: "Create and manage event categories for better organization.",
+          icon: <Tags className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-pink-500 to-pink-700"
+        };
       default:
         return {
           title: "Dashboard Overview",
@@ -100,13 +116,83 @@ const AdminDashboard: React.FC = () => {
       console.error('Failed to parse error response:', jsonError);
     }
     setError(errorMessage);
-    setAllUsers([]);
     toast({
       title: "Error",
       description: errorMessage,
       variant: "destructive",
     });
   }, [toast]);
+
+  // Categories API functions
+  const fetchCategories = useCallback(async () => {
+    setIsLoading(true);
+    setError(undefined);
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        await handleFetchError(response);
+        return;
+      }
+      const data = await response.json();
+      setCategories(data.categories || []);
+    } catch (err) {
+      console.error('Fetch categories error:', err);
+      setError('An unexpected error occurred while fetching categories.');
+      toast({
+        title: "Error",
+        description: 'An unexpected error occurred while fetching categories.',
+        variant: "destructive",
+      });
+      setCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast, handleFetchError]);
+
+  const handleCreateCategory = async (categoryData: { name: string; description?: string }) => {
+    setIsLoading(true);
+    setError(undefined);
+    setSuccessMessage('');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(categoryData)
+      });
+      
+      if (!response.ok) {
+        await handleFetchError(response);
+        return;
+      }
+      
+      const result = await response.json();
+      setSuccessMessage('Category created successfully.');
+      toast({
+        title: "Success",
+        description: 'Category created successfully.',
+        variant: "default",
+      });
+      
+      // Refresh categories list
+      await fetchCategories();
+    } catch (err) {
+      console.error('Create category error:', err);
+      setError('An unexpected error occurred while creating category.');
+      toast({
+        title: "Error",
+        description: 'An unexpected error occurred while creating category.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRegister = async (data: any) => {
     setIsLoading(true);
@@ -280,13 +366,14 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer') => {
+  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories') => {
     setCurrentView(view);
     if (view !== 'viewAllUsers' && view !== 'nonAttendees') {
       setSearchTerm('');
       setAllUsers([]);
       debouncedSearch.cancel();
     }
+    // Clear messages when switching views
     setError(undefined);
     setSuccessMessage('');
   };
@@ -300,12 +387,15 @@ const AdminDashboard: React.FC = () => {
         console.log("useEffect: Fetching search results due to view change and existing search term.");
         handleSearchUsers(searchTerm);
       }
+    } else if (currentView === 'manageCategories') {
+      // Fetch categories when switching to manage categories view
+      fetchCategories();
     }
     return () => {
       console.log("useEffect cleanup: Canceling debounced search.");
       debouncedSearch.cancel();
     };
-  }, [currentView, searchTerm, fetchAllUsers, handleSearchUsers, debouncedSearch]);
+  }, [currentView, searchTerm, fetchAllUsers, handleSearchUsers, debouncedSearch, fetchCategories]);
 
   const filteredUsers = allUsers.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -351,6 +441,15 @@ const AdminDashboard: React.FC = () => {
             )}
             {currentView === 'events' && (
               <RecentEvents />
+            )}
+            {currentView === 'manageCategories' && (
+              <CategoryManagement
+                categories={categories}
+                onCreateCategory={handleCreateCategory}
+                isLoading={isLoading}
+                error={error}
+                successMessage={successMessage}
+              />
             )}
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
               <UserManagement
