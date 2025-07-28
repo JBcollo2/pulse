@@ -208,10 +208,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         
         <CardContent>
           {isLoading && categories.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-pink-500 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">Loading categories...</p>
+            <div className="min-h-[400px] flex items-center justify-center">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+                <p className="text-gray-700 dark:text-gray-300">Loading categories...</p>
               </div>
             </div>
           ) : categories.length === 0 ? (
