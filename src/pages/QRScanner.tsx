@@ -444,13 +444,13 @@ const QRScanner = () => {
                   <p className="text-center text-gray-500 dark:text-gray-400">
                     Ready to scan tickets
                   </p>
-                  <Button 
-                    onClick={() => setScanning(true)}
-                    className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Start Scanning
-                  </Button>
+                  <Button                      
+                  onClick={() => setScanning(true)}                     
+                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold transition-all duration-200 hover:scale-105"                   
+                >                     
+                  <Camera className="w-4 h-4 mr-2" />                     
+                  Start Scanning                   
+                </Button>
                 </div>
               ) : scanning ? (
                 <div className="relative">

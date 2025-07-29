@@ -439,16 +439,15 @@ const Tickets = () => {
             {/* Advanced Filters Toggle */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
                 showAdvancedFilters
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-gradient-to-r from-blue-500 to-[#10b981] text-white hover:from-blue-600 hover:to-[#0ea372]'
                   : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
             </button>
-
             {/* Items per page */}
             <select
               value={itemsPerPage}
