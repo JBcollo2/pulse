@@ -88,7 +88,21 @@ const Tickets = () => {
   // Get unique locations for filter dropdown
   const uniqueLocations = useMemo(() => {
     if (!ticketData) return [];
-    const dataToAnalyze = getDataSource();
+    
+    let dataToAnalyze: EventTicket[] = [];
+    
+    if (viewMode === 'my_tickets') {
+      dataToAnalyze = ticketData.my_tickets || [];
+    } else {
+      if (ticketData.role === 'admin' && ticketData.all_events_tickets) {
+        dataToAnalyze = ticketData.all_events_tickets;
+      } else if (ticketData.role === 'organizer' && ticketData.my_events_tickets) {
+        dataToAnalyze = ticketData.my_events_tickets;
+      } else {
+        dataToAnalyze = ticketData.my_tickets || [];
+      }
+    }
+    
     const locations = [...new Set(dataToAnalyze.map(event => event.location))];
     return locations.sort();
   }, [ticketData, viewMode]);
@@ -110,7 +124,21 @@ const Tickets = () => {
   };
 
   const getFilteredAndSortedData = useMemo(() => {
-    const dataSource = getDataSource();
+    if (!ticketData) return [];
+    
+    let dataSource: EventTicket[] = [];
+    
+    if (viewMode === 'my_tickets') {
+      dataSource = ticketData.my_tickets || [];
+    } else {
+      if (ticketData.role === 'admin' && ticketData.all_events_tickets) {
+        dataSource = ticketData.all_events_tickets;
+      } else if (ticketData.role === 'organizer' && ticketData.my_events_tickets) {
+        dataSource = ticketData.my_events_tickets;
+      } else {
+        dataSource = ticketData.my_tickets || [];
+      }
+    }
     
     // Apply basic search filter
     let filtered = dataSource.filter(event => {
