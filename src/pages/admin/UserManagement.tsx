@@ -98,7 +98,7 @@ const UserManagement: React.FC<UserManagementProps> = ({
           gradient: 'bg-gradient-to-r from-blue-500 to-green-500',
           hover: 'hover:from-blue-600 hover:to-green-600',
           shadow: 'shadow-lg shadow-blue-500/25',
-          focus: 'focus:ring-blue-500'
+          focus: 'focus:ring-purple-500'
         };
     }
   };
