@@ -539,13 +539,13 @@ return (
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <select
-                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none min-w-[150px] [&>option:checked]:bg-purple-500 [&>option:checked]:text-white"
+                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[150px]"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
                 >
                   <option value="">All Months</option>
                   {availableMonths.map(month => (
-                    <option key={month} value={month} className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-purple-100 dark:hover:bg-purple-800">{month}</option>
+                    <option key={month} value={month}>{month}</option>
                   ))}
                 </select>
               </div>
@@ -554,13 +554,13 @@ return (
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <select
-                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:outline-none min-w-[180px] [&>option:checked]:bg-purple-500 [&>option:checked]:text-white"
+                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[180px]"
                   value={selectedOrganizer}
                   onChange={(e) => setSelectedOrganizer(e.target.value)}
                 >
                   <option value="">All Organizers</option>
                   {availableOrganizers.map(organizer => (
-                    <option key={organizer} value={organizer} className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-purple-100 dark:hover:bg-purple-800">{organizer}</option>
+                    <option key={organizer} value={organizer}>{organizer}</option>
                   ))}
                 </select>
               </div>
