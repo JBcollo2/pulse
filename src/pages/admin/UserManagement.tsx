@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Filter, Users, Search } from "lucide-react";
 
 interface User {
   id: string;
@@ -49,6 +49,11 @@ const UserManagement: React.FC<UserManagementProps> = ({
     address: '',
     company_logo: null
   });
+
+  // Pagination and filtering states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   // Define color schemes based on view type to match navigation colors
   const getViewColors = (viewType: string) => {
@@ -100,6 +105,68 @@ const UserManagement: React.FC<UserManagementProps> = ({
 
   const colors = getViewColors(view);
 
+  // Get available role filter options based on view
+  const getRoleFilterOptions = () => {
+    if (view === 'viewAllUsers') {
+      return [
+        { value: 'all', label: 'All Roles' },
+        { value: 'attendee', label: 'Attendees' },
+        { value: 'organizer', label: 'Organizers' },
+        { value: 'admin', label: 'Admins' },
+        { value: 'security', label: 'Security' }
+      ];
+    } else if (view === 'nonAttendees') {
+      return [
+        { value: 'all', label: 'All Non-Attendees' },
+        { value: 'organizer', label: 'Organizers' },
+        { value: 'admin', label: 'Admins' },
+        { value: 'security', label: 'Security' }
+      ];
+    }
+    return [];
+  };
+
+  // Filter and paginate users
+  const filteredAndPaginatedUsers = useMemo(() => {
+    if (!users) return { paginatedUsers: [], totalUsers: 0, totalPages: 0 };
+
+    // Filter by search term
+    let filtered = users.filter(user => 
+      user.full_name.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      user.email.toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+      user.id.toLowerCase().includes((searchTerm || '').toLowerCase())
+    );
+
+    // Filter by role
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(user => 
+        user.role.toLowerCase() === roleFilter.toLowerCase()
+      );
+    }
+
+    const totalUsers = filtered.length;
+    const totalPages = Math.ceil(totalUsers / itemsPerPage);
+    
+    // Paginate
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedUsers = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+    return { paginatedUsers, totalUsers, totalPages };
+  }, [users, searchTerm, roleFilter, currentPage, itemsPerPage]);
+
+  // Get role statistics
+  const roleStats = useMemo(() => {
+    if (!users) return {};
+    
+    const stats = users.reduce((acc, user) => {
+      const role = user.role.toLowerCase();
+      acc[role] = (acc[role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return stats;
+  }, [users]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, files } = e.target;
     if (files) {
@@ -120,18 +187,42 @@ const UserManagement: React.FC<UserManagementProps> = ({
     await onRegister(formData);
   };
 
+  const handleRoleFilterChange = (newFilter: string) => {
+    setRoleFilter(newFilter);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when items per page changes
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
   if (view === 'viewAllUsers' || view === 'nonAttendees') {
+    const { paginatedUsers, totalUsers, totalPages } = filteredAndPaginatedUsers;
+    const roleFilterOptions = getRoleFilterOptions();
+
     return (
       <Card className="w-full p-4 md:p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-xl md:text-2xl text-gray-800 dark:text-gray-200">
+          <CardTitle className="text-xl md:text-2xl text-gray-800 dark:text-gray-200 flex items-center gap-2">
+            <Users className="h-6 w-6" />
             {view === 'viewAllUsers' ? 'All Users' : 'Non-Attendees'}
           </CardTitle>
           <CardDescription className="text-gray-500 dark:text-gray-400">
-            {view === 'viewAllUsers' ? 'List of all users in the system' : 'List of non-attendee users'}
+            {view === 'viewAllUsers' ? 'Manage all users in the system' : 'Manage non-attendee users'}
+            {totalUsers > 0 && (
+              <span className="ml-2 font-medium">
+                ({totalUsers} user{totalUsers !== 1 ? 's' : ''} found)
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        
+        <CardContent className="space-y-6">
           {error && (
             <Alert variant="destructive" className="bg-red-50 dark:bg-red-900 border-red-500 dark:border-red-700 text-red-800 dark:text-red-200">
               <AlertCircle className="h-4 w-4" />
@@ -145,45 +236,190 @@ const UserManagement: React.FC<UserManagementProps> = ({
             </Alert>
           )}
 
-          {onSearchTermChange && (
-            <div className="mb-4">
-              <Input
-                placeholder="Search by email..."
-                value={searchTerm || ''}
-                onChange={(e) => onSearchTermChange(e.target.value)}
-                className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 
-                  focus:outline-none focus:ring-2 ${colors.focus} focus:border-transparent transition-all duration-200`}
-              />
+          {/* Role Statistics */}
+          {Object.keys(roleStats).length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              {Object.entries(roleStats).map(([role, count]) => (
+                <div key={role} className="text-center">
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{count}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">{role}s</div>
+                </div>
+              ))}
             </div>
           )}
 
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {isLoading && users?.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">Loading users...</p>
-            ) : users?.length === 0 ? (
-              searchTerm ? (
-                <p className="text-center text-gray-500 dark:text-gray-400">No users found matching "{searchTerm}".</p>
-              ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400">No users found.</p>
-              )
-            ) : (
-              users?.map(user => (
-                <div key={user.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow bg-white dark:bg-gray-800 hover:shadow-md transition-shadow duration-200 relative">
-                  <div className="absolute top-2 right-2">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors.gradient} text-white shadow-sm`}>
-                      #{user.id}
-                    </span>
-                  </div>
-                  <div className="pr-16">
-                    <p className="text-gray-800 dark:text-gray-200"><strong>Name:</strong> {user.full_name}</p>
-                    <p className="text-gray-800 dark:text-gray-200"><strong>Email:</strong> {user.email}</p>
-                    <p className="text-gray-800 dark:text-gray-200"><strong>Role:</strong> {user.role}</p>
-                    {user.phone_number && <p className="text-gray-800 dark:text-gray-200"><strong>Phone:</strong> {user.phone_number}</p>}
-                  </div>
+          {/* Filters and Search */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            {onSearchTermChange && (
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search by name, email, or ID..."
+                    value={searchTerm || ''}
+                    onChange={(e) => onSearchTermChange(e.target.value)}
+                    className={`pl-10 w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 
+                      focus:outline-none focus:ring-2 ${colors.focus} focus:border-transparent transition-all duration-200`}
+                  />
                 </div>
-              ))
+              </div>
+            )}
+
+            {/* Role Filter */}
+            {roleFilterOptions.length > 0 && (
+              <div className="md:w-48">
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => handleRoleFilterChange(e.target.value)}
+                    className={`pl-10 w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 
+                      rounded-md focus:outline-none focus:ring-2 ${colors.focus} focus:border-transparent transition-all duration-200 py-2`}
+                  >
+                    {roleFilterOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Items per page */}
+            <div className="md:w-32">
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                className={`w-full bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 
+                  rounded-md focus:outline-none focus:ring-2 ${colors.focus} focus:border-transparent transition-all duration-200 py-2`}
+              >
+                <option value={10}>10 per page</option>
+                <option value={20}>20 per page</option>
+                <option value={50}>50 per page</option>
+                <option value={100}>100 per page</option>
+              </select>
+            </div>
+          </div>
+
+          {/* User List */}
+          <div className="space-y-3">
+            {isLoading && paginatedUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="animate-spin inline-block h-8 w-8 border-4 border-current border-t-transparent text-gray-500 rounded-full"></div>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">Loading users...</p>
+              </div>
+            ) : paginatedUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  {searchTerm || roleFilter !== 'all' ? 
+                    'No users found matching your criteria.' : 
+                    'No users found.'
+                  }
+                </p>
+                {(searchTerm || roleFilter !== 'all') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onSearchTermChange?.('');
+                      setRoleFilter('all');
+                    }}
+                    className="mt-4"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {paginatedUsers.map(user => (
+                  <div key={user.id} className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg shadow-sm bg-white dark:bg-gray-800 hover:shadow-md transition-all duration-200 relative">
+                    <div className="absolute top-3 right-3 flex gap-2">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors.gradient} text-white shadow-sm`}>
+                        #{user.id}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize
+                        ${user.role.toLowerCase() === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                          user.role.toLowerCase() === 'organizer' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          user.role.toLowerCase() === 'security' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}>
+                        {user.role}
+                      </span>
+                    </div>
+                    <div className="pr-32">
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">{user.full_name}</h3>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-gray-600 dark:text-gray-300"><strong>Email:</strong> {user.email}</p>
+                        {user.phone_number && <p className="text-gray-600 dark:text-gray-300"><strong>Phone:</strong> {user.phone_number}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalUsers)} to {Math.min(currentPage * itemsPerPage, totalUsers)} of {totalUsers} users
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNumber}
+                        variant={currentPage === pageNumber ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`w-8 h-8 p-0 ${currentPage === pageNumber ? colors.gradient : ''}`}
+                      >
+                        {pageNumber}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -382,17 +618,3 @@ const UserManagement: React.FC<UserManagementProps> = ({
 };
 
 export default UserManagement;
-
-
-
-
-//   if (isLoadingCurrencies || (isLoadingOrganizers && organizers.length === 0)) {
-//   return (
-//     <div className="min-h-[400px] flex items-center justify-center">
-//       <div className="flex flex-col items-center space-y-4">
-//         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-//         <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
-//       </div>
-//     </div>
-//   );
-// }
