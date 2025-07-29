@@ -373,32 +373,32 @@ const Tickets = () => {
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* View Mode Toggle for Admin/Organizer */}
-            {(ticketData?.role === 'admin' || ticketData?.role === 'organizer') && (
-              <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-1">
-                <button
-                  onClick={() => setViewMode('events')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'events'
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <Eye className="h-4 w-4 inline mr-1" />
-                  {ticketData?.role === 'admin' ? 'All Events' : 'My Events'}
-                </button>
-                <button
-                  onClick={() => setViewMode('my_tickets')}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'my_tickets'
-                      ? 'bg-blue-500 text-white'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <CreditCard className="h-4 w-4 inline mr-1" />
-                  My Tickets
-                </button>
-              </div>
-            )}
+              {(ticketData?.role === 'admin' || ticketData?.role === 'organizer') && (
+                <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-1">
+                  <button
+                    onClick={() => setViewMode('events')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                      viewMode === 'events'
+                        ? 'bg-gradient-to-r from-blue-500 to-[#10b981] text-white hover:from-blue-600 hover:to-[#0ea372]'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    <Eye className="h-4 w-4 inline mr-1" />
+                    {ticketData?.role === 'admin' ? 'All Events' : 'My Events'}
+                  </button>
+                  <button
+                    onClick={() => setViewMode('my_tickets')}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                      viewMode === 'my_tickets'
+                        ? 'bg-gradient-to-r from-blue-500 to-[#10b981] text-white hover:from-blue-600 hover:to-[#0ea372]'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    <CreditCard className="h-4 w-4 inline mr-1" />
+                    My Tickets
+                  </button>
+                </div>
+              )}
 
             {/* Search */}
             <div className="relative flex-1 max-w-md">
