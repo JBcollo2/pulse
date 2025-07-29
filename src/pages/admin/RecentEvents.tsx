@@ -335,7 +335,7 @@ const RecentEvents = () => {
     );
   }
 
-  return (
+return (
     <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -554,8 +554,7 @@ const RecentEvents = () => {
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <select
-                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500
-                  focus:border-transparent min-w-[180px]"
+                  className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[180px]"
                   value={selectedOrganizer}
                   onChange={(e) => setSelectedOrganizer(e.target.value)}
                 >
