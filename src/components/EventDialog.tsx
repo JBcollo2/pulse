@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription, // Add this import
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -356,25 +357,13 @@ export const EventDialog = ({
         formData.append('end_date', formatDate(newEvent.end_date));
       }
 
-      // Handle times - FIXED: Validate and format time properly
+      // Handle times - SIMPLIFIED: Just use the input values directly
       if (newEvent.start_time && newEvent.start_time.trim() !== '') {
-        const startTime = newEvent.start_time.trim();
-        // Validate HH:MM format
-        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!timeRegex.test(startTime)) {
-          throw new Error('Invalid start time format. Please use HH:MM format (e.g., 14:30)');
-        }
-        formData.append('start_time', startTime);
+        formData.append('start_time', newEvent.start_time.trim());
       }
 
       if (newEvent.end_time && newEvent.end_time.trim() !== '') {
-        const endTime = newEvent.end_time.trim();
-        // Validate HH:MM format
-        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!timeRegex.test(endTime)) {
-          throw new Error('Invalid end time format. Please use HH:MM format (e.g., 16:30)');
-        }
-        formData.append('end_time', endTime);
+        formData.append('end_time', newEvent.end_time.trim());
       }
 
       // Additional validation: Check if start time is before end time (for same day events)
@@ -509,6 +498,9 @@ export const EventDialog = ({
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {isEditing ? 'Edit Event' : 'Create New Event'}
           </DialogTitle>
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
+            {isEditing ? 'Update your event details and ticket information.' : 'Fill in the details to create a new event with ticket types.'}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Dialog Content */}
@@ -586,14 +578,7 @@ export const EventDialog = ({
                   type="time"
                   value={newEvent.start_time}
                   onChange={(e) => {
-                    const time = e.target.value;
-                    // Ensure the time is in HH:MM format (24-hour format)
-                    if (time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-                      setNewEvent({...newEvent, start_time: time});
-                    } else if (time === '') {
-                      // Allow empty time to be set
-                      setNewEvent({...newEvent, start_time: ''});
-                    }
+                    setNewEvent({...newEvent, start_time: e.target.value});
                   }}
                   required
                   step="60" // Only allow hour/minute selection, no seconds
@@ -621,14 +606,7 @@ export const EventDialog = ({
                   type="time"
                   value={newEvent.end_time}
                   onChange={(e) => {
-                    const time = e.target.value;
-                    // Ensure the time is in HH:MM format (24-hour format)
-                    if (time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-                      setNewEvent({...newEvent, end_time: time});
-                    } else if (time === '') {
-                      // Allow empty time to be set
-                      setNewEvent({...newEvent, end_time: ''});
-                    }
+                    setNewEvent({...newEvent, end_time: e.target.value});
                   }}
                   step="60" // Only allow hour/minute selection, no seconds
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
