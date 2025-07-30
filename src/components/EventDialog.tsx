@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription, // Add this import
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
@@ -357,13 +357,19 @@ export const EventDialog = ({
         formData.append('end_date', formatDate(newEvent.end_date));
       }
 
-      // Handle times - SIMPLIFIED: Just use the input values directly
+      // Handle times - FIXED: Convert to HH:MM format (remove seconds)
       if (newEvent.start_time && newEvent.start_time.trim() !== '') {
-        formData.append('start_time', newEvent.start_time.trim());
+        const startTime = newEvent.start_time.trim();
+        // Remove seconds if present (16:00:00 -> 16:00)
+        const timeHHMM = startTime.includes(':') ? startTime.split(':').slice(0, 2).join(':') : startTime;
+        formData.append('start_time', timeHHMM);
       }
 
       if (newEvent.end_time && newEvent.end_time.trim() !== '') {
-        formData.append('end_time', newEvent.end_time.trim());
+        const endTime = newEvent.end_time.trim();
+        // Remove seconds if present (16:00:00 -> 16:00)
+        const timeHHMM = endTime.includes(':') ? endTime.split(':').slice(0, 2).join(':') : endTime;
+        formData.append('end_time', timeHHMM);
       }
 
       // Additional validation: Check if start time is before end time (for same day events)
