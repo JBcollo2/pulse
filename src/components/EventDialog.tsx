@@ -586,22 +586,29 @@ export const EventDialog = ({
                   value={newEvent.start_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    setNewEvent({...newEvent, start_time: time});
+                    // Ensure the time is in HH:MM format (24-hour format)
+                    if (time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+                      setNewEvent({...newEvent, start_time: time});
+                    } else if (time === '') {
+                      // Allow empty time to be set
+                      setNewEvent({...newEvent, start_time: ''});
+                    }
                   }}
                   required
+                  step="60" // Only allow hour/minute selection, no seconds
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                 />
               </div>
             </div>
-            
+
             {/* End Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
-                  selected={newEvent.date}
-                  onSelect={(date) => date && setNewEvent({...newEvent, date})}
+                  selected={newEvent.end_date}
+                  onSelect={(date) => date && setNewEvent({...newEvent, end_date: date})}
                   required
                   className="text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
@@ -614,8 +621,15 @@ export const EventDialog = ({
                   value={newEvent.end_time}
                   onChange={(e) => {
                     const time = e.target.value;
-                    setNewEvent({...newEvent, end_time: time});
+                    // Ensure the time is in HH:MM format (24-hour format)
+                    if (time && /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+                      setNewEvent({...newEvent, end_time: time});
+                    } else if (time === '') {
+                      // Allow empty time to be set
+                      setNewEvent({...newEvent, end_time: ''});
+                    }
                   }}
+                  step="60" // Only allow hour/minute selection, no seconds
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                 />
               </div>
