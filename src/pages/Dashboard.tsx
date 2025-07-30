@@ -48,11 +48,12 @@ const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const { toast } = useToast();
 
-  // New state variables for filtering and sorting
+  // State variables for filtering and sorting
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDate, setFilterDate] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [eventSearchQuery, setEventSearchQuery] = useState("");
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -166,12 +167,12 @@ const Dashboard = () => {
   }, [user, loading]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event) => {
       if (isMobile && mobileMenuOpen) {
         const sidebar = document.getElementById('mobile-sidebar');
         const menuButton = document.getElementById('mobile-menu-btn');
-        if (sidebar && !sidebar.contains(event.target as Node) &&
-            menuButton && !menuButton.contains(event.target as Node)) {
+        if (sidebar && !sidebar.contains(event.target) &&
+            menuButton && !menuButton.contains(event.target)) {
           setMobileMenuOpen(false);
         }
       }
@@ -192,7 +193,7 @@ const Dashboard = () => {
   }
 
   const menuItemsForUser = user
-    ? allMenuItems.filter(item => item.roles.includes(user.role as "ADMIN" | "ORGANIZER" | "ATTENDEE" | "SECURITY"))
+    ? allMenuItems.filter(item => item.roles.includes(user.role))
     : [];
 
   const filteredMenuItems = menuItemsForUser.filter(item =>
@@ -201,7 +202,7 @@ const Dashboard = () => {
 
   const activeMenuItem = menuItemsForUser.find(item => item.id === activeTab);
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     if (isMobile) {
       setMobileMenuOpen(false);
@@ -248,7 +249,6 @@ const Dashboard = () => {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-      // Remove the deleted event from the state
       setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
       toast({
         title: "Success",
@@ -265,75 +265,100 @@ const Dashboard = () => {
     }
   };
 
-  // Function to filter and sort events
-  const getFilteredAndSortedEvents = () => {
-    let filtered = events.filter(event => {
-      // Filter by search query
-      const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           event.location?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Filter by status
-      const matchesStatus = filterStatus === "all" || event.status === filterStatus;
-
-      // Filter by date
-      let matchesDate = true;
-      if (filterDate !== "all") {
-        const eventDate = new Date(event.date);
-        const today = new Date();
-        const oneWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const oneMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-        switch (filterDate) {
-          case "today":
-            matchesDate = eventDate.toDateString() === today.toDateString();
-            break;
-          case "week":
-            matchesDate = eventDate >= today && eventDate <= oneWeek;
-            break;
-          case "month":
-            matchesDate = eventDate >= today && eventDate <= oneMonth;
-            break;
-          case "past":
-            matchesDate = eventDate < today;
-            break;
-        }
-      }
-
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-    // Sort events
-    filtered.sort((a, b) => {
-      let aValue, bValue;
-
-      switch (sortBy) {
-        case "name":
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case "date":
-          aValue = new Date(a.date);
-          bValue = new Date(b.date);
-          break;
-        case "status":
-          aValue = a.status;
-          bValue = b.status;
-          break;
-        default:
-          return 0;
-      }
-
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
-    return filtered;
-  };
-
   const MyEventsComponent = () => {
+    const getFilteredAndSortedEvents = () => {
+      let filtered = events.filter(event => {
+        const matchesSearch = eventSearchQuery === "" ||
+          event.name.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+          event.description?.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
+          event.location?.toLowerCase().includes(eventSearchQuery.toLowerCase());
+
+        const matchesStatus = filterStatus === "all" || event.status === filterStatus;
+
+        let matchesDate = true;
+        if (filterDate !== "all") {
+          const eventDate = new Date(event.date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          eventDate.setHours(0, 0, 0, 0);
+
+          const todayTime = today.getTime();
+          const eventTime = eventDate.getTime();
+
+          switch (filterDate) {
+            case "today":
+              matchesDate = eventTime === todayTime;
+              break;
+            case "week":
+              const oneWeekFromNow = new Date(today);
+              oneWeekFromNow.setDate(today.getDate() + 7);
+              matchesDate = eventTime >= todayTime && eventTime <= oneWeekFromNow.getTime();
+              break;
+            case "month":
+              const oneMonthFromNow = new Date(today);
+              oneMonthFromNow.setMonth(today.getMonth() + 1);
+              matchesDate = eventTime >= todayTime && eventTime <= oneMonthFromNow.getTime();
+              break;
+            case "past":
+              matchesDate = eventTime < todayTime;
+              break;
+            case "future":
+              matchesDate = eventTime > todayTime;
+              break;
+            default:
+              matchesDate = true;
+          }
+        }
+        return matchesSearch && matchesStatus && matchesDate;
+      });
+
+      filtered.sort((a, b) => {
+        let aValue, bValue;
+        switch (sortBy) {
+          case "name":
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+            break;
+          case "date":
+            aValue = new Date(a.date);
+            bValue = new Date(b.date);
+            break;
+          case "status":
+            const statusPriority = {
+              'Active': 1,
+              'Upcoming': 2,
+              'Completed': 3
+            };
+            aValue = statusPriority[a.status] || 4;
+            bValue = statusPriority[b.status] || 4;
+            break;
+          default:
+            return 0;
+        }
+        if (sortOrder === "asc") {
+          return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+        } else {
+          return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+        }
+      });
+      return filtered;
+    };
+
     const filteredEvents = getFilteredAndSortedEvents();
+
+    const clearAllFilters = () => {
+      setEventSearchQuery("");
+      setFilterStatus("all");
+      setFilterDate("all");
+      setSortBy("date");
+      setSortOrder("desc");
+    };
+
+    const hasActiveFilters = eventSearchQuery !== "" ||
+      filterStatus !== "all" ||
+      filterDate !== "all" ||
+      sortBy !== "date" ||
+      sortOrder !== "desc";
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -343,8 +368,6 @@ const Dashboard = () => {
           editingEvent={editingEvent}
           onEventCreated={handleEventSave}
         />
-
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -352,7 +375,9 @@ const Dashboard = () => {
             </div>
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and organize your events ({filteredEvents.length} of {events.length})</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Manage and organize your events ({filteredEvents.length} of {events.length} shown)
+              </p>
             </div>
           </div>
           {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
@@ -365,10 +390,8 @@ const Dashboard = () => {
             </button>
           )}
         </div>
-        {/* Filters Section */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
               <div className="relative">
@@ -376,13 +399,12 @@ const Dashboard = () => {
                 <input
                   type="text"
                   placeholder="Search by name, description, location..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={eventSearchQuery}
+                  onChange={(e) => setEventSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
                 />
               </div>
             </div>
-            {/* Status Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
               <select
@@ -394,10 +416,8 @@ const Dashboard = () => {
                 <option value="Active">Active</option>
                 <option value="Upcoming">Upcoming</option>
                 <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
               </select>
             </div>
-            {/* Date Filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
               <select
@@ -407,12 +427,12 @@ const Dashboard = () => {
               >
                 <option value="all">All Dates</option>
                 <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
+                <option value="week">Next 7 Days</option>
+                <option value="month">Next 30 Days</option>
+                <option value="future">Future Events</option>
                 <option value="past">Past Events</option>
               </select>
             </div>
-            {/* Sort Options */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
               <div className="flex gap-2">
@@ -428,31 +448,62 @@ const Dashboard = () => {
                 <button
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                   className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
+                  title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
                 >
                   {sortOrder === "asc" ? "↑" : "↓"}
                 </button>
               </div>
             </div>
           </div>
-          {/* Clear Filters Button */}
-          {(searchQuery || filterStatus !== "all" || filterDate !== "all" || sortBy !== "date" || sortOrder !== "desc") && (
+          {hasActiveFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setFilterStatus("all");
-                  setFilterDate("all");
-                  setSortBy("date");
-                  setSortOrder("desc");
-                }}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                onClick={clearAllFilters}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors flex items-center gap-2"
               >
+                <X className="h-4 w-4" />
                 Clear all filters
               </button>
             </div>
           )}
+          {hasActiveFilters && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {eventSearchQuery && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-md">
+                  Search: "{eventSearchQuery}"
+                  <button
+                    onClick={() => setEventSearchQuery("")}
+                    className="hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {filterStatus !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-md">
+                  Status: {filterStatus}
+                  <button
+                    onClick={() => setFilterStatus("all")}
+                    className="hover:bg-green-200 dark:hover:bg-green-800 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {filterDate !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-md">
+                  Date: {filterDate === "week" ? "Next 7 Days" : filterDate === "month" ? "Next 30 Days" : filterDate}
+                  <button
+                    onClick={() => setFilterDate("all")}
+                    className="hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
-        {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.length > 0 ? (
             filteredEvents.map((event) => (
@@ -464,8 +515,9 @@ const Dashboard = () => {
                     </CardTitle>
                     <span className={`px-3 py-1 text-xs font-medium rounded-full
                       ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                      event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                        event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                        event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                       {event.status}
                     </span>
                   </div>
@@ -480,7 +532,9 @@ const Dashboard = () => {
                         <Calendar className="h-4 w-4" />
                         Date:
                       </span>
-                      <span className="text-gray-800 dark:text-gray-200 font-medium">{event.date}</span>
+                      <span className="text-gray-800 dark:text-gray-200 font-medium">
+                        {new Date(event.date).toLocaleDateString()}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
@@ -523,10 +577,18 @@ const Dashboard = () => {
               <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No events found</h3>
               <p className="text-gray-500 dark:text-gray-400">
-                {searchQuery || filterStatus !== "all" || filterDate !== "all"
+                {hasActiveFilters
                   ? "Try adjusting your filters to find more events."
                   : "Create your first event to get started."}
               </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -650,7 +712,7 @@ const Dashboard = () => {
               )}
             </div>
             <nav className="p-2 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto h-full pb-20">
-              {filteredMenuItems.map((item, index) => {
+              {filteredMenuItems.map((item) => {
                 const isActive = activeTab === item.id;
                 return (
                   <button
