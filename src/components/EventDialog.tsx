@@ -283,7 +283,7 @@ export const EventDialog = ({
   };
 
   /**
-   * Main form submission handler
+   * Main form submission handler - FIXED VERSION
    * Handles both creating new events and updating existing ones
    */
   const handleSubmitEvent = async (e) => {
@@ -309,34 +309,63 @@ export const EventDialog = ({
 
       // Prepare form data for file upload (multipart/form-data)
       const formData = new FormData();
-      formData.append('organizer_id', organizer_id.toString());
+      
+      // Add organizer_id for new events only
+      if (!isEditing) {
+        formData.append('organizer_id', organizer_id.toString());
+      }
 
-      // Add category if selected
-      if (newEvent.category_id) {
+      // Add category if selected and valid
+      if (newEvent.category_id && newEvent.category_id !== null && newEvent.category_id !== '') {
         formData.append('category_id', newEvent.category_id.toString());
       }
 
-      // Add all event fields to form data
-      Object.entries(newEvent).forEach(([key, value]) => {
-        if (key === 'image' && value instanceof File) {
-          // Handle file upload
-          formData.append('file', value);
-        } else if (key === 'date' && value instanceof Date) {
-          // Format date for API
-          formData.append(key, formatDate(value));
-        } else if (key === 'end_date' && value instanceof Date) {
-          // Only add end_date if it's different from start date
-          if (formatDate(value) !== formatDate(newEvent.date)) {
-            formData.append('end_date', formatDate(value));
-          }
-        } else if (key !== 'ticket_types' && typeof value === 'string' && value !== '') {
-          // Add non-empty string fields (excluding ticket_types which are handled separately)
-          formData.append(key, value);
-        }
-      });
+      // Add required fields with validation
+      if (newEvent.name && newEvent.name.trim() !== '') {
+        formData.append('name', newEvent.name.trim());
+      }
+
+      if (newEvent.description && newEvent.description.trim() !== '') {
+        formData.append('description', newEvent.description.trim());
+      }
+
+      if (newEvent.location && newEvent.location.trim() !== '') {
+        formData.append('location', newEvent.location.trim());
+      }
+
+      // Handle dates - always add date
+      if (newEvent.date instanceof Date) {
+        formData.append('date', formatDate(newEvent.date));
+      }
+
+      // Only add end_date if it's different from start date
+      if (newEvent.end_date instanceof Date && 
+          formatDate(newEvent.end_date) !== formatDate(newEvent.date)) {
+        formData.append('end_date', formatDate(newEvent.end_date));
+      }
+
+      // Handle times - only add if they have values
+      if (newEvent.start_time && newEvent.start_time.trim() !== '') {
+        formData.append('start_time', newEvent.start_time.trim());
+      }
+
+      if (newEvent.end_time && newEvent.end_time.trim() !== '') {
+        formData.append('end_time', newEvent.end_time.trim());
+      }
+
+      // Handle file upload
+      if (newEvent.image instanceof File) {
+        formData.append('file', newEvent.image);
+      }
 
       let eventResponse;
       let eventId;
+
+      // Debug: Log what we're sending
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
 
       // Create or update event based on mode
       if (isEditing && editingEvent) {
@@ -354,13 +383,18 @@ export const EventDialog = ({
           credentials: 'include',
           body: formData
         });
-        const eventData = await eventResponse.json();
-        eventId = eventData.id;
       }
 
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
-        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
+        console.error('Server error response:', errorData);
+        throw new Error(errorData.error || errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
+      }
+
+      // Get event ID from response for new events
+      if (!isEditing) {
+        const eventData = await eventResponse.json();
+        eventId = eventData.id;
       }
 
       // Create new ticket types (not updates to existing ones)
@@ -439,6 +473,7 @@ export const EventDialog = ({
     }
   };
 
+ 
   // Render the dialog UI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
