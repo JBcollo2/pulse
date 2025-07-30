@@ -664,9 +664,9 @@ export const EventDialog = ({
 
             {/* Render new ticket types being added */}
             {newEvent.ticket_types.map((ticket, index) => (
-              <div key={index} className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+              <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                 {/* Ticket Type Selection */}
-                <div className="space-y-2">
+                <div className="col-span-4 space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Type</Label>
                   <select
                     className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
@@ -680,41 +680,45 @@ export const EventDialog = ({
                 </div>
                 
                 {/* Ticket Price */}
-                <div className="space-y-2">
+                <div className="col-span-3 space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Price</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.01"
-                    value={ticket.price}
-                    onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value))}
+                    value={ticket.price || ''}
+                    onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value) || 0)}
                     required
+                    placeholder="0.00"
                     className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                   />
                 </div>
                 
-                {/* Ticket Quantity and Remove Button */}
-                <div className="space-y-2">
+                {/* Ticket Quantity */}
+                <div className="col-span-4 space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      min="0"
-                      value={ticket.quantity}
-                      onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value))}
-                      required
-                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveTicketType(index)}
-                      className="text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={ticket.quantity || ''}
+                    onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                    required
+                    placeholder="Enter quantity"
+                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                  />
+                </div>
+                
+                {/* Remove Button */}
+                <div className="col-span-1 flex justify-center items-end pb-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveTicketType(index)}
+                    className="text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}
