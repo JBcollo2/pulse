@@ -32,7 +32,7 @@ const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EAR
 /**
  * Main EventDialog Component
  * A modal dialog for creating new events or editing existing ones
- * 
+ *
  * Props:
  * - open: boolean - Controls dialog visibility
  * - onOpenChange: function - Callback when dialog open state changes
@@ -47,10 +47,10 @@ export const EventDialog = ({
 }) => {
   // State for storing event categories fetched from API
   const [categories, setCategories] = useState([]);
-  
+
   // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
-  
+
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
     name: '',
@@ -64,10 +64,10 @@ export const EventDialog = ({
     ticket_types: [],           // Array of new ticket types to be created
     category_id: null           // Selected category ID
   });
-  
+
   // Loading state for form submission
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Toast notification hook for user feedback
   const { toast } = useToast();
 
@@ -228,11 +228,11 @@ export const EventDialog = ({
       }
 
       const responseData = await response.json();
-      
+
       // Update local state to reflect changes immediately
-      setExistingTicketTypes(prev => 
-        prev.map(ticket => 
-          ticket.id === ticketTypeId 
+      setExistingTicketTypes(prev =>
+        prev.map(ticket =>
+          ticket.id === ticketTypeId
             ? { ...ticket, ...updatedData }
             : ticket
         )
@@ -300,7 +300,7 @@ export const EventDialog = ({
       // For editing, we don't need to fetch organizer profile again
       // since we already have the event and it belongs to the current user
       let organizer_id = null;
-      
+
       if (!isEditing) {
         // Only fetch organizer profile for new events
         const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
@@ -321,7 +321,7 @@ export const EventDialog = ({
 
       // Prepare form data for file upload (multipart/form-data)
       const formData = new FormData();
-      
+
       // Add organizer_id for new events only
       if (!isEditing && organizer_id) {
         formData.append('organizer_id', organizer_id.toString());
@@ -350,7 +350,7 @@ export const EventDialog = ({
         formData.append('date', formatDate(newEvent.date));
       }
 
-      if (newEvent.end_date instanceof Date && 
+      if (newEvent.end_date instanceof Date &&
           !isNaN(newEvent.end_date.getTime()) &&
           formatDate(newEvent.end_date) !== formatDate(newEvent.date)) {
         formData.append('end_date', formatDate(newEvent.end_date));
@@ -378,11 +378,11 @@ export const EventDialog = ({
       }
 
       // Additional validation: Check if start time is before end time (for same day events)
-      if (newEvent.start_time && newEvent.end_time && 
+      if (newEvent.start_time && newEvent.end_time &&
           formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
         const startTime = newEvent.start_time.trim();
         const endTime = newEvent.end_time.trim();
-        
+
         if (startTime >= endTime) {
           throw new Error('Start time must be before end time for same-day events');
         }
@@ -428,7 +428,7 @@ export const EventDialog = ({
 
       // Get event data from response
       const eventData = await eventResponse.json();
-      
+
       // For new events, get the ID from response
       if (!isEditing) {
         eventId = eventData.event?.id || eventData.id;
@@ -467,12 +467,12 @@ export const EventDialog = ({
 
       // Close dialog and notify parent component
       onOpenChange(false);
-      
+
       // Return the updated event data to parent
-      const updatedEventData = isEditing 
-        ? { ...editingEvent, ...eventData.event } 
+      const updatedEventData = isEditing
+        ? { ...editingEvent, ...eventData.event }
         : eventData.event || eventData;
-        
+
       onEventCreated?.(updatedEventData);
 
       // Reset form state
@@ -499,6 +499,7 @@ export const EventDialog = ({
       setIsLoading(false);
     }
   };
+
   // Render the dialog UI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -509,7 +510,7 @@ export const EventDialog = ({
             {isEditing ? 'Edit Event' : 'Create New Event'}
           </DialogTitle>
         </DialogHeader>
-        
+
         {/* Dialog Content */}
         <div className="space-y-4 pt-4">
           {/* Event Name Field */}
@@ -719,7 +720,7 @@ export const EventDialog = ({
                       ))}
                     </select>
                   </div>
-                  
+
                   {/* Ticket Price */}
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-gray-300">Price</Label>
@@ -734,7 +735,7 @@ export const EventDialog = ({
                       className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                     />
                   </div>
-                  
+
                   {/* Ticket Quantity */}
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
@@ -749,7 +750,7 @@ export const EventDialog = ({
                     />
                   </div>
                 </div>
-                
+
                 {/* Second Row: Remove Button (centered) */}
                 <div className="flex justify-center">
                   <Button
@@ -778,7 +779,7 @@ export const EventDialog = ({
             >
               Cancel
             </Button>
-            
+
             {/* Submit Button - Create or Update */}
             <Button
               type="button"
@@ -828,7 +829,7 @@ export const EventDialog = ({
  * ExistingTicketTypeRow Component
  * Displays existing ticket types with inline editing capability
  * Used when editing an event to show and modify existing ticket types
- * 
+ *
  * Props:
  * - ticket: object - The ticket type data
  * - onUpdate: function - Callback to update ticket type
@@ -837,14 +838,14 @@ export const EventDialog = ({
 const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
   // State to control edit mode for this ticket type
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Local state for editing ticket type data
   const [editData, setEditData] = useState({
     type_name: ticket.type_name,
     price: ticket.price,
     quantity: ticket.quantity
   });
-  
+
   // Loading state for update operations
   const [isLoading, setIsLoading] = useState(false);
 
@@ -906,7 +907,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               ))}
             </select>
           </div>
-          
+
           {/* Price Input */}
           <div className="space-y-2">
             <Label className="text-gray-700 dark:text-gray-300">Price</Label>
@@ -920,7 +921,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
             />
           </div>
-          
+
           {/* Quantity Input */}
           <div className="space-y-2">
             <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
@@ -934,7 +935,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             />
           </div>
         </div>
-        
+
         {/* Second Row: Action Buttons (centered) */}
         <div className="flex justify-center gap-2">
           {/* Save Button */}
@@ -973,20 +974,20 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Type</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
         </div>
-        
+
         {/* Display Price */}
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">${ticket.price}</p>
         </div>
-        
+
         {/* Display Quantity */}
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.quantity}</p>
         </div>
       </div>
-      
+
       {/* Second Row: Action Buttons (centered) */}
       <div className="flex justify-center gap-2">
         {/* Edit Button */}
