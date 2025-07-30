@@ -373,10 +373,9 @@ export const EventDialog = ({
       }
 
       // Additional validation: Check if start time is before end time (for same day events)
-      if (newEvent.start_time && newEvent.end_time &&
-          formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
-        const startTime = newEvent.start_time.trim();
-        const endTime = newEvent.end_time.trim();
+      if (newEvent.start_time && newEvent.end_time && formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
+        const startTime = new Date(`1970-01-01T${newEvent.start_time}`);
+        const endTime = new Date(`1970-01-01T${newEvent.end_time}`);
 
         if (startTime >= endTime) {
           throw new Error('Start time must be before end time for same-day events');
