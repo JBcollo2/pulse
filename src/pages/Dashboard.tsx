@@ -575,36 +575,42 @@ const Dashboard = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <CardDescription className="text-gray-600 dark:text-gray-400">
+                                <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
                                     {event.description}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-0">
-                                <div className="space-y-3 text-sm mb-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" />
-                                            Date:
-                                        </span>
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium">
+                                {/* Compact info display similar to your image */}
+                                <div className="space-y-2 text-sm mb-4">
+                                    {/* Date */}
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                        <Calendar className="h-4 w-4" />
+                                        <span>Date:</span>
+                                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
                                             {new Date(event.date).toLocaleDateString()}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                            <User className="h-4 w-4" />
-                                            Organizer:
+                                    
+                                    {/* Organizer */}
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                        <User className="h-4 w-4" />
+                                        <span>Organizer:</span>
+                                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                                            {event.full_name}
                                         </span>
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium">{event.full_name}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                            <Building className="h-4 w-4" />
-                                            Company:
+                                    
+                                    {/* Company */}
+                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                        <Building className="h-4 w-4" />
+                                        <span>Company:</span>
+                                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                                            {event.company_name}
                                         </span>
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium">{event.company_name}</span>
                                     </div>
                                 </div>
+                                
+                                {/* Action buttons */}
                                 <div className="flex gap-2">
                                     {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                                         <button
