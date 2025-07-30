@@ -266,7 +266,7 @@ const Dashboard = () => {
     }
   };
 
-  const MyEventsComponent = () => {
+const MyEventsComponent = () => {
     // Add categories state
     const [categories, setCategories] = useState([]);
 
@@ -576,7 +576,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
-                                    {event.description}
+                                    {event.description || 'No description available'}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -596,7 +596,7 @@ const Dashboard = () => {
                                         <User className="h-4 w-4" />
                                         <span>Organizer:</span>
                                         <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                                            {event.full_name}
+                                            {event.organizer?.id ? `Organizer #${event.organizer.id}` : 'N/A'}
                                         </span>
                                     </div>
                                     
@@ -605,7 +605,7 @@ const Dashboard = () => {
                                         <Building className="h-4 w-4" />
                                         <span>Company:</span>
                                         <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                                            {event.company_name}
+                                            {event.organizer?.company_name || 'N/A'}
                                         </span>
                                     </div>
                                 </div>
@@ -655,7 +655,6 @@ const Dashboard = () => {
         </div>
     );
 };
-
   const renderActiveTab = () => {
     switch (activeTab) {
       case "overview":
