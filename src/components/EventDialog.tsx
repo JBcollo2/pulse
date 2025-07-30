@@ -509,7 +509,7 @@ export const EventDialog = ({
             {/* Start Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">Start Date</Label>
-              <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+              <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
                   selected={newEvent.date}
@@ -537,12 +537,13 @@ export const EventDialog = ({
             {/* End Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
-              <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
+              <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
-                  selected={newEvent.end_date}
-                  onSelect={(date) => date && setNewEvent({...newEvent, end_date: date})}
-                  className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
+                  selected={newEvent.date}
+                  onSelect={(date) => date && setNewEvent({...newEvent, date})}
+                  required
+                  className="text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
               </div>
               <div className="mt-2">
@@ -586,11 +587,10 @@ export const EventDialog = ({
                   setNewEvent({...newEvent, image: file});
                 }
               }}
-              className="block w-full text-sm text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-200 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 file:cursor-pointer bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 overflow-hidden"
+              className="block w-full text-sm text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-green-500 file:text-white hover:file:from-blue-600 hover:file:to-green-600 file:cursor-pointer file:transition-all file:duration-200 file:shadow-md hover:file:shadow-lg file:transform hover:file:scale-105 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 overflow-hidden"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
           </div>
-
           {/* Existing Ticket Types Section - Only shown when editing */}
           {isEditing && existingTicketTypes.length > 0 && (
             <div className="space-y-4">
@@ -885,12 +885,6 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
         <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
       </div>
       
-      {/* Display Price with Currency */}
-      <div className="space-y-1">
-        <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
-        <p className="text-gray-800 dark:text-gray-200 font-medium">Ksh{ticket.price}</p>
-      </div>
-      
       {/* Display Quantity with Action Buttons */}
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
@@ -903,7 +897,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               variant="ghost"
               size="icon"
               onClick={() => setIsEditing(true)}
-              className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 w-8"
+              className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 w-8 transition-colors"
             >
               <Edit className="h-4 w-4" />
             </Button>
@@ -913,7 +907,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               variant="ghost"
               size="icon"
               onClick={handleDelete}
-              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8"
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
             </Button>

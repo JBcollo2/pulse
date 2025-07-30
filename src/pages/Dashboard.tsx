@@ -49,8 +49,9 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   // State variables for filtering and sorting
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
   const [filterDate, setFilterDate] = useState("all");
+  const [filterCapacity, setFilterCapacity] = useState("all");
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [eventSearchQuery, setEventSearchQuery] = useState("");
@@ -273,7 +274,11 @@ const Dashboard = () => {
           event.description?.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
           event.location?.toLowerCase().includes(eventSearchQuery.toLowerCase());
 
-        const matchesStatus = filterStatus === "all" || event.status === filterStatus;
+        // Category filter
+        let matchesCategory = true;
+        if (filterCategory !== "all") {
+          matchesCategory = event.category === filterCategory;
+        }
 
         let matchesDate = true;
         if (filterDate !== "all") {
@@ -309,7 +314,7 @@ const Dashboard = () => {
               matchesDate = true;
           }
         }
-        return matchesSearch && matchesStatus && matchesDate;
+        return matchesSearch && matchesCategory && matchesDate;
       });
 
       filtered.sort((a, b) => {
@@ -323,14 +328,9 @@ const Dashboard = () => {
             aValue = new Date(a.date);
             bValue = new Date(b.date);
             break;
-          case "status":
-            const statusPriority = {
-              'Active': 1,
-              'Upcoming': 2,
-              'Completed': 3
-            };
-            aValue = statusPriority[a.status] || 4;
-            bValue = statusPriority[b.status] || 4;
+          case "category":
+            aValue = a.category ? a.category.toLowerCase() : "";
+            bValue = b.category ? b.category.toLowerCase() : "";
             break;
           default:
             return 0;
@@ -348,14 +348,14 @@ const Dashboard = () => {
 
     const clearAllFilters = () => {
       setEventSearchQuery("");
-      setFilterStatus("all");
+      setFilterCategory("all");
       setFilterDate("all");
       setSortBy("date");
       setSortOrder("desc");
     };
 
     const hasActiveFilters = eventSearchQuery !== "" ||
-      filterStatus !== "all" ||
+      filterCategory !== "all" ||
       filterDate !== "all" ||
       sortBy !== "date" ||
       sortOrder !== "desc";
@@ -406,16 +406,22 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
               <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
                 className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
               >
-                <option value="all">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Upcoming">Upcoming</option>
-                <option value="Completed">Completed</option>
+                <option value="all">All Categories</option>
+                <option value="technology">Technology</option>
+                <option value="business">Business</option>
+                <option value="sports">Sports</option>
+                <option value="environment">Environment</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="education">Education</option>
+                <option value="health-wellness">Health & Wellness</option>
+                <option value="food">Food</option>
+                <option value="fashion">Fashion</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -443,7 +449,8 @@ const Dashboard = () => {
                 >
                   <option value="date">Date</option>
                   <option value="name">Name</option>
-                  <option value="status">Status</option>
+                  <option value="capacity">Capacity</option>
+                  <option value="attendees">Attendees</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
@@ -479,11 +486,14 @@ const Dashboard = () => {
                   </button>
                 </span>
               )}
-              {filterStatus !== "all" && (
+              {filterCapacity !== "all" && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-md">
-                  Status: {filterStatus}
+                  Size: {filterCapacity === "small" ? "≤50 people" : 
+                         filterCapacity === "medium" ? "51-200 people" : 
+                         filterCapacity === "large" ? "200+ people" : 
+                         "Unlimited"}
                   <button
-                    onClick={() => setFilterStatus("all")}
+                    onClick={() => setFilterCapacity("all")}
                     className="hover:bg-green-200 dark:hover:bg-green-800 rounded-full p-0.5"
                   >
                     <X className="h-3 w-3" />
@@ -513,13 +523,20 @@ const Dashboard = () => {
                     <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
                       {event.name}
                     </CardTitle>
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full
-                      ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                        event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                        event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
-                        'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
-                      {event.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {event.max_attendees && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                          {event.current_attendees || 0}/{event.max_attendees}
+                        </span>
+                      )}
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full
+                        ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                          event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                          event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                          'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                        {event.status}
+                      </span>
+                    </div>
                   </div>
                   <CardDescription className="text-gray-600 dark:text-gray-400">
                     {event.description}
