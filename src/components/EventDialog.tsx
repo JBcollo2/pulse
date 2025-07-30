@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
  * Used for API calls that expect date strings in this format
  */
 const formatDate = (date) => {
+  if (!date) return '';
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -135,15 +136,22 @@ export const EventDialog = ({
    */
   useEffect(() => {
     if (editingEvent) {
+      // Helper function to parse date strings
+      const parseDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? new Date() : date;
+      };
+
       // Populate form with existing event data for editing
       setNewEvent({
-        name: editingEvent.name,
+        name: editingEvent.name || '',
         description: editingEvent.description || '',
-        date: new Date(editingEvent.date),
-        end_date: editingEvent.end_date ? new Date(editingEvent.end_date) : new Date(editingEvent.date),
-        start_time: editingEvent.start_time,
+        date: parseDate(editingEvent.date),
+        end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
+        start_time: editingEvent.start_time || '',
         end_time: editingEvent.end_time || '',
-        location: editingEvent.location,
+        location: editingEvent.location || '',
         image: null, // Always null for editing (user can upload new image)
         ticket_types: [], // Start with empty array for new ticket types
         category_id: editingEvent.category_id || null
@@ -286,41 +294,40 @@ export const EventDialog = ({
    * Main form submission handler - FIXED VERSION
    * Handles both creating new events and updating existing ones
    */
-  const handleSubmitEvent = async (e) => {
-    e.preventDefault();
-
+  const handleSubmitEvent = async () => {
     setIsLoading(true);
     try {
-      // First, get the current user's organizer profile
-      const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
-        credentials: 'include'
-      });
+      // For editing, we don't need to fetch organizer profile again
+      // since we already have the event and it belongs to the current user
+      let organizer_id = null;
+      
+      if (!isEditing) {
+        // Only fetch organizer profile for new events
+        const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+          credentials: 'include'
+        });
 
-      if (!profileResponse.ok) {
-        throw new Error('Failed to fetch profile');
-      }
+        if (!profileResponse.ok) {
+          throw new Error('Failed to fetch profile');
+        }
 
-      const profileData = await profileResponse.json();
-      const organizer_id = profileData.organizer_profile?.id;
+        const profileData = await profileResponse.json();
+        organizer_id = profileData.organizer_profile?.id;
 
-      if (!organizer_id) {
-        throw new Error('Organizer profile not found');
+        if (!organizer_id) {
+          throw new Error('Organizer profile not found');
+        }
       }
 
       // Prepare form data for file upload (multipart/form-data)
       const formData = new FormData();
       
       // Add organizer_id for new events only
-      if (!isEditing) {
+      if (!isEditing && organizer_id) {
         formData.append('organizer_id', organizer_id.toString());
       }
 
-      // Add category if selected and valid
-      if (newEvent.category_id && newEvent.category_id !== null && newEvent.category_id !== '') {
-        formData.append('category_id', newEvent.category_id.toString());
-      }
-
-      // Add required fields with validation
+      // Add basic event fields - only add if they have values
       if (newEvent.name && newEvent.name.trim() !== '') {
         formData.append('name', newEvent.name.trim());
       }
@@ -333,24 +340,52 @@ export const EventDialog = ({
         formData.append('location', newEvent.location.trim());
       }
 
-      // Handle dates - always add date
-      if (newEvent.date instanceof Date) {
+      // Handle category - convert to string and check for valid values
+      if (newEvent.category_id !== null && newEvent.category_id !== undefined && newEvent.category_id !== '') {
+        formData.append('category_id', newEvent.category_id.toString());
+      }
+
+      // Handle dates - always add date, only add end_date if different
+      if (newEvent.date instanceof Date && !isNaN(newEvent.date.getTime())) {
         formData.append('date', formatDate(newEvent.date));
       }
 
-      // Only add end_date if it's different from start date
       if (newEvent.end_date instanceof Date && 
+          !isNaN(newEvent.end_date.getTime()) &&
           formatDate(newEvent.end_date) !== formatDate(newEvent.date)) {
         formData.append('end_date', formatDate(newEvent.end_date));
       }
 
-      // Handle times - only add if they have values
+      // Handle times - FIXED: Validate and format time properly
       if (newEvent.start_time && newEvent.start_time.trim() !== '') {
-        formData.append('start_time', newEvent.start_time.trim());
+        const startTime = newEvent.start_time.trim();
+        // Validate HH:MM format
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(startTime)) {
+          throw new Error('Invalid start time format. Please use HH:MM format (e.g., 14:30)');
+        }
+        formData.append('start_time', startTime);
       }
 
       if (newEvent.end_time && newEvent.end_time.trim() !== '') {
-        formData.append('end_time', newEvent.end_time.trim());
+        const endTime = newEvent.end_time.trim();
+        // Validate HH:MM format
+        const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(endTime)) {
+          throw new Error('Invalid end time format. Please use HH:MM format (e.g., 16:30)');
+        }
+        formData.append('end_time', endTime);
+      }
+
+      // Additional validation: Check if start time is before end time (for same day events)
+      if (newEvent.start_time && newEvent.end_time && 
+          formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
+        const startTime = newEvent.start_time.trim();
+        const endTime = newEvent.end_time.trim();
+        
+        if (startTime >= endTime) {
+          throw new Error('Start time must be before end time for same-day events');
+        }
       }
 
       // Handle file upload
@@ -361,7 +396,7 @@ export const EventDialog = ({
       let eventResponse;
       let eventId;
 
-      // Debug: Log what we're sending
+      // Debug: Log what we're sending (remove in production)
       console.log('FormData contents:');
       for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
@@ -391,10 +426,12 @@ export const EventDialog = ({
         throw new Error(errorData.error || errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
       }
 
-      // Get event ID from response for new events
+      // Get event data from response
+      const eventData = await eventResponse.json();
+      
+      // For new events, get the ID from response
       if (!isEditing) {
-        const eventData = await eventResponse.json();
-        eventId = eventData.id;
+        eventId = eventData.event?.id || eventData.id;
       }
 
       // Create new ticket types (not updates to existing ones)
@@ -409,8 +446,8 @@ export const EventDialog = ({
             body: JSON.stringify({
               event_id: eventId,
               type_name: ticketType.type_name,
-              price: ticketType.price,
-              quantity: ticketType.quantity
+              price: parseFloat(ticketType.price) || 0,
+              quantity: parseInt(ticketType.quantity) || 0
             })
           });
 
@@ -430,23 +467,13 @@ export const EventDialog = ({
 
       // Close dialog and notify parent component
       onOpenChange(false);
-      if (isEditing && editingEvent) {
-        onEventCreated?.(editingEvent);
-      } else {
-        // Return new event data to parent component
-        onEventCreated?.({
-          id: eventId,
-          name: newEvent.name,
-          description: newEvent.description,
-          date: formatDate(newEvent.date),
-          end_date: formatDate(newEvent.end_date),
-          start_time: newEvent.start_time,
-          end_time: newEvent.end_time,
-          location: newEvent.location,
-          organizer_id: organizer_id,
-          category_id: newEvent.category_id || undefined
-        });
-      }
+      
+      // Return the updated event data to parent
+      const updatedEventData = isEditing 
+        ? { ...editingEvent, ...eventData.event } 
+        : eventData.event || eventData;
+        
+      onEventCreated?.(updatedEventData);
 
       // Reset form state
       setNewEvent({
@@ -472,8 +499,6 @@ export const EventDialog = ({
       setIsLoading(false);
     }
   };
-
- 
   // Render the dialog UI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -664,60 +689,64 @@ export const EventDialog = ({
 
             {/* Render new ticket types being added */}
             {newEvent.ticket_types.map((ticket, index) => (
-              <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
-                {/* Ticket Type Selection */}
-                <div className="col-span-4 space-y-2">
-                  <Label className="text-gray-700 dark:text-gray-300">Type</Label>
-                  <select
-                    className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-                    value={ticket.type_name}
-                    onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
-                  >
-                    {TICKET_TYPES.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+              <div key={index} className="grid grid-cols-1 gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                {/* First Row: Type, Price, Quantity */}
+                <div className="grid grid-cols-3 gap-4">
+                  {/* Ticket Type Selection */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 dark:text-gray-300">Type</Label>
+                    <select
+                      className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                      value={ticket.type_name}
+                      onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
+                    >
+                      {TICKET_TYPES.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Ticket Price */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 dark:text-gray-300">Price</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={ticket.price || ''}
+                      onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value) || 0)}
+                      required
+                      placeholder="0.00"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    />
+                  </div>
+                  
+                  {/* Ticket Quantity */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={ticket.quantity || ''}
+                      onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                      required
+                      placeholder="Enter quantity"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    />
+                  </div>
                 </div>
                 
-                {/* Ticket Price */}
-                <div className="col-span-3 space-y-2">
-                  <Label className="text-gray-700 dark:text-gray-300">Price</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={ticket.price || ''}
-                    onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value) || 0)}
-                    required
-                    placeholder="0.00"
-                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-                  />
-                </div>
-                
-                {/* Ticket Quantity */}
-                <div className="col-span-4 space-y-2">
-                  <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={ticket.quantity || ''}
-                    onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                    required
-                    placeholder="Enter quantity"
-                    className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-                  />
-                </div>
-                
-                {/* Remove Button */}
-                <div className="col-span-1 flex justify-center items-end pb-2">
+                {/* Second Row: Remove Button (centered) */}
+                <div className="flex justify-center">
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
+                    size="sm"
                     onClick={() => handleRemoveTicketType(index)}
                     className="text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove Ticket Type
                   </Button>
                 </div>
               </div>
@@ -847,39 +876,40 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
   // Render edit mode interface
   if (isEditing) {
     return (
-      <div className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        {/* Ticket Type Dropdown */}
-        <div className="space-y-2">
-          <Label className="text-gray-700 dark:text-gray-300">Type</Label>
-          <select
-            className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-            value={editData.type_name}
-            onChange={(e) => setEditData({...editData, type_name: e.target.value})}
-          >
-            {TICKET_TYPES.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-        
-        {/* Price Input */}
-        <div className="space-y-2">
-          <Label className="text-gray-700 dark:text-gray-300">Price</Label>
-          <Input
-            type="number"
-            min="0"
-            step="0.01"
-            value={editData.price}
-            onChange={(e) => setEditData({...editData, price: parseFloat(e.target.value)})}
-            required
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-          />
-        </div>
-        
-        {/* Quantity Input and Action Buttons */}
-        <div className="space-y-2">
-          <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
-          <div className="flex gap-2">
+      <div className="space-y-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        {/* First Row: Type, Price, Quantity */}
+        <div className="grid grid-cols-3 gap-4">
+          {/* Ticket Type Dropdown */}
+          <div className="space-y-2">
+            <Label className="text-gray-700 dark:text-gray-300">Type</Label>
+            <select
+              className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+              value={editData.type_name}
+              onChange={(e) => setEditData({...editData, type_name: e.target.value})}
+            >
+              {TICKET_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Price Input */}
+          <div className="space-y-2">
+            <Label className="text-gray-700 dark:text-gray-300">Price</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={editData.price}
+              onChange={(e) => setEditData({...editData, price: parseFloat(e.target.value)})}
+              required
+              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+            />
+          </div>
+          
+          {/* Quantity Input */}
+          <div className="space-y-2">
+            <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
             <Input
               type="number"
               min="0"
@@ -888,28 +918,32 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               required
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
             />
-            {/* Save Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleSave}
-              disabled={isLoading}
-              className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40"
-            >
-              {isLoading ? '...' : 'Save'}
-            </Button>
-            {/* Cancel Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
-            >
-              Cancel
-            </Button>
           </div>
+        </div>
+        
+        {/* Second Row: Action Buttons (centered) */}
+        <div className="flex justify-center gap-2">
+          {/* Save Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleSave}
+            disabled={isLoading}
+            className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40"
+          >
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
+          {/* Cancel Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+            className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+          >
+            Cancel
+          </Button>
         </div>
       </div>
     );
@@ -917,41 +951,52 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
 
   // Render view mode interface (default state)
   return (
-    <div className="grid grid-cols-3 gap-4 items-center p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
-      {/* Display Ticket Type */}
-      <div className="space-y-1">
-        <Label className="text-gray-500 dark:text-gray-400 text-xs">Type</Label>
-        <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
+    <div className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+      {/* First Row: Type, Price, Quantity */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Display Ticket Type */}
+        <div className="space-y-1">
+          <Label className="text-gray-500 dark:text-gray-400 text-xs">Type</Label>
+          <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
+        </div>
+        
+        {/* Display Price */}
+        <div className="space-y-1">
+          <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
+          <p className="text-gray-800 dark:text-gray-200 font-medium">${ticket.price}</p>
+        </div>
+        
+        {/* Display Quantity */}
+        <div className="space-y-1">
+          <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
+          <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.quantity}</p>
+        </div>
       </div>
       
-      {/* Display Quantity with Action Buttons */}
-      <div className="space-y-1">
-        <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
-        <div className="flex gap-2 items-center">
-          <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.quantity}</p>
-          <div className="flex gap-1">
-            {/* Edit Button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsEditing(true)}
-              className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 w-8 transition-colors"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            {/* Delete Button */}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 h-8 w-8 transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+      {/* Second Row: Action Buttons (centered) */}
+      <div className="flex justify-center gap-2">
+        {/* Edit Button */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsEditing(true)}
+          className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Edit
+        </Button>
+        {/* Delete Button */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </Button>
       </div>
     </div>
   );
