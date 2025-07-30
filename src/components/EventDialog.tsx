@@ -14,6 +14,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Plus, Trash2, Edit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+/**
+ * Utility function to format Date object to YYYY-MM-DD string format
+ * Used for API calls that expect date strings in this format
+ */
 const formatDate = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -21,38 +25,63 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+// Predefined ticket types available for events
 const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
 
+/**
+ * Main EventDialog Component
+ * A modal dialog for creating new events or editing existing ones
+ * 
+ * Props:
+ * - open: boolean - Controls dialog visibility
+ * - onOpenChange: function - Callback when dialog open state changes
+ * - editingEvent: object|null - Event data when editing, null when creating new
+ * - onEventCreated: function - Callback when event is successfully created/updated
+ */
 export const EventDialog = ({
   open,
   onOpenChange,
   editingEvent = null,
   onEventCreated
 }) => {
+  // State for storing event categories fetched from API
   const [categories, setCategories] = useState([]);
+  
+  // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
+  
+  // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
     name: '',
     description: '',
-    date: new Date(),
-    end_date: new Date(),
-    start_time: '',
-    end_time: '',
+    date: new Date(),           // Event start date
+    end_date: new Date(),       // Event end date
+    start_time: '',             // Event start time (HH:MM format)
+    end_time: '',               // Event end time (HH:MM format)
     location: '',
-    image: null,
-    ticket_types: [],
-    category_id: null
+    image: null,                // File object for event image
+    ticket_types: [],           // Array of new ticket types to be created
+    category_id: null           // Selected category ID
   });
+  
+  // Loading state for form submission
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Toast notification hook for user feedback
   const { toast } = useToast();
 
+  // Determine if we're in editing mode
   const isEditing = !!editingEvent;
 
+  /**
+   * Effect: Fetch event categories from API on component mount
+   * Categories are used in the category dropdown selection
+   */
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
-          credentials: 'include'
+          credentials: 'include' // Include cookies for authentication
         });
 
         if (!response.ok) {
@@ -74,7 +103,10 @@ export const EventDialog = ({
     fetchCategories();
   }, []);
 
-  // Fetch existing ticket types when editing
+  /**
+   * Effect: Fetch existing ticket types when editing an event
+   * This allows users to see and modify existing ticket types
+   */
   useEffect(() => {
     const fetchExistingTicketTypes = async () => {
       if (editingEvent && editingEvent.id) {
@@ -96,8 +128,14 @@ export const EventDialog = ({
     fetchExistingTicketTypes();
   }, [editingEvent]);
 
+  /**
+   * Effect: Initialize form data based on editing mode
+   * - When editing: populate form with existing event data
+   * - When creating: reset form to default values
+   */
   useEffect(() => {
     if (editingEvent) {
+      // Populate form with existing event data for editing
       setNewEvent({
         name: editingEvent.name,
         description: editingEvent.description || '',
@@ -106,11 +144,12 @@ export const EventDialog = ({
         start_time: editingEvent.start_time,
         end_time: editingEvent.end_time || '',
         location: editingEvent.location,
-        image: null,
-        ticket_types: [],
+        image: null, // Always null for editing (user can upload new image)
+        ticket_types: [], // Start with empty array for new ticket types
         category_id: editingEvent.category_id || null
       });
     } else {
+      // Reset form for creating new event
       setNewEvent({
         name: '',
         description: '',
@@ -127,6 +166,10 @@ export const EventDialog = ({
     }
   }, [editingEvent, open]);
 
+  /**
+   * Add a new ticket type to the form
+   * Creates a new ticket type with default values
+   */
   const handleAddTicketType = () => {
     setNewEvent(prev => ({
       ...prev,
@@ -134,6 +177,9 @@ export const EventDialog = ({
     }));
   };
 
+  /**
+   * Remove a ticket type from the form by index
+   */
   const handleRemoveTicketType = (index) => {
     setNewEvent(prev => ({
       ...prev,
@@ -141,6 +187,9 @@ export const EventDialog = ({
     }));
   };
 
+  /**
+   * Update a specific field of a ticket type by index
+   */
   const handleTicketTypeChange = (index, field, value) => {
     setNewEvent(prev => ({
       ...prev,
@@ -150,6 +199,10 @@ export const EventDialog = ({
     }));
   };
 
+  /**
+   * Update an existing ticket type via API call
+   * Used for modifying ticket types that already exist in the database
+   */
   const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
@@ -168,7 +221,7 @@ export const EventDialog = ({
 
       const responseData = await response.json();
       
-      // Update local state
+      // Update local state to reflect changes immediately
       setExistingTicketTypes(prev => 
         prev.map(ticket => 
           ticket.id === ticketTypeId 
@@ -195,6 +248,10 @@ export const EventDialog = ({
     }
   };
 
+  /**
+   * Delete an existing ticket type via API call
+   * Removes ticket type from database and updates local state
+   */
   const handleDeleteExistingTicketType = async (ticketTypeId) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
@@ -207,7 +264,7 @@ export const EventDialog = ({
         throw new Error(errorData.error || 'Failed to delete ticket type');
       }
 
-      // Remove from local state
+      // Remove from local state immediately
       setExistingTicketTypes(prev => prev.filter(ticket => ticket.id !== ticketTypeId));
 
       toast({
@@ -225,11 +282,16 @@ export const EventDialog = ({
     }
   };
 
+  /**
+   * Main form submission handler
+   * Handles both creating new events and updating existing ones
+   */
   const handleSubmitEvent = async (e) => {
     e.preventDefault();
 
     setIsLoading(true);
     try {
+      // First, get the current user's organizer profile
       const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         credentials: 'include'
       });
@@ -245,23 +307,30 @@ export const EventDialog = ({
         throw new Error('Organizer profile not found');
       }
 
+      // Prepare form data for file upload (multipart/form-data)
       const formData = new FormData();
       formData.append('organizer_id', organizer_id.toString());
 
+      // Add category if selected
       if (newEvent.category_id) {
         formData.append('category_id', newEvent.category_id.toString());
       }
 
+      // Add all event fields to form data
       Object.entries(newEvent).forEach(([key, value]) => {
         if (key === 'image' && value instanceof File) {
+          // Handle file upload
           formData.append('file', value);
         } else if (key === 'date' && value instanceof Date) {
+          // Format date for API
           formData.append(key, formatDate(value));
         } else if (key === 'end_date' && value instanceof Date) {
+          // Only add end_date if it's different from start date
           if (formatDate(value) !== formatDate(newEvent.date)) {
             formData.append('end_date', formatDate(value));
           }
         } else if (key !== 'ticket_types' && typeof value === 'string' && value !== '') {
+          // Add non-empty string fields (excluding ticket_types which are handled separately)
           formData.append(key, value);
         }
       });
@@ -269,7 +338,9 @@ export const EventDialog = ({
       let eventResponse;
       let eventId;
 
+      // Create or update event based on mode
       if (isEditing && editingEvent) {
+        // Update existing event
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
           method: 'PUT',
           credentials: 'include',
@@ -277,6 +348,7 @@ export const EventDialog = ({
         });
         eventId = editingEvent.id;
       } else {
+        // Create new event
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
           method: 'POST',
           credentials: 'include',
@@ -291,7 +363,7 @@ export const EventDialog = ({
         throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
       }
 
-      // Handle new ticket types (only for new ones, not updates to existing)
+      // Create new ticket types (not updates to existing ones)
       if (newEvent.ticket_types.length > 0) {
         for (const ticketType of newEvent.ticket_types) {
           const ticketTypeResponse = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
@@ -315,16 +387,19 @@ export const EventDialog = ({
         }
       }
 
+      // Show success message
       toast({
         title: "Success",
         description: `Event ${isEditing ? 'updated' : 'created'} successfully`,
         variant: "default"
       });
 
+      // Close dialog and notify parent component
       onOpenChange(false);
       if (isEditing && editingEvent) {
         onEventCreated?.(editingEvent);
       } else {
+        // Return new event data to parent component
         onEventCreated?.({
           id: eventId,
           name: newEvent.name,
@@ -339,6 +414,7 @@ export const EventDialog = ({
         });
       }
 
+      // Reset form state
       setNewEvent({
         name: '',
         description: '',
@@ -363,15 +439,20 @@ export const EventDialog = ({
     }
   };
 
+  // Render the dialog UI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
+        {/* Dialog Header */}
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {isEditing ? 'Edit Event' : 'Create New Event'}
           </DialogTitle>
         </DialogHeader>
+        
+        {/* Dialog Content */}
         <div className="space-y-4 pt-4">
+          {/* Event Name Field */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Event Name</Label>
             <Input
@@ -383,6 +464,7 @@ export const EventDialog = ({
             />
           </div>
 
+          {/* Event Description Field */}
           <div className="space-y-2">
             <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Description</Label>
             <Textarea
@@ -394,6 +476,7 @@ export const EventDialog = ({
             />
           </div>
 
+          {/* Category Selection Field */}
           <div className="space-y-2">
             <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">Category</Label>
             <Select
@@ -421,7 +504,9 @@ export const EventDialog = ({
             </Select>
           </div>
 
+          {/* Date and Time Fields - Two Column Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Start Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">Start Date</Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
@@ -448,6 +533,8 @@ export const EventDialog = ({
                 />
               </div>
             </div>
+            
+            {/* End Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600">
@@ -474,6 +561,7 @@ export const EventDialog = ({
             </div>
           </div>
 
+          {/* Location Field */}
           <div className="space-y-2">
             <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">Location</Label>
             <Input
@@ -485,6 +573,7 @@ export const EventDialog = ({
             />
           </div>
 
+          {/* Image Upload Field */}
           <div className="space-y-2">
             <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Event Image</Label>
             <Input
@@ -502,7 +591,7 @@ export const EventDialog = ({
             <p className="text-xs text-gray-500 dark:text-gray-400">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
           </div>
 
-          {/* Existing Ticket Types Section (only shown when editing) */}
+          {/* Existing Ticket Types Section - Only shown when editing */}
           {isEditing && existingTicketTypes.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -538,8 +627,10 @@ export const EventDialog = ({
               </Button>
             </div>
 
+            {/* Render new ticket types being added */}
             {newEvent.ticket_types.map((ticket, index) => (
               <div key={index} className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                {/* Ticket Type Selection */}
                 <div className="space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Type</Label>
                   <select
@@ -552,6 +643,8 @@ export const EventDialog = ({
                     ))}
                   </select>
                 </div>
+                
+                {/* Ticket Price */}
                 <div className="space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Price</Label>
                   <Input
@@ -564,6 +657,8 @@ export const EventDialog = ({
                     className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                   />
                 </div>
+                
+                {/* Ticket Quantity and Remove Button */}
                 <div className="space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
                   <div className="flex gap-2">
@@ -590,7 +685,9 @@ export const EventDialog = ({
             ))}
           </div>
 
+          {/* Dialog Action Buttons */}
           <div className="flex justify-end space-x-2">
+            {/* Cancel Button */}
             <Button
               type="button"
               variant="outline"
@@ -599,6 +696,8 @@ export const EventDialog = ({
             >
               Cancel
             </Button>
+            
+            {/* Submit Button - Create or Update */}
             <Button
               type="button"
               onClick={handleSubmitEvent}
@@ -609,6 +708,7 @@ export const EventDialog = ({
             >
               {isLoading ? (
                 <>
+                  {/* Loading Spinner */}
                   <svg
                     className="animate-spin h-5 w-5 mr-2 text-white"
                     xmlns="http://www.w3.org/2000/svg"
@@ -642,16 +742,34 @@ export const EventDialog = ({
   );
 };
 
-// Component for handling existing ticket type rows
+/**
+ * ExistingTicketTypeRow Component
+ * Displays existing ticket types with inline editing capability
+ * Used when editing an event to show and modify existing ticket types
+ * 
+ * Props:
+ * - ticket: object - The ticket type data
+ * - onUpdate: function - Callback to update ticket type
+ * - onDelete: function - Callback to delete ticket type
+ */
 const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
+  // State to control edit mode for this ticket type
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Local state for editing ticket type data
   const [editData, setEditData] = useState({
     type_name: ticket.type_name,
     price: ticket.price,
     quantity: ticket.quantity
   });
+  
+  // Loading state for update operations
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Save changes to the ticket type
+   * Calls parent update function and exits edit mode on success
+   */
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -664,6 +782,10 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     }
   };
 
+  /**
+   * Cancel editing and revert changes
+   * Resets edit data to original values
+   */
   const handleCancel = () => {
     setEditData({
       type_name: ticket.type_name,
@@ -673,15 +795,21 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     setIsEditing(false);
   };
 
+  /**
+   * Delete ticket type with confirmation
+   * Shows browser confirmation dialog before deletion
+   */
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this ticket type?')) {
       await onDelete(ticket.id);
     }
   };
 
+  // Render edit mode interface
   if (isEditing) {
     return (
       <div className="grid grid-cols-3 gap-4 items-end p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        {/* Ticket Type Dropdown */}
         <div className="space-y-2">
           <Label className="text-gray-700 dark:text-gray-300">Type</Label>
           <select
@@ -694,6 +822,8 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             ))}
           </select>
         </div>
+        
+        {/* Price Input */}
         <div className="space-y-2">
           <Label className="text-gray-700 dark:text-gray-300">Price</Label>
           <Input
@@ -706,6 +836,8 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
           />
         </div>
+        
+        {/* Quantity Input and Action Buttons */}
         <div className="space-y-2">
           <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
           <div className="flex gap-2">
@@ -717,6 +849,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               required
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
             />
+            {/* Save Button */}
             <Button
               type="button"
               variant="outline"
@@ -727,6 +860,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             >
               {isLoading ? '...' : 'Save'}
             </Button>
+            {/* Cancel Button */}
             <Button
               type="button"
               variant="outline"
@@ -742,21 +876,28 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     );
   }
 
+  // Render view mode interface (default state)
   return (
     <div className="grid grid-cols-3 gap-4 items-center p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+      {/* Display Ticket Type */}
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Type</Label>
         <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
       </div>
+      
+      {/* Display Price with Currency */}
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
         <p className="text-gray-800 dark:text-gray-200 font-medium">Ksh{ticket.price}</p>
       </div>
+      
+      {/* Display Quantity with Action Buttons */}
       <div className="space-y-1">
         <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
         <div className="flex gap-2 items-center">
           <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.quantity}</p>
           <div className="flex gap-1">
+            {/* Edit Button */}
             <Button
               type="button"
               variant="ghost"
@@ -766,6 +907,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             >
               <Edit className="h-4 w-4" />
             </Button>
+            {/* Delete Button */}
             <Button
               type="button"
               variant="ghost"

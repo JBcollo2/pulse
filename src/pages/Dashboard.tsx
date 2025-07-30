@@ -48,6 +48,12 @@ const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const { toast } = useToast();
 
+  // New state variables for filtering and sorting
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDate, setFilterDate] = useState("all");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("desc");
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -58,7 +64,6 @@ const Dashboard = () => {
         setSidebarCollapsed(false);
       }
     };
-
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
@@ -70,11 +75,9 @@ const Dashboard = () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
           credentials: 'include',
         });
-
         if (!response.ok) {
           throw new Error('Failed to fetch events');
         }
-
         const data = await response.json();
         setEvents(data.events);
       } catch (error) {
@@ -86,7 +89,6 @@ const Dashboard = () => {
         });
       }
     };
-
     if (user) {
       fetchEvents();
     }
@@ -155,7 +157,6 @@ const Dashboard = () => {
     if (!loading && user) {
       const userRole = user.role as "ADMIN" | "ORGANIZER" | "ATTENDEE" | "SECURITY";
       const firstAccessibleTab = allMenuItems.find(item => item.roles.includes(userRole));
-
       if (firstAccessibleTab) {
         setActiveTab(firstAccessibleTab.id);
       } else {
@@ -169,14 +170,12 @@ const Dashboard = () => {
       if (isMobile && mobileMenuOpen) {
         const sidebar = document.getElementById('mobile-sidebar');
         const menuButton = document.getElementById('mobile-menu-btn');
-
         if (sidebar && !sidebar.contains(event.target as Node) &&
             menuButton && !menuButton.contains(event.target as Node)) {
           setMobileMenuOpen(false);
         }
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, mobileMenuOpen]);
@@ -246,11 +245,9 @@ const Dashboard = () => {
         method: 'DELETE',
         credentials: 'include',
       });
-
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-
       // Remove the deleted event from the state
       setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
       toast({
@@ -268,105 +265,274 @@ const Dashboard = () => {
     }
   };
 
-  const MyEventsComponent = () => (
-  <div className="space-y-6 animate-fade-in">
-    <EventDialog
-      open={showEventDialog}
-      onOpenChange={setShowEventDialog}
-      editingEvent={editingEvent}
-      onEventCreated={handleEventSave}
-    />
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-          <Calendar className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and organize your events</p>
-        </div>
-      </div>
-      {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-        <button
-          onClick={handleCreateEventClick}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-        >
-          <Plus className="h-5 w-5" />
-          <span>Create New Event</span>
-        </button>
-      )}
-    </div>
+  // Function to filter and sort events
+  const getFilteredAndSortedEvents = () => {
+    let filtered = events.filter(event => {
+      // Filter by search query
+      const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           event.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           event.location?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {events.map((event) => (
-        <Card key={event.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-200 group">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
-                {event.name}
-              </CardTitle>
-              <span className={`px-3 py-1 text-xs font-medium rounded-full
-                ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
-                {event.status}
-              </span>
-            </div>
-            <CardDescription className="text-gray-600 dark:text-gray-400">
-              {event.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3 text-sm mb-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Date:
-                </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.date}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Organizer:
-                </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.full_name}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  Company:
-                </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">{event.company_name}</span>
-              </div>
-            </div>
+      // Filter by status
+      const matchesStatus = filterStatus === "all" || event.status === filterStatus;
 
-            <div className="flex gap-2">
-              {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-                <button
-                  onClick={() => handleEditEventClick(event)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                >
-                  <Edit className="h-4 w-4" />
-                  Manage
-                </button>
-              )}
-              <button
-                onClick={() => handleViewEventClick(event)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+      // Filter by date
+      let matchesDate = true;
+      if (filterDate !== "all") {
+        const eventDate = new Date(event.date);
+        const today = new Date();
+        const oneWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const oneMonth = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        switch (filterDate) {
+          case "today":
+            matchesDate = eventDate.toDateString() === today.toDateString();
+            break;
+          case "week":
+            matchesDate = eventDate >= today && eventDate <= oneWeek;
+            break;
+          case "month":
+            matchesDate = eventDate >= today && eventDate <= oneMonth;
+            break;
+          case "past":
+            matchesDate = eventDate < today;
+            break;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+    // Sort events
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case "name":
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case "date":
+          aValue = new Date(a.date);
+          bValue = new Date(b.date);
+          break;
+        case "status":
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortOrder === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+    return filtered;
+  };
+
+  const MyEventsComponent = () => {
+    const filteredEvents = getFilteredAndSortedEvents();
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <EventDialog
+          open={showEventDialog}
+          onOpenChange={setShowEventDialog}
+          editingEvent={editingEvent}
+          onEventCreated={handleEventSave}
+        />
+
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and organize your events ({filteredEvents.length} of {events.length})</p>
+            </div>
+          </div>
+          {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+            <button
+              onClick={handleCreateEventClick}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Create New Event</span>
+            </button>
+          )}
+        </div>
+        {/* Filters Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, description, location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
+                />
+              </div>
+            </div>
+            {/* Status Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
               >
-                <Eye className="h-4 w-4" />
-                View
+                <option value="all">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Upcoming">Upcoming</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+            {/* Date Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
+              <select
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+              >
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="past">Past Events</option>
+              </select>
+            </div>
+            {/* Sort Options */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
+              <div className="flex gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                >
+                  <option value="date">Date</option>
+                  <option value="name">Name</option>
+                  <option value="status">Status</option>
+                </select>
+                <button
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
+                >
+                  {sortOrder === "asc" ? "↑" : "↓"}
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* Clear Filters Button */}
+          {(searchQuery || filterStatus !== "all" || filterDate !== "all" || sortBy !== "date" || sortOrder !== "desc") && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterStatus("all");
+                  setFilterDate("all");
+                  setSortBy("date");
+                  setSortOrder("desc");
+                }}
+                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                Clear all filters
               </button>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  </div>
-);
-
-
+          )}
+        </div>
+        {/* Events Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map((event) => (
+              <Card key={event.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-200 group">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                      {event.name}
+                    </CardTitle>
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full
+                      ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                      event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                      {event.status}
+                    </span>
+                  </div>
+                  <CardDescription className="text-gray-600 dark:text-gray-400">
+                    {event.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3 text-sm mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Date:
+                      </span>
+                      <span className="text-gray-800 dark:text-gray-200 font-medium">{event.date}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Organizer:
+                      </span>
+                      <span className="text-gray-800 dark:text-gray-200 font-medium">{event.full_name}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        Company:
+                      </span>
+                      <span className="text-gray-800 dark:text-gray-200 font-medium">{event.company_name}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+                      <button
+                        onClick={() => handleEditEventClick(event)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Manage
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleViewEventClick(event)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No events found</h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                {searchQuery || filterStatus !== "all" || filterDate !== "all"
+                  ? "Try adjusting your filters to find more events."
+                  : "Create your first event to get started."}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderActiveTab = () => {
     switch (activeTab) {
