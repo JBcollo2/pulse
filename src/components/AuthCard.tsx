@@ -15,7 +15,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-
   const { loginUser, user, isAuthenticated } = useAuth();
 
   // Get token from URL if present
@@ -54,8 +53,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   // Simplified success handler without automatic redirects
   const handleSuccessfulAuth = useCallback(async (userData) => {
     try {
-      console.log('🚀 Starting authentication success flow for user:', userData);
-
       // Normalize user data to ensure consistency
       const normalizedUser = {
         id: userData.id || userData.user_id,
@@ -66,8 +63,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         phone_number: userData.phone_number,
         ...userData
       };
-
-      console.log('✅ Normalized user data:', normalizedUser);
 
       // Update auth state
       loginUser(normalizedUser);
@@ -103,11 +98,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       // Cross-tab sync
       localStorage.setItem('auth-login', Date.now().toString());
       setTimeout(() => localStorage.removeItem('auth-login'), 100);
-
-      console.log('✅ Authentication successful - user can now navigate freely');
-
     } catch (error) {
-      console.error('❌ Error in handleSuccessfulAuth:', error);
       setError('Authentication successful but there was an issue. Please try again.');
     }
   }, [onClose, toast, loginUser]);
@@ -148,14 +139,12 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         setTokenValidated(true);
       }
     } catch (error) {
-      console.error('Token validation error:', error);
       let errorMessage = 'Invalid or expired reset token. Please request a new password reset.';
       if (axios.isAxiosError(error) && error.response && error.response.data.msg) {
         errorMessage = error.response.data.msg;
       }
       setError(errorMessage);
       setTokenValidated(false);
-
       setTimeout(() => {
         toggleForm('forgot-password');
       }, 3000);
@@ -190,8 +179,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSuccessMessage('');
 
     try {
-      console.log('🔐 Starting sign in process...');
-
       // Make login request
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
@@ -202,17 +189,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         }
       );
 
-      console.log('✅ Login API response:', response.data);
-
       // Extract user data from response with multiple fallback strategies
       let userData = null;
-
       if (response.data.user) {
         userData = response.data.user;
       } else if (response.data.id || response.data.email) {
         userData = response.data;
       } else {
-        console.log('🔍 User data not in login response, fetching profile...');
         // Fallback: fetch user profile
         const profileResponse = await axios.get(
           `${import.meta.env.VITE_API_URL}/auth/profile`,
@@ -222,32 +205,23 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           }
         );
         userData = profileResponse.data;
-        console.log('✅ Profile fetch successful:', userData);
       }
 
       // Validate essential user data
       if (!userData) {
         throw new Error('No user data received from server');
       }
-
       if (!userData.role) {
         throw new Error('User role not found in response');
       }
-
       if (!userData.email) {
         throw new Error('User email not found in response');
       }
 
-      console.log('🎉 Authentication successful, updating auth state...');
-
       // Handle successful login WITHOUT automatic redirect
       await handleSuccessfulAuth(userData);
-
     } catch (error) {
-      console.error('❌ Sign in error:', error);
-
       let errorMessage = 'An unexpected error occurred. Please try again.';
-
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
           errorMessage = 'Request timeout. Please check your connection and try again.';
@@ -261,7 +235,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       } else if (error.message.includes('No user data received')) {
         errorMessage = 'Authentication failed. Please try again.';
       }
-
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -283,8 +256,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSuccessMessage('');
 
     try {
-      console.log('📝 Starting sign up process...');
-
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/register`,
         signUpData,
@@ -294,31 +265,22 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         }
       );
 
-      console.log('✅ Sign up successful:', response.data);
-
       // Check if user is automatically logged in after registration
       if (response.data.user && response.data.user.role) {
-        console.log('🎉 Auto-login after registration detected');
         setSuccessMessage('Account created successfully! You are now logged in.');
         await handleSuccessfulAuth(response.data.user);
       } else {
         // Traditional flow - user needs to sign in manually
         setSuccessMessage('Account created successfully! Please sign in to continue.');
-
         // Auto-fill sign in form with registered email
         setSignInData(prev => ({ ...prev, email: signUpData.email }));
-
         // Switch to sign in after successful registration
         setTimeout(() => {
           toggleForm('signin');
         }, 2000);
       }
-
     } catch (error) {
-      console.error('❌ Sign up error:', error);
-
       let errorMessage = 'Registration failed. Please try again.';
-
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
           errorMessage = 'Request timeout. Please try again.';
@@ -326,7 +288,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           errorMessage = error.response.data?.msg || 'Registration failed. Please check your information.';
         }
       }
-
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -346,10 +307,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         { email: forgotPasswordEmail },
         { withCredentials: true, timeout: 10000 }
       );
-
       setSuccessMessage('Password reset link sent to your email!');
-      console.log('Forgot password successful', response.data);
-
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.msg || 'Failed to send reset link. Please try again.');
@@ -393,9 +351,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         { password: newPassword },
         { withCredentials: true, timeout: 10000 }
       );
-
       setSuccessMessage('Password reset successful! You can now sign in.');
-      console.log('Password reset successful', response.data);
 
       // Clear the token from the URL
       if (navigate) {
@@ -407,12 +363,9 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       setTimeout(() => {
         toggleForm('signin');
       }, 2000);
-
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        console.error('Error response:', error.response);
         setError(error.response.data.msg || 'Failed to reset password. Please try again.');
-
         if (error.response.status === 400 || error.response.status === 401) {
           setTimeout(() => {
             toggleForm('forgot-password');
@@ -420,7 +373,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           }, 2000);
         }
       } else {
-        console.error('An unexpected error occurred during password reset:', error);
         setError('An unexpected error occurred. Please try again.');
       }
     } finally {
@@ -437,24 +389,15 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         localStorage.setItem('preAuthUrl', currentUrl);
       }
 
-      console.log('🔗 Initiating Google OAuth login...');
-      console.log('API URL:', import.meta.env.VITE_API_URL);
-
-      const googleLoginUrl = `${import.meta.env.VITE_API_URL}/auth/login/google`;
-      console.log('Google Login URL:', googleLoginUrl);
-
       setIsLoading(true);
       setError('');
       setSuccessMessage('Redirecting to Google...');
 
       // Redirect to Google OAuth endpoint
-      window.location.href = googleLoginUrl;
+      window.location.href = `${import.meta.env.VITE_API_URL}/auth/login/google`;
     } catch (error) {
-      console.error('❌ Error initiating Google login:', error);
       setIsLoading(false);
-
       const errorMsg = "Failed to initiate Google login. Please try again.";
-
       if (toast) {
         toast({
           title: "Error",
@@ -474,9 +417,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       const isGoogleCallback = urlParams.get('google_auth') === 'success';
 
       if (isGoogleCallback) {
-        console.log('🔗 Processing Google OAuth callback...');
         setIsLoading(true);
-
         try {
           // Small delay to ensure backend session is ready
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -491,13 +432,11 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           );
 
           if (response.data && response.data.role) {
-            console.log('✅ Google login profile fetch successful:', response.data);
             await handleSuccessfulAuth(response.data);
           } else {
             throw new Error('User profile not found after Google login');
           }
         } catch (error) {
-          console.error('❌ Error fetching profile after Google login:', error);
           setError('Google login was successful, but we could not load your profile. Please try signing in again.');
         } finally {
           setIsLoading(false);
@@ -586,7 +525,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
             </CardFooter>
           </Card>
         );
-
       case 'signup':
         return (
           <Card className="w-full max-w-md mx-auto">
@@ -672,7 +610,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
             </CardFooter>
           </Card>
         );
-
       case 'forgot-password':
         return (
           <Card className="w-full max-w-md mx-auto">
@@ -718,7 +655,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
             </CardFooter>
           </Card>
         );
-
       case 'reset-password':
         return (
           <Card className="w-full max-w-md mx-auto">
@@ -802,7 +738,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
             </CardFooter>
           </Card>
         );
-
       default:
         return null;
     }
