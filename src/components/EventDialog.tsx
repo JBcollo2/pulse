@@ -374,11 +374,25 @@ export const EventDialog = ({
 
       // Additional validation: Check if start time is before end time (for same day events)
       if (newEvent.start_time && newEvent.end_time && formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
-        const startTime = new Date(`1970-01-01T${newEvent.start_time}`);
-        const endTime = new Date(`1970-01-01T${newEvent.end_time}`);
+        // Normalize time strings to HH:MM format (remove seconds if present)
+        const normalizeTime = (timeStr) => {
+          if (!timeStr) return '';
+          const timeParts = timeStr.split(':');
+          return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+        };
 
-        if (startTime >= endTime) {
-          throw new Error('Start time must be before end time for same-day events');
+        const normalizedStartTime = normalizeTime(newEvent.start_time);
+        const normalizedEndTime = normalizeTime(newEvent.end_time);
+
+        // Create Date objects for comparison
+        const startTime = new Date(`1970-01-01T${normalizedStartTime}:00`);
+        const endTime = new Date(`1970-01-01T${normalizedEndTime}:00`);
+
+        // Check if both dates are valid
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+          if (startTime >= endTime) {
+            throw new Error('Start time must be before end time for same-day events');
+          }
         }
       }
 
