@@ -65,8 +65,6 @@ const Dashboard = () => {
     if (hasInitializedRef.current) {
       return;
     }
-
-    console.log('🎯 Dashboard: Processing authenticated user:', user?.role);
     hasInitializedRef.current = true;
   }, []);
 
@@ -97,7 +95,6 @@ const Dashboard = () => {
         const data = await response.json();
         setEvents(data.events);
       } catch (error) {
-        console.error('Error fetching events:', error);
         toast({
           title: "Error",
           description: "Failed to fetch events",
@@ -176,15 +173,12 @@ const Dashboard = () => {
       if (tabFromUrl) {
         if (hasTabPermission(user.role, tabFromUrl)) {
           targetTab = tabFromUrl;
-          console.log('✅ Dashboard: URL tab validated:', tabFromUrl);
         } else {
           const newSearchParams = new URLSearchParams(searchParams);
           newSearchParams.delete('tab');
           setSearchParams(newSearchParams, { replace: true });
-          console.warn(`⚠️ Dashboard: User ${user.role} denied access to tab: ${tabFromUrl}`);
         }
       }
-
       if (!targetTab || !hasTabPermission(user.role, targetTab)) {
         const roleBasedDefaults = {
           'ADMIN': 'admin',
@@ -198,27 +192,21 @@ const Dashboard = () => {
         );
         if (isAccessible) {
           targetTab = defaultTab;
-          console.log('🎯 Dashboard: Using role-based default tab:', defaultTab);
         } else {
           const firstAccessibleTab = allMenuItems.find(item =>
             item.roles.includes(user.role)
           );
           targetTab = firstAccessibleTab?.id || "overview";
-          console.log('🔄 Dashboard: Using fallback tab:', targetTab);
         }
       }
-
       if (targetTab !== activeTab) {
         setActiveTab(targetTab);
-        console.log('✅ Dashboard: Active tab updated to:', targetTab);
       }
-
       const currentUrlTab = searchParams.get('tab');
       if (currentUrlTab !== targetTab) {
         const newSearchParams = new URLSearchParams(searchParams);
         newSearchParams.set('tab', targetTab);
         setSearchParams(newSearchParams, { replace: true });
-        console.log('🔗 Dashboard: URL updated to tab:', targetTab);
       }
     }
   }, [user, loading, searchParams, setSearchParams, activeTab, allMenuItems]);
@@ -239,17 +227,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     const handleAuthStateChange = (event) => {
-      console.log('🔄 Dashboard: Auth state change detected:', event.detail);
-
       if (event.detail && event.detail.action === 'logout') {
-        console.log('🚪 Dashboard: Processing logout');
         setActiveTab('overview');
         const newSearchParams = new URLSearchParams();
         setSearchParams(newSearchParams, { replace: true });
-
       } else if (event.detail && event.detail.action === 'login' && event.detail.user) {
-        console.log('👤 Dashboard: Processing login for role:', event.detail.user.role);
-
         const user = event.detail.user;
         const roleDefaults = {
           'ADMIN': 'admin',
@@ -257,25 +239,17 @@ const Dashboard = () => {
           'SECURITY': 'scanner',
           'ATTENDEE': 'overview'
         };
-
         const defaultTab = roleDefaults[user.role] || 'overview';
-
         const isAccessible = allMenuItems.find(item =>
           item.id === defaultTab && item.roles.includes(user.role)
         );
-
         const targetTab = isAccessible ? defaultTab : 'overview';
-
         setActiveTab(targetTab);
-
         const newSearchParams = new URLSearchParams();
         newSearchParams.set('tab', targetTab);
         setSearchParams(newSearchParams, { replace: true });
-
-        console.log('✅ Dashboard: Auth login processed, redirected to:', targetTab);
       }
     };
-
     window.addEventListener('auth-state-changed', handleAuthStateChange);
     return () => window.removeEventListener('auth-state-changed', handleAuthStateChange);
   }, [setSearchParams, allMenuItems]);
@@ -332,7 +306,6 @@ const Dashboard = () => {
 
   const handleTabChange = (tabId) => {
     if (user && !hasTabPermission(user.role, tabId)) {
-      console.warn(`User ${user.role} attempted to access unauthorized tab: ${tabId}`);
       if (toast) {
         toast({
           title: "Access Denied",
@@ -342,13 +315,10 @@ const Dashboard = () => {
       }
       return;
     }
-
     setActiveTab(tabId);
-
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('tab', tabId);
     setSearchParams(newSearchParams, { replace: true });
-
     if (isMobile) {
       setMobileMenuOpen(false);
     }
@@ -401,7 +371,6 @@ const Dashboard = () => {
         variant: "default"
       });
     } catch (error) {
-      console.error('Error deleting event:', error);
       toast({
         title: "Error",
         description: "Failed to delete event",
@@ -425,7 +394,6 @@ const Dashboard = () => {
           const data = await response.json();
           setCategories(data.categories);
         } catch (error) {
-          console.error('Error fetching categories:', error);
           toast({
             title: "Error",
             description: "Failed to fetch categories",
@@ -442,12 +410,10 @@ const Dashboard = () => {
           event.name.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
           event.description?.toLowerCase().includes(eventSearchQuery.toLowerCase()) ||
           event.location?.toLowerCase().includes(eventSearchQuery.toLowerCase());
-
         let matchesCategory = true;
         if (filterCategory !== "all") {
           matchesCategory = event.category === filterCategory;
         }
-
         let matchesDate = true;
         if (filterDate !== "all") {
           const eventDate = new Date(event.date);
@@ -456,7 +422,6 @@ const Dashboard = () => {
           eventDate.setHours(0, 0, 0, 0);
           const todayTime = today.getTime();
           const eventTime = eventDate.getTime();
-
           switch (filterDate) {
             case "today":
               matchesDate = eventTime === todayTime;
@@ -481,10 +446,8 @@ const Dashboard = () => {
               matchesDate = true;
           }
         }
-
         return matchesSearch && matchesCategory && matchesDate;
       });
-
       filtered.sort((a, b) => {
         let aValue, bValue;
         switch (sortBy) {
@@ -509,12 +472,10 @@ const Dashboard = () => {
           return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
         }
       });
-
       return filtered;
     };
 
     const filteredEvents = getFilteredAndSortedEvents();
-
     const clearAllFilters = () => {
       setEventSearchQuery("");
       setFilterCategory("all");
@@ -522,7 +483,6 @@ const Dashboard = () => {
       setSortBy("date");
       setSortOrder("desc");
     };
-
     const hasActiveFilters = eventSearchQuery !== "" ||
       filterCategory !== "all" ||
       filterDate !== "all" ||
