@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.tsx
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 
 // Define the shape of your user object, including the role
 interface User {
@@ -38,9 +38,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isContextReady, setIsContextReady] = useState(false);
+  
+  // CRITICAL: Add refs to prevent multiple simultaneous operations
+  const isFetchingRef = useRef(false);
+  const initializationCompleteRef = useRef(false);
 
   // Function to fetch user profile (extracted for reusability)
   const fetchUserProfile = useCallback(async (): Promise<User | null> => {
+    // Prevent multiple simultaneous fetches
+    if (isFetchingRef.current) {
+      console.log('⚠️ Profile fetch already in progress, skipping...');
+      return null;
+    }
+
+    isFetchingRef.current = true;
+
     try {
       console.log('🔍 Fetching user profile...');
       
@@ -91,12 +103,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       return null;
+    } finally {
+      isFetchingRef.current = false;
     }
   }, []);
 
-  // Enhanced initialization with better error handling
+  // FIXED: Enhanced initialization with single-run guarantee
   useEffect(() => {
     const initializeAuth = async () => {
+      // Prevent multiple initializations
+      if (initializationCompleteRef.current) {
+        console.log('⚠️ Auth already initialized, skipping...');
+        return;
+      }
+
       console.log('🚀 Initializing authentication context...');
       setLoading(true);
       
@@ -112,68 +132,83 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } finally {
         setLoading(false);
         setIsContextReady(true);
+        initializationCompleteRef.current = true;
         console.log('✅ Authentication context ready');
       }
     };
 
     initializeAuth();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); // Empty dependency array ensures this runs only once
 
-  // Enhanced auth state change event listener
+  // FIXED: Enhanced auth state change event listener with debouncing
   useEffect(() => {
+    let eventTimeout: NodeJS.Timeout;
+
     const handleAuthStateChange = async (event: CustomEvent) => {
-      console.log('🔄 Auth state change event received:', event.detail);
-      
-      try {
-        if (event.detail && event.detail.user && event.detail.action === 'login') {
-          const userData = event.detail.user;
-          
-          // Normalize the user data structure
-          const normalizedUser: User = {
-            id: userData.id || userData.user_id,
-            name: userData.name || userData.full_name || userData.username,
-            email: userData.email,
-            role: userData.role,
-            full_name: userData.full_name,
-            phone_number: userData.phone_number,
-            ...userData
-          };
-          
-          // Validate the user data
-          if (!normalizedUser.email || !normalizedUser.role) {
-            console.error('❌ Invalid user data in login event:', normalizedUser);
-            return;
-          }
-          
-          setUser(normalizedUser);
-          setIsAuthenticated(true);
-          setLoading(false);
-          
-          console.log('✅ User logged in via event:', normalizedUser.role);
-          
-        } else if (event.detail && event.detail.action === 'logout') {
-          setUser(null);
-          setIsAuthenticated(false);
-          setLoading(false);
-          
-          console.log('✅ User logged out via event');
-          
-        } else if (event.detail && event.detail.action === 'refresh') {
-          console.log('🔄 Refreshing user data via event...');
-          setLoading(true);
-          try {
-            const userData = await fetchUserProfile();
-            if (userData) {
-              console.log('✅ User data refreshed via event:', userData.role);
-            }
-          } finally {
-            setLoading(false);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error handling auth state change:', error);
-        setLoading(false);
+      // Clear any pending timeout
+      if (eventTimeout) {
+        clearTimeout(eventTimeout);
       }
+
+      // Debounce rapid events
+      eventTimeout = setTimeout(async () => {
+        console.log('🔄 Auth state change event received:', event.detail);
+        
+        try {
+          if (event.detail && event.detail.user && event.detail.action === 'login') {
+            const userData = event.detail.user;
+            
+            // Normalize the user data structure
+            const normalizedUser: User = {
+              id: userData.id || userData.user_id,
+              name: userData.name || userData.full_name || userData.username,
+              email: userData.email,
+              role: userData.role,
+              full_name: userData.full_name,
+              phone_number: userData.phone_number,
+              ...userData
+            };
+            
+            // Validate the user data
+            if (!normalizedUser.email || !normalizedUser.role) {
+              console.error('❌ Invalid user data in login event:', normalizedUser);
+              return;
+            }
+            
+            setUser(normalizedUser);
+            setIsAuthenticated(true);
+            setLoading(false);
+            
+            console.log('✅ User logged in via event:', normalizedUser.role);
+            
+          } else if (event.detail && event.detail.action === 'logout') {
+            setUser(null);
+            setIsAuthenticated(false);
+            setLoading(false);
+            
+            console.log('✅ User logged out via event');
+            
+          } else if (event.detail && event.detail.action === 'refresh') {
+            console.log('🔄 Refreshing user data via event...');
+            
+            // Only refresh if not already loading
+            if (!isFetchingRef.current) {
+              setLoading(true);
+              try {
+                const userData = await fetchUserProfile();
+                if (userData) {
+                  console.log('✅ User data refreshed via event:', userData.role);
+                }
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error handling auth state change:', error);
+          setLoading(false);
+        }
+      }, 100); // 100ms debounce
     };
 
     // Type assertion for the event listener
@@ -181,33 +216,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.addEventListener('auth-state-changed', eventListener);
     
     return () => {
+      if (eventTimeout) {
+        clearTimeout(eventTimeout);
+      }
       window.removeEventListener('auth-state-changed', eventListener);
     };
   }, [fetchUserProfile]);
 
-  // Enhanced storage event listener for cross-tab sync
+  // FIXED: Enhanced storage event listener with debouncing
   useEffect(() => {
+    let storageTimeout: NodeJS.Timeout;
+
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'auth-logout') {
-        console.log('🔄 User logged out in another tab, syncing...');
-        setUser(null);
-        setIsAuthenticated(false);
-      } else if (event.key === 'auth-login') {
-        console.log('🔄 User logged in in another tab, refreshing...');
-        // Small delay to ensure backend session is ready
-        setTimeout(() => {
-          fetchUserProfile();
-        }, 500);
+      // Clear any pending timeout
+      if (storageTimeout) {
+        clearTimeout(storageTimeout);
       }
+
+      // Debounce rapid storage events
+      storageTimeout = setTimeout(async () => {
+        if (event.key === 'auth-logout') {
+          console.log('🔄 User logged out in another tab, syncing...');
+          setUser(null);
+          setIsAuthenticated(false);
+        } else if (event.key === 'auth-login') {
+          console.log('🔄 User logged in in another tab, refreshing...');
+          
+          // Only refresh if not already fetching
+          if (!isFetchingRef.current) {
+            // Small delay to ensure backend session is ready
+            setTimeout(async () => {
+              try {
+                await fetchUserProfile();
+              } catch (error) {
+                console.error('❌ Error refreshing profile after cross-tab login:', error);
+              }
+            }, 500);
+          }
+        }
+      }, 200); // 200ms debounce for storage events
     };
 
     window.addEventListener('storage', handleStorageChange);
+    
     return () => {
+      if (storageTimeout) {
+        clearTimeout(storageTimeout);
+      }
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [fetchUserProfile]);
 
-  // Enhanced loginUser function
+  // FIXED: Enhanced loginUser function with validation
   const loginUser = useCallback((userData: User) => {
     try {
       // Normalize user data
@@ -231,10 +291,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(true);
       setLoading(false);
       
-      // Trigger storage event for cross-tab sync
+      // Trigger storage event for cross-tab sync (with error handling)
       try {
         localStorage.setItem('auth-login', Date.now().toString());
-        setTimeout(() => localStorage.removeItem('auth-login'), 100);
+        setTimeout(() => {
+          try {
+            localStorage.removeItem('auth-login');
+          } catch (error) {
+            console.warn('⚠️ Could not remove auth-login from localStorage');
+          }
+        }, 100);
       } catch (storageError) {
         console.warn('⚠️ Storage not available for cross-tab sync');
       }
@@ -275,7 +341,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Trigger storage event for cross-tab sync
       try {
         localStorage.setItem('auth-logout', Date.now().toString());
-        setTimeout(() => localStorage.removeItem('auth-logout'), 100);
+        setTimeout(() => {
+          try {
+            localStorage.removeItem('auth-logout');
+          } catch (error) {
+            console.warn('⚠️ Could not remove auth-logout from localStorage');
+          }
+        }, 100);
       } catch (storageError) {
         console.warn('⚠️ Storage not available for cross-tab sync');
       }
@@ -292,7 +364,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Enhanced refreshUser function with better error handling
   const refreshUser = useCallback(async () => {
     console.log('🔄 Refreshing user data...');
-    setLoading(true);
+    
+    // Don't set loading if already fetching
+    if (!isFetchingRef.current) {
+      setLoading(true);
+    }
     
     try {
       const userData = await fetchUserProfile();
@@ -304,7 +380,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('❌ Failed to refresh user data:', error);
     } finally {
-      setLoading(false);
+      if (!isFetchingRef.current) {
+        setLoading(false);
+      }
     }
   }, [fetchUserProfile]);
 

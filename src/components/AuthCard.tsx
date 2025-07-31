@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Dialog, DialogContent } from './ui/dialog';
@@ -14,8 +14,12 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const { loginUser, refreshUser, user, isAuthenticated } = useAuth();
+
+  // CRITICAL: Use refs to prevent infinite redirect loops
+  const hasRedirectedRef = useRef(false);
+  const isRedirectingRef = useRef(false);
 
   // Get token from URL if present
   const resetTokenFromUrl = searchParams.get('token') ||
@@ -50,10 +54,18 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // ENHANCED Role-based redirect handler with better state management
+  // FIXED: Role-based redirect handler with infinite loop prevention
   const handleSuccessfulAuth = useCallback(async (userData, redirectDelay = 800) => {
     try {
       console.log('🚀 Starting authentication success flow for user:', userData);
+
+      // CRITICAL: Prevent multiple simultaneous redirects
+      if (isRedirectingRef.current) {
+        console.log('⚠️ Redirect already in progress, skipping...');
+        return;
+      }
+
+      isRedirectingRef.current = true;
 
       // Normalize user data to ensure consistency
       const normalizedUser = {
@@ -90,12 +102,12 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       }
 
       // Trigger immediate auth state change event
-      const authEvent = new CustomEvent('auth-state-changed', { 
-        detail: { 
-          user: normalizedUser, 
+      const authEvent = new CustomEvent('auth-state-changed', {
+        detail: {
+          user: normalizedUser,
           action: 'login',
           timestamp: Date.now()
-        } 
+        }
       });
       window.dispatchEvent(authEvent);
 
@@ -103,33 +115,49 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       localStorage.setItem('auth-login', Date.now().toString());
       setTimeout(() => localStorage.removeItem('auth-login'), 100);
 
-      // Role-based redirect with proper timing
+      // FIXED: Role-based redirect with loop prevention
       setTimeout(async () => {
-        const redirectPath = getRoleBasedRedirect(normalizedUser.role);
-        console.log(`🎯 Redirecting ${normalizedUser.role} user to: ${redirectPath}`);
-        
-        // Force navigate with replace to avoid back button issues
-        navigate(redirectPath, { 
-          replace: true,
-          state: { fromAuth: true, userRole: normalizedUser.role }
-        });
+        try {
+          const redirectPath = getRoleBasedRedirect(normalizedUser.role);
+          const currentPath = location.pathname;
+          const currentSearch = location.search;
+          const currentFullPath = `${currentPath}${currentSearch}`;
 
-        // Ensure auth context is fully synced after navigation
-        setTimeout(async () => {
-          try {
-            await refreshUser();
-            console.log('🔄 User context refreshed after redirect');
-          } catch (error) {
-            console.warn('⚠️ Context refresh failed, but user should still be authenticated:', error);
+          console.log(`🎯 Redirect check - Current: ${currentFullPath}, Target: ${redirectPath}`);
+
+          // CRITICAL: Only redirect if we're not already on the target path
+          if (currentFullPath !== redirectPath && !hasRedirectedRef.current) {
+            hasRedirectedRef.current = true;
+            console.log(`🔄 Redirecting ${normalizedUser.role} user to: ${redirectPath}`);
+
+            // Force navigate with replace to avoid back button issues
+            navigate(redirectPath, {
+              replace: true,
+              state: { fromAuth: true, userRole: normalizedUser.role }
+            });
+
+            // Reset redirect flag after navigation
+            setTimeout(() => {
+              hasRedirectedRef.current = false;
+              isRedirectingRef.current = false;
+            }, 1000);
+          } else {
+            console.log('📍 Already on target path or redirect already performed, skipping redirect');
+            isRedirectingRef.current = false;
           }
-        }, 100);
+        } catch (error) {
+          console.error('❌ Error during redirect:', error);
+          isRedirectingRef.current = false;
+          hasRedirectedRef.current = false;
+        }
       }, redirectDelay);
 
     } catch (error) {
       console.error('❌ Error in handleSuccessfulAuth:', error);
+      isRedirectingRef.current = false;
       setError('Authentication successful but redirect failed. Please refresh the page.');
     }
-  }, [onClose, toast, loginUser, navigate, refreshUser]);
+  }, [onClose, toast, loginUser, navigate, location]);
 
   // Helper to reset all form-specific states when changing views
   const resetFormStates = useCallback(() => {
@@ -215,7 +243,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/login`,
         signInData,
-        { 
+        {
           withCredentials: true,
           timeout: 10000 // 10 second timeout
         }
@@ -235,7 +263,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         // Fallback: fetch user profile
         const profileResponse = await axios.get(
           `${import.meta.env.VITE_API_URL}/auth/profile`,
-          { 
+          {
             withCredentials: true,
             timeout: 5000
           }
@@ -264,7 +292,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
     } catch (error) {
       console.error('❌ Sign in error:', error);
-      
+
       let errorMessage = 'An unexpected error occurred. Please try again.';
 
       if (axios.isAxiosError(error)) {
@@ -307,7 +335,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/register`,
         signUpData,
-        { 
+        {
           withCredentials: true,
           timeout: 10000
         }
@@ -323,10 +351,10 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       } else {
         // Traditional flow - user needs to verify email or sign in manually
         setSuccessMessage('Account created successfully! Please sign in to continue.');
-        
+
         // Auto-fill sign in form with registered email
         setSignInData(prev => ({ ...prev, email: signUpData.email }));
-        
+
         // Switch to sign in after successful registration
         setTimeout(() => {
           toggleForm('signin');
@@ -335,9 +363,9 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
     } catch (error) {
       console.error('❌ Sign up error:', error);
-      
+
       let errorMessage = 'Registration failed. Please try again.';
-      
+
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
           errorMessage = 'Request timeout. Please try again.';
@@ -345,7 +373,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           errorMessage = error.response.data?.msg || 'Registration failed. Please check your information.';
         }
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -474,9 +502,9 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     } catch (error) {
       console.error('❌ Error initiating Google login:', error);
       setIsLoading(false);
-      
+
       const errorMsg = "Failed to initiate Google login. Please try again.";
-      
+
       if (toast) {
         toast({
           title: "Error",
@@ -494,24 +522,24 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     const handleGoogleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const isGoogleCallback = urlParams.get('google_auth') === 'success';
-      
+
       if (isGoogleCallback) {
         console.log('🔗 Processing Google OAuth callback...');
         setIsLoading(true);
-        
+
         try {
           // Small delay to ensure backend session is ready
           await new Promise(resolve => setTimeout(resolve, 500));
-          
+
           // Fetch user profile after Google login
           const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/auth/profile`,
-            { 
+            {
               withCredentials: true,
               timeout: 10000
             }
           );
-          
+
           if (response.data && response.data.role) {
             console.log('✅ Google login profile fetch successful:', response.data);
             await handleSuccessfulAuth(response.data, 500);
@@ -533,28 +561,58 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     handleGoogleCallback();
   }, [handleSuccessfulAuth]);
 
-  // Auto-redirect if already authenticated
+  // FIXED: Auto-redirect with infinite loop prevention
   useEffect(() => {
+    // CRITICAL: Only run redirect logic if we're not already redirecting
+    if (isRedirectingRef.current || hasRedirectedRef.current) {
+      console.log('⚠️ Redirect already in progress or completed, skipping auto-redirect check');
+      return;
+    }
+
     if (isAuthenticated && user && user.role && !isLoading) {
       console.log('👤 User already authenticated, checking for auto-redirect...');
-      
+
       // Only auto-redirect if we're not on a password reset flow
       if (currentView !== 'reset-password' && !resetTokenFromUrl) {
         const redirectPath = getRoleBasedRedirect(user.role);
-        console.log(`🔄 Auto-redirecting authenticated ${user.role} user to: ${redirectPath}`);
-        
-        if (onClose) onClose();
-        
-        setTimeout(() => {
-          navigate(redirectPath, { replace: true });
-        }, 100);
+        const currentPath = location.pathname;
+        const currentSearch = location.search;
+        const currentFullPath = `${currentPath}${currentSearch}`;
+
+        console.log(`🔍 Auto-redirect check - Current: ${currentFullPath}, Target: ${redirectPath}`);
+
+        // CRITICAL: Only redirect if not already on the target path
+        if (currentFullPath !== redirectPath) {
+          console.log(`🔄 Auto-redirecting authenticated ${user.role} user to: ${redirectPath}`);
+
+          if (onClose) onClose();
+
+          // Mark as redirecting to prevent multiple attempts
+          isRedirectingRef.current = true;
+          hasRedirectedRef.current = true;
+
+          setTimeout(() => {
+            navigate(redirectPath, { replace: true });
+
+            // Reset flags after navigation
+            setTimeout(() => {
+              isRedirectingRef.current = false;
+            }, 1000);
+          }, 100);
+        } else {
+          console.log('📍 Already on correct path, no redirect needed');
+        }
       }
     }
-  }, [isAuthenticated, user, currentView, resetTokenFromUrl, navigate, onClose, isLoading]);
+  }, [isAuthenticated, user, currentView, resetTokenFromUrl, navigate, onClose, isLoading, location]);
 
-  // Rest of your component's JSX return statement goes here...
-  // [The return statement would contain all your form JSX - keeping this comment to indicate where it should go]
-
+  // Reset redirect flags when component unmounts or auth state changes significantly
+  useEffect(() => {
+    return () => {
+      hasRedirectedRef.current = false;
+      isRedirectingRef.current = false;
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

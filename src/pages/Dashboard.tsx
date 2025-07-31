@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth, hasTabPermission } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -40,6 +40,8 @@ import { useToast } from "@/components/ui/use-toast";
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const hasInitializedRef = useRef(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -57,6 +59,16 @@ const Dashboard = () => {
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [eventSearchQuery, setEventSearchQuery] = useState("");
+
+  // IMMEDIATE FIX: Prevent redirect loops in Dashboard
+  useEffect(() => {
+    if (hasInitializedRef.current) {
+      return;
+    }
+
+    console.log('🎯 Dashboard: Processing authenticated user:', user?.role);
+    hasInitializedRef.current = true;
+  }, []);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -159,8 +171,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!loading && user && user.role) {
-      console.log('🎯 Dashboard: Processing authenticated user:', user.role);
-
       const tabFromUrl = searchParams.get('tab');
       let targetTab = activeTab;
       if (tabFromUrl) {
