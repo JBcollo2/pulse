@@ -374,23 +374,49 @@ export const EventDialog = ({
 
       // Additional validation: Check if start time is before end time (for same day events)
       if (newEvent.start_time && newEvent.end_time && formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
+        // Debug logging - remove after fixing
+        console.log('Time validation inputs:', {
+          start_time: newEvent.start_time,
+          end_time: newEvent.end_time,
+          start_date: formatDate(newEvent.date),
+          end_date: formatDate(newEvent.end_date)
+        });
+
         // Normalize time strings to HH:MM format (remove seconds if present)
         const normalizeTime = (timeStr) => {
-          if (!timeStr) return '';
-          const timeParts = timeStr.split(':');
-          return `${timeParts[0].padStart(2, '0')}:${timeParts[1].padStart(2, '0')}`;
+          if (!timeStr || typeof timeStr !== 'string') return '';
+          const timeParts = timeStr.trim().split(':');
+          if (timeParts.length < 2) return '';
+          const hours = timeParts[0].padStart(2, '0');
+          const minutes = timeParts[1].padStart(2, '0');
+          return `${hours}:${minutes}`;
         };
 
         const normalizedStartTime = normalizeTime(newEvent.start_time);
         const normalizedEndTime = normalizeTime(newEvent.end_time);
 
-        // Create Date objects for comparison
-        const startTime = new Date(`1970-01-01T${normalizedStartTime}:00`);
-        const endTime = new Date(`1970-01-01T${normalizedEndTime}:00`);
+        // Debug logging
+        console.log('Normalized times:', {
+          normalizedStartTime,
+          normalizedEndTime
+        });
 
-        // Check if both dates are valid
-        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-          if (startTime >= endTime) {
+        // Only proceed if both times are properly normalized
+        if (normalizedStartTime && normalizedEndTime) {
+          // Simple string comparison for HH:MM format
+          const [startHour, startMin] = normalizedStartTime.split(':').map(Number);
+          const [endHour, endMin] = normalizedEndTime.split(':').map(Number);
+
+          const startTotalMinutes = startHour * 60 + startMin;
+          const endTotalMinutes = endHour * 60 + endMin;
+
+          console.log('Time comparison:', {
+            startTotalMinutes,
+            endTotalMinutes,
+            isStartAfterEnd: startTotalMinutes >= endTotalMinutes
+          });
+
+          if (startTotalMinutes >= endTotalMinutes) {
             throw new Error('Start time must be before end time for same-day events');
           }
         }
@@ -1013,3 +1039,4 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     </div>
   );
 };
+
