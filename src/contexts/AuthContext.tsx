@@ -1,15 +1,15 @@
 // src/contexts/AuthContext.tsx
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 // Define the shape of your user object, including the role
 interface User {
   id: string;
-  name: string; // Or username, display name
+  name: string;
   email: string;
-  role: "ADMIN" | "ORGANIZER" | "ATTENDEE" | "SECURITY"; // Ensure these match your backend enum
-  full_name?: string; // Add optional full_name for display purposes
-  phone_number?: string; // Add other optional fields as needed
+  role: "ADMIN" | "ORGANIZER" | "ATTENDEE" | "SECURITY";
+  full_name?: string;
+  phone_number?: string;
   // Add any other user properties you get from your /auth/profile endpoint
 }
 
@@ -17,36 +17,43 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  // Functions to update auth state, if needed (e.g., after login/logout)
+  // Functions to update auth state
   loginUser: (userData: User) => void;
   logoutUser: () => void;
-  refreshUser: () => Promise<void>; // Add refresh function
+  refreshUser: () => Promise<void>;
+  // Add method to check if context is ready
+  isContextReady: boolean;
 }
 
-// Create the context with an undefined default value, which will be provided by the AuthProvider
+// Create the context with an undefined default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// AuthProvider component to wrap your application or specific parts
+// AuthProvider component to wrap your application
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true); // Start as loading
+  const [loading, setLoading] = useState(true);
+  const [isContextReady, setIsContextReady] = useState(false);
 
   // Function to fetch user profile (extracted for reusability)
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async (): Promise<User | null> => {
     try {
+      console.log('🔍 Fetching user profile...');
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
         method: 'GET',
-        credentials: 'include' // Important for sending cookies/session
+        credentials: 'include',
+        // Add timeout using AbortController
+        signal: AbortSignal.timeout(10000) // 10 second timeout
       });
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('User profile fetched:', userData); // Debug log
+        console.log('✅ User profile fetched successfully:', userData);
         
         // Ensure the userData has the expected structure
         const normalizedUser: User = {
@@ -59,68 +66,112 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           ...userData // Spread any additional properties
         };
         
+        // Validate required fields
+        if (!normalizedUser.email || !normalizedUser.role) {
+          console.error('❌ Invalid user data structure:', normalizedUser);
+          throw new Error('Invalid user data received from server');
+        }
+        
         setUser(normalizedUser);
         setIsAuthenticated(true);
         return normalizedUser;
       } else {
         // Not authenticated or session expired
-        console.log('User not authenticated or session expired');
+        console.log('ℹ️ User not authenticated or session expired');
         setUser(null);
         setIsAuthenticated(false);
         return null;
       }
     } catch (error) {
-      console.error("Failed to fetch user profile:", error);
+      if (error.name === 'AbortError') {
+        console.error('❌ Profile fetch timeout');
+      } else {
+        console.error("❌ Failed to fetch user profile:", error);
+      }
       setUser(null);
       setIsAuthenticated(false);
       return null;
     }
-  };
+  }, []);
 
-  // This useEffect will be responsible for fetching the user profile on app load
+  // Enhanced initialization with better error handling
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🚀 Initializing authentication context...');
       setLoading(true);
-      await fetchUserProfile();
-      setLoading(false);
+      
+      try {
+        const userData = await fetchUserProfile();
+        if (userData) {
+          console.log('✅ Authentication context initialized with user:', userData.role);
+        } else {
+          console.log('ℹ️ Authentication context initialized - no user session');
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize auth context:', error);
+      } finally {
+        setLoading(false);
+        setIsContextReady(true);
+        console.log('✅ Authentication context ready');
+      }
     };
 
     initializeAuth();
   }, []); // Empty dependency array means this runs once on mount
 
-  // Listen for custom auth state change events (from login components)
+  // Enhanced auth state change event listener
   useEffect(() => {
     const handleAuthStateChange = async (event: CustomEvent) => {
-      console.log('Auth state change event received:', event.detail);
+      console.log('🔄 Auth state change event received:', event.detail);
       
-      if (event.detail && event.detail.user && event.detail.action === 'login') {
-        const userData = event.detail.user;
-        
-        // Normalize the user data structure
-        const normalizedUser: User = {
-          id: userData.id || userData.user_id,
-          name: userData.name || userData.full_name || userData.username,
-          email: userData.email,
-          role: userData.role,
-          full_name: userData.full_name,
-          phone_number: userData.phone_number,
-          ...userData
-        };
-        
-        setUser(normalizedUser);
-        setIsAuthenticated(true);
-        setLoading(false);
-        
-        console.log('User logged in via event:', normalizedUser);
-      } else if (event.detail && event.detail.action === 'logout') {
-        setUser(null);
-        setIsAuthenticated(false);
-        setLoading(false);
-        
-        console.log('User logged out via event');
-      } else if (event.detail && event.detail.action === 'refresh') {
-        // Refresh user data from server
-        await fetchUserProfile();
+      try {
+        if (event.detail && event.detail.user && event.detail.action === 'login') {
+          const userData = event.detail.user;
+          
+          // Normalize the user data structure
+          const normalizedUser: User = {
+            id: userData.id || userData.user_id,
+            name: userData.name || userData.full_name || userData.username,
+            email: userData.email,
+            role: userData.role,
+            full_name: userData.full_name,
+            phone_number: userData.phone_number,
+            ...userData
+          };
+          
+          // Validate the user data
+          if (!normalizedUser.email || !normalizedUser.role) {
+            console.error('❌ Invalid user data in login event:', normalizedUser);
+            return;
+          }
+          
+          setUser(normalizedUser);
+          setIsAuthenticated(true);
+          setLoading(false);
+          
+          console.log('✅ User logged in via event:', normalizedUser.role);
+          
+        } else if (event.detail && event.detail.action === 'logout') {
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false);
+          
+          console.log('✅ User logged out via event');
+          
+        } else if (event.detail && event.detail.action === 'refresh') {
+          console.log('🔄 Refreshing user data via event...');
+          setLoading(true);
+          try {
+            const userData = await fetchUserProfile();
+            if (userData) {
+              console.log('✅ User data refreshed via event:', userData.role);
+            }
+          } finally {
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error handling auth state change:', error);
         setLoading(false);
       }
     };
@@ -132,20 +183,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('auth-state-changed', eventListener);
     };
-  }, []);
+  }, [fetchUserProfile]);
 
-  // Listen for storage events (useful for cross-tab logout)
+  // Enhanced storage event listener for cross-tab sync
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'auth-logout') {
-        // Another tab logged out, sync this tab
+        console.log('🔄 User logged out in another tab, syncing...');
         setUser(null);
         setIsAuthenticated(false);
-        console.log('User logged out in another tab');
       } else if (event.key === 'auth-login') {
-        // Another tab logged in, refresh user data
-        fetchUserProfile();
-        console.log('User logged in in another tab, refreshing...');
+        console.log('🔄 User logged in in another tab, refreshing...');
+        // Small delay to ensure backend session is ready
+        setTimeout(() => {
+          fetchUserProfile();
+        }, 500);
       }
     };
 
@@ -153,77 +205,119 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
+  }, [fetchUserProfile]);
+
+  // Enhanced loginUser function
+  const loginUser = useCallback((userData: User) => {
+    try {
+      // Normalize user data
+      const normalizedUser: User = {
+        id: userData.id || (userData as any).user_id,
+        name: userData.name || userData.full_name || (userData as any).username,
+        email: userData.email,
+        role: userData.role,
+        full_name: userData.full_name,
+        phone_number: userData.phone_number,
+        ...userData
+      };
+      
+      // Validate required fields
+      if (!normalizedUser.email || !normalizedUser.role) {
+        console.error('❌ Invalid user data provided to loginUser:', normalizedUser);
+        throw new Error('Invalid user data provided');
+      }
+      
+      setUser(normalizedUser);
+      setIsAuthenticated(true);
+      setLoading(false);
+      
+      // Trigger storage event for cross-tab sync
+      try {
+        localStorage.setItem('auth-login', Date.now().toString());
+        setTimeout(() => localStorage.removeItem('auth-login'), 100);
+      } catch (storageError) {
+        console.warn('⚠️ Storage not available for cross-tab sync');
+      }
+      
+      console.log('✅ User logged in manually:', normalizedUser.role);
+    } catch (error) {
+      console.error('❌ Error in loginUser:', error);
+    }
   }, []);
 
-  const loginUser = (userData: User) => {
-    const normalizedUser: User = {
-      id: userData.id || (userData as any).user_id,
-      name: userData.name || userData.full_name || (userData as any).username,
-      email: userData.email,
-      role: userData.role,
-      full_name: userData.full_name,
-      phone_number: userData.phone_number,
-      ...userData
-    };
+  // Enhanced logoutUser function
+  const logoutUser = useCallback(async () => {
+    console.log('🚪 Logging out user...');
     
-    setUser(normalizedUser);
-    setIsAuthenticated(true);
-    
-    // Trigger storage event for cross-tab sync
-    localStorage.setItem('auth-login', Date.now().toString());
-    localStorage.removeItem('auth-login'); // Clean up immediately
-    
-    console.log('User logged in manually:', normalizedUser);
-  };
-
-  const logoutUser = async () => {
     try {
       // Make logout request to backend
-      await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, { 
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, { 
         method: 'POST', 
-        credentials: 'include' 
+        credentials: 'include',
+        signal: AbortSignal.timeout(5000) // 5 second timeout for logout
       });
+      
+      if (!response.ok) {
+        console.warn('⚠️ Backend logout request failed, but proceeding with local logout');
+      }
     } catch (error) {
-      console.error('Logout request failed:', error);
+      if (error.name === 'AbortError') {
+        console.warn('⚠️ Logout request timeout, proceeding with local logout');
+      } else {
+        console.error('❌ Logout request failed:', error);
+      }
     } finally {
       // Clear local state regardless of backend response
       setUser(null);
       setIsAuthenticated(false);
+      setLoading(false);
       
       // Trigger storage event for cross-tab sync
-      localStorage.setItem('auth-logout', Date.now().toString());
-      localStorage.removeItem('auth-logout'); // Clean up immediately
+      try {
+        localStorage.setItem('auth-logout', Date.now().toString());
+        setTimeout(() => localStorage.removeItem('auth-logout'), 100);
+      } catch (storageError) {
+        console.warn('⚠️ Storage not available for cross-tab sync');
+      }
       
       // Dispatch logout event
       window.dispatchEvent(new CustomEvent('auth-state-changed', { 
         detail: { action: 'logout' } 
       }));
       
-      console.log('User logged out');
+      console.log('✅ User logged out successfully');
     }
-  };
+  }, []);
 
-  // Function to refresh user data from server
-  const refreshUser = async () => {
+  // Enhanced refreshUser function with better error handling
+  const refreshUser = useCallback(async () => {
+    console.log('🔄 Refreshing user data...');
     setLoading(true);
+    
     try {
       const userData = await fetchUserProfile();
       if (userData) {
-        console.log('User data refreshed:', userData);
+        console.log('✅ User data refreshed successfully:', userData.role);
+      } else {
+        console.log('ℹ️ User data refresh - no active session');
       }
+    } catch (error) {
+      console.error('❌ Failed to refresh user data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchUserProfile]);
 
-  const contextValue = {
+  // Context value memoization for performance
+  const contextValue = React.useMemo(() => ({
     user,
     isAuthenticated,
     loading,
     loginUser,
     logoutUser,
     refreshUser,
-  };
+    isContextReady,
+  }), [user, isAuthenticated, loading, loginUser, logoutUser, refreshUser, isContextReady]);
 
   return (
     <AuthContext.Provider value={contextValue}>

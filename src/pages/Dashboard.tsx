@@ -158,49 +158,60 @@ const Dashboard = () => {
   ];
 
   useEffect(() => {
-    if (!loading && user) {
-      const tabFromUrl = searchParams.get('tab');
+    if (!loading && user && user.role) {
+      console.log('🎯 Dashboard: Processing authenticated user:', user.role);
 
+      const tabFromUrl = searchParams.get('tab');
+      let targetTab = activeTab;
       if (tabFromUrl) {
         if (hasTabPermission(user.role, tabFromUrl)) {
-          setActiveTab(tabFromUrl);
-          return;
+          targetTab = tabFromUrl;
+          console.log('✅ Dashboard: URL tab validated:', tabFromUrl);
         } else {
           const newSearchParams = new URLSearchParams(searchParams);
           newSearchParams.delete('tab');
           setSearchParams(newSearchParams, { replace: true });
-          console.warn(`User ${user.role} attempted to access unauthorized tab: ${tabFromUrl}`);
+          console.warn(`⚠️ Dashboard: User ${user.role} denied access to tab: ${tabFromUrl}`);
         }
       }
 
-      const roleBasedDefaults = {
-        'ADMIN': 'admin',
-        'ORGANIZER': 'events',
-        'SECURITY': 'scanner',
-        'ATTENDEE': 'overview'
-      };
-
-      const defaultTab = roleBasedDefaults[user.role] || 'overview';
-      const isAccessible = allMenuItems.find(item => item.id === defaultTab && item.roles.includes(user.role));
-
-      if (isAccessible) {
-        setActiveTab(defaultTab);
-        if (!tabFromUrl) {
-          const newSearchParams = new URLSearchParams(searchParams);
-          newSearchParams.set('tab', defaultTab);
-          setSearchParams(newSearchParams, { replace: true });
+      if (!targetTab || !hasTabPermission(user.role, targetTab)) {
+        const roleBasedDefaults = {
+          'ADMIN': 'admin',
+          'ORGANIZER': 'events',
+          'SECURITY': 'scanner',
+          'ATTENDEE': 'overview'
+        };
+        const defaultTab = roleBasedDefaults[user.role] || 'overview';
+        const isAccessible = allMenuItems.find(item =>
+          item.id === defaultTab && item.roles.includes(user.role)
+        );
+        if (isAccessible) {
+          targetTab = defaultTab;
+          console.log('🎯 Dashboard: Using role-based default tab:', defaultTab);
+        } else {
+          const firstAccessibleTab = allMenuItems.find(item =>
+            item.roles.includes(user.role)
+          );
+          targetTab = firstAccessibleTab?.id || "overview";
+          console.log('🔄 Dashboard: Using fallback tab:', targetTab);
         }
-      } else {
-        const firstAccessibleTab = allMenuItems.find(item => item.roles.includes(user.role));
-        const fallbackTab = firstAccessibleTab?.id || "overview";
-        setActiveTab(fallbackTab);
+      }
 
+      if (targetTab !== activeTab) {
+        setActiveTab(targetTab);
+        console.log('✅ Dashboard: Active tab updated to:', targetTab);
+      }
+
+      const currentUrlTab = searchParams.get('tab');
+      if (currentUrlTab !== targetTab) {
         const newSearchParams = new URLSearchParams(searchParams);
-        newSearchParams.set('tab', fallbackTab);
+        newSearchParams.set('tab', targetTab);
         setSearchParams(newSearchParams, { replace: true });
+        console.log('🔗 Dashboard: URL updated to tab:', targetTab);
       }
     }
-  }, [user, loading, searchParams, setSearchParams, allMenuItems]);
+  }, [user, loading, searchParams, setSearchParams, activeTab, allMenuItems]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -216,12 +227,84 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, mobileMenuOpen]);
 
+  useEffect(() => {
+    const handleAuthStateChange = (event) => {
+      console.log('🔄 Dashboard: Auth state change detected:', event.detail);
+
+      if (event.detail && event.detail.action === 'logout') {
+        console.log('🚪 Dashboard: Processing logout');
+        setActiveTab('overview');
+        const newSearchParams = new URLSearchParams();
+        setSearchParams(newSearchParams, { replace: true });
+
+      } else if (event.detail && event.detail.action === 'login' && event.detail.user) {
+        console.log('👤 Dashboard: Processing login for role:', event.detail.user.role);
+
+        const user = event.detail.user;
+        const roleDefaults = {
+          'ADMIN': 'admin',
+          'ORGANIZER': 'events',
+          'SECURITY': 'scanner',
+          'ATTENDEE': 'overview'
+        };
+
+        const defaultTab = roleDefaults[user.role] || 'overview';
+
+        const isAccessible = allMenuItems.find(item =>
+          item.id === defaultTab && item.roles.includes(user.role)
+        );
+
+        const targetTab = isAccessible ? defaultTab : 'overview';
+
+        setActiveTab(targetTab);
+
+        const newSearchParams = new URLSearchParams();
+        newSearchParams.set('tab', targetTab);
+        setSearchParams(newSearchParams, { replace: true });
+
+        console.log('✅ Dashboard: Auth login processed, redirected to:', targetTab);
+      }
+    };
+
+    window.addEventListener('auth-state-changed', handleAuthStateChange);
+    return () => window.removeEventListener('auth-state-changed', handleAuthStateChange);
+  }, [setSearchParams, allMenuItems]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
           <p className="text-gray-700 dark:text-gray-300">Loading dashboard...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Preparing your personalized experience
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md mx-4">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Authentication Required
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Please log in to access the dashboard.
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
@@ -316,32 +399,6 @@ const Dashboard = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const handleAuthStateChange = (event) => {
-      if (event.detail && event.detail.action === 'logout') {
-        setActiveTab('overview');
-        const newSearchParams = new URLSearchParams();
-        setSearchParams(newSearchParams, { replace: true });
-      } else if (event.detail && event.detail.action === 'login' && event.detail.user) {
-        const user = event.detail.user;
-        const roleDefaults = {
-          'ADMIN': 'admin',
-          'ORGANIZER': 'events',
-          'SECURITY': 'scanner',
-          'ATTENDEE': 'overview'
-        };
-        const defaultTab = roleDefaults[user.role] || 'overview';
-        setActiveTab(defaultTab);
-
-        const newSearchParams = new URLSearchParams();
-        newSearchParams.set('tab', defaultTab);
-        setSearchParams(newSearchParams, { replace: true });
-      }
-    };
-    window.addEventListener('auth-state-changed', handleAuthStateChange);
-    return () => window.removeEventListener('auth-state-changed', handleAuthStateChange);
-  }, [setSearchParams]);
 
   const MyEventsComponent = () => {
     const [categories, setCategories] = useState([]);
