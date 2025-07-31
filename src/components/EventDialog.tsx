@@ -408,7 +408,14 @@ export const EventDialog = ({
           const [endHour, endMin] = normalizedEndTime.split(':').map(Number);
 
           const startTotalMinutes = startHour * 60 + startMin;
-          const endTotalMinutes = endHour * 60 + endMin;
+          let endTotalMinutes = endHour * 60 + endMin;
+
+          // FIXED: Handle midnight crossing - if end time is 00:00 and start time is later in the day,
+          // treat it as next day (add 24 hours worth of minutes)
+          if (endTotalMinutes === 0 && startTotalMinutes > 0) {
+            console.log('Detected midnight crossing - treating end time as next day');
+            endTotalMinutes = 24 * 60; // 24 hours = 1440 minutes
+          }
 
           console.log('Time comparison:', {
             startTotalMinutes,
@@ -1039,4 +1046,3 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     </div>
   );
 };
-
