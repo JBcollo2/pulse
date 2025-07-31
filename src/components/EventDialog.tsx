@@ -374,14 +374,6 @@ export const EventDialog = ({
 
       // Additional validation: Check if start time is before end time (for same day events)
       if (newEvent.start_time && newEvent.end_time && formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
-        // Debug logging - remove after fixing
-        console.log('Time validation inputs:', {
-          start_time: newEvent.start_time,
-          end_time: newEvent.end_time,
-          start_date: formatDate(newEvent.date),
-          end_date: formatDate(newEvent.end_date)
-        });
-
         // Normalize time strings to HH:MM format (remove seconds if present)
         const normalizeTime = (timeStr) => {
           if (!timeStr || typeof timeStr !== 'string') return '';
@@ -395,12 +387,6 @@ export const EventDialog = ({
         const normalizedStartTime = normalizeTime(newEvent.start_time);
         const normalizedEndTime = normalizeTime(newEvent.end_time);
 
-        // Debug logging
-        console.log('Normalized times:', {
-          normalizedStartTime,
-          normalizedEndTime
-        });
-
         // Only proceed if both times are properly normalized
         if (normalizedStartTime && normalizedEndTime) {
           // Simple string comparison for HH:MM format
@@ -413,19 +399,37 @@ export const EventDialog = ({
           // FIXED: Handle midnight crossing - if end time is 00:00 and start time is later in the day,
           // treat it as next day (add 24 hours worth of minutes)
           if (endTotalMinutes === 0 && startTotalMinutes > 0) {
-            console.log('Detected midnight crossing - treating end time as next day');
             endTotalMinutes = 24 * 60; // 24 hours = 1440 minutes
           }
-
-          console.log('Time comparison:', {
-            startTotalMinutes,
-            endTotalMinutes,
-            isStartAfterEnd: startTotalMinutes >= endTotalMinutes
-          });
 
           if (startTotalMinutes >= endTotalMinutes) {
             throw new Error('Start time must be before end time for same-day events');
           }
+        }
+      }
+
+      // Client-side validation: Check if event date is in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of today for accurate comparison
+
+      const eventDate = new Date(newEvent.date);
+      eventDate.setHours(0, 0, 0, 0); // Set to start of event date
+
+      if (eventDate < today) {
+        throw new Error('Event date cannot be in the past. Please select a future date.');
+      }
+
+      // Also check end date if it's different from start date
+      if (newEvent.end_date && formatDate(newEvent.end_date) !== formatDate(newEvent.date)) {
+        const endDate = new Date(newEvent.end_date);
+        endDate.setHours(0, 0, 0, 0);
+
+        if (endDate < today) {
+          throw new Error('Event end date cannot be in the past. Please select a future date.');
+        }
+
+        if (endDate < eventDate) {
+          throw new Error('Event end date cannot be before start date.');
         }
       }
 
@@ -436,12 +440,6 @@ export const EventDialog = ({
 
       let eventResponse;
       let eventId;
-
-      // Debug: Log what we're sending (remove in production)
-      console.log('FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-      }
 
       // Create or update event based on mode
       if (isEditing && editingEvent) {
@@ -463,7 +461,6 @@ export const EventDialog = ({
 
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
-        console.error('Server error response:', errorData);
         throw new Error(errorData.error || errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
       }
 
@@ -619,6 +616,11 @@ export const EventDialog = ({
                   mode="single"
                   selected={newEvent.date}
                   onSelect={(date) => date && setNewEvent({...newEvent, date})}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today; // Disable past dates
+                  }}
                   required
                   className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
@@ -647,6 +649,15 @@ export const EventDialog = ({
                   mode="single"
                   selected={newEvent.end_date}
                   onSelect={(date) => date && setNewEvent({...newEvent, end_date: date})}
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const startDate = new Date(newEvent.date);
+                    startDate.setHours(0, 0, 0, 0);
+
+                    // Disable dates before today or before start date
+                    return date < today || date < startDate;
+                  }}
                   required
                   className="text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
