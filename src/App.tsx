@@ -24,38 +24,29 @@ import { AuthProvider, useAuth, getRoleBasedRedirect } from "./contexts/AuthCont
 
 const queryClient = new QueryClient();
 
-// Enhanced ProtectedRoute component with redirect loop prevention
-const DynamicProtectedRoute: React.FC = () => {
+// FIXED: Simplified ProtectedRoute that only protects dashboard
+const DashboardProtectedRoute: React.FC = () => {
   const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const hasRedirectedRef = useRef(false);
 
-  // CRITICAL: Handle role-based redirects with loop prevention
+  // Only handle role-based redirects for dashboard access
   useEffect(() => {
-    // Don't do anything if still loading or already redirected
     if (loading || hasRedirectedRef.current) {
       return;
     }
 
-    // If authenticated with role, check if we need to redirect to correct tab
-    if (isAuthenticated && user && user.role) {
-      const currentPath = location.pathname + location.search;
+    // Only redirect if user is on base dashboard without a tab
+    if (isAuthenticated && user && user.role && location.pathname === '/dashboard' && !location.search) {
       const expectedPath = getRoleBasedRedirect(user.role);
+      console.log(`🔄 Redirecting ${user.role} user from base dashboard to: ${expectedPath}`);
+      hasRedirectedRef.current = true;
+      navigate(expectedPath, { replace: true });
       
-      console.log(`🔍 Protected route check - Current: ${currentPath}, Expected: ${expectedPath}`);
-      
-      // Only redirect if we're on the base dashboard path without correct tab
-      if (currentPath === '/dashboard' && expectedPath !== '/dashboard') {
-        console.log(`🔄 Redirecting ${user.role} user from base dashboard to: ${expectedPath}`);
-        hasRedirectedRef.current = true;
-        navigate(expectedPath, { replace: true });
-        
-        // Reset flag after redirect
-        setTimeout(() => {
-          hasRedirectedRef.current = false;
-        }, 1000);
-      }
+      setTimeout(() => {
+        hasRedirectedRef.current = false;
+      }, 1000);
     }
   }, [isAuthenticated, user, location, navigate, loading]);
 
@@ -77,68 +68,27 @@ const DynamicProtectedRoute: React.FC = () => {
   return <Outlet />;
 };
 
-// Main App Router component with redirect loop prevention
+// FIXED: Simplified App Router without aggressive redirects
 const AppRouter: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, loading } = useAuth();
-  const redirectCountRef = useRef(0);
-  const lastRedirectRef = useRef('');
-  const isInitialLoadRef = useRef(true);
 
-  // Emergency redirect loop breaker
+  // REMOVED: All the aggressive redirect logic that was preventing navigation
+
+  // Only handle initial root redirect
   useEffect(() => {
-    const currentPath = location.pathname + location.search;
-    
-    // Track redirect attempts to prevent infinite loops
-    if (lastRedirectRef.current === currentPath) {
-      redirectCountRef.current += 1;
-      
-      if (redirectCountRef.current > 3) {
-        console.error('🚨 REDIRECT LOOP DETECTED - STOPPING ALL REDIRECTS');
-        console.error('Current path:', currentPath);
-        console.error('User:', user);
-        console.error('Is authenticated:', isAuthenticated);
-        
-        // Clear any problematic localStorage
-        try {
-          localStorage.removeItem('auth-login');
-          localStorage.removeItem('auth-logout');
-        } catch (error) {
-          console.warn('Could not clear localStorage:', error);
-        }
-        
-        // Reset counter and stop further redirects
-        redirectCountRef.current = 0;
-        return;
-      }
-    } else {
-      // Different path, reset counter
-      redirectCountRef.current = 0;
-    }
-    
-    lastRedirectRef.current = currentPath;
-  }, [location, user, isAuthenticated]);
-
-  // Handle initial authentication-based redirects
-  useEffect(() => {
-    // Skip if still loading or not initial load
-    if (loading || !isInitialLoadRef.current) {
-      return;
-    }
-
-    // Mark that we've handled initial load
-    isInitialLoadRef.current = false;
+    if (loading) return;
 
     const currentPath = location.pathname + location.search;
     
-    // If user is authenticated and on root path, redirect to their dashboard
+    // Only redirect from root path when user is authenticated
     if (isAuthenticated && user && user.role && currentPath === '/') {
       const redirectPath = getRoleBasedRedirect(user.role);
       console.log(`🎯 Initial load: Redirecting authenticated ${user.role} user from root to: ${redirectPath}`);
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, loading, location, navigate]);
+  }, [isAuthenticated, user, loading, location.pathname, navigate]);
 
   return (
     <Routes>
@@ -149,8 +99,8 @@ const AppRouter: React.FC = () => {
       <Route path="/about" element={<About />} />
       <Route path="/payment-status" element={<PaymentStatus />} />
 
-      {/* Protected Dashboard Routes */}
-      <Route path="/" element={<DynamicProtectedRoute />}>
+      {/* Protected Dashboard Routes - Only dashboard is protected */}
+      <Route path="/" element={<DashboardProtectedRoute />}>
         <Route path="dashboard" element={<Dashboard />} />
       </Route>
 

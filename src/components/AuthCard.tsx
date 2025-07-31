@@ -1,25 +1,22 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import * as lucideReact from 'lucide-react';
-import { useAuth, getRoleBasedRedirect } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { VisuallyHidden } from './ui/Visually-hidden';
 
 const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { loginUser, refreshUser, user, isAuthenticated } = useAuth();
-
-  // CRITICAL: Use refs to prevent infinite redirect loops
-  const hasRedirectedRef = useRef(false);
-  const isRedirectingRef = useRef(false);
+  const { loginUser, user, isAuthenticated } = useAuth();
 
   // Get token from URL if present
   const resetTokenFromUrl = searchParams.get('token') ||
@@ -54,18 +51,10 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // FIXED: Role-based redirect handler with infinite loop prevention
-  const handleSuccessfulAuth = useCallback(async (userData, redirectDelay = 800) => {
+  // Simplified success handler without automatic redirects
+  const handleSuccessfulAuth = useCallback(async (userData) => {
     try {
       console.log('🚀 Starting authentication success flow for user:', userData);
-
-      // CRITICAL: Prevent multiple simultaneous redirects
-      if (isRedirectingRef.current) {
-        console.log('⚠️ Redirect already in progress, skipping...');
-        return;
-      }
-
-      isRedirectingRef.current = true;
 
       // Normalize user data to ensure consistency
       const normalizedUser = {
@@ -80,14 +69,14 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       console.log('✅ Normalized user data:', normalizedUser);
 
-      // Immediate state updates
+      // Update auth state
       loginUser(normalizedUser);
 
       // Show success message
       const displayName = normalizedUser.full_name || normalizedUser.name || normalizedUser.email;
       setSuccessMessage(`Welcome back, ${displayName}!`);
 
-      // Close the auth modal immediately
+      // Close the auth modal
       if (onClose) {
         onClose();
       }
@@ -96,12 +85,12 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       if (toast) {
         toast({
           title: "Login Successful",
-          description: `Welcome ${displayName}! Redirecting to your dashboard...`,
+          description: `Welcome ${displayName}! You can now access your dashboard.`,
           variant: "default"
         });
       }
 
-      // Trigger immediate auth state change event
+      // Trigger auth state change event
       const authEvent = new CustomEvent('auth-state-changed', {
         detail: {
           user: normalizedUser,
@@ -115,49 +104,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       localStorage.setItem('auth-login', Date.now().toString());
       setTimeout(() => localStorage.removeItem('auth-login'), 100);
 
-      // FIXED: Role-based redirect with loop prevention
-      setTimeout(async () => {
-        try {
-          const redirectPath = getRoleBasedRedirect(normalizedUser.role);
-          const currentPath = location.pathname;
-          const currentSearch = location.search;
-          const currentFullPath = `${currentPath}${currentSearch}`;
-
-          console.log(`🎯 Redirect check - Current: ${currentFullPath}, Target: ${redirectPath}`);
-
-          // CRITICAL: Only redirect if we're not already on the target path
-          if (currentFullPath !== redirectPath && !hasRedirectedRef.current) {
-            hasRedirectedRef.current = true;
-            console.log(`🔄 Redirecting ${normalizedUser.role} user to: ${redirectPath}`);
-
-            // Force navigate with replace to avoid back button issues
-            navigate(redirectPath, {
-              replace: true,
-              state: { fromAuth: true, userRole: normalizedUser.role }
-            });
-
-            // Reset redirect flag after navigation
-            setTimeout(() => {
-              hasRedirectedRef.current = false;
-              isRedirectingRef.current = false;
-            }, 1000);
-          } else {
-            console.log('📍 Already on target path or redirect already performed, skipping redirect');
-            isRedirectingRef.current = false;
-          }
-        } catch (error) {
-          console.error('❌ Error during redirect:', error);
-          isRedirectingRef.current = false;
-          hasRedirectedRef.current = false;
-        }
-      }, redirectDelay);
+      console.log('✅ Authentication successful - user can now navigate freely');
 
     } catch (error) {
       console.error('❌ Error in handleSuccessfulAuth:', error);
-      isRedirectingRef.current = false;
-      setError('Authentication successful but redirect failed. Please refresh the page.');
+      setError('Authentication successful but there was an issue. Please try again.');
     }
-  }, [onClose, toast, loginUser, navigate, location]);
+  }, [onClose, toast, loginUser]);
 
   // Helper to reset all form-specific states when changing views
   const resetFormStates = useCallback(() => {
@@ -229,7 +182,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignInData(prev => ({ ...prev, [field]: value }));
   };
 
-  // ENHANCED SIGN IN HANDLER with better error handling and state management
+  // ENHANCED SIGN IN HANDLER with better error handling
   const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -285,9 +238,9 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         throw new Error('User email not found in response');
       }
 
-      console.log('🎉 Authentication successful, processing redirect...');
+      console.log('🎉 Authentication successful, updating auth state...');
 
-      // Handle successful login with role-based redirect
+      // Handle successful login WITHOUT automatic redirect
       await handleSuccessfulAuth(userData);
 
     } catch (error) {
@@ -322,7 +275,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignUpData(prev => ({ ...prev, [field]: value }));
   };
 
-  // ENHANCED SIGN UP HANDLER with immediate login capability
+  // ENHANCED SIGN UP HANDLER
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -346,10 +299,10 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       // Check if user is automatically logged in after registration
       if (response.data.user && response.data.user.role) {
         console.log('🎉 Auto-login after registration detected');
-        setSuccessMessage('Account created successfully! Redirecting to your dashboard...');
+        setSuccessMessage('Account created successfully! You are now logged in.');
         await handleSuccessfulAuth(response.data.user);
       } else {
-        // Traditional flow - user needs to verify email or sign in manually
+        // Traditional flow - user needs to sign in manually
         setSuccessMessage('Account created successfully! Please sign in to continue.');
 
         // Auto-fill sign in form with registered email
@@ -441,7 +394,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         { withCredentials: true, timeout: 10000 }
       );
 
-      setSuccessMessage('Password reset successful! Redirecting to sign in...');
+      setSuccessMessage('Password reset successful! You can now sign in.');
       console.log('Password reset successful', response.data);
 
       // Clear the token from the URL
@@ -453,9 +406,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       // Switch to sign in view
       setTimeout(() => {
         toggleForm('signin');
-        if (onClose) {
-          onClose();
-        }
       }, 2000);
 
     } catch (error) {
@@ -542,7 +492,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
           if (response.data && response.data.role) {
             console.log('✅ Google login profile fetch successful:', response.data);
-            await handleSuccessfulAuth(response.data, 500);
+            await handleSuccessfulAuth(response.data);
           } else {
             throw new Error('User profile not found after Google login');
           }
@@ -561,473 +511,311 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     handleGoogleCallback();
   }, [handleSuccessfulAuth]);
 
-  // FIXED: Auto-redirect with infinite loop prevention
-  useEffect(() => {
-    // CRITICAL: Only run redirect logic if we're not already redirecting
-    if (isRedirectingRef.current || hasRedirectedRef.current) {
-      console.log('⚠️ Redirect already in progress or completed, skipping auto-redirect check');
-      return;
+  // Render logic for different auth views
+  const renderAuthView = () => {
+    switch (currentView) {
+      case 'signin':
+        return (
+          <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Sign In</CardTitle>
+              <CardDescription>Welcome back! Please sign in to your account.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <Label htmlFor="signin-email">Email</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    value={signInData.email}
+                    onChange={handleSignInChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signin-password">Password</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={signInData.password}
+                    onChange={handleSignInChange}
+                    required
+                  />
+                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <Alert>
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Signing In...' : 'Sign In'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <lucideReact.Mail className="mr-2 h-4 w-4" />
+                  Sign in with Google
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2">
+              <Button
+                variant="link"
+                onClick={() => toggleForm('forgot-password')}
+                disabled={isLoading}
+              >
+                Forgot your password?
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => toggleForm('signup')}
+                disabled={isLoading}
+              >
+                Don't have an account? Sign up
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+
+      case 'signup':
+        return (
+          <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Create Account</CardTitle>
+              <CardDescription>Enter your details to create your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <Label htmlFor="signup-full_name">Full Name</Label>
+                  <Input
+                    id="signup-full_name"
+                    value={signUpData.full_name}
+                    onChange={handleSignUpChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={signUpData.email}
+                    onChange={handleSignUpChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-phone_number">Phone Number</Label>
+                  <Input
+                    id="signup-phone_number"
+                    value={signUpData.phone_number}
+                    onChange={handleSignUpChange}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Must be a valid Safaricom number (e.g., 0712345678)</p>
+                </div>
+                <div>
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={signUpData.password}
+                    onChange={handleSignUpChange}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Password must be at least 8 characters long and include both letters and numbers</p>
+                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <Alert>
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Signing Up...' : 'Sign Up'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <lucideReact.Mail className="mr-2 h-4 w-4" />
+                  Sign up with Google
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2">
+              <Button
+                variant="link"
+                onClick={() => toggleForm('signin')}
+                disabled={isLoading}
+              >
+                Already have an account? Sign in
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+
+      case 'forgot-password':
+        return (
+          <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Forgot Password</CardTitle>
+              <CardDescription>Enter your email to receive a password reset link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <Label htmlFor="forgot-email">Email</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <Alert>
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send Reset Link'}
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2">
+              <Button
+                variant="link"
+                onClick={() => toggleForm('signin')}
+                disabled={isLoading}
+              >
+                Remembered your password? Sign in
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+
+      case 'reset-password':
+        return (
+          <Card className="w-full max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>Reset Password</CardTitle>
+              <CardDescription>Enter your new password below</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              {successMessage && (
+                <Alert>
+                  <AlertDescription>{successMessage}</AlertDescription>
+                </Alert>
+              )}
+              {isLoading && <p className="text-center text-muted-foreground">Validating reset link...</p>}
+              {!isLoading && !tokenValidated && !error && resetTokenFromUrl && (
+                <p className="text-center text-muted-foreground">Please wait while we validate your reset link, or it might be invalid/expired.</p>
+              )}
+              {!isLoading && tokenValidated && !error && (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={8}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Password must be at least 8 characters long and include both letters and numbers
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                    />
+                    {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-xs text-red-500">Passwords do not match</p>
+                    )}
+                    {newPassword && confirmPassword && newPassword === confirmPassword && (
+                      <p className="text-xs text-green-600">Passwords match ✓</p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={
+                      isLoading ||
+                      !newPassword ||
+                      !confirmPassword ||
+                      newPassword !== confirmPassword ||
+                      newPassword.length < 8 ||
+                      !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))
+                    }
+                  >
+                    {isLoading ? 'Resetting...' : 'Reset Password'}
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2">
+              <Button
+                variant="link"
+                onClick={() => toggleForm('signin')}
+                disabled={isLoading}
+              >
+                Remembered your password? Sign in
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+
+      default:
+        return null;
     }
-
-    if (isAuthenticated && user && user.role && !isLoading) {
-      console.log('👤 User already authenticated, checking for auto-redirect...');
-
-      // Only auto-redirect if we're not on a password reset flow
-      if (currentView !== 'reset-password' && !resetTokenFromUrl) {
-        const redirectPath = getRoleBasedRedirect(user.role);
-        const currentPath = location.pathname;
-        const currentSearch = location.search;
-        const currentFullPath = `${currentPath}${currentSearch}`;
-
-        console.log(`🔍 Auto-redirect check - Current: ${currentFullPath}, Target: ${redirectPath}`);
-
-        // CRITICAL: Only redirect if not already on the target path
-        if (currentFullPath !== redirectPath) {
-          console.log(`🔄 Auto-redirecting authenticated ${user.role} user to: ${redirectPath}`);
-
-          if (onClose) onClose();
-
-          // Mark as redirecting to prevent multiple attempts
-          isRedirectingRef.current = true;
-          hasRedirectedRef.current = true;
-
-          setTimeout(() => {
-            navigate(redirectPath, { replace: true });
-
-            // Reset flags after navigation
-            setTimeout(() => {
-              isRedirectingRef.current = false;
-            }, 1000);
-          }, 100);
-        } else {
-          console.log('📍 Already on correct path, no redirect needed');
-        }
-      }
-    }
-  }, [isAuthenticated, user, currentView, resetTokenFromUrl, navigate, onClose, isLoading, location]);
-
-  // Reset redirect flags when component unmounts or auth state changes significantly
-  useEffect(() => {
-    return () => {
-      hasRedirectedRef.current = false;
-      isRedirectingRef.current = false;
-    };
-  }, []);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] p-0 bg-transparent border-none shadow-none">
-        <div className="relative w-full min-h-[580px]">
-          {/* Sign In View */}
-          {currentView === 'signin' && (
-            <Card className="w-full p-6 glass-card">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-gradient">Sign In</CardTitle>
-                <CardDescription>Enter your credentials to access your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <lucideReact.AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {successMessage && (
-                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
-                    <AlertDescription>{successMessage}</AlertDescription>
-                  </Alert>
-                )}
-
-                <form onSubmit={handleSignIn}>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        placeholder="Enter your email"
-                        type="email"
-                        className="pl-10"
-                        value={signInData.email}
-                        onChange={handleSignInChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    <div className="flex justify-between items-center">
-                      <Label htmlFor="password">Password</Label>
-                      <button
-                        type="button"
-                        onClick={() => toggleForm('forgot-password')}
-                        className="text-sm text-pulse-purple hover:underline"
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        className="pl-10"
-                        value={signInData.password}
-                        onChange={handleSignInChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <Button
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
-                      type="submit"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Signing In..." : "Sign In"}
-                    </Button>
-                  </div>
-                </form>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t"></span>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-300"
-                  onClick={handleGoogleLogin}
-                  type="button"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Sign in with Google
-                </Button>
-              </CardContent>
-              <CardFooter className="pt-2">
-                <p className="text-sm text-muted-foreground text-center w-full">
-                  Don't have an account?{" "}
-                  <button
-                    onClick={() => toggleForm('signup')}
-                    className="text-pulse-purple hover:underline font-medium"
-                    type="button"
-                  >
-                    Sign Up
-                  </button>
-                </p>
-              </CardFooter>
-            </Card>
-          )}
-
-          {/* Sign Up View */}
-          {currentView === 'signup' && (
-            <Card className="w-full p-6 glass-card">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-gradient">Create Account</CardTitle>
-                <CardDescription>Enter your details to create your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <lucideReact.AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {successMessage && (
-                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
-                    <AlertDescription>{successMessage}</AlertDescription>
-                  </Alert>
-                )}
-
-                <form onSubmit={handleSignUp}>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-full_name">Full Name</Label>
-                    <div className="relative">
-                      <lucideReact.User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="signup-full_name"
-                        placeholder="Enter your full name"
-                        className="pl-10"
-                        value={signUpData.full_name}
-                        onChange={handleSignUpChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        placeholder="Enter your email"
-                        type="email"
-                        className="pl-10"
-                        value={signUpData.email}
-                        onChange={handleSignUpChange}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="signup-phone_number">Phone Number</Label>
-                    <div className="relative">
-                      <lucideReact.Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="signup-phone_number"
-                        placeholder="Enter your Safaricom number"
-                        className="pl-10"
-                        value={signUpData.phone_number}
-                        onChange={handleSignUpChange}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Must be a valid Safaricom number (e.g., 0712345678)</p>
-                  </div>
-                  <div className="space-y-2 mt-4">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <div className="relative">
-                      <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Create a password"
-                        className="pl-10"
-                        value={signUpData.password}
-                        onChange={handleSignUpChange}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">Password must be at least 8 characters long and include both letters and numbers</p>
-                  </div>
-                  <div className="mt-6">
-                    <Button
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
-                      type="submit"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Signing Up..." : "Sign Up"}
-                    </Button>
-                  </div>
-                </form>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t"></span>
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 hover:bg-gray-100 border border-gray-300"
-                  onClick={handleGoogleLogin}
-                  type="button"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Sign up with Google
-                </Button>
-              </CardContent>
-              <CardFooter className="pt-2">
-                <p className="text-sm text-muted-foreground text-center w-full">
-                  Already have an account?{" "}
-                  <button
-                    onClick={() => toggleForm('signin')}
-                    className="text-pulse-purple hover:underline font-medium"
-                    type="button"
-                  >
-                    Sign In
-                  </button>
-                </p>
-              </CardFooter>
-            </Card>
-          )}
-
-          {/* Forgot Password View */}
-          {currentView === 'forgot-password' && (
-            <Card className="w-full p-6 glass-card">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-gradient">Forgot Password</CardTitle>
-                <CardDescription>Enter your email to receive a password reset link</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <lucideReact.AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {successMessage && (
-                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
-                    <AlertDescription>{successMessage}</AlertDescription>
-                  </Alert>
-                )}
-
-                <form onSubmit={handleForgotPassword}>
-                  <div className="space-y-2">
-                    <Label htmlFor="forgot-email">Email</Label>
-                    <div className="relative">
-                      <lucideReact.Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        id="forgot-email"
-                        placeholder="Enter your email"
-                        type="email"
-                        className="pl-10"
-                        value={forgotPasswordEmail}
-                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <Button
-                      className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
-                      type="submit"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? "Sending..." : "Send Reset Link"}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-              <CardFooter className="pt-2">
-                <p className="text-sm text-muted-foreground text-center w-full">
-                  Remembered your password?{" "}
-                  <button
-                    onClick={() => toggleForm('signin')}
-                    className="text-pulse-purple hover:underline font-medium"
-                    type="button"
-                  >
-                    Back to Sign In
-                  </button>
-                </p>
-              </CardFooter>
-            </Card>
-          )}
-
-          {/* Reset Password View */}
-          {currentView === 'reset-password' && (
-            <Card className="w-full p-6 glass-card">
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl text-gradient">Reset Password</CardTitle>
-                <CardDescription>Enter your new password below</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <lucideReact.AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
-                {successMessage && (
-                  <Alert variant="default" className="bg-green-100 border-green-400 text-green-800">
-                    <AlertDescription>{successMessage}</AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Conditional rendering of the form based on token validation and loading state */}
-                {isLoading && <p className="text-center text-muted-foreground">Validating reset link...</p>}
-                {!isLoading && !tokenValidated && !error && resetTokenFromUrl && (
-                  <p className="text-center text-muted-foreground">Please wait while we validate your reset link, or it might be invalid/expired.</p>
-                )}
-
-                {!isLoading && tokenValidated && !error && (
-                  <form onSubmit={handleResetPassword}>
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <div className="relative">
-                        <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          id="new-password"
-                          type="password"
-                          placeholder="Enter your new password"
-                          className="pl-10"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          required
-                          minLength={8}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Password must be at least 8 characters long and include both letters and numbers
-                      </p>
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
-                      <div className="relative">
-                        <lucideReact.Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                        <Input
-                          id="confirm-password"
-                          type="password"
-                          placeholder="Confirm your new password"
-                          className="pl-10"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                          minLength={8}
-                        />
-                      </div>
-                      {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                        <p className="text-xs text-red-500">Passwords do not match</p>
-                      )}
-                      {newPassword && confirmPassword && newPassword === confirmPassword && (
-                        <p className="text-xs text-green-600">Passwords match ✓</p>
-                      )}
-                    </div>
-
-                    <div className="mt-6">
-                      <Button
-                        className="w-full bg-pulse-purple hover:bg-pulse-deep-purple"
-                        type="submit"
-                        disabled={
-                          isLoading ||
-                          !newPassword ||
-                          !confirmPassword ||
-                          newPassword !== confirmPassword ||
-                          newPassword.length < 8 ||
-                          !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword)) // Added strength check to button disable
-                        }
-                      >
-                        {isLoading ? "Resetting..." : "Reset Password"}
-                      </Button>
-                    </div>
-                  </form>
-                )}
-              </CardContent>
-              <CardFooter className="pt-2">
-                <p className="text-sm text-muted-foreground text-center w-full">
-                  Remembered your password?{" "}
-                  <button
-                    onClick={() => toggleForm('signin')}
-                    className="text-pulse-purple hover:underline font-medium"
-                    type="button"
-                  >
-                    Back to Sign In
-                  </button>
-                </p>
-              </CardFooter>
-            </Card>
-          )}
-        </div>
+      <DialogContent className="max-w-md">
+        <VisuallyHidden>
+          <DialogTitle>Authentication</DialogTitle>
+          <DialogDescription>Sign in or create an account</DialogDescription>
+        </VisuallyHidden>
+        {renderAuthView()}
       </DialogContent>
     </Dialog>
   );
