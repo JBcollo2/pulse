@@ -8,11 +8,16 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
 import * as lucideReact from 'lucide-react';
+// ADD THIS IMPORT:
+import { useAuth, getRoleBasedRedirect } from '@/contexts/AuthContext';
 
 const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // ADD THIS LINE - Import auth context functions
+  const { loginUser, refreshUser } = useAuth();
 
   // Get token from URL if present
   // Prioritize query param, then path segment
@@ -47,6 +52,48 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   // Reset Password state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // ADD THIS NEW FUNCTION - Role-based redirect handler
+  const handleSuccessfulAuth = useCallback((userData, redirectDelay = 1000) => {
+    // Close the auth modal/dialog if it exists
+    if (onClose) {
+      onClose();
+    }
+
+    // Show success message with user's name
+    const displayName = userData.full_name || userData.name || userData.email;
+    setSuccessMessage(`Welcome back, ${displayName}!`);
+
+    // Show success toast if available
+    if (toast) {
+      toast({
+        title: "Login Successful",
+        description: `Welcome ${displayName}! Redirecting to your dashboard...`,
+        variant: "default"
+      });
+    }
+
+    // Update the auth context immediately
+    loginUser(userData);
+
+    // Trigger a custom event for immediate context refresh
+    window.dispatchEvent(new CustomEvent('auth-state-changed', { 
+      detail: { user: userData, action: 'login' } 
+    }));
+
+    // Navigate to role-based route after a short delay
+    setTimeout(() => {
+      const redirectPath = getRoleBasedRedirect(userData.role);
+      console.log(`Redirecting ${userData.role} user to: ${redirectPath}`);
+      
+      navigate(redirectPath, { replace: true });
+      
+      // Small delay to ensure navigation completes, then refresh context
+      setTimeout(() => {
+        refreshUser(); // Refresh user data from server to ensure sync
+      }, 100);
+    }, redirectDelay);
+  }, [onClose, toast, loginUser, navigate, refreshUser]);
 
   // Helper to reset all form-specific states when changing views
   const resetFormStates = useCallback(() => {
@@ -121,6 +168,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignInData(prev => ({ ...prev, [field]: value }));
   };
 
+  // UPDATED SIGN IN HANDLER - This is the key change
   const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -134,19 +182,37 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         { withCredentials: true }
       );
 
-      setSuccessMessage('Sign in successful!');
       console.log('Sign in successful', response.data);
 
-      // Handle successful login (e.g., redirect, update auth state)
-      setTimeout(() => {
-        if (onClose) onClose();
-        // Optionally navigate to a dashboard or home page after login
-        // navigate('/dashboard');
-      }, 1000);
+      // Extract user data from response - handle different response structures
+      let userData;
+      if (response.data.user) {
+        userData = response.data.user;
+      } else if (response.data.id || response.data.email) {
+        userData = response.data;
+      } else {
+        // Fallback: fetch user profile if not included in login response
+        const profileResponse = await axios.get(
+          `${import.meta.env.VITE_API_URL}/auth/profile`,
+          { withCredentials: true }
+        );
+        userData = profileResponse.data;
+      }
+
+      // Ensure userData has required fields
+      if (!userData.role) {
+        throw new Error('User role not found in response');
+      }
+
+      // Handle successful login with role-based redirect
+      handleSuccessfulAuth(userData);
 
     } catch (error) {
+      console.error('Sign in error:', error);
       if (axios.isAxiosError(error) && error.response) {
         setError(error.response.data.msg || 'Sign in failed. Please try again.');
+      } else if (error.message === 'User role not found in response') {
+        setError('Authentication successful but user role is missing. Please contact support.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
@@ -162,6 +228,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignUpData(prev => ({ ...prev, [field]: value }));
   };
 
+  // UPDATED SIGN UP HANDLER - Handle immediate login after registration
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -175,13 +242,22 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
         { withCredentials: true }
       );
 
-      setSuccessMessage('Account created successfully! Please check your email for verification.');
       console.log('Sign up successful', response.data);
 
-      // Switch to sign in after successful registration
-      setTimeout(() => {
-        toggleForm('signin');
-      }, 2000);
+      // Check if user is automatically logged in after registration
+      if (response.data.user && response.data.user.role) {
+        // User is logged in immediately after registration
+        setSuccessMessage('Account created successfully! Redirecting to your dashboard...');
+        handleSuccessfulAuth(response.data.user);
+      } else {
+        // Traditional flow - user needs to verify email
+        setSuccessMessage('Account created successfully! Please check your email for verification.');
+        
+        // Switch to sign in after successful registration
+        setTimeout(() => {
+          toggleForm('signin');
+        }, 2000);
+      }
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -296,7 +372,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     }
   };
 
-  // Google Login handler
+  // UPDATED GOOGLE LOGIN HANDLER
   const handleGoogleLogin = () => {
     try {
       // Store the current URL to redirect back after Google login
@@ -307,21 +383,30 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       // Log the API URL for debugging
       console.log('API URL:', import.meta.env.VITE_API_URL);
+      console.log('Initiating Google OAuth login...');
 
       // Construct the Google login URL
       const googleLoginUrl = `${import.meta.env.VITE_API_URL}/auth/login/google`;
       console.log('Google Login URL:', googleLoginUrl);
 
+      // Show loading state for Google login
+      setIsLoading(true);
+      setError('');
+      setSuccessMessage('Redirecting to Google...');
+
       // Redirect to Google OAuth endpoint
       window.location.href = googleLoginUrl;
     } catch (error) {
       console.error('Error initiating Google login:', error);
+      setIsLoading(false);
+      
       if (error instanceof Error) {
         console.error('Error details:', {
           message: error.message,
           stack: error.stack
         });
       }
+      
       if (toast) {
         toast({
           title: "Error",
@@ -333,6 +418,45 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
       }
     }
   };
+
+  // ADD THIS - Listen for Google OAuth callback success
+  useEffect(() => {
+    const handleGoogleCallback = async () => {
+      // Check if we're returning from Google OAuth
+      const urlParams = new URLSearchParams(window.location.search);
+      const isGoogleCallback = urlParams.get('google_auth') === 'success';
+      
+      if (isGoogleCallback) {
+        setIsLoading(true);
+        try {
+          // Fetch user profile after Google login
+          const response = await axios.get(
+            `${import.meta.env.VITE_API_URL}/auth/profile`,
+            { withCredentials: true }
+          );
+          
+          if (response.data && response.data.role) {
+            console.log('Google login successful:', response.data);
+            handleSuccessfulAuth(response.data, 500);
+          } else {
+            throw new Error('User profile not found after Google login');
+          }
+        } catch (error) {
+          console.error('Error fetching profile after Google login:', error);
+          setError('Google login was successful, but we could not load your profile. Please try signing in again.');
+        } finally {
+          setIsLoading(false);
+          // Clean up URL parameters
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }
+    };
+
+    handleGoogleCallback();
+  }, [handleSuccessfulAuth]);
+
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
