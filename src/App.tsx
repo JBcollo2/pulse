@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
@@ -23,6 +23,85 @@ import PaymentStatus from "./pages/PaymentStatus";
 import { AuthProvider, useAuth, getRoleBasedRedirect } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
+
+// Enhanced Loading Component
+const EnhancedLoadingComponent = () => {
+  const [dots, setDots] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState('Loading session');
+
+  // Animated dots effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(prev => prev.length >= 3 ? '' : prev + '.');
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Simulated progress
+  useEffect(() => {
+    const stages = [
+      'Loading session',
+      'Authenticating user',
+      'Preparing dashboard',
+      'Almost ready'
+    ];
+    
+    let currentStage = 0;
+    let currentProgress = 0;
+    
+    const progressInterval = setInterval(() => {
+      currentProgress += Math.random() * 15 + 5;
+      if (currentProgress > 100) currentProgress = 100;
+      
+      setProgress(currentProgress);
+      
+      // Update stage based on progress
+      const stageIndex = Math.floor((currentProgress / 100) * (stages.length - 1));
+      if (stageIndex !== currentStage && stageIndex < stages.length) {
+        currentStage = stageIndex;
+        setLoadingStage(stages[stageIndex]);
+      }
+      
+      if (currentProgress >= 100) {
+        clearInterval(progressInterval);
+      }
+    }, 300);
+
+    return () => clearInterval(progressInterval);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center space-y-4">
+        {/* Enhanced spinner with pulse effect */}
+        <div className="relative flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
+          <div className="absolute animate-ping rounded-full h-6 w-6 border border-gray-400 dark:border-gray-600 opacity-30"></div>
+        </div>
+        
+        {/* Dynamic loading text with original styling */}
+        <div className="space-y-2">
+          <p className="text-gray-700 dark:text-gray-300 font-medium">
+            {loadingStage}{dots}
+          </p>
+          
+          {/* Subtle progress indicator */}
+          <div className="w-48 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="h-full bg-gray-900 dark:bg-gray-100 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Please wait while we prepare your experience
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // FIXED: Simplified ProtectedRoute that only protects dashboard
 const DashboardProtectedRoute: React.FC = () => {
@@ -51,12 +130,7 @@ const DashboardProtectedRoute: React.FC = () => {
   }, [isAuthenticated, user, location, navigate, loading]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-gray-100"></div>
-        <p className="ml-3 text-gray-700 dark:text-gray-300">Loading session...</p>
-      </div>
-    );
+    return <EnhancedLoadingComponent />;
   }
 
   if (!isAuthenticated) {
