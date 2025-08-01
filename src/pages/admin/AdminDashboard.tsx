@@ -110,8 +110,14 @@ const AdminDashboard: React.FC = () => {
   const handleFetchError = useCallback(async (response: Response) => {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.msg || errorData.error || JSON.stringify(errorData);
+      } else {
+        const textData = await response.text();
+        errorMessage = textData || errorMessage;
+      }
     } catch (jsonError) {
       console.error('Failed to parse error response:', jsonError);
     }
@@ -130,6 +136,11 @@ const AdminDashboard: React.FC = () => {
     setSuccessMessage('');
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include'
       });
       if (!response.ok) {
@@ -160,6 +171,7 @@ const AdminDashboard: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
         credentials: 'include',
@@ -198,6 +210,10 @@ const AdminDashboard: React.FC = () => {
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
+    
+    console.log('Registration data being sent:', data);
+    console.log('Current view:', currentView);
+    
     try {
       let endpoint = '';
       if (currentView === 'registerAdmin') {
@@ -207,32 +223,57 @@ const AdminDashboard: React.FC = () => {
       } else if (currentView === 'registerOrganizer') {
         endpoint = '/auth/admin/register-organizer';
       }
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        formData.append(key, data[key]);
-      });
+
+      console.log('Sending request to:', `${import.meta.env.VITE_API_URL}${endpoint}`);
+      
+      // Ensure data is properly formatted
+      const requestBody = {
+        email: data.email?.trim(),
+        phone_number: data.phone_number?.trim(),
+        password: data.password,
+        full_name: data.full_name?.trim()
+      };
+
+      console.log('Request body:', requestBody);
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include',
-        body: formData
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
+      
       const result = await response.json();
-      setSuccessMessage(result.msg || `${currentView === 'registerAdmin' ? 'Admin' : currentView === 'registerSecurity' ? 'Security user' : 'Organizer'} registered successfully.`);
+      console.log('Success response:', result);
+      
+      const roleLabel = currentView === 'registerAdmin' ? 'Admin' : 
+                       currentView === 'registerSecurity' ? 'Security user' : 'Organizer';
+      
+      const successMsg = result.msg || `${roleLabel} registered successfully.`;
+      setSuccessMessage(successMsg);
       toast({
         title: "Success",
-        description: result.msg || `${currentView === 'registerAdmin' ? 'Admin' : currentView === 'registerSecurity' ? 'Security user' : 'Organizer'} registered successfully.`,
+        description: successMsg,
         variant: "default",
       });
     } catch (err) {
       console.error('Registration error:', err);
-      setError('An unexpected error occurred during registration.');
+      const errorMsg = 'An unexpected error occurred during registration.';
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: 'An unexpected error occurred during registration.',
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -247,6 +288,10 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
         method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include'
       });
       if (!response.ok) {
@@ -282,6 +327,11 @@ const AdminDashboard: React.FC = () => {
         ? '/admin/users/non-attendees'
         : '/admin/users';
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include'
       });
       if (!response.ok) {
@@ -322,6 +372,11 @@ const AdminDashboard: React.FC = () => {
     try {
       const endpoint = `/admin/users/search?email=${encodeURIComponent(email)}`;
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include'
       });
       if (!response.ok) {
