@@ -84,7 +84,7 @@ const AdminDashboard: React.FC = () => {
       case 'registerOrganizer':
         return {
           title: "Register Organizer",
-          description: "Create new organizer accounts.",
+          description: "Convert existing users to organizers with company details.",
           icon: <UserPlus className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-yellow-500 to-yellow-700"
         };
@@ -216,34 +216,53 @@ const AdminDashboard: React.FC = () => {
     
     try {
       let endpoint = '';
+      let requestBody: any;
+      let headers: any = {
+        'Accept': 'application/json',
+      };
+
       if (currentView === 'registerAdmin') {
         endpoint = '/auth/admin/register-admin';
+        headers['Content-Type'] = 'application/json';
+        requestBody = JSON.stringify({
+          email: data.email?.trim(),
+          phone_number: data.phone_number?.trim(),
+          password: data.password,
+          full_name: data.full_name?.trim()
+        });
       } else if (currentView === 'registerSecurity') {
         endpoint = '/auth/admin/register-security';
+        headers['Content-Type'] = 'application/json';
+        requestBody = JSON.stringify({
+          email: data.email?.trim(),
+          phone_number: data.phone_number?.trim(),
+          password: data.password,
+          full_name: data.full_name?.trim()
+        });
       } else if (currentView === 'registerOrganizer') {
         endpoint = '/auth/admin/register-organizer';
+        // For organizer, we use FormData to handle potential file uploads
+        const formData = new FormData();
+        formData.append('user_id', data.user_id);
+        formData.append('company_name', data.company_name?.trim() || '');
+        if (data.company_description) formData.append('company_description', data.company_description.trim());
+        if (data.website) formData.append('website', data.website.trim());
+        if (data.business_registration_number) formData.append('business_registration_number', data.business_registration_number.trim());
+        if (data.tax_id) formData.append('tax_id', data.tax_id.trim());
+        if (data.address) formData.append('address', data.address.trim());
+        if (data.company_logo) formData.append('company_logo', data.company_logo);
+        
+        requestBody = formData;
+        // Don't set Content-Type for FormData, let browser set it with boundary
       }
 
       console.log('Sending request to:', `${import.meta.env.VITE_API_URL}${endpoint}`);
-      
-      // Ensure data is properly formatted
-      const requestBody = {
-        email: data.email?.trim(),
-        phone_number: data.phone_number?.trim(),
-        password: data.password,
-        full_name: data.full_name?.trim()
-      };
-
-      console.log('Request body:', requestBody);
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         credentials: 'include',
-        body: JSON.stringify(requestBody)
+        body: requestBody
       });
 
       console.log('Response status:', response.status);
