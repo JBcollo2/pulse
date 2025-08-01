@@ -609,29 +609,35 @@ const Dashboard = () => {
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, description, location..."
-                  value={eventSearchQuery}
-                  onChange={(e) => setEventSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, description, location..."
+                    value={eventSearchQuery}
+                    onChange={(e) => {
+                      setEventSearchQuery(e.target.value);
+                      setCurrentPage(1); // Reset to first page when search changes
+                    }}
+                    className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
+                  />
+                </div>
               </div>
-            </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
               <select
                 value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
+                onChange={(e) => {
+                  setFilterCategory(e.target.value);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}
                 className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
               >
                 <option value="all">All Categories</option>
                 {categories.map((category) => (
-                  <option key={category.id || category.name} value={category.slug || category.name}>
+                  <option key={category.id || category.name} value={category.slug || category.name || category.id}>
                     {category.name}
                   </option>
                 ))}
@@ -641,7 +647,10 @@ const Dashboard = () => {
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
               <select
                 value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}
                 className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
               >
                 <option value="all">All Dates</option>
@@ -657,7 +666,10 @@ const Dashboard = () => {
               <div className="flex gap-2">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(1); // Reset to first page when sort changes
+                  }}
                   className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
                   <option value="date">Date</option>
@@ -666,7 +678,10 @@ const Dashboard = () => {
                   <option value="created_at">Created</option>
                 </select>
                 <button
-                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  onClick={() => {
+                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    setCurrentPage(1); // Reset to first page when sort order changes
+                  }}
                   className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
                   title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
                 >
@@ -739,19 +754,21 @@ const Dashboard = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <User className="h-4 w-4" />
-                        <span>Organizer:</span>
-                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                          {event.organizer?.id ? `Organizer #${event.organizer.id}` : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <Building className="h-4 w-4" />
                         <span>Company:</span>
                         <span className="text-gray-800 dark:text-gray-200 ml-auto">
                           {event.organizer?.company_name || 'N/A'}
                         </span>
                       </div>
+                      {event.category && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+                          <span>Category:</span>
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                            {event.category}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
