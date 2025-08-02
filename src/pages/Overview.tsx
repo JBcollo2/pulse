@@ -22,6 +22,16 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Debug system health state changes
+  useEffect(() => {
+    console.log('systemHealth state changed:', systemHealth);
+  }, [systemHealth]);
+
+  // Debug user role changes
+  useEffect(() => {
+    console.log('userRole changed:', userRole);
+  }, [userRole]);
+
   // Fetch user profile from real API
   const fetchUserProfile = useCallback(async () => {
     setLoading(true);
@@ -41,6 +51,7 @@ const Dashboard = () => {
 
           if (response.ok) {
             profileData = await response.json();
+            console.log('Profile data received:', profileData);
             break;
           } else if (response.status === 401) {
             throw new Error('Authentication expired. Please log in again.');
@@ -75,6 +86,7 @@ const Dashboard = () => {
         phoneNumber: profileData.phone_number || profileData.phoneNumber || profileData.phone
       };
 
+      console.log('Normalized profile:', normalizedProfile);
       setProfile(normalizedProfile);
       setUserRole(normalizedProfile.role);
     } catch (error) {
@@ -90,9 +102,12 @@ const Dashboard = () => {
     setError(null);
     
     try {
+      console.log('Fetching stats...');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/stats`, {
         credentials: 'include'
       });
+
+      console.log('Stats response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -100,6 +115,7 @@ const Dashboard = () => {
       }
 
       const statsData = await response.json();
+      console.log('Stats data received:', statsData);
       setStats(statsData);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -110,23 +126,39 @@ const Dashboard = () => {
 
   // Fetch system health from real API (admin only)
   const fetchSystemHealth = useCallback(async () => {
-    if (userRole !== 'ADMIN') return;
+    if (userRole !== 'ADMIN') {
+      console.log('Skipping health check - user role:', userRole);
+      return;
+    }
+    
+    console.log('Fetching system health for admin user...');
     
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/system/health`, {
         credentials: 'include'
       });
 
+      console.log('Health response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('Health API error:', errorData);
         throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const healthData = await response.json();
+      console.log('Raw health data received:', healthData);
+      console.log('Health data type:', typeof healthData);
+      console.log('Health data keys:', Object.keys(healthData));
+      
       setSystemHealth(healthData);
+      console.log('System health state updated');
     } catch (error) {
       console.error('Error fetching system health:', error);
-      // Don't set error for system health as it's not critical for non-admins
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       setSystemHealth(null);
     }
   }, [userRole]);
@@ -139,8 +171,14 @@ const Dashboard = () => {
   // Fetch stats after profile is loaded
   useEffect(() => {
     if (userRole) {
+      console.log('User role confirmed, fetching data for role:', userRole);
       fetchStats();
-      fetchSystemHealth();
+      if (userRole === 'ADMIN') {
+        console.log('Admin role confirmed, fetching health data');
+        fetchSystemHealth();
+      } else {
+        console.log('Non-admin role, skipping health fetch');
+      }
     }
   }, [userRole, fetchStats, fetchSystemHealth]);
 
@@ -242,7 +280,7 @@ const Dashboard = () => {
       await Promise.all([
         fetchUserProfile(),
         fetchStats(),
-        fetchSystemHealth()
+        userRole === 'ADMIN' ? fetchSystemHealth() : Promise.resolve()
       ]);
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -281,6 +319,10 @@ const Dashboard = () => {
     if (!stats) return null;
 
     const { userRole: statsRole, platformStats, organizerStats, businessMetrics, systemHealth: statsSystemHealth } = stats;
+
+    console.log('Rendering stats for role:', statsRole);
+    console.log('Current systemHealth state:', systemHealth);
+    console.log('Stats systemHealth:', statsSystemHealth);
 
     switch (statsRole) {
       case 'attendee':
@@ -398,7 +440,8 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {(statsSystemHealth || systemHealth) && (
+            {/* System Health Card - Fixed Logic */}
+            {(systemHealth || statsSystemHealth) && (
               <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
@@ -408,29 +451,65 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {(() => {
-                    const healthData = statsSystemHealth || systemHealth;
+                    const healthData = systemHealth || statsSystemHealth;
+                    console.log('Rendering health data:', healthData);
+                    
+                    // Handle both possible data structures
                     const systemMetrics = healthData?.system || healthData?.systemHealth;
                     const services = healthData?.services;
+                    const overallStatus = healthData?.overall || healthData?.status;
                     
                     return (
                       <div className="space-y-4">
+                        {/* Overall Status Display */}
+                        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border">
+                          <span className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Activity className="h-4 w-4" />
+                            Overall System Status:
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <div className={getStatusIndicator(overallStatus)}></div>
+                            <span className={`text-sm capitalize font-bold ${getStatusTextColor(overallStatus)}`}>
+                              {overallStatus || 'Unknown'}
+                            </span>
+                          </div>
+                        </div>
+
                         {systemMetrics && (
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {systemMetrics.cpu || systemMetrics.cpuLoad}%
+                              <div className={`text-lg font-bold ${
+                                (systemMetrics.cpu || systemMetrics.cpuLoad) > 80 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : (systemMetrics.cpu || systemMetrics.cpuLoad) > 60 
+                                    ? 'text-yellow-600 dark:text-yellow-400'
+                                    : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {(systemMetrics.cpu || systemMetrics.cpuLoad)}%
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">CPU Usage</div>
                             </div>
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {systemMetrics.memory || systemMetrics.memoryUsage}%
+                              <div className={`text-lg font-bold ${
+                                (systemMetrics.memory || systemMetrics.memoryUsage) > 80 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : (systemMetrics.memory || systemMetrics.memoryUsage) > 60 
+                                    ? 'text-yellow-600 dark:text-yellow-400'
+                                    : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {(systemMetrics.memory || systemMetrics.memoryUsage)}%
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">Memory Usage</div>
                             </div>
                             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {systemMetrics.disk || systemMetrics.diskUsage}%
+                              <div className={`text-lg font-bold ${
+                                (systemMetrics.disk || systemMetrics.diskUsage) > 80 
+                                  ? 'text-red-600 dark:text-red-400' 
+                                  : (systemMetrics.disk || systemMetrics.diskUsage) > 60 
+                                    ? 'text-yellow-600 dark:text-yellow-400'
+                                    : 'text-green-600 dark:text-green-400'
+                              }`}>
+                                {(systemMetrics.disk || systemMetrics.diskUsage)}%
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">Disk Usage</div>
                             </div>
@@ -449,16 +528,25 @@ const Dashboard = () => {
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Overall Status:</span>
-                                <div className="flex items-center gap-2">
-                                  <div className={getStatusIndicator(healthData?.overall || healthData?.status)}></div>
-                                  <span className={`text-sm capitalize font-medium ${getStatusTextColor(healthData?.overall || healthData?.status)}`}>
-                                    {healthData?.overall || healthData?.status || 'Unknown'}
-                                  </span>
+                              {services.redis !== undefined && (
+                                <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                  <span className="font-medium text-gray-700 dark:text-gray-300">Redis:</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className={getStatusIndicator(services.redis)}></div>
+                                    <span className={`text-sm capitalize font-medium ${getStatusTextColor(services.redis)}`}>
+                                      {services.redis}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
+                          </div>
+                        )}
+
+                        {/* Timestamp */}
+                        {healthData?.timestamp && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 text-center pt-2 border-t border-gray-200 dark:border-gray-700">
+                            Last checked: {new Date(healthData.timestamp).toLocaleString()}
                           </div>
                         )}
                       </div>
@@ -541,6 +629,36 @@ const Dashboard = () => {
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
+
+        {/* Debug Info for Admin */}
+        {userRole === 'ADMIN' && (
+          <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+            <CardHeader>
+              <CardTitle className="text-yellow-800 dark:text-yellow-200 text-sm">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-xs">
+                  <strong>User Role:</strong> {userRole}
+                </div>
+                <div className="text-xs">
+                  <strong>System Health State:</strong> {systemHealth ? 'Set' : 'Not Set'}
+                </div>
+                <div className="text-xs">
+                  <strong>Stats System Health:</strong> {stats?.systemHealth ? 'Set' : 'Not Set'}
+                </div>
+                {systemHealth && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer font-semibold">System Health Data</summary>
+                    <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-auto">
+                      {JSON.stringify(systemHealth, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Error Alert - Only show non-critical errors */}
         {error && profile && (
