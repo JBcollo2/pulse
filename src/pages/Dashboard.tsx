@@ -132,7 +132,6 @@ const Dashboard = () => {
 
       if (categoryFilter && categoryFilter.trim() !== "") {
         params.append('category_id', categoryFilter.trim());
-        console.log('Filtering by category_id:', categoryFilter);
       }
 
       if (locationFilter.trim()) {
@@ -154,7 +153,6 @@ const Dashboard = () => {
       }
 
       const url = `${import.meta.env.VITE_API_URL}/events?${params.toString()}`;
-      console.log('API Request URL:', url);
 
       const response = await fetch(url, {
         credentials: 'include',
@@ -166,13 +164,6 @@ const Dashboard = () => {
 
       const data = await response.json();
 
-      console.log('API Response:', {
-        eventsCount: data.events?.length || 0,
-        totalEvents: data.total || 0,
-        filtersApplied: data.filters_applied || {},
-        viewType: data.view_type || 'unknown'
-      });
-
       setEvents(data.events || []);
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
@@ -182,7 +173,6 @@ const Dashboard = () => {
         setAvailableFilters(data.available_filters);
       }
     } catch (error) {
-      console.error('Error fetching events:', error);
       toast({
         title: "Error",
         description: "Failed to fetch events",
@@ -689,8 +679,6 @@ const Dashboard = () => {
                   value={categoryFilter}
                   onChange={(e) => {
                     const newCategoryFilter = e.target.value;
-                    console.log('Category filter changed to ID:', newCategoryFilter);
-                    console.log('Available categories:', availableFilters.categories);
                     setCategoryFilter(newCategoryFilter);
                     setCurrentPage(1);
                   }}
@@ -699,7 +687,7 @@ const Dashboard = () => {
                   <option value="">All Categories</option>
                   {availableFilters.categories?.map((category) => (
                     <option key={category.id} value={category.id.toString()}>
-                      {category.name} (ID: {category.id})
+                      {category.name}
                     </option>
                   ))}
                 </select>
