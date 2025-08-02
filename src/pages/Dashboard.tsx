@@ -61,7 +61,7 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
-  const [pageSize, setPageSize] = useState(12); // Events per page
+  const [pageSize, setPageSize] = useState(12);
 
   // Updated state variables for new filtering system
   const [eventSearchQuery, setEventSearchQuery] = useState("");
@@ -113,12 +113,12 @@ const Dashboard = () => {
 
   const fetchEvents = async (page = 1, resetPage = false) => {
     if (!user) return;
-
     try {
       setEventsLoading(true);
+      const targetPage = resetPage ? 1 : page;
 
       const params = new URLSearchParams({
-        page: resetPage ? '1' : page.toString(),
+        page: targetPage.toString(),
         per_page: pageSize.toString(),
         dashboard: 'true',
         sort_by: sortBy,
@@ -145,9 +145,11 @@ const Dashboard = () => {
       if (organizerCompanyFilter.trim()) {
         params.append('organizer_company', organizerCompanyFilter.trim());
       }
+
       if (startDateFilter) {
         params.append('start_date', startDateFilter);
       }
+
       if (endDateFilter) {
         params.append('end_date', endDateFilter);
       }
@@ -167,7 +169,7 @@ const Dashboard = () => {
       setEvents(data.events || []);
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
-      setCurrentPage(resetPage ? 1 : page);
+      setCurrentPage(targetPage);
 
       if (data.available_filters) {
         setAvailableFilters(data.available_filters);
@@ -181,13 +183,16 @@ const Dashboard = () => {
       setEvents([]);
       setTotalPages(1);
       setTotalEvents(0);
+      setCurrentPage(1);
     } finally {
       setEventsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEvents(1, true);
+    if (user) {
+      fetchEvents(1, true);
+    }
   }, [
     user,
     eventSearchQuery,
@@ -204,7 +209,7 @@ const Dashboard = () => {
   ]);
 
   useEffect(() => {
-    if (currentPage > 1) {
+    if (currentPage > 1 && user && !eventsLoading) {
       fetchEvents(currentPage, false);
     }
   }, [currentPage]);
@@ -495,6 +500,11 @@ const Dashboard = () => {
     setSortBy("date");
     setSortOrder("asc");
     setCurrentPage(1);
+    setTimeout(() => {
+      if (user) {
+        fetchEvents(1, true);
+      }
+    }, 0);
   };
 
   const hasActiveFilters = eventSearchQuery !== "" ||
@@ -532,27 +542,31 @@ const Dashboard = () => {
 
     if (totalPages <= 1) return null;
 
+    const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && !eventsLoading) {
+        setCurrentPage(newPage);
+      }
+    };
+
     return (
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="text-sm text-gray-700 dark:text-gray-300">
           Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalEvents)} of {totalEvents} events
         </div>
-
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1 || eventsLoading}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
-
           <div className="flex items-center gap-1">
             {getPageNumbers().map((page, index) => (
               <button
                 key={index}
-                onClick={() => typeof page === 'number' && setCurrentPage(page)}
-                disabled={page === '...' || eventsLoading}
+                onClick={() => typeof page === 'number' && handlePageChange(page)}
+                disabled={page === '...' || eventsLoading || page === currentPage}
                 className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                   page === currentPage
                     ? 'bg-blue-500 text-white'
@@ -565,16 +579,14 @@ const Dashboard = () => {
               </button>
             ))}
           </div>
-
           <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages || eventsLoading}
             className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>
         </div>
-
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700 dark:text-gray-300">Per page:</label>
           <select
@@ -583,7 +595,8 @@ const Dashboard = () => {
               setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+            disabled={eventsLoading}
+            className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-50"
           >
             <option value={6}>6</option>
             <option value={12}>12</option>
@@ -604,7 +617,6 @@ const Dashboard = () => {
           editingEvent={editingEvent}
           onEventCreated={handleEventSave}
         />
-
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -627,7 +639,6 @@ const Dashboard = () => {
             </button>
           )}
         </div>
-
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2 mb-4">
@@ -872,7 +883,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
         <div className="relative">
           {eventsLoading && (
             <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
@@ -882,7 +892,6 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.length > 0 ? (
               events.map((event) => (
@@ -943,9 +952,9 @@ const Dashboard = () => {
                       </div>
                       {event.category && (
                         <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+                          <div className="h-4 w-4 rounded-full bg-gradient-to-r from-blue-500 to-[#10b981] shadow-sm ring-1 ring-white/20"></div>
                           <span>Category:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-medium">
                             {event.category}
                           </span>
                         </div>
@@ -1002,7 +1011,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
         <PaginationControls />
       </div>
     );
