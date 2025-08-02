@@ -65,10 +65,10 @@ const Dashboard = () => {
 
   // Updated state variables for new filtering system
   const [eventSearchQuery, setEventSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState(""); // Updated to use category name
-  const [timeFilter, setTimeFilter] = useState("upcoming"); // New time filter
-  const [locationFilter, setLocationFilter] = useState(""); // New location filter
-  const [featuredOnly, setFeaturedOnly] = useState(false); // New featured filter
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [timeFilter, setTimeFilter] = useState("upcoming");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -76,7 +76,6 @@ const Dashboard = () => {
   const [organizerCompanyFilter, setOrganizerCompanyFilter] = useState("");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
-  const [categoryIdFilter, setCategoryIdFilter] = useState("");
 
   // Available filter options from API
   const [availableFilters, setAvailableFilters] = useState({
@@ -90,7 +89,6 @@ const Dashboard = () => {
     }
   });
 
-  // IMMEDIATE FIX: Prevent redirect loops in Dashboard
   useEffect(() => {
     if (hasInitializedRef.current) {
       return;
@@ -113,61 +111,52 @@ const Dashboard = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Enhanced fetchEvents function with new API parameters
   const fetchEvents = async (page = 1, resetPage = false) => {
     if (!user) return;
-    
+
     try {
       setEventsLoading(true);
-      
-      // Build query parameters for dashboard view
+
       const params = new URLSearchParams({
         page: resetPage ? '1' : page.toString(),
         per_page: pageSize.toString(),
-        dashboard: 'true', // Important: Mark as dashboard request
+        dashboard: 'true',
         sort_by: sortBy,
         sort_order: sortOrder,
         time_filter: timeFilter
       });
 
-      // Add search filter
       if (eventSearchQuery.trim()) {
         params.append('search', eventSearchQuery.trim());
       }
 
-      // Add basic category filter (for public view compatibility)
-      if (categoryFilter.trim()) {
-        params.append('category', categoryFilter.trim());
+      if (categoryFilter && categoryFilter.trim() !== "") {
+        params.append('category_id', categoryFilter.trim());
+        console.log('Filtering by category_id:', categoryFilter);
       }
 
-      // Add location filter
       if (locationFilter.trim()) {
         params.append('location', locationFilter.trim());
       }
 
-      // Add featured filter
       if (featuredOnly) {
         params.append('featured', 'true');
       }
 
-      // Dashboard-specific advanced filters
       if (organizerCompanyFilter.trim()) {
         params.append('organizer_company', organizerCompanyFilter.trim());
       }
-
       if (startDateFilter) {
         params.append('start_date', startDateFilter);
       }
-
       if (endDateFilter) {
         params.append('end_date', endDateFilter);
       }
 
-      if (categoryIdFilter) {
-        params.append('category_id', categoryIdFilter);
-      }
+      const url = `${import.meta.env.VITE_API_URL}/events?${params.toString()}`;
+      console.log('API Request URL:', url);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
+      const response = await fetch(url, {
         credentials: 'include',
       });
 
@@ -176,17 +165,22 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-      
+
+      console.log('API Response:', {
+        eventsCount: data.events?.length || 0,
+        totalEvents: data.total || 0,
+        filtersApplied: data.filters_applied || {},
+        viewType: data.view_type || 'unknown'
+      });
+
       setEvents(data.events || []);
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
       setCurrentPage(resetPage ? 1 : page);
 
-      // Update available filters from API response
       if (data.available_filters) {
         setAvailableFilters(data.available_filters);
       }
-
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -202,26 +196,23 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch events when dependencies change
   useEffect(() => {
-    fetchEvents(1, true); // Reset to page 1 when filters change
+    fetchEvents(1, true);
   }, [
-    user, 
-    eventSearchQuery, 
-    categoryFilter, 
-    timeFilter, 
-    locationFilter, 
-    featuredOnly, 
-    organizerCompanyFilter, 
-    startDateFilter, 
-    endDateFilter, 
-    categoryIdFilter, 
-    sortBy, 
-    sortOrder, 
+    user,
+    eventSearchQuery,
+    categoryFilter,
+    timeFilter,
+    locationFilter,
+    featuredOnly,
+    organizerCompanyFilter,
+    startDateFilter,
+    endDateFilter,
+    sortBy,
+    sortOrder,
     pageSize
   ]);
 
-  // Fetch events when page changes (without resetting)
   useEffect(() => {
     if (currentPage > 1) {
       fetchEvents(currentPage, false);
@@ -470,7 +461,6 @@ const Dashboard = () => {
         prevEvents.map(event => (event.id === eventData.id ? eventData : event))
       );
     } else {
-      // Refresh the events list to get the latest data
       fetchEvents(currentPage);
     }
     setShowEventDialog(false);
@@ -486,10 +476,9 @@ const Dashboard = () => {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-      
-      // Refresh the events list
+
       fetchEvents(currentPage);
-      
+
       toast({
         title: "Success",
         description: "Event deleted successfully",
@@ -504,7 +493,6 @@ const Dashboard = () => {
     }
   };
 
-  // Clear all filters function
   const clearAllFilters = () => {
     setEventSearchQuery("");
     setCategoryFilter("");
@@ -514,13 +502,11 @@ const Dashboard = () => {
     setOrganizerCompanyFilter("");
     setStartDateFilter("");
     setEndDateFilter("");
-    setCategoryIdFilter("");
     setSortBy("date");
     setSortOrder("asc");
     setCurrentPage(1);
   };
 
-  // Check if any filters are active
   const hasActiveFilters = eventSearchQuery !== "" ||
     categoryFilter !== "" ||
     timeFilter !== "upcoming" ||
@@ -529,35 +515,28 @@ const Dashboard = () => {
     organizerCompanyFilter !== "" ||
     startDateFilter !== "" ||
     endDateFilter !== "" ||
-    categoryIdFilter !== "" ||
     sortBy !== "date" ||
     sortOrder !== "asc";
 
-  // Pagination Component
   const PaginationControls = () => {
     const getPageNumbers = () => {
       const delta = 2;
       const range = [];
       const rangeWithDots = [];
-
       for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
         range.push(i);
       }
-
       if (currentPage - delta > 2) {
         rangeWithDots.push(1, '...');
       } else {
         rangeWithDots.push(1);
       }
-
       rangeWithDots.push(...range);
-
       if (currentPage + delta < totalPages - 1) {
         rangeWithDots.push('...', totalPages);
       } else if (totalPages > 1) {
         rangeWithDots.push(totalPages);
       }
-
       return rangeWithDots;
     };
 
@@ -568,7 +547,7 @@ const Dashboard = () => {
         <div className="text-sm text-gray-700 dark:text-gray-300">
           Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalEvents)} of {totalEvents} events
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
@@ -577,7 +556,7 @@ const Dashboard = () => {
           >
             Previous
           </button>
-          
+
           <div className="flex items-center gap-1">
             {getPageNumbers().map((page, index) => (
               <button
@@ -596,7 +575,7 @@ const Dashboard = () => {
               </button>
             ))}
           </div>
-          
+
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || eventsLoading}
@@ -605,7 +584,7 @@ const Dashboard = () => {
             Next
           </button>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700 dark:text-gray-300">Per page:</label>
           <select
@@ -635,8 +614,7 @@ const Dashboard = () => {
           editingEvent={editingEvent}
           onEventCreated={handleEventSave}
         />
-        
-        {/* Header */}
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -660,17 +638,13 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Enhanced Filters Section */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Filters & Search</h3>
             </div>
-
-            {/* Basic Filters Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              {/* Search Events */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
                 <div className="relative">
@@ -687,8 +661,6 @@ const Dashboard = () => {
                   />
                 </div>
               </div>
-
-              {/* Time Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Range</label>
                 <select
@@ -711,28 +683,27 @@ const Dashboard = () => {
                   ]}
                 </select>
               </div>
-
-              {/* Category Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <select
                   value={categoryFilter}
                   onChange={(e) => {
-                    setCategoryFilter(e.target.value);
+                    const newCategoryFilter = e.target.value;
+                    console.log('Category filter changed to ID:', newCategoryFilter);
+                    console.log('Available categories:', availableFilters.categories);
+                    setCategoryFilter(newCategoryFilter);
                     setCurrentPage(1);
                   }}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
                   <option value="">All Categories</option>
                   {availableFilters.categories?.map((category) => (
-                    <option key={category.id} value={category.name}>
-                      {category.name}
+                    <option key={category.id} value={category.id.toString()}>
+                      {category.name} (ID: {category.id})
                     </option>
                   ))}
                 </select>
               </div>
-
-              {/* Sort By */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <div className="flex gap-2">
@@ -768,13 +739,10 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
-            {/* Advanced Dashboard Filters */}
             {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Location Filter */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
                     <div className="relative">
@@ -791,8 +759,6 @@ const Dashboard = () => {
                       />
                     </div>
                   </div>
-
-                  {/* Organizer Company Filter (Admin only) */}
                   {user?.role === "ADMIN" && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Organizer Company</label>
@@ -813,8 +779,6 @@ const Dashboard = () => {
                       </select>
                     </div>
                   )}
-
-                  {/* Date Range Filters */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
                     <div className="relative">
@@ -832,7 +796,6 @@ const Dashboard = () => {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
                     <div className="relative">
@@ -851,8 +814,6 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* Additional Options */}
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -869,8 +830,6 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-
-            {/* Active Filters & Clear Button */}
             {hasActiveFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -882,7 +841,10 @@ const Dashboard = () => {
                   )}
                   {categoryFilter && (
                     <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
-                      Category: {categoryFilter}
+                      Category: {
+                        availableFilters.categories?.find(cat => cat.id.toString() === categoryFilter)?.name ||
+                        `ID: ${categoryFilter}`
+                      }
                     </span>
                   )}
                   {timeFilter !== "upcoming" && (
@@ -923,7 +885,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Events Grid */}
         <div className="relative">
           {eventsLoading && (
             <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
@@ -933,7 +894,7 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.length > 0 ? (
               events.map((event) => (
@@ -1054,7 +1015,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Pagination */}
         <PaginationControls />
       </div>
     );
