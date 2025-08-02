@@ -29,7 +29,7 @@ const Dashboard = () => {
     
     try {
       // Try multiple profile endpoints
-      const endpoints = ['/api/auth/profile', '/api/user/me', '/api/auth/user'];
+      const endpoints = ['/auth/profile', '/user/me', '/auth/user'];
       let profileData = null;
       let lastError = null;
 
