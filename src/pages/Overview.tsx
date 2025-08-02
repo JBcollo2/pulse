@@ -2,88 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, User, Shield, BarChart, RefreshCw, Activity, Globe, Monitor, AlertCircle, CheckCircle, Loader2, TrendingUp, Users, Calendar, DollarSign } from 'lucide-react';
 
-// Enhanced Loading Component
-const EnhancedLoadingComponent = () => {
-  const [dots, setDots] = useState('');
-  const [progress, setProgress] = useState(0);
-  const [loadingStage, setLoadingStage] = useState('Connecting to server');
-
-  // Animated dots effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? '' : prev + '.');
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Simulated progress
-  useEffect(() => {
-    const stages = [
-      'Connecting to server',
-      'Authenticating session',
-      'Loading profile data',
-      'Almost ready'
-    ];
-    
-    let currentStage = 0;
-    let currentProgress = 0;
-    
-    const progressInterval = setInterval(() => {
-      currentProgress += Math.random() * 15 + 5;
-      if (currentProgress > 100) currentProgress = 100;
-      
-      setProgress(currentProgress);
-      
-      // Update stage based on progress
-      const stageIndex = Math.floor((currentProgress / 100) * (stages.length - 1));
-      if (stageIndex !== currentStage && stageIndex < stages.length) {
-        currentStage = stageIndex;
-        setLoadingStage(stages[stageIndex]);
-      }
-      
-      if (currentProgress >= 100) {
-        clearInterval(progressInterval);
-      }
-    }, 300);
-
-    return () => clearInterval(progressInterval);
-  }, []);
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="text-center p-8 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-2xl border border-gray-200/50 dark:border-gray-700/50">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping"></div>
-          <div className="relative bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full p-3 shadow-lg">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          </div>
-        </div>
-        
-        <div className="space-y-4">
-          {/* Dynamic loading text with dots animation */}
-          <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-              {loadingStage}{dots}
-            </h3>
-            
-            {/* Progress bar */}
-            <div className="w-64 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Please wait while we prepare your experience
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const Dashboard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [profile, setProfile] = useState(null);
@@ -619,9 +537,19 @@ const Dashboard = () => {
     }
   };
 
-  // Loading state with enhanced loading component
+  // Loading state with better error handling
   if (loading && !profile) {
-    return <EnhancedLoadingComponent />;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Connecting to server...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+            {import.meta.env.VITE_API_URL}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // Show error state if profile loading failed
@@ -666,7 +594,7 @@ const Dashboard = () => {
           <button
             onClick={refreshData}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 sm:w-auto w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
+            className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
