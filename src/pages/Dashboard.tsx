@@ -29,6 +29,9 @@ import {
   User,
   Building,
   Loader2,
+  Filter,
+  CalendarDays,
+  MapPin,
 } from 'lucide-react';
 import Overview from './Overview';
 import Tickets from './Tickets';
@@ -60,13 +63,32 @@ const Dashboard = () => {
   const [totalEvents, setTotalEvents] = useState(0);
   const [pageSize, setPageSize] = useState(12); // Events per page
 
-  // State variables for filtering and sorting
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterDate, setFilterDate] = useState("all");
-  const [filterCapacity, setFilterCapacity] = useState("all");
-  const [sortBy, setSortBy] = useState("date");
-  const [sortOrder, setSortOrder] = useState("desc");
+  // Updated state variables for new filtering system
   const [eventSearchQuery, setEventSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState(""); // Updated to use category name
+  const [timeFilter, setTimeFilter] = useState("upcoming"); // New time filter
+  const [locationFilter, setLocationFilter] = useState(""); // New location filter
+  const [featuredOnly, setFeaturedOnly] = useState(false); // New featured filter
+  const [sortBy, setSortBy] = useState("date");
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  // Dashboard-specific advanced filters
+  const [organizerCompanyFilter, setOrganizerCompanyFilter] = useState("");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [categoryIdFilter, setCategoryIdFilter] = useState("");
+
+  // Available filter options from API
+  const [availableFilters, setAvailableFilters] = useState({
+    categories: [],
+    time_filters: [],
+    organizers: [],
+    sort_options: [],
+    date_range: {
+      min_date: "",
+      max_date: ""
+    }
+  });
 
   // IMMEDIATE FIX: Prevent redirect loops in Dashboard
   useEffect(() => {
@@ -91,33 +113,58 @@ const Dashboard = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // Enhanced fetchEvents function with pagination and filters
+  // Enhanced fetchEvents function with new API parameters
   const fetchEvents = async (page = 1, resetPage = false) => {
     if (!user) return;
     
     try {
       setEventsLoading(true);
       
-      // Build query parameters
+      // Build query parameters for dashboard view
       const params = new URLSearchParams({
         page: resetPage ? '1' : page.toString(),
-        limit: pageSize.toString(),
+        per_page: pageSize.toString(),
+        dashboard: 'true', // Important: Mark as dashboard request
         sort_by: sortBy,
         sort_order: sortOrder,
+        time_filter: timeFilter
       });
 
-      // Add filters
+      // Add search filter
       if (eventSearchQuery.trim()) {
         params.append('search', eventSearchQuery.trim());
       }
-      if (filterCategory !== 'all') {
-        params.append('category', filterCategory);
+
+      // Add basic category filter (for public view compatibility)
+      if (categoryFilter.trim()) {
+        params.append('category', categoryFilter.trim());
       }
-      if (filterDate !== 'all') {
-        params.append('date_filter', filterDate);
+
+      // Add location filter
+      if (locationFilter.trim()) {
+        params.append('location', locationFilter.trim());
       }
-      if (filterCapacity !== 'all') {
-        params.append('capacity_filter', filterCapacity);
+
+      // Add featured filter
+      if (featuredOnly) {
+        params.append('featured', 'true');
+      }
+
+      // Dashboard-specific advanced filters
+      if (organizerCompanyFilter.trim()) {
+        params.append('organizer_company', organizerCompanyFilter.trim());
+      }
+
+      if (startDateFilter) {
+        params.append('start_date', startDateFilter);
+      }
+
+      if (endDateFilter) {
+        params.append('end_date', endDateFilter);
+      }
+
+      if (categoryIdFilter) {
+        params.append('category_id', categoryIdFilter);
       }
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
@@ -134,6 +181,11 @@ const Dashboard = () => {
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
       setCurrentPage(resetPage ? 1 : page);
+
+      // Update available filters from API response
+      if (data.available_filters) {
+        setAvailableFilters(data.available_filters);
+      }
 
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -153,7 +205,21 @@ const Dashboard = () => {
   // Fetch events when dependencies change
   useEffect(() => {
     fetchEvents(1, true); // Reset to page 1 when filters change
-  }, [user, eventSearchQuery, filterCategory, filterDate, filterCapacity, sortBy, sortOrder, pageSize]);
+  }, [
+    user, 
+    eventSearchQuery, 
+    categoryFilter, 
+    timeFilter, 
+    locationFilter, 
+    featuredOnly, 
+    organizerCompanyFilter, 
+    startDateFilter, 
+    endDateFilter, 
+    categoryIdFilter, 
+    sortBy, 
+    sortOrder, 
+    pageSize
+  ]);
 
   // Fetch events when page changes (without resetting)
   useEffect(() => {
@@ -438,10 +504,39 @@ const Dashboard = () => {
     }
   };
 
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setEventSearchQuery("");
+    setCategoryFilter("");
+    setTimeFilter("upcoming");
+    setLocationFilter("");
+    setFeaturedOnly(false);
+    setOrganizerCompanyFilter("");
+    setStartDateFilter("");
+    setEndDateFilter("");
+    setCategoryIdFilter("");
+    setSortBy("date");
+    setSortOrder("asc");
+    setCurrentPage(1);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = eventSearchQuery !== "" ||
+    categoryFilter !== "" ||
+    timeFilter !== "upcoming" ||
+    locationFilter !== "" ||
+    featuredOnly ||
+    organizerCompanyFilter !== "" ||
+    startDateFilter !== "" ||
+    endDateFilter !== "" ||
+    categoryIdFilter !== "" ||
+    sortBy !== "date" ||
+    sortOrder !== "asc";
+
   // Pagination Component
   const PaginationControls = () => {
     const getPageNumbers = () => {
-      const delta = 2; // Number of pages to show on each side of current page
+      const delta = 2;
       const range = [];
       const rangeWithDots = [];
 
@@ -532,47 +627,6 @@ const Dashboard = () => {
   };
 
   const MyEventsComponent = () => {
-    const [categories, setCategories] = useState([]);
-
-    useEffect(() => {
-      const fetchCategories = async () => {
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
-            credentials: 'include'
-          });
-          if (!response.ok) {
-            throw new Error('Failed to fetch categories');
-          }
-          const data = await response.json();
-          setCategories(data.categories);
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to fetch categories",
-            variant: "destructive"
-          });
-        }
-      };
-      fetchCategories();
-    }, []);
-
-    const clearAllFilters = () => {
-      setEventSearchQuery("");
-      setFilterCategory("all");
-      setFilterDate("all");
-      setFilterCapacity("all");
-      setSortBy("date");
-      setSortOrder("desc");
-      setCurrentPage(1);
-    };
-
-    const hasActiveFilters = eventSearchQuery !== "" ||
-      filterCategory !== "all" ||
-      filterDate !== "all" ||
-      filterCapacity !== "all" ||
-      sortBy !== "date" ||
-      sortOrder !== "desc";
-
     return (
       <div className="space-y-6 animate-fade-in">
         <EventDialog
@@ -606,103 +660,267 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Enhanced Filters Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Filters & Search</h3>
+            </div>
+
+            {/* Basic Filters Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Search Events */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search by name, description, location..."
+                    placeholder="Search by name, description..."
                     value={eventSearchQuery}
                     onChange={(e) => {
                       setEventSearchQuery(e.target.value);
-                      setCurrentPage(1); // Reset to first page when search changes
+                      setCurrentPage(1);
                     }}
                     className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
                   />
                 </div>
               </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-              <select
-                value={filterCategory}
-                onChange={(e) => {
-                  setFilterCategory(e.target.value);
-                  setCurrentPage(1); // Reset to first page when filter changes
-                }}
-                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category.id || category.name} value={category.slug || category.name || category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Range</label>
-              <select
-                value={filterDate}
-                onChange={(e) => {
-                  setFilterDate(e.target.value);
-                  setCurrentPage(1); // Reset to first page when filter changes
-                }}
-                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
-              >
-                <option value="all">All Dates</option>
-                <option value="today">Today</option>
-                <option value="week">Next 7 Days</option>
-                <option value="month">Next 30 Days</option>
-                <option value="future">Future Events</option>
-                <option value="past">Past Events</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
-              <div className="flex gap-2">
+
+              {/* Time Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Range</label>
                 <select
-                  value={sortBy}
+                  value={timeFilter}
                   onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setCurrentPage(1); // Reset to first page when sort changes
+                    setTimeFilter(e.target.value);
+                    setCurrentPage(1);
                   }}
-                  className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
-                  <option value="date">Date</option>
-                  <option value="name">Name</option>
-                  <option value="category">Category</option>
-                  <option value="created_at">Created</option>
+                  {availableFilters.time_filters?.map((filter) => (
+                    <option key={filter.value} value={filter.value}>
+                      {filter.label}
+                    </option>
+                  )) || [
+                    <option key="upcoming" value="upcoming">Upcoming Events</option>,
+                    <option key="today" value="today">Today</option>,
+                    <option key="past" value="past">Past Events</option>,
+                    <option key="all" value="all">All Events</option>
+                  ]}
                 </select>
-                <button
-                  onClick={() => {
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                    setCurrentPage(1); // Reset to first page when sort order changes
+              </div>
+
+              {/* Category Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => {
+                    setCategoryFilter(e.target.value);
+                    setCurrentPage(1);
                   }}
-                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
-                  title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
+                  className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
-                  {sortOrder === "asc" ? "↑" : "↓"}
-                </button>
+                  <option value="">All Categories</option>
+                  {availableFilters.categories?.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
+                <div className="flex gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                  >
+                    {availableFilters.sort_options?.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    )) || [
+                      <option key="date" value="date">Date</option>,
+                      <option key="name" value="name">Name</option>,
+                      <option key="featured" value="featured">Featured</option>,
+                      <option key="created_at" value="created_at">Created</option>
+                    ]}
+                  </select>
+                  <button
+                    onClick={() => {
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                      setCurrentPage(1);
+                    }}
+                    className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
+                    title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
+                  >
+                    {sortOrder === "asc" ? "↑" : "↓"}
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Advanced Dashboard Filters */}
+            {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Location Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Filter by location..."
+                        value={locationFilter}
+                        onChange={(e) => {
+                          setLocationFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Organizer Company Filter (Admin only) */}
+                  {user?.role === "ADMIN" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Organizer Company</label>
+                      <select
+                        value={organizerCompanyFilter}
+                        onChange={(e) => {
+                          setOrganizerCompanyFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                      >
+                        <option value="">All Organizers</option>
+                        {availableFilters.organizers?.map((organizer) => (
+                          <option key={organizer.id} value={organizer.company_name}>
+                            {organizer.company_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Date Range Filters */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <input
+                        type="date"
+                        value={startDateFilter}
+                        onChange={(e) => {
+                          setStartDateFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        min={availableFilters.date_range?.min_date}
+                        max={availableFilters.date_range?.max_date}
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <input
+                        type="date"
+                        value={endDateFilter}
+                        onChange={(e) => {
+                          setEndDateFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        min={startDateFilter || availableFilters.date_range?.min_date}
+                        max={availableFilters.date_range?.max_date}
+                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Options */}
+                <div className="mt-4 flex flex-wrap items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={featuredOnly}
+                      onChange={(e) => {
+                        setFeaturedOnly(e.target.checked);
+                        setCurrentPage(1);
+                      }}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Featured events only</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Active Filters & Clear Button */}
+            {hasActiveFilters && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Active filters:</span>
+                  {eventSearchQuery && (
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                      Search: {eventSearchQuery}
+                    </span>
+                  )}
+                  {categoryFilter && (
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                      Category: {categoryFilter}
+                    </span>
+                  )}
+                  {timeFilter !== "upcoming" && (
+                    <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
+                      Time: {availableFilters.time_filters?.find(f => f.value === timeFilter)?.label || timeFilter}
+                    </span>
+                  )}
+                  {locationFilter && (
+                    <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
+                      Location: {locationFilter}
+                    </span>
+                  )}
+                  {featuredOnly && (
+                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs rounded-full">
+                      Featured Only
+                    </span>
+                  )}
+                  {organizerCompanyFilter && (
+                    <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
+                      Organizer: {organizerCompanyFilter}
+                    </span>
+                  )}
+                  {(startDateFilter || endDateFilter) && (
+                    <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-xs rounded-full">
+                      Date Range: {startDateFilter || 'Start'} - {endDateFilter || 'End'}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                  Clear all filters
+                </button>
+              </div>
+            )}
           </div>
-          
-          {/* Active Filters */}
-          {hasActiveFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={clearAllFilters}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors flex items-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                Clear all filters
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Events Grid */}
@@ -724,6 +942,11 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
                         {event.name}
+                        {event.featured && (
+                          <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                            ⭐ Featured
+                          </span>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         {event.max_attendees && (
@@ -753,6 +976,15 @@ const Dashboard = () => {
                           {new Date(event.date).toLocaleDateString()}
                         </span>
                       </div>
+                      {event.location && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <MapPin className="h-4 w-4" />
+                          <span>Location:</span>
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto truncate">
+                            {event.location}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                         <Building className="h-4 w-4" />
                         <span>Company:</span>
@@ -766,6 +998,15 @@ const Dashboard = () => {
                           <span>Category:</span>
                           <span className="text-gray-800 dark:text-gray-200 ml-auto">
                             {event.category}
+                          </span>
+                        </div>
+                      )}
+                      {event.likes_count !== undefined && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <span>❤️</span>
+                          <span>Likes:</span>
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                            {event.likes_count}
                           </span>
                         </div>
                       )}

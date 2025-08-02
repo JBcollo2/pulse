@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Star } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 /**
  * Utility function to format Date object to YYYY-MM-DD string format
@@ -25,6 +26,95 @@ const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+/**
+ * Utility function to validate time format and convert to HH:MM
+ */
+const normalizeTimeFormat = (timeStr) => {
+  if (!timeStr || typeof timeStr !== 'string') return '';
+  const timeParts = timeStr.trim().split(':');
+  if (timeParts.length < 2) return '';
+  const hours = timeParts[0].padStart(2, '0');
+  const minutes = timeParts[1].padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+/**
+ * Utility function to validate form data
+ */
+const validateEventData = (eventData) => {
+  const errors = [];
+  
+  if (!eventData.name?.trim()) {
+    errors.push('Event name is required');
+  }
+  
+  if (!eventData.description?.trim()) {
+    errors.push('Event description is required');
+  }
+  
+  if (!eventData.location?.trim()) {
+    errors.push('Event location is required');
+  }
+  
+  if (!eventData.category_id) {
+    errors.push('Event category is required');
+  }
+  
+  if (!eventData.start_time?.trim()) {
+    errors.push('Start time is required');
+  }
+  
+  // Validate date is not in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(eventData.date);
+  eventDate.setHours(0, 0, 0, 0);
+  
+  if (eventDate < today) {
+    errors.push('Event date cannot be in the past');
+  }
+  
+  // Validate end date if provided
+  if (eventData.end_date && formatDate(eventData.end_date) !== formatDate(eventData.date)) {
+    const endDate = new Date(eventData.end_date);
+    endDate.setHours(0, 0, 0, 0);
+    
+    if (endDate < today) {
+      errors.push('Event end date cannot be in the past');
+    }
+    
+    if (endDate < eventDate) {
+      errors.push('Event end date cannot be before start date');
+    }
+  }
+  
+  // Validate time sequence for same-day events
+  if (eventData.start_time && eventData.end_time && 
+      formatDate(eventData.date) === formatDate(eventData.end_date)) {
+    const startTime = normalizeTimeFormat(eventData.start_time);
+    const endTime = normalizeTimeFormat(eventData.end_time);
+    
+    if (startTime && endTime) {
+      const [startHour, startMin] = startTime.split(':').map(Number);
+      const [endHour, endMin] = endTime.split(':').map(Number);
+      
+      const startTotalMinutes = startHour * 60 + startMin;
+      let endTotalMinutes = endHour * 60 + endMin;
+      
+      // Handle midnight crossing
+      if (endTotalMinutes === 0 && startTotalMinutes > 0) {
+        endTotalMinutes = 24 * 60;
+      }
+      
+      if (startTotalMinutes >= endTotalMinutes) {
+        errors.push('Start time must be before end time for same-day events');
+      }
+    }
+  }
+  
+  return errors;
 };
 
 // Predefined ticket types available for events
@@ -39,12 +129,14 @@ const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EAR
  * - onOpenChange: function - Callback when dialog open state changes
  * - editingEvent: object|null - Event data when editing, null when creating new
  * - onEventCreated: function - Callback when event is successfully created/updated
+ * - userRole: string - Current user's role for feature access control
  */
 export const EventDialog = ({
   open,
   onOpenChange,
   editingEvent = null,
-  onEventCreated
+  onEventCreated,
+  userRole = null
 }) => {
   // State for storing event categories fetched from API
   const [categories, setCategories] = useState([]);
@@ -52,22 +144,27 @@ export const EventDialog = ({
   // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
 
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
     name: '',
     description: '',
-    date: new Date(),           // Event start date
-    end_date: new Date(),       // Event end date
-    start_time: '',             // Event start time (HH:MM format)
-    end_time: '',               // Event end time (HH:MM format)
+    date: new Date(),
+    end_date: new Date(),
+    start_time: '',
+    end_time: '',
     location: '',
-    image: null,                // File object for event image
-    ticket_types: [],           // Array of new ticket types to be created
-    category_id: null           // Selected category ID
+    image: null,
+    ticket_types: [],
+    category_id: null,
+    featured: false // Add featured support
   });
 
-  // Loading state for form submission
-  const [isLoading, setIsLoading] = useState(false);
+  // Form validation state
+  const [validationErrors, setValidationErrors] = useState([]);
 
   // Toast notification hook for user feedback
   const { toast } = useToast();
@@ -76,42 +173,48 @@ export const EventDialog = ({
   const isEditing = !!editingEvent;
 
   /**
+   * Memoized function to fetch categories to prevent unnecessary re-renders
+   */
+  const fetchCategories = useCallback(async () => {
+    setIsLoadingCategories(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch categories`);
+      }
+
+      const data = await response.json();
+      setCategories(data.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch categories",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  }, [toast]);
+
+  /**
    * Effect: Fetch event categories from API on component mount
-   * Categories are used in the category dropdown selection
    */
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
-          credentials: 'include' // Include cookies for authentication
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch categories');
-        }
-
-        const data = await response.json();
-        setCategories(data.categories);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch categories",
-          variant: "destructive"
-        });
-      }
-    };
-
-    fetchCategories();
-  }, []);
+    if (open) {
+      fetchCategories();
+    }
+  }, [open, fetchCategories]);
 
   /**
    * Effect: Fetch existing ticket types when editing an event
-   * This allows users to see and modify existing ticket types
    */
   useEffect(() => {
     const fetchExistingTicketTypes = async () => {
-      if (editingEvent && editingEvent.id) {
+      if (editingEvent?.id) {
         try {
           const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/ticket-types`, {
             credentials: 'include'
@@ -120,6 +223,8 @@ export const EventDialog = ({
           if (response.ok) {
             const data = await response.json();
             setExistingTicketTypes(data.ticket_types || []);
+          } else {
+            console.warn('Failed to fetch existing ticket types');
           }
         } catch (error) {
           console.error('Error fetching existing ticket types:', error);
@@ -132,19 +237,15 @@ export const EventDialog = ({
 
   /**
    * Effect: Initialize form data based on editing mode
-   * - When editing: populate form with existing event data
-   * - When creating: reset form to default values
    */
   useEffect(() => {
     if (editingEvent) {
-      // Helper function to parse date strings
       const parseDate = (dateStr) => {
         if (!dateStr) return new Date();
         const date = new Date(dateStr);
         return isNaN(date.getTime()) ? new Date() : date;
       };
 
-      // Populate form with existing event data for editing
       setNewEvent({
         name: editingEvent.name || '',
         description: editingEvent.description || '',
@@ -153,12 +254,12 @@ export const EventDialog = ({
         start_time: editingEvent.start_time || '',
         end_time: editingEvent.end_time || '',
         location: editingEvent.location || '',
-        image: null, // Always null for editing (user can upload new image)
-        ticket_types: [], // Start with empty array for new ticket types
-        category_id: editingEvent.category_id || null
+        image: null,
+        ticket_types: [],
+        category_id: editingEvent.category_id || null,
+        featured: editingEvent.featured || false
       });
     } else {
-      // Reset form for creating new event
       setNewEvent({
         name: '',
         description: '',
@@ -169,48 +270,65 @@ export const EventDialog = ({
         location: '',
         image: null,
         ticket_types: [],
-        category_id: null
+        category_id: null,
+        featured: false
       });
       setExistingTicketTypes([]);
     }
+    
+    setValidationErrors([]);
   }, [editingEvent, open]);
 
   /**
-   * Add a new ticket type to the form
-   * Creates a new ticket type with default values
+   * Handle form field changes with validation
    */
-  const handleAddTicketType = () => {
+  const handleFieldChange = useCallback((field, value) => {
+    setNewEvent(prev => ({ ...prev, [field]: value }));
+    
+    // Clear validation errors when user starts typing
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  }, [validationErrors.length]);
+
+  /**
+   * Add a new ticket type to the form
+   */
+  const handleAddTicketType = useCallback(() => {
     setNewEvent(prev => ({
       ...prev,
-      ticket_types: [...prev.ticket_types, { type_name: TICKET_TYPES[0], price: 0, quantity: 0 }]
+      ticket_types: [...prev.ticket_types, { 
+        type_name: TICKET_TYPES[0], 
+        price: 0, 
+        quantity: 0 
+      }]
     }));
-  };
+  }, []);
 
   /**
    * Remove a ticket type from the form by index
    */
-  const handleRemoveTicketType = (index) => {
+  const handleRemoveTicketType = useCallback((index) => {
     setNewEvent(prev => ({
       ...prev,
       ticket_types: prev.ticket_types.filter((_, i) => i !== index)
     }));
-  };
+  }, []);
 
   /**
    * Update a specific field of a ticket type by index
    */
-  const handleTicketTypeChange = (index, field, value) => {
+  const handleTicketTypeChange = useCallback((index, field, value) => {
     setNewEvent(prev => ({
       ...prev,
       ticket_types: prev.ticket_types.map((ticket, i) =>
         i === index ? { ...ticket, [field]: value } : ticket
       )
     }));
-  };
+  }, []);
 
   /**
    * Update an existing ticket type via API call
-   * Used for modifying ticket types that already exist in the database
    */
   const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
     try {
@@ -228,9 +346,6 @@ export const EventDialog = ({
         throw new Error(errorData.error || 'Failed to update ticket type');
       }
 
-      const responseData = await response.json();
-
-      // Update local state to reflect changes immediately
       setExistingTicketTypes(prev =>
         prev.map(ticket =>
           ticket.id === ticketTypeId
@@ -244,8 +359,6 @@ export const EventDialog = ({
         description: "Ticket type updated successfully",
         variant: "default"
       });
-
-      return responseData;
     } catch (error) {
       console.error('Error updating ticket type:', error);
       toast({
@@ -259,7 +372,6 @@ export const EventDialog = ({
 
   /**
    * Delete an existing ticket type via API call
-   * Removes ticket type from database and updates local state
    */
   const handleDeleteExistingTicketType = async (ticketTypeId) => {
     try {
@@ -273,7 +385,6 @@ export const EventDialog = ({
         throw new Error(errorData.error || 'Failed to delete ticket type');
       }
 
-      // Remove from local state immediately
       setExistingTicketTypes(prev => prev.filter(ticket => ticket.id !== ticketTypeId));
 
       toast({
@@ -292,61 +403,63 @@ export const EventDialog = ({
   };
 
   /**
-   * Main form submission handler - FIXED VERSION
-   * Handles both creating new events and updating existing ones
+   * Enhanced form submission handler with improved validation and error handling
    */
   const handleSubmitEvent = async () => {
+    // Client-side validation
+    const errors = validateEventData(newEvent);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Error",
+        description: errors[0],
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // For editing, we don't need to fetch organizer profile again
-      // since we already have the event and it belongs to the current user
       let organizer_id = null;
 
       if (!isEditing) {
-        // Only fetch organizer profile for new events
         const profileResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
           credentials: 'include'
         });
 
         if (!profileResponse.ok) {
-          throw new Error('Failed to fetch profile');
+          throw new Error('Failed to fetch profile. Please log in again.');
         }
 
         const profileData = await profileResponse.json();
         organizer_id = profileData.organizer_profile?.id;
 
         if (!organizer_id) {
-          throw new Error('Organizer profile not found');
+          throw new Error('Organizer profile not found. Please complete your profile setup.');
         }
       }
 
-      // Prepare form data for file upload (multipart/form-data)
       const formData = new FormData();
 
-      // Add organizer_id for new events only
       if (!isEditing && organizer_id) {
         formData.append('organizer_id', organizer_id.toString());
       }
 
-      // Add basic event fields - only add if they have values
-      if (newEvent.name && newEvent.name.trim() !== '') {
-        formData.append('name', newEvent.name.trim());
-      }
+      // Add form fields with validation
+      const fieldsToAdd = [
+        { key: 'name', value: newEvent.name?.trim() },
+        { key: 'description', value: newEvent.description?.trim() },
+        { key: 'location', value: newEvent.location?.trim() }
+      ];
 
-      if (newEvent.description && newEvent.description.trim() !== '') {
-        formData.append('description', newEvent.description.trim());
-      }
+      fieldsToAdd.forEach(({ key, value }) => {
+        if (value) formData.append(key, value);
+      });
 
-      if (newEvent.location && newEvent.location.trim() !== '') {
-        formData.append('location', newEvent.location.trim());
-      }
-
-      // Handle category - convert to string and check for valid values
-      if (newEvent.category_id !== null && newEvent.category_id !== undefined && newEvent.category_id !== '') {
+      if (newEvent.category_id) {
         formData.append('category_id', newEvent.category_id.toString());
       }
 
-      // Handle dates - always add date, only add end_date if different
       if (newEvent.date instanceof Date && !isNaN(newEvent.date.getTime())) {
         formData.append('date', formatDate(newEvent.date));
       }
@@ -357,80 +470,24 @@ export const EventDialog = ({
         formData.append('end_date', formatDate(newEvent.end_date));
       }
 
-      // Handle times - FIXED: Convert to HH:MM format (remove seconds)
-      if (newEvent.start_time && newEvent.start_time.trim() !== '') {
-        const startTime = newEvent.start_time.trim();
-        // Remove seconds if present (16:00:00 -> 16:00)
-        const timeHHMM = startTime.includes(':') ? startTime.split(':').slice(0, 2).join(':') : startTime;
-        formData.append('start_time', timeHHMM);
-      }
+      // Handle times with proper formatting
+      const timeFields = [
+        { key: 'start_time', value: newEvent.start_time },
+        { key: 'end_time', value: newEvent.end_time }
+      ];
 
-      if (newEvent.end_time && newEvent.end_time.trim() !== '') {
-        const endTime = newEvent.end_time.trim();
-        // Remove seconds if present (16:00:00 -> 16:00)
-        const timeHHMM = endTime.includes(':') ? endTime.split(':').slice(0, 2).join(':') : endTime;
-        formData.append('end_time', timeHHMM);
-      }
-
-      // Additional validation: Check if start time is before end time (for same day events)
-      if (newEvent.start_time && newEvent.end_time && formatDate(newEvent.date) === formatDate(newEvent.end_date)) {
-        // Normalize time strings to HH:MM format (remove seconds if present)
-        const normalizeTime = (timeStr) => {
-          if (!timeStr || typeof timeStr !== 'string') return '';
-          const timeParts = timeStr.trim().split(':');
-          if (timeParts.length < 2) return '';
-          const hours = timeParts[0].padStart(2, '0');
-          const minutes = timeParts[1].padStart(2, '0');
-          return `${hours}:${minutes}`;
-        };
-
-        const normalizedStartTime = normalizeTime(newEvent.start_time);
-        const normalizedEndTime = normalizeTime(newEvent.end_time);
-
-        // Only proceed if both times are properly normalized
-        if (normalizedStartTime && normalizedEndTime) {
-          // Simple string comparison for HH:MM format
-          const [startHour, startMin] = normalizedStartTime.split(':').map(Number);
-          const [endHour, endMin] = normalizedEndTime.split(':').map(Number);
-
-          const startTotalMinutes = startHour * 60 + startMin;
-          let endTotalMinutes = endHour * 60 + endMin;
-
-          // FIXED: Handle midnight crossing - if end time is 00:00 and start time is later in the day,
-          // treat it as next day (add 24 hours worth of minutes)
-          if (endTotalMinutes === 0 && startTotalMinutes > 0) {
-            endTotalMinutes = 24 * 60; // 24 hours = 1440 minutes
-          }
-
-          if (startTotalMinutes >= endTotalMinutes) {
-            throw new Error('Start time must be before end time for same-day events');
+      timeFields.forEach(({ key, value }) => {
+        if (value?.trim()) {
+          const normalizedTime = normalizeTimeFormat(value.trim());
+          if (normalizedTime) {
+            formData.append(key, normalizedTime);
           }
         }
-      }
+      });
 
-      // Client-side validation: Check if event date is in the past
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to start of today for accurate comparison
-
-      const eventDate = new Date(newEvent.date);
-      eventDate.setHours(0, 0, 0, 0); // Set to start of event date
-
-      if (eventDate < today) {
-        throw new Error('Event date cannot be in the past. Please select a future date.');
-      }
-
-      // Also check end date if it's different from start date
-      if (newEvent.end_date && formatDate(newEvent.end_date) !== formatDate(newEvent.date)) {
-        const endDate = new Date(newEvent.end_date);
-        endDate.setHours(0, 0, 0, 0);
-
-        if (endDate < today) {
-          throw new Error('Event end date cannot be in the past. Please select a future date.');
-        }
-
-        if (endDate < eventDate) {
-          throw new Error('Event end date cannot be before start date.');
-        }
+      // Add featured flag
+      if (newEvent.featured) {
+        formData.append('featured', 'true');
       }
 
       // Handle file upload
@@ -441,9 +498,7 @@ export const EventDialog = ({
       let eventResponse;
       let eventId;
 
-      // Create or update event based on mode
       if (isEditing && editingEvent) {
-        // Update existing event
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
           method: 'PUT',
           credentials: 'include',
@@ -451,7 +506,6 @@ export const EventDialog = ({
         });
         eventId = editingEvent.id;
       } else {
-        // Create new event
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
           method: 'POST',
           credentials: 'include',
@@ -461,21 +515,26 @@ export const EventDialog = ({
 
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
+        
+        // Handle specific error types
+        if (errorData.validation_errors) {
+          const errorMessages = Object.values(errorData.validation_errors).flat();
+          throw new Error(`Validation errors: ${errorMessages.join(', ')}`);
+        }
+        
         throw new Error(errorData.error || errorData.message || `Failed to ${isEditing ? 'update' : 'create'} event`);
       }
 
-      // Get event data from response
       const eventData = await eventResponse.json();
 
-      // For new events, get the ID from response
       if (!isEditing) {
         eventId = eventData.event?.id || eventData.id;
       }
 
-      // Create new ticket types (not updates to existing ones)
+      // Create new ticket types
       if (newEvent.ticket_types.length > 0) {
-        for (const ticketType of newEvent.ticket_types) {
-          const ticketTypeResponse = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
+        const ticketTypePromises = newEvent.ticket_types.map(async (ticketType) => {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -489,24 +548,25 @@ export const EventDialog = ({
             })
           });
 
-          if (!ticketTypeResponse.ok) {
-            const errorData = await ticketTypeResponse.json();
-            throw new Error(`Failed to create ticket type: ${errorData.message || 'Unknown error'}`);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Failed to create ticket type ${ticketType.type_name}: ${errorData.message || 'Unknown error'}`);
           }
-        }
+          
+          return response.json();
+        });
+
+        await Promise.all(ticketTypePromises);
       }
 
-      // Show success message
       toast({
         title: "Success",
         description: `Event ${isEditing ? 'updated' : 'created'} successfully`,
         variant: "default"
       });
 
-      // Close dialog and notify parent component
       onOpenChange(false);
 
-      // Return the updated event data to parent
       const updatedEventData = isEditing
         ? { ...editingEvent, ...eventData.event }
         : eventData.event || eventData;
@@ -524,10 +584,17 @@ export const EventDialog = ({
         location: '',
         image: null,
         ticket_types: [],
-        category_id: null
+        category_id: null,
+        featured: false
       });
+      setValidationErrors([]);
     } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
+        error: error.message,
+        eventData: newEvent,
+        isEditing
+      });
+      
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : `Failed to ${isEditing ? 'update' : 'create'} event`,
@@ -538,11 +605,12 @@ export const EventDialog = ({
     }
   };
 
-  // Render the dialog UI
+  // Show validation errors if any
+  const showValidationErrors = validationErrors.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
-        {/* Dialog Header */}
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {isEditing ? 'Edit Event' : 'Create New Event'}
@@ -552,113 +620,154 @@ export const EventDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Dialog Content */}
+        {/* Validation Errors Display */}
+        {showValidationErrors && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 mt-4">
+            <h4 className="text-red-800 dark:text-red-200 font-medium mb-2">Please fix the following errors:</h4>
+            <ul className="text-red-700 dark:text-red-300 text-sm space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>• {error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="space-y-4 pt-4">
           {/* Event Name Field */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">Event Name</Label>
+            <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
+              Event Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               value={newEvent.name}
-              onChange={(e) => setNewEvent({...newEvent, name: e.target.value})}
+              onChange={(e) => handleFieldChange('name', e.target.value)}
               required
               className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+              placeholder="Enter event name..."
             />
           </div>
 
           {/* Event Description Field */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">Description</Label>
+            <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">
+              Description <span className="text-red-500">*</span>
+            </Label>
             <Textarea
               id="description"
               value={newEvent.description}
-              onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+              onChange={(e) => handleFieldChange('description', e.target.value)}
               required
+              rows={4}
               className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+              placeholder="Describe your event..."
             />
           </div>
 
           {/* Category Selection Field */}
           <div className="space-y-2">
-            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">Category</Label>
-            <Select
-              value={newEvent.category_id?.toString() || ''}
-              onValueChange={(value) => setNewEvent({...newEvent, category_id: value ? parseInt(value) : null})}
-            >
-              <SelectTrigger
-                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
+              Category <span className="text-red-500">*</span>
+            </Label>
+            {isLoadingCategories ? (
+              <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"></div>
+            ) : (
+              <Select
+                value={newEvent.category_id?.toString() || ''}
+                onValueChange={(value) => handleFieldChange('category_id', value ? parseInt(value) : null)}
               >
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent
-                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-lg z-50 rounded-md py-1"
-              >
-                {categories.map((category) => (
-                  <SelectItem
-                    key={category.id}
-                    value={category.id.toString()}
-                    className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectTrigger className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-lg z-50 rounded-md py-1">
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                      className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-900 dark:focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {/* Date and Time Fields - Two Column Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Start Date and Time Column */}
+          {/* Featured Event Checkbox - Only show for admins or organizers */}
+          {(userRole === 'ADMIN' || userRole === 'ORGANIZER') && (
             <div className="space-y-2">
-              <Label className="text-gray-700 dark:text-gray-300">Start Date</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="featured"
+                  checked={newEvent.featured}
+                  onCheckedChange={(checked) => handleFieldChange('featured', checked)}
+                  className="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                />
+                <Label 
+                  htmlFor="featured" 
+                  className="text-gray-700 dark:text-gray-300 flex items-center gap-2 cursor-pointer"
+                >
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  Mark as featured event
+                </Label>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Featured events will be highlighted and appear at the top of event listings
+              </p>
+            </div>
+          )}
+
+          {/* Date and Time Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-gray-700 dark:text-gray-300">
+                Start Date <span className="text-red-500">*</span>
+              </Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
                   selected={newEvent.date}
-                  onSelect={(date) => date && setNewEvent({...newEvent, date})}
+                  onSelect={(date) => date && handleFieldChange('date', date)}
                   disabled={(date) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    return date < today; // Disable past dates
+                    return date < today;
                   }}
                   required
                   className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
               </div>
               <div className="mt-2">
-                <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300">Start Time</Label>
+                <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300">
+                  Start Time <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="start_time"
                   type="time"
                   value={newEvent.start_time}
-                  onChange={(e) => {
-                    setNewEvent({...newEvent, start_time: e.target.value});
-                  }}
+                  onChange={(e) => handleFieldChange('start_time', e.target.value)}
                   required
-                  step="60" // Only allow hour/minute selection, no seconds
+                  step="60"
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                 />
               </div>
             </div>
 
-            {/* End Date and Time Column */}
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
                   selected={newEvent.end_date}
-                  onSelect={(date) => date && setNewEvent({...newEvent, end_date: date})}
+                  onSelect={(date) => date && handleFieldChange('end_date', date)}
                   disabled={(date) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const startDate = new Date(newEvent.date);
                     startDate.setHours(0, 0, 0, 0);
-
-                    // Disable dates before today or before start date
                     return date < today || date < startDate;
                   }}
-                  required
                   className="text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
                 />
               </div>
@@ -668,10 +777,8 @@ export const EventDialog = ({
                   id="end_time"
                   type="time"
                   value={newEvent.end_time}
-                  onChange={(e) => {
-                    setNewEvent({...newEvent, end_time: e.target.value});
-                  }}
-                  step="60" // Only allow hour/minute selection, no seconds
+                  onChange={(e) => handleFieldChange('end_time', e.target.value)}
+                  step="60"
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                 />
               </div>
@@ -680,13 +787,16 @@ export const EventDialog = ({
 
           {/* Location Field */}
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">Location</Label>
+            <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">
+              Location <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="location"
               value={newEvent.location}
-              onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
+              onChange={(e) => handleFieldChange('location', e.target.value)}
               required
               className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+              placeholder="Enter event location..."
             />
           </div>
 
@@ -700,18 +810,38 @@ export const EventDialog = ({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setNewEvent({...newEvent, image: file});
+                  // Validate file size (max 5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast({
+                      title: "File too large",
+                      description: "Please select an image smaller than 5MB",
+                      variant: "destructive"
+                    });
+                    return;
+                  }
+                  handleFieldChange('image', file);
                 }
               }}
               className="block w-full text-sm text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-green-500 file:text-white hover:file:from-blue-600 hover:file:to-green-600 file:cursor-pointer file:transition-all file:duration-200 file:shadow-md hover:file:shadow-lg file:transform hover:file:scale-105 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 overflow-hidden"
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400">Upload event image (PNG, JPG, JPEG, GIF, WEBP)</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Upload event image (PNG, JPG, JPEG, GIF, WEBP) - Max 5MB
+            </p>
+            {newEvent.image && (
+              <p className="text-xs text-green-600 dark:text-green-400">
+                Selected: {newEvent.image.name}
+              </p>
+            )}
           </div>
+
           {/* Existing Ticket Types Section - Only shown when editing */}
           {isEditing && existingTicketTypes.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-gray-700 dark:text-gray-300">Existing Ticket Types</Label>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {existingTicketTypes.length} existing type{existingTicketTypes.length !== 1 ? 's' : ''}
+                </span>
               </div>
 
               {existingTicketTypes.map((ticket) => (
@@ -743,12 +873,18 @@ export const EventDialog = ({
               </Button>
             </div>
 
-            {/* Render new ticket types being added */}
+            {newEvent.ticket_types.length === 0 && (
+              <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                <p className="text-gray-500 dark:text-gray-400 mb-2">No ticket types added yet</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Click "Add Ticket Type" to create tickets for your event
+                </p>
+              </div>
+            )}
+
             {newEvent.ticket_types.map((ticket, index) => (
               <div key={index} className="grid grid-cols-1 gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
-                {/* First Row: Type, Price, Quantity */}
                 <div className="grid grid-cols-3 gap-4">
-                  {/* Ticket Type Selection */}
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-gray-300">Type</Label>
                     <select
@@ -762,9 +898,8 @@ export const EventDialog = ({
                     </select>
                   </div>
 
-                  {/* Ticket Price */}
                   <div className="space-y-2">
-                    <Label className="text-gray-700 dark:text-gray-300">Price</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">Price ($)</Label>
                     <Input
                       type="number"
                       min="0"
@@ -777,12 +912,11 @@ export const EventDialog = ({
                     />
                   </div>
 
-                  {/* Ticket Quantity */}
                   <div className="space-y-2">
                     <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
                     <Input
                       type="number"
-                      min="0"
+                      min="1"
                       value={ticket.quantity || ''}
                       onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value) || 0)}
                       required
@@ -792,7 +926,6 @@ export const EventDialog = ({
                   </div>
                 </div>
 
-                {/* Second Row: Remove Button (centered) */}
                 <div className="flex justify-center">
                   <Button
                     type="button"
@@ -809,30 +942,28 @@ export const EventDialog = ({
             ))}
           </div>
 
-          {/* Dialog Action Buttons */}
-          <div className="flex justify-end space-x-2">
-            {/* Cancel Button */}
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isLoading}
               className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
               Cancel
             </Button>
 
-            {/* Submit Button - Create or Update */}
             <Button
               type="button"
               onClick={handleSubmitEvent}
-              disabled={isLoading}
+              disabled={isLoading || showValidationErrors}
               className={`bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
-                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                isLoading || showValidationErrors ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
               {isLoading ? (
                 <>
-                  {/* Loading Spinner */}
                   <svg
                     className="animate-spin h-5 w-5 mr-2 text-white"
                     xmlns="http://www.w3.org/2000/svg"
@@ -868,32 +999,18 @@ export const EventDialog = ({
 
 /**
  * ExistingTicketTypeRow Component
- * Displays existing ticket types with inline editing capability
- * Used when editing an event to show and modify existing ticket types
- *
- * Props:
- * - ticket: object - The ticket type data
- * - onUpdate: function - Callback to update ticket type
- * - onDelete: function - Callback to delete ticket type
+ * Enhanced version with better UX and error handling
  */
 const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
-  // State to control edit mode for this ticket type
   const [isEditing, setIsEditing] = useState(false);
-
-  // Local state for editing ticket type data
   const [editData, setEditData] = useState({
     type_name: ticket.type_name,
     price: ticket.price,
     quantity: ticket.quantity
   });
-
-  // Loading state for update operations
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  /**
-   * Save changes to the ticket type
-   * Calls parent update function and exits edit mode on success
-   */
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -906,10 +1023,6 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     }
   };
 
-  /**
-   * Cancel editing and revert changes
-   * Resets edit data to original values
-   */
   const handleCancel = () => {
     setEditData({
       type_name: ticket.type_name,
@@ -919,29 +1032,30 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     setIsEditing(false);
   };
 
-  /**
-   * Delete ticket type with confirmation
-   * Shows browser confirmation dialog before deletion
-   */
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this ticket type?')) {
-      await onDelete(ticket.id);
+    if (window.confirm(`Are you sure you want to delete the ${ticket.type_name} ticket type? This action cannot be undone.`)) {
+      setIsDeleting(true);
+      try {
+        await onDelete(ticket.id);
+      } catch (error) {
+        // Error handling is done in parent component
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
-  // Render edit mode interface
   if (isEditing) {
     return (
       <div className="space-y-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        {/* First Row: Type, Price, Quantity */}
         <div className="grid grid-cols-3 gap-4">
-          {/* Ticket Type Dropdown */}
           <div className="space-y-2">
             <Label className="text-gray-700 dark:text-gray-300">Type</Label>
             <select
               className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               value={editData.type_name}
               onChange={(e) => setEditData({...editData, type_name: e.target.value})}
+              disabled={isLoading}
             >
               {TICKET_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
@@ -949,37 +1063,35 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
             </select>
           </div>
 
-          {/* Price Input */}
           <div className="space-y-2">
-            <Label className="text-gray-700 dark:text-gray-300">Price</Label>
+            <Label className="text-gray-700 dark:text-gray-300">Price ($)</Label>
             <Input
               type="number"
               min="0"
               step="0.01"
               value={editData.price}
-              onChange={(e) => setEditData({...editData, price: parseFloat(e.target.value)})}
+              onChange={(e) => setEditData({...editData, price: parseFloat(e.target.value) || 0})}
               required
+              disabled={isLoading}
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
             />
           </div>
 
-          {/* Quantity Input */}
           <div className="space-y-2">
             <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
             <Input
               type="number"
-              min="0"
+              min="1"
               value={editData.quantity}
-              onChange={(e) => setEditData({...editData, quantity: parseInt(e.target.value)})}
+              onChange={(e) => setEditData({...editData, quantity: parseInt(e.target.value) || 0})}
               required
+              disabled={isLoading}
               className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
             />
           </div>
         </div>
 
-        {/* Second Row: Action Buttons (centered) */}
         <div className="flex justify-center gap-2">
-          {/* Save Button */}
           <Button
             type="button"
             variant="outline"
@@ -990,12 +1102,12 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
           >
             {isLoading ? 'Saving...' : 'Save'}
           </Button>
-          {/* Cancel Button */}
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleCancel}
+            disabled={isLoading}
             className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
           >
             Cancel
@@ -1005,53 +1117,47 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
     );
   }
 
-  // Render view mode interface (default state)
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
-      {/* First Row: Type, Price, Quantity */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Display Ticket Type */}
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Type</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.type_name}</p>
         </div>
 
-        {/* Display Price */}
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">${ticket.price}</p>
         </div>
 
-        {/* Display Quantity */}
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Quantity</Label>
           <p className="text-gray-800 dark:text-gray-200 font-medium">{ticket.quantity}</p>
         </div>
       </div>
 
-      {/* Second Row: Action Buttons (centered) */}
       <div className="flex justify-center gap-2">
-        {/* Edit Button */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => setIsEditing(true)}
+          disabled={isDeleting}
           className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
         >
           <Edit className="h-4 w-4 mr-2" />
           Edit
         </Button>
-        {/* Delete Button */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={handleDelete}
+          disabled={isDeleting}
           className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete
+          {isDeleting ? 'Deleting...' : 'Delete'}
         </Button>
       </div>
     </div>
