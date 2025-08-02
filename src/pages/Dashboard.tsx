@@ -533,16 +533,16 @@ const Dashboard = () => {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 p-6 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-850 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="text-sm text-gray-700 dark:text-gray-300 font-medium">
-          Showing <span className="font-bold text-blue-600 dark:text-blue-400">{((currentPage - 1) * pageSize) + 1}</span> to <span className="font-bold text-blue-600 dark:text-blue-400">{Math.min(currentPage * pageSize, totalEvents)}</span> of <span className="font-bold text-blue-600 dark:text-blue-400">{totalEvents}</span> events
+          Showing <span className="font-semibold text-gray-800 dark:text-gray-200">{((currentPage - 1) * pageSize) + 1}</span> to <span className="font-semibold text-gray-800 dark:text-gray-200">{Math.min(currentPage * pageSize, totalEvents)}</span> of <span className="font-semibold text-gray-800 dark:text-gray-200">{totalEvents}</span> events
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1 || eventsLoading}
-            className="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700 dark:hover:to-gray-650 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 hover:shadow-md disabled:hover:scale-100 disabled:hover:shadow-none font-medium text-gray-700 dark:text-gray-300"
+            className="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-gray-700 dark:text-gray-300"
           >
             Previous
           </button>
@@ -553,12 +553,12 @@ const Dashboard = () => {
                 key={index}
                 onClick={() => typeof page === 'number' && setCurrentPage(page)}
                 disabled={page === '...' || eventsLoading}
-                className={`px-4 py-2.5 text-sm rounded-xl transition-all duration-300 font-medium ${
+                className={`px-4 py-2.5 text-sm rounded-lg transition-all duration-200 font-medium ${
                   page === currentPage
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 scale-110 ring-2 ring-blue-500/20'
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 shadow-sm'
                     : page === '...'
                     ? 'cursor-default text-gray-400 dark:text-gray-500'
-                    : 'border border-gray-300 dark:border-gray-600 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700 dark:hover:to-gray-650 hover:scale-105 hover:shadow-md text-gray-700 dark:text-gray-300'
+                    : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {page}
@@ -569,7 +569,7 @@ const Dashboard = () => {
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || eventsLoading}
-            className="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700 dark:hover:to-gray-650 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 hover:shadow-md disabled:hover:scale-100 disabled:hover:shadow-none font-medium text-gray-700 dark:text-gray-300"
+            className="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-gray-700 dark:text-gray-300"
           >
             Next
           </button>
@@ -583,7 +583,7 @@ const Dashboard = () => {
               setPageSize(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md cursor-pointer font-medium"
+            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 cursor-pointer font-medium"
           >
             <option value={6}>6</option>
             <option value={12}>12</option>
@@ -605,42 +605,42 @@ const Dashboard = () => {
           onEventCreated={handleEventSave}
         />
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 p-8 bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl backdrop-blur-sm hover:shadow-2xl transition-all duration-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 p-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30 hover:scale-110 transition-transform duration-300">
+            <div className="w-16 h-16 bg-gray-700 dark:bg-gray-600 rounded-xl flex items-center justify-center">
               <Calendar className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800 dark:from-gray-200 dark:via-white dark:to-gray-200 bg-clip-text text-transparent">My Events</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-200">My Events</h2>
               <p className="text-gray-600 dark:text-gray-400 mt-2 font-medium">
-                Manage and organize your events (<span className="text-blue-600 dark:text-blue-400 font-bold">{events.length}</span> of <span className="text-blue-600 dark:text-blue-400 font-bold">{totalEvents}</span> shown)
+                Manage and organize your events (<span className="text-gray-800 dark:text-gray-200 font-semibold">{events.length}</span> of <span className="text-gray-800 dark:text-gray-200 font-semibold">{totalEvents}</span> shown)
               </p>
             </div>
           </div>
           {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
             <button
               onClick={handleCreateEventClick}
-              className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-green-500 hover:from-blue-600 hover:via-blue-700 hover:to-green-600 text-white font-bold rounded-xl transition-all duration-300 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-600/40 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800 group"
+              className="flex items-center gap-3 px-8 py-4 bg-gray-800 hover:bg-gray-700 dark:bg-gray-200 dark:hover:bg-gray-300 text-white dark:text-gray-800 font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
             >
-              <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
+              <Plus className="h-6 w-6" />
               <span>Create New Event</span>
             </button>
           )}
         </div>
 
-        <div className="bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl backdrop-blur-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-8 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
-                <Filter className="h-6 w-6 text-white" />
+              <div className="p-2 bg-gray-700 dark:bg-gray-600 rounded-lg">
+                <Filter className="h-5 w-5 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">Filters & Search</h3>
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">Filters & Search</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Search Events</label>
-                <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Search Events</label>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     placeholder="Search by name, description..."
@@ -649,19 +649,19 @@ const Dashboard = () => {
                       setEventSearchQuery(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-gray-800 dark:text-gray-200 hover:shadow-md font-medium"
+                    className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200 font-medium"
                   />
                 </div>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Time Range</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Time Range</label>
                 <select
                   value={timeFilter}
                   onChange={(e) => {
                     setTimeFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                  className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                 >
                   {availableFilters.time_filters?.map((filter) => (
                     <option key={filter.value} value={filter.value}>
@@ -676,7 +676,7 @@ const Dashboard = () => {
                 </select>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Category</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
                 <select
                   value={categoryFilter}
                   onChange={(e) => {
@@ -684,7 +684,7 @@ const Dashboard = () => {
                     setCategoryFilter(newCategoryFilter);
                     setCurrentPage(1);
                   }}
-                  className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                  className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                 >
                   <option value="">All Categories</option>
                   {availableFilters.categories?.map((category) => (
@@ -695,7 +695,7 @@ const Dashboard = () => {
                 </select>
               </div>
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Sort By</label>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Sort By</label>
                 <div className="flex gap-3">
                   <select
                     value={sortBy}
@@ -703,7 +703,7 @@ const Dashboard = () => {
                       setSortBy(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="flex-1 px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                    className="flex-1 px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                   >
                     {availableFilters.sort_options?.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -721,7 +721,7 @@ const Dashboard = () => {
                       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
                       setCurrentPage(1);
                     }}
-                    className="px-4 py-3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-650 border border-gray-300 dark:border-gray-600 rounded-xl hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-550 text-gray-800 dark:text-gray-200 text-sm font-bold transition-all duration-300 hover:shadow-md hover:scale-105 active:scale-95"
+                    className="px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-semibold transition-all duration-200"
                     title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
                   >
                     {sortOrder === "asc" ? "↑" : "↓"}
@@ -732,16 +732,16 @@ const Dashboard = () => {
             {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
+                  <div className="p-1.5 bg-gray-600 dark:bg-gray-500 rounded-lg">
                     <div className="w-3 h-3 bg-white rounded-sm"></div>
                   </div>
-                  <h4 className="text-lg font-bold text-gray-700 dark:text-gray-300">Advanced Filters</h4>
+                  <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Advanced Filters</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Location</label>
-                    <div className="relative group">
-                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-green-500 transition-colors duration-300" />
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Location</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                       <input
                         type="text"
                         placeholder="Filter by location..."
@@ -750,20 +750,20 @@ const Dashboard = () => {
                           setLocationFilter(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 font-medium"
+                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 font-medium"
                       />
                     </div>
                   </div>
                   {user?.role === "ADMIN" && (
                     <div className="space-y-3">
-                      <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Organizer Company</label>
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Organizer Company</label>
                       <select
                         value={organizerCompanyFilter}
                         onChange={(e) => {
                           setOrganizerCompanyFilter(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                        className="w-full px-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                       >
                         <option value="">All Organizers</option>
                         {availableFilters.organizers?.map((organizer) => (
@@ -775,9 +775,9 @@ const Dashboard = () => {
                     </div>
                   )}
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">Start Date</label>
-                    <div className="relative group">
-                      <CalendarDays className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Start Date</label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                       <input
                         type="date"
                         value={startDateFilter}
@@ -787,14 +787,14 @@ const Dashboard = () => {
                         }}
                         min={availableFilters.date_range?.min_date}
                         max={availableFilters.date_range?.max_date}
-                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                       />
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-gray-700 dark:text-gray-300">End Date</label>
-                    <div className="relative group">
-                      <CalendarDays className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">End Date</label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                       <input
                         type="date"
                         value={endDateFilter}
@@ -804,13 +804,13 @@ const Dashboard = () => {
                         }}
                         min={startDateFilter || availableFilters.date_range?.min_date}
                         max={availableFilters.date_range?.max_date}
-                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer font-medium"
+                        className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-gray-800 dark:text-gray-200 transition-all duration-200 cursor-pointer font-medium"
                       />
                     </div>
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
-                  <label className="flex items-center gap-3 cursor-pointer group">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={featuredOnly}
@@ -818,9 +818,9 @@ const Dashboard = () => {
                         setFeaturedOnly(e.target.checked);
                         setCurrentPage(1);
                       }}
-                      className="w-5 h-5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2 transition-all duration-300 hover:scale-110"
+                      className="w-5 h-5 text-gray-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-gray-500 focus:ring-2 transition-all duration-200"
                     />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">Featured events only</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Featured events only</span>
                   </label>
                 </div>
               </div>
@@ -828,14 +828,14 @@ const Dashboard = () => {
             {hasActiveFilters && (
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-bold text-gray-500 dark:text-gray-400">Active filters:</span>
+                  <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">Active filters:</span>
                   {eventSearchQuery && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-800 dark:text-blue-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium rounded-full">
                       Search: {eventSearchQuery}
                     </span>
                   )}
                   {categoryFilter && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium rounded-full">
                       Category: {
                         availableFilters.categories?.find(cat => cat.id.toString() === categoryFilter)?.name ||
                         `ID: ${categoryFilter}`
@@ -843,34 +843,34 @@ const Dashboard = () => {
                     </span>
                   )}
                   {timeFilter !== "upcoming" && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 text-purple-800 dark:text-purple-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-medium rounded-full">
                       Time: {availableFilters.time_filters?.find(f => f.value === timeFilter)?.label || timeFilter}
                     </span>
                   )}
                   {locationFilter && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 text-orange-800 dark:text-orange-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs font-medium rounded-full">
                       Location: {locationFilter}
                     </span>
                   )}
                   {featuredOnly && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900 dark:to-yellow-800 text-yellow-800 dark:text-yellow-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs font-medium rounded-full">
                       Featured Only
                     </span>
                   )}
                   {organizerCompanyFilter && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-800 text-indigo-800 dark:text-indigo-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-medium rounded-full">
                       Organizer: {organizerCompanyFilter}
                     </span>
                   )}
                   {(startDateFilter || endDateFilter) && (
-                    <span className="px-3 py-1.5 bg-gradient-to-r from-pink-100 to-pink-200 dark:from-pink-900 dark:to-pink-800 text-pink-800 dark:text-pink-200 text-xs font-bold rounded-full shadow-sm">
+                    <span className="px-3 py-1.5 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-xs font-medium rounded-full">
                       Date Range: {startDateFilter || 'Start'} - {endDateFilter || 'End'}
                     </span>
                   )}
                 </div>
                 <button
                   onClick={clearAllFilters}
-                  className="px-6 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-white transition-all duration-300 flex items-center gap-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-650 rounded-xl hover:from-red-500 hover:to-red-600 hover:scale-105 hover:shadow-lg font-medium"
+                  className="px-6 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all duration-200 flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium"
                 >
                   <X className="h-4 w-4" />
                   Clear all filters
@@ -882,39 +882,39 @@ const Dashboard = () => {
 
         <div className="relative">
           {eventsLoading && (
-            <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-10 flex items-center justify-center rounded-2xl">
-              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 px-6 py-4 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+            <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 px-6 py-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
                 <span className="font-medium">Loading events...</span>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.length > 0 ? (
               events.map((event) => (
-                <Card key={event.id} className="bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-800 dark:via-gray-850 dark:to-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-2xl dark:hover:shadow-gray-900/40 transition-all duration-500 group hover:scale-105 hover:-translate-y-2 rounded-2xl overflow-hidden">
+                <Card key={event.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-300 group hover:scale-[1.02] rounded-xl overflow-hidden">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 leading-tight">
+                      <CardTitle className="text-xl font-semibold text-gray-800 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200 leading-tight">
                         {event.name}
                         {event.featured && (
-                          <span className="ml-3 inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900 dark:to-yellow-800 text-yellow-800 dark:text-yellow-200 shadow-sm">
+                          <span className="ml-3 inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
                             ⭐ Featured
                           </span>
                         )}
                       </CardTitle>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {event.max_attendees && (
-                          <span className="px-3 py-1.5 text-xs font-bold rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-650 text-gray-700 dark:text-gray-300 shadow-sm">
+                          <span className="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             {event.current_attendees || 0}/{event.max_attendees}
                           </span>
                         )}
-                        <span className={`px-4 py-1.5 text-xs font-bold rounded-full shadow-sm
-                          ${event.status === 'Active' ? 'bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-200' :
-                            event.status === 'Upcoming' ? 'bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900 dark:to-yellow-800 text-yellow-800 dark:text-yellow-200' :
-                              event.status === 'Completed' ? 'bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-800 dark:text-blue-200' :
-                                'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-650 text-gray-800 dark:text-gray-200'}`}>
+                        <span className={`px-4 py-1.5 text-xs font-medium rounded-full
+                          ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                            event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                              event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
                           {event.status}
                         </span>
                       </div>
@@ -925,53 +925,53 @@ const Dashboard = () => {
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3 text-sm mb-6">
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-300">
-                        <div className="p-1.5 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 rounded-lg">
-                          <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                          <Calendar className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </div>
                         <span className="font-medium">Date:</span>
-                        <span className="text-gray-800 dark:text-gray-200 ml-auto font-bold">
+                        <span className="text-gray-800 dark:text-gray-200 ml-auto font-semibold">
                           {new Date(event.date).toLocaleDateString()}
                         </span>
                       </div>
                       {event.location && (
-                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-300">
-                          <div className="p-1.5 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 rounded-lg">
-                            <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                          <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <MapPin className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                           </div>
                           <span className="font-medium">Location:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto truncate font-bold">
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto truncate font-semibold">
                             {event.location}
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors duration-300">
-                        <div className="p-1.5 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900 dark:to-purple-800 rounded-lg">
-                          <Building className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                        <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                          <Building className="h-4 w-4 text-gray-600 dark:text-gray-400" />
                         </div>
                         <span className="font-medium">Company:</span>
-                        <span className="text-gray-800 dark:text-gray-200 ml-auto font-bold">
+                        <span className="text-gray-800 dark:text-gray-200 ml-auto font-semibold">
                           {event.organizer?.company_name || 'N/A'}
                         </span>
                       </div>
                       {event.category && (
-                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-300">
-                          <div className="p-1.5 bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-800 rounded-lg">
-                            <div className="h-4 w-4 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600"></div>
+                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                          <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div className="h-4 w-4 rounded-full bg-gray-600 dark:bg-gray-400"></div>
                           </div>
                           <span className="font-medium">Category:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-bold">
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-semibold">
                             {event.category}
                           </span>
                         </div>
                       )}
                       {event.likes_count !== undefined && (
-                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-300">
-                          <div className="p-1.5 bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-lg">
-                            <span className="text-red-600 dark:text-red-400 text-sm">❤️</span>
+                        <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                          <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-400 text-sm">❤️</span>
                           </div>
                           <span className="font-medium">Likes:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-bold">
+                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-semibold">
                             {event.likes_count}
                           </span>
                         </div>
@@ -981,17 +981,17 @@ const Dashboard = () => {
                       {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                         <button
                           onClick={() => handleEditEventClick(event)}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 via-blue-600 to-green-500 hover:from-blue-600 hover:via-blue-700 hover:to-green-600 text-white text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800 group"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-800 hover:bg-gray-700 dark:bg-gray-200 dark:hover:bg-gray-300 text-white dark:text-gray-800 text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                         >
-                          <Edit className="h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+                          <Edit className="h-4 w-4" />
                           Manage
                         </button>
                       )}
                       <button
                         onClick={() => handleViewEventClick(event)}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-white to-gray-50 dark:from-gray-700 dark:to-gray-650 hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-600 dark:hover:to-gray-550 text-gray-800 dark:text-gray-200 text-sm font-bold rounded-xl border border-gray-200 dark:border-gray-600 transition-all duration-300 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500/50 focus:ring-offset-2 dark:focus:ring-offset-gray-800 group"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-semibold rounded-lg border border-gray-200 dark:border-gray-600 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                       >
-                        <Eye className="h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
+                        <Eye className="h-4 w-4" />
                         View
                       </button>
                     </div>
@@ -999,11 +999,11 @@ const Dashboard = () => {
                 </Card>
               ))
             ) : (
-              <div className="col-span-full text-center py-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-600">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 dark:from-gray-500 dark:to-gray-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="col-span-full text-center py-16 bg-gray-50 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+                <div className="w-20 h-20 bg-gray-400 dark:bg-gray-500 rounded-xl flex items-center justify-center mx-auto mb-6">
                   <Calendar className="h-10 w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">No events found</h3>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">No events found</h3>
                 <p className="text-gray-500 dark:text-gray-400 font-medium text-lg mb-6">
                   {hasActiveFilters
                     ? "Try adjusting your filters to find more events."
@@ -1012,7 +1012,7 @@ const Dashboard = () => {
                 {hasActiveFilters && (
                   <button
                     onClick={clearAllFilters}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    className="px-8 py-3 bg-gray-800 hover:bg-gray-700 dark:bg-gray-200 dark:hover:bg-gray-300 text-white dark:text-gray-800 text-sm font-semibold rounded-lg transition-all duration-200 hover:shadow-md"
                   >
                     Clear Filters
                   </button>
@@ -1026,6 +1026,7 @@ const Dashboard = () => {
       </div>
     );
   };
+                
   const renderActiveTab = () => {
     switch (activeTab) {
       case "overview":
