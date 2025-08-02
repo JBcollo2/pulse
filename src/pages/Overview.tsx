@@ -22,94 +22,34 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // API configuration matching backend expectations
-  const API_CONFIG = {
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
-    timeout: 10000,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
-  };
-
-  // Enhanced API fetch utility with JWT support
-  const apiRequest = useCallback(
-    async (
-      endpoint: string,
-      options: RequestInit = {}
-    ) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
-
-      try {
-        // Get JWT token from localStorage or wherever you store it
-        const token = localStorage.getItem('access_token');
-
-        const mergedHeaders = {
-          ...API_CONFIG.headers,
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-          ...(options.headers && typeof options.headers === 'object' ? options.headers : {})
-        };
-
-        const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, {
-          ...options,
-          headers: mergedHeaders,
-          credentials: 'include',
-          signal: controller.signal
-        });
-
-      clearTimeout(timeoutId);
-
-      if (response.status === 401) {
-        // Handle unauthorized - redirect to login or refresh token
-        setError('Authentication required. Please log in.');
-        return null;
-      }
-
-      if (response.status === 403) {
-        setError('Access denied. Insufficient permissions.');
-        return null;
-      }
-
-      if (response.status === 429) {
-        setError('Too many requests. Please wait and try again.');
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-      }
-      
-      return await response.text();
-    } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
-      }
-      throw error;
-    }
-  }, []);
-
-  // Fetch user profile - try multiple endpoints as backend suggests
+  // Fetch user profile from real API
   const fetchUserProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
-      
-      // Try the profile endpoints mentioned in the backend
+      // Try multiple profile endpoints
       const endpoints = ['/api/auth/profile', '/api/user/me', '/api/auth/user'];
       let profileData = null;
       let lastError = null;
 
       for (const endpoint of endpoints) {
         try {
-          profileData = await apiRequest(endpoint);
-          if (profileData) break;
+          const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            profileData = await response.json();
+            break;
+          } else if (response.status === 401) {
+            throw new Error('Authentication expired. Please log in again.');
+          } else if (response.status === 403) {
+            throw new Error('Access denied. You do not have permission to access this resource.');
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            lastError = new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+          }
         } catch (err) {
           lastError = err;
           continue;
@@ -117,77 +57,79 @@ const Dashboard = () => {
       }
 
       if (!profileData) {
-        // Create demo profile for development/testing
-        profileData = {
-          id: 'demo-123',
-          name: "Demo User",
-          role: "ORGANIZER", // Match backend UserRole enum
-          email: "demo@company.com",
-          avatar: null,
-          lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          isActive: true,
-          permissions: ['read', 'write'],
-          department: 'Events',
-          joinDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        };
+        throw lastError || new Error('Unable to fetch user profile from any endpoint');
       }
 
-      // Normalize profile data structure to match backend response
+      // Normalize profile data structure
       const normalizedProfile = {
-        id: profileData.id || profileData.userId || 'demo-123',
-        name: profileData.full_name || profileData.fullName || profileData.name || profileData.displayName || 'Demo User',
-        email: profileData.email || profileData.emailAddress || 'demo@company.com',
-        role: profileData.role || profileData.userRole || 'ORGANIZER',
-        avatar: profileData.avatar || profileData.profilePicture || profileData.image || null,
-        lastLogin: profileData.lastLogin || profileData.lastLoginAt || profileData.loginTime || new Date(Date.now() - 2 * 60 * 60 * 1000),
-        isActive: profileData.isActive !== undefined ? profileData.isActive : true,
+        id: profileData.id || profileData.user_id || profileData.userId,
+        name: profileData.full_name || profileData.fullName || profileData.name || profileData.displayName,
+        email: profileData.email || profileData.emailAddress,
+        role: profileData.role || profileData.userRole || profileData.user_role,
+        avatar: profileData.avatar || profileData.profilePicture || profileData.image,
+        lastLogin: profileData.last_login || profileData.lastLogin || profileData.lastLoginAt || profileData.loginTime,
+        isActive: profileData.is_active !== undefined ? profileData.is_active : profileData.isActive,
         permissions: profileData.permissions || [],
-        department: profileData.department || 'Events',
-        joinDate: profileData.joinDate || profileData.created_at || profileData.createdAt || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        phoneNumber: profileData.phone_number || profileData.phoneNumber || null
+        department: profileData.department,
+        joinDate: profileData.join_date || profileData.joinDate || profileData.created_at || profileData.createdAt,
+        phoneNumber: profileData.phone_number || profileData.phoneNumber || profileData.phone
       };
 
       setProfile(normalizedProfile);
       setUserRole(normalizedProfile.role);
     } catch (error) {
       console.error('Error fetching user profile:', error);
-      setError(error.message);
+      setError(`Profile Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  }, [apiRequest]);
+  }, []);
 
-  // Fetch statistics based on user role using the unified stats endpoint
+  // Fetch statistics from real API
   const fetchStats = useCallback(async () => {
+    setError(null);
+    
     try {
-      setError(null);
-      
-      // Use the unified stats endpoint from backend
-      const statsData = await apiRequest('/api/stats');
-      if (statsData) {
-        setStats(statsData);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/stats`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
+
+      const statsData = await response.json();
+      setStats(statsData);
     } catch (error) {
       console.error('Error fetching stats:', error);
-      // Don't set error here as stats might not be critical
+      setError(`Statistics Error: ${error.message}`);
       setStats(null);
     }
-  }, [apiRequest]);
+  }, []);
 
-  // Fetch system health (admin only)
+  // Fetch system health from real API (admin only)
   const fetchSystemHealth = useCallback(async () => {
+    if (userRole !== 'ADMIN') return;
+    
     try {
-      if (userRole === 'ADMIN') {
-        const healthData = await apiRequest('/api/system/health');
-        if (healthData) {
-          setSystemHealth(healthData);
-        }
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/system/health`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
       }
+
+      const healthData = await response.json();
+      setSystemHealth(healthData);
     } catch (error) {
-      console.warn('Could not fetch system health:', error);
+      console.error('Error fetching system health:', error);
+      // Don't set error for system health as it's not critical for non-admins
       setSystemHealth(null);
     }
-  }, [apiRequest, userRole]);
+  }, [userRole]);
 
   // Initial data loading
   useEffect(() => {
@@ -533,13 +475,46 @@ const Dashboard = () => {
     }
   };
 
-  // Loading state
+  // Loading state with better error handling
   if (loading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Connecting to server...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+            {import.meta.env.VITE_API_URL}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if profile loading failed
+  if (error && !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            Connection Failed
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {error}
+          </p>
+          <button
+            onClick={() => {
+              setError(null);
+              fetchUserProfile();
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry Connection
+          </button>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
+            Server: {import.meta.env.VITE_API_URL}
+          </p>
         </div>
       </div>
     );
@@ -567,13 +542,19 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+        {/* Error Alert - Only show non-critical errors */}
+        {error && profile && (
+          <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+              <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
                 <AlertCircle className="h-4 w-4" />
                 <span className="text-sm">{error}</span>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-auto text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 dark:hover:text-yellow-200"
+                >
+                  ×
+                </button>
               </div>
             </CardContent>
           </Card>
@@ -729,7 +710,7 @@ const Dashboard = () => {
                     </span>
                   </div>
 
-                  {/* API Status */}
+                  {/* API Connection Status */}
                   <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <span className="font-medium text-gray-700 dark:text-gray-300">API Status:</span>
                     <div className="flex items-center gap-2">
@@ -738,6 +719,14 @@ const Dashboard = () => {
                         {stats ? 'Connected' : 'Disconnected'}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Server Info */}
+                  <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">Server:</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                      {import.meta.env.VITE_API_URL?.replace('https://', '').replace('http://', '') || 'Not configured'}
+                    </span>
                   </div>
 
                   {/* Last Updated */}

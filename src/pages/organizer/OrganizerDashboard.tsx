@@ -578,7 +578,6 @@ const stats = [
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editingEvent={editingEvent}
-        onEventDeleted={handleEventDeleted}
         onEventCreated={handleEventCreated}
       />
 
