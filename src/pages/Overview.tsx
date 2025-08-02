@@ -574,6 +574,9 @@ const Dashboard = () => {
             <RefreshCw className="h-4 w-4" />
             Retry Connection
           </button>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
+            Server: {import.meta.env.VITE_API_URL}
+          </p>
         </div>
       </div>
     );
