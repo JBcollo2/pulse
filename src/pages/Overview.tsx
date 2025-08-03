@@ -553,35 +553,31 @@ const Dashboard = () => {
   }
 
   // Show error state if profile loading failed
-  if (error && !profile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center max-w-md mx-auto p-6">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            Connection Failed
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {error}
-          </p>
-          <button
-            onClick={() => {
-              setError(null);
-              fetchUserProfile();
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry Connection
-          </button>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-4">
-            Server: {import.meta.env.VITE_API_URL}
-          </p>
-        </div>
+if (error && !profile) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="text-center max-w-md mx-auto p-6">
+        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          Connection Failed
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          {error}
+        </p>
+        <button
+          onClick={() => {
+            setError(null);
+            fetchUserProfile();
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry Connection
+        </button>
       </div>
-    );
-  }
-
+    </div>
+  );
+}
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -595,13 +591,13 @@ const Dashboard = () => {
           </div>
           
           <button
-            onClick={refreshData}
-            disabled={refreshing}
-            className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh'}
-          </button>
+          onClick={refreshData}
+          disabled={refreshing}
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-md transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 shadow-sm hover:shadow-md"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="text-sm">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+        </button>
         </div>
 
         {/* Error Alert - Only show non-critical errors */}
