@@ -537,20 +537,33 @@ const Dashboard = () => {
     }
   };
 
-  // Loading state with better error handling
-  if (loading && !profile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Connecting to server...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-            {import.meta.env.VITE_API_URL}
-          </p>
-        </div>
+ // Show error state if profile loading failed
+if (error && !profile) {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="text-center max-w-md mx-auto p-6">
+        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          Connection Failed
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">
+          {error}
+        </p>
+        <button
+          onClick={() => {
+            setError(null);
+            fetchUserProfile();
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry Connection
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   // Show error state if profile loading failed
 if (error && !profile) {
