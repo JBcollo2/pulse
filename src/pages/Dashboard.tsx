@@ -1018,7 +1018,7 @@ const Dashboard = () => {
 
   const renderActiveTab = () => {
     switch (activeTab) {
-      case "overview":
+      case "general-overview":
         return <Overview />;
       case "tickets":
         if (user && (user.role === "ADMIN" || user.role === "ORGANIZER")) {
