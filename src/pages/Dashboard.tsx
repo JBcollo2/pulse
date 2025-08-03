@@ -13,13 +13,13 @@ import {
   Users,
   QrCode,
   ChevronRight,
+  ChevronLeft,
   Bell,
   Search,
   Plus,
   Menu,
   X,
   UserCheck,
-  ChevronLeft,
   Building2,
   Edit,
   Eye,
@@ -30,7 +30,6 @@ import {
   Building,
   Loader2,
   Filter,
-  CalendarDays,
   MapPin,
 } from 'lucide-react';
 import Overview from './Overview';
@@ -63,7 +62,7 @@ const Dashboard = () => {
   const [totalEvents, setTotalEvents] = useState(0);
   const [pageSize, setPageSize] = useState(12);
 
-  // Updated state variables for new filtering system
+  // Filtering state
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [timeFilter, setTimeFilter] = useState("upcoming");
@@ -71,8 +70,6 @@ const Dashboard = () => {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("asc");
-
-  // Dashboard-specific advanced filters
   const [organizerCompanyFilter, setOrganizerCompanyFilter] = useState("");
 
   // Available filter options from API
@@ -153,6 +150,7 @@ const Dashboard = () => {
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
       setCurrentPage(targetPage);
+
       if (data.available_filters) {
         setAvailableFilters(data.available_filters);
       }
@@ -175,18 +173,7 @@ const Dashboard = () => {
     if (user) {
       fetchEvents(1, true);
     }
-  }, [
-    user,
-    eventSearchQuery,
-    categoryFilter,
-    timeFilter,
-    locationFilter,
-    featuredOnly,
-    organizerCompanyFilter,
-    sortBy,
-    sortOrder,
-    pageSize
-  ]);
+  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder, pageSize]);
 
   useEffect(() => {
     if (currentPage > 1 && user && !eventsLoading) {
