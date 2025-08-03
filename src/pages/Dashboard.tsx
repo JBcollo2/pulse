@@ -215,14 +215,14 @@ const Dashboard = () => {
   }, [currentPage]);
 
   const allMenuItems = [
-   {
-    id: "general-overview",
-    name: "General Overview",
-    icon: BarChart,
-    description: "Go to comprehensive dashboard analytics and system insights",
-    color: "text-blue-500",
-    roles: ["ADMIN", "ORGANIZER", "ATTENDEE", "SECURITY"]
-  },
+    {
+      id: "overview",
+      name: "Overview",
+      icon: BarChart,
+      description: "Dashboard analytics",
+      color: "text-blue-500",
+      roles: ["ADMIN", "ORGANIZER", "ATTENDEE", "SECURITY"]
+    },
     {
       id: "tickets",
       name: "Tickets",
@@ -1018,7 +1018,7 @@ const Dashboard = () => {
 
   const renderActiveTab = () => {
     switch (activeTab) {
-      case "general-overview":
+      case "overview":
         return <Overview />;
       case "tickets":
         if (user && (user.role === "ADMIN" || user.role === "ORGANIZER")) {
