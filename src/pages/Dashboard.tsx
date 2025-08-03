@@ -215,14 +215,14 @@ const Dashboard = () => {
   }, [currentPage]);
 
   const allMenuItems = [
-    {
-      id: "overview",
-      name: "Overview",
-      icon: BarChart,
-      description: "Dashboard analytics",
-      color: "text-blue-500",
-      roles: ["ADMIN", "ORGANIZER", "ATTENDEE", "SECURITY"]
-    },
+   {
+    id: "general-overview",
+    name: "General Overview",
+    icon: BarChart,
+    description: "Go to comprehensive dashboard analytics and system insights",
+    color: "text-blue-500",
+    roles: ["ADMIN", "ORGANIZER", "ATTENDEE", "SECURITY"]
+  },
     {
       id: "tickets",
       name: "Tickets",
