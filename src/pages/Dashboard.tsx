@@ -74,8 +74,6 @@ const Dashboard = () => {
 
   // Dashboard-specific advanced filters
   const [organizerCompanyFilter, setOrganizerCompanyFilter] = useState("");
-  const [startDateFilter, setStartDateFilter] = useState("");
-  const [endDateFilter, setEndDateFilter] = useState("");
 
   // Available filter options from API
   const [availableFilters, setAvailableFilters] = useState({
@@ -116,7 +114,6 @@ const Dashboard = () => {
     try {
       setEventsLoading(true);
       const targetPage = resetPage ? 1 : page;
-
       const params = new URLSearchParams({
         page: targetPage.toString(),
         per_page: pageSize.toString(),
@@ -129,33 +126,20 @@ const Dashboard = () => {
       if (eventSearchQuery.trim()) {
         params.append('search', eventSearchQuery.trim());
       }
-
       if (categoryFilter && categoryFilter.trim() !== "") {
         params.append('category_id', categoryFilter.trim());
       }
-
       if (locationFilter.trim()) {
         params.append('location', locationFilter.trim());
       }
-
       if (featuredOnly) {
         params.append('featured', 'true');
       }
-
       if (organizerCompanyFilter.trim()) {
         params.append('organizer_company', organizerCompanyFilter.trim());
       }
 
-      if (startDateFilter) {
-        params.append('start_date', startDateFilter);
-      }
-
-      if (endDateFilter) {
-        params.append('end_date', endDateFilter);
-      }
-
       const url = `${import.meta.env.VITE_API_URL}/events?${params.toString()}`;
-
       const response = await fetch(url, {
         credentials: 'include',
       });
@@ -165,12 +149,10 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-
       setEvents(data.events || []);
       setTotalPages(data.pages || 1);
       setTotalEvents(data.total || 0);
       setCurrentPage(targetPage);
-
       if (data.available_filters) {
         setAvailableFilters(data.available_filters);
       }
@@ -201,8 +183,6 @@ const Dashboard = () => {
     locationFilter,
     featuredOnly,
     organizerCompanyFilter,
-    startDateFilter,
-    endDateFilter,
     sortBy,
     sortOrder,
     pageSize
@@ -471,9 +451,7 @@ const Dashboard = () => {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-
       fetchEvents(currentPage);
-
       toast({
         title: "Success",
         description: "Event deleted successfully",
@@ -495,8 +473,6 @@ const Dashboard = () => {
     setLocationFilter("");
     setFeaturedOnly(false);
     setOrganizerCompanyFilter("");
-    setStartDateFilter("");
-    setEndDateFilter("");
     setSortBy("date");
     setSortOrder("asc");
     setCurrentPage(1);
@@ -513,8 +489,6 @@ const Dashboard = () => {
     locationFilter !== "" ||
     featuredOnly ||
     organizerCompanyFilter !== "" ||
-    startDateFilter !== "" ||
-    endDateFilter !== "" ||
     sortBy !== "date" ||
     sortOrder !== "asc";
 
@@ -741,7 +715,7 @@ const Dashboard = () => {
             {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
                     <div className="relative">
@@ -778,40 +752,6 @@ const Dashboard = () => {
                       </select>
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-                    <div className="relative">
-                      <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                      <input
-                        type="date"
-                        value={startDateFilter}
-                        onChange={(e) => {
-                          setStartDateFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        min={availableFilters.date_range?.min_date}
-                        max={availableFilters.date_range?.max_date}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-                    <div className="relative">
-                      <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                      <input
-                        type="date"
-                        value={endDateFilter}
-                        onChange={(e) => {
-                          setEndDateFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        min={startDateFilter || availableFilters.date_range?.min_date}
-                        max={availableFilters.date_range?.max_date}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
-                      />
-                    </div>
-                  </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -864,11 +804,6 @@ const Dashboard = () => {
                   {organizerCompanyFilter && (
                     <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs rounded-full">
                       Organizer: {organizerCompanyFilter}
-                    </span>
-                  )}
-                  {(startDateFilter || endDateFilter) && (
-                    <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 text-xs rounded-full">
-                      Date Range: {startDateFilter || 'Start'} - {endDateFilter || 'End'}
                     </span>
                   )}
                 </div>
@@ -956,15 +891,6 @@ const Dashboard = () => {
                           <span>Category:</span>
                           <span className="text-gray-800 dark:text-gray-200 ml-auto font-medium">
                             {event.category}
-                          </span>
-                        </div>
-                      )}
-                      {event.likes_count !== undefined && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <span>❤️</span>
-                          <span>Likes:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                            {event.likes_count}
                           </span>
                         </div>
                       )}
