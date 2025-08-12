@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X, CheckCircle } from 'lucide-react';
+import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EventMap from '@/components/EventMap';
 import {
@@ -54,7 +54,7 @@ const EventDetails = () => {
   const navigate = useNavigate();
   const paymentReference = searchParams.get('reference');
   const location = useLocation();
-  const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending' | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending' | 'cancelled' | null>(null);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [event, setEvent] = useState<Event | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
@@ -229,6 +229,8 @@ const EventDetails = () => {
       setPaymentStatus('failed');
     } else if (location.pathname.includes('/payment-pending')) {
       setPaymentStatus('pending');
+    } else if (location.pathname.includes('/payment-cancelled')) {
+      setPaymentStatus('cancelled');
     }
 
     if (paymentReference && !paymentStatus) {
@@ -252,6 +254,13 @@ const EventDetails = () => {
         toast({
           title: "Payment Successful",
           description: "Your ticket purchase was successful!",
+          duration: 5000,
+        });
+      } else if (response.ok && data.status === 'cancelled') {
+        setPaymentStatus('cancelled');
+        toast({
+          title: "Payment Cancelled",
+          description: data.user_message || "Payment was cancelled by user.",
           duration: 5000,
         });
       } else {
@@ -308,6 +317,24 @@ const EventDetails = () => {
                 variant="outline"
                 size="sm"
                 className="mt-2 border-red-300 text-red-800"
+                onClick={() => setPaymentStatus(null)}
+              >
+                Try Again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        );
+      case 'cancelled':
+        return (
+          <Alert className="mb-6 bg-orange-50 text-orange-800 border-orange-300">
+            <XCircle className="h-4 w-4 text-orange-600" />
+            <AlertTitle>Payment Cancelled</AlertTitle>
+            <AlertDescription>
+              You cancelled the payment request. No charges were made to your account. You can try purchasing tickets again if needed.
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 border-orange-300 text-orange-800"
                 onClick={() => setPaymentStatus(null)}
               >
                 Try Again
@@ -502,10 +529,10 @@ const EventDetails = () => {
                         </div>
                       </div>
                       <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-                      disabled={buyButtonDisabled}
-                    >
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+                        disabled={buyButtonDisabled}
+                      >
                         {buyButtonDisabled ? (
                           <>Processing...</>
                         ) : (
