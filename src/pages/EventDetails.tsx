@@ -531,239 +531,231 @@ const EventDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Navbar />
-      <main className="py-12 pt-24">
-        <div className="container mx-auto px-4">
-          {verifyingPayment ? (
-            <div className="mb-6 text-center p-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-              <p>Verifying your payment...</p>
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <Navbar />
+    <main className="py-12 pt-24">
+      <div className="container mx-auto px-4">
+        {verifyingPayment ? (
+          <div className="mb-6 text-center p-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+            <p>Verifying your payment...</p>
+          </div>
+        ) : renderPaymentStatusAlert()}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="rounded-lg overflow-hidden mb-8">
+              <img
+                src={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
+                alt={event.name}
+                className="w-full max-h-96 object-cover"
+              />
             </div>
-          ) : renderPaymentStatusAlert()}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <div className="rounded-lg overflow-hidden mb-8">
-                <img
-                  src={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
-                  alt={event.name}
-                  className="w-full max-h-96 object-cover"
-                />
-              </div>
-              <div className="mb-8">
-                {event.category && (
-                  <Badge className="mb-4 bg-purple-600">{event.category}</Badge>
-                )}
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
-                <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
-                  <div className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
-                    <span>{formatDate(event.date)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-2" />
-                    <span>{event.location}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <User className="h-5 w-5 mr-2" />
-                    <span>By {event.organizer.company_name}</span>
-                  </div>
+            <div className="mb-8">
+              {event.category && (
+                <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-[#10b981] text-white">{event.category}</Badge>
+              )}
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
+              <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
+                <div className="flex items-center">
+                  <Calendar className="h-5 w-5 mr-2" />
+                  <span>{formatDate(event.date)}</span>
                 </div>
-                <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-xl font-bold mb-4">About This Event</h2>
-                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold mb-4">Location</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
-                    <EventMap location={event.location} />
-                  </div>
+                <div className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  <span>{event.location}</span>
+                </div>
+                <div className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  <span>By {event.organizer.company_name}</span>
                 </div>
               </div>
+              <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold mb-4">About This Event</h2>
+                  <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold mb-4">Location</h2>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
+                  <EventMap location={event.location} />
+                </div>
+              </div>
             </div>
-            <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
-                {isCheckingOut ? (
-                  <div>
-                    <h2 className="text-xl font-bold mb-6">Complete Your Purchase</h2>
-                    <form onSubmit={handleProceedToPayment}>
+          </div>
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
+              {isCheckingOut ? (
+                <div>
+                  <h2 className="text-xl font-bold mb-6">Complete Your Purchase</h2>
+                  <form onSubmit={handleProceedToPayment}>
+                    <div className="space-y-4 mb-6">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium mb-1">
+                          Full Name
+                        </label>
+                        <Input
+                          id="name"
+                          type="text"
+                          value={buyerDetails.name}
+                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, name: e.target.value }))}
+                          required
+                          className="bg-gray-50 dark:bg-gray-800"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium mb-1">
+                          Email
+                        </label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={buyerDetails.email}
+                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, email: e.target.value }))}
+                          required
+                          className="bg-gray-50 dark:bg-gray-800"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium mb-1">
+                          Phone Number (for M-Pesa)
+                        </label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={buyerDetails.phone_number}
+                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, phone_number: e.target.value }))}
+                          required
+                          className="bg-gray-50 dark:bg-gray-800"
+                        />
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span>{formatCurrency(total)}</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+                      disabled={buyButtonDisabled}
+                    >
+                      {buyButtonDisabled ? (
+                        <>Processing...</>
+                      ) : (
+                        <>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Proceed to Payment
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-2 border-gray-300 dark:border-gray-700"
+                      onClick={() => setIsCheckingOut(false)}
+                    >
+                      Back
+                    </Button>
+                  </form>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-xl font-bold mb-2">Tickets</h2>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
+                  {ticketTypes.length > 0 ? (
+                    <>
                       <div className="space-y-4 mb-6">
                         <div>
-                          <label htmlFor="name" className="block text-sm font-medium mb-1">
-                            Full Name
+                          <label htmlFor="ticketType" className="block text-sm font-medium mb-1">
+                            Ticket Type
                           </label>
-                          <Input
-                            id="name"
-                            type="text"
-                            value={buyerDetails.name}
-                            onChange={(e) => setBuyerDetails({ ...buyerDetails, name: e.target.value })}
-                            required
-                            className="bg-gray-50 dark:bg-gray-800"
-                          />
+                          <Select value={ticketType} onValueChange={setTicketType}>
+                            <SelectTrigger id="ticketType" className="bg-gray-50 dark:bg-gray-800">
+                              <SelectValue placeholder="Select ticket type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ticketTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.id.toString()}>
+                                  <span className="font-medium">{type.type_name}</span> - {formatCurrency(type.price)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
-                          <label htmlFor="email" className="block text-sm font-medium mb-1">
-                            Email
+                          <label htmlFor="quantity" className="block text-sm font-medium mb-1">
+                            Quantity
                           </label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={buyerDetails.email}
-                            onChange={(e) => setBuyerDetails({ ...buyerDetails, email: e.target.value })}
-                            required
-                            className="bg-gray-50 dark:bg-gray-800"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                            Phone Number (for M-Pesa)
-                          </label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={buyerDetails.phone_number}
-                            onChange={(e) => setBuyerDetails({ ...buyerDetails, phone_number: e.target.value })}
-                            required
-                            className="bg-gray-50 dark:bg-gray-800"
-                          />
+                          <Select
+                            value={ticketCount.toString()}
+                            onValueChange={(value) => setTicketCount(parseInt(value))}
+                          >
+                            <SelectTrigger id="quantity" className="bg-gray-50 dark:bg-gray-800">
+                              <SelectValue placeholder="Select quantity" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                <SelectItem key={num} value={num.toString()}>
+                                  {num}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
                         <div className="flex justify-between mb-2">
-                          <span>Subtotal</span>
-                          <span>{formatCurrency(total)}</span>
-                        </div>
-                        <div className="flex justify-between mb-2">
-                          <span>Service Fee</span>
-                          <span>{formatCurrency(total * 0.1)}</span>
+                          <span>
+                            {ticketTypes.find(t => t.id.toString() === ticketType)?.type_name} × {ticketCount}
+                          </span>
+                          <span>{formatCurrency(selectedTicketPrice * ticketCount)}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg mt-4">
                           <span>Total</span>
-                          <span>{formatCurrency(total * 1.1)}</span>
+                          <span>{formatCurrency(total)}</span>
                         </div>
                       </div>
                       <Button
-                        type="submit"
                         className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-                        disabled={buyButtonDisabled}
+                        onClick={() => setIsCheckingOut(true)}
                       >
-                        {buyButtonDisabled ? (
-                          <>Processing...</>
-                        ) : (
-                          <>
-                            <CreditCard className="mr-2 h-4 w-4" />
-                            Proceed to Payment
-                          </>
-                        )}
+                        Get Tickets
                       </Button>
+                    </>
+                  ) : (
+                    <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600">
+                      <p className="font-bold">No tickets available</p>
+                      <p>There are currently no tickets available for this event.</p>
                       <Button
-                        type="button"
                         variant="outline"
-                        className="w-full mt-2 border-gray-300 dark:border-gray-700"
-                        onClick={() => setIsCheckingOut(false)}
+                        className="mt-4 w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-200 dark:hover:bg-yellow-900/50"
+                        onClick={() => {
+                          window.location.reload();
+                        }}
                       >
-                        Back
-                      </Button>
-                    </form>
-                  </div>
-                ) : (
-                  <div>
-                    <h2 className="text-xl font-bold mb-2">Tickets</h2>
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
-                    {ticketTypes.length > 0 ? (
-                      <>
-                        <div className="space-y-4 mb-6">
-                          <div>
-                            <label htmlFor="ticketType" className="block text-sm font-medium mb-1">
-                              Ticket Type
-                            </label>
-                            <Select value={ticketType} onValueChange={setTicketType}>
-                              <SelectTrigger id="ticketType" className="bg-gray-50 dark:bg-gray-800">
-                                <SelectValue placeholder="Select ticket type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ticketTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id.toString()}>
-                                    <span className="font-medium">{type.type_name}</span> - {formatCurrency(type.price)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label htmlFor="quantity" className="block text-sm font-medium mb-1">
-                              Quantity
-                            </label>
-                            <Select
-                              value={ticketCount.toString()}
-                              onValueChange={(value) => setTicketCount(parseInt(value))}
-                            >
-                              <SelectTrigger id="quantity" className="bg-gray-50 dark:bg-gray-800">
-                                <SelectValue placeholder="Select quantity" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                                  <SelectItem key={num} value={num.toString()}>
-                                    {num}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-                          <div className="flex justify-between mb-2">
-                            <span>
-                              {ticketTypes.find(t => t.id.toString() === ticketType)?.type_name} × {ticketCount}
-                            </span>
-                            <span>{formatCurrency(selectedTicketPrice * ticketCount)}</span>
-                          </div>
-                          <div className="flex justify-between font-bold text-lg mt-4">
-                            <span>Subtotal</span>
-                            <span>{formatCurrency(total)}</span>
-                          </div>
-                        </div>
-                        <Button
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                          onClick={() => setIsCheckingOut(true)}
-                        >
-                          Get Tickets
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600">
-                        <p className="font-bold">No tickets available</p>
-                        <p>There are currently no tickets available for this event.</p>
-                        <Button
-                          variant="outline"
-                          className="mt-4 w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-200 dark:hover:bg-yellow-900/50"
-                          onClick={() => {
-                            window.location.reload();
-                          }}
-                        >
-                          Refresh
-                        </Button>
-                      </div>
-                    )}
-                    <div className="mt-6 flex gap-4 justify-center">
-                      <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-purple-600">
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share
+                        Refresh
                       </Button>
                     </div>
+                  )}
+                  <div className="mt-6 flex gap-4 justify-center">
+                    <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-purple-600">
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share
+                    </Button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </main>
-      <AdvancedPaymentDialog />
-      <Footer />
-    </div>
-  );
+      </div>
+    </main>
+    <AdvancedPaymentDialog />
+    <Footer />
+  </div>
+);
 };
 
 export default EventDetails;
