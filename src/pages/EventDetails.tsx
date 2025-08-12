@@ -407,7 +407,7 @@ const EventDetails = () => {
         <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all">
           
           {/* Header with gradient */}
-          <div className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 px-8 py-8 text-white">
+          <div className="relative bg-gradient-to-r from-blue-500 to-[#10b981] px-8 py-8 text-white">
             <button
               onClick={() => !isProcessingPayment && setShowPaymentDialog(false)}
               disabled={isProcessingPayment}
@@ -420,7 +420,7 @@ const EventDetails = () => {
               <Shield className="h-8 w-8" />
               <h2 className="text-2xl font-bold">Secure Payment</h2>
             </div>
-            <p className="text-blue-100 text-lg">
+            <p className="text-green-100 text-lg">
               Choose your preferred payment method to complete your purchase
             </p>
             
