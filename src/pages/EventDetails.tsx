@@ -8,7 +8,27 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, MapPin, User, CreditCard, Share2, Phone, Clock, Ticket, AlertCircle, X, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { 
+  Calendar, 
+  MapPin, 
+  User, 
+  CreditCard, 
+  Share2, 
+  Phone, 
+  Clock, 
+  Ticket, 
+  AlertCircle, 
+  X, 
+  CheckCircle, 
+  XCircle, 
+  Shield,
+  Copy,
+  Facebook,
+  Twitter,
+  MessageCircle,
+  Mail,
+  Check
+} from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EventMap from '@/components/EventMap';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -58,12 +78,104 @@ const EventDetails = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Share functionality state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  
   const [buyerDetails, setBuyerDetails] = useState({
     name: '',
     email: '',
     phone_number: ''
   });
   const { toast } = useToast();
+
+  // Share functionality functions
+  const getEventUrl = () => {
+    return `${window.location.origin}/events/${id}`;
+  };
+
+  const getShareText = () => {
+    if (!event) return '';
+    return `Check out this amazing event: ${event.name} on ${formatDate(event.date)} at ${event.location}. Get your tickets now!`;
+  };
+
+  // Web Share API (native mobile sharing)
+  const handleNativeShare = async () => {
+    if (!event) return;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: event.name,
+          text: getShareText(),
+          url: getEventUrl(),
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+        // Fallback to custom share modal
+        setShowShareModal(true);
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      setShowShareModal(true);
+    }
+  };
+
+  // Copy link to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(getEventUrl());
+      setCopySuccess(true);
+      toast({
+        title: "Link Copied!",
+        description: "Event link has been copied to clipboard",
+        duration: 2000,
+      });
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = getEventUrl();
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopySuccess(true);
+      toast({
+        title: "Link Copied!",
+        description: "Event link has been copied to clipboard",
+        duration: 2000,
+      });
+      setTimeout(() => setCopySuccess(false), 2000);
+    }
+  };
+
+  // Social media share functions
+  const shareOnFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getEventUrl())}`;
+    window.open(url, '_blank', 'width=600,height=400');
+  };
+
+  const shareOnTwitter = () => {
+    const text = encodeURIComponent(getShareText());
+    const url = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(getEventUrl())}`;
+    window.open(url, '_blank', 'width=600,height=400');
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = encodeURIComponent(`${getShareText()} ${getEventUrl()}`);
+    const url = `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
+  };
+
+  const shareViaEmail = () => {
+    if (!event) return;
+    const subject = encodeURIComponent(`Check out: ${event.name}`);
+    const body = encodeURIComponent(`${getShareText()}\n\nEvent Details: ${getEventUrl()}`);
+    const url = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = url;
+  };
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -346,6 +458,100 @@ const EventDetails = () => {
       default:
         return null;
     }
+  };
+
+  // Share Modal Component
+  const ShareModal = () => {
+    if (!showShareModal) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div 
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowShareModal(false)}
+        />
+        <div className="relative w-full max-w-md mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Share Event</h3>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Copy Link Section */}
+          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <input
+                type="text"
+                value={getEventUrl()}
+                readOnly
+                className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md text-gray-900 dark:text-white"
+              />
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors flex items-center space-x-2"
+              >
+                {copySuccess ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Social Share Options */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={shareOnFacebook}
+              className="flex items-center justify-center space-x-2 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Facebook className="h-5 w-5" />
+              <span>Facebook</span>
+            </button>
+            
+            <button
+              onClick={shareOnTwitter}
+              className="flex items-center justify-center space-x-2 p-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
+            >
+              <Twitter className="h-5 w-5" />
+              <span>Twitter</span>
+            </button>
+            
+            <button
+              onClick={shareOnWhatsApp}
+              className="flex items-center justify-center space-x-2 p-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+            >
+              <MessageCircle className="h-5 w-5" />
+              <span>WhatsApp</span>
+            </button>
+            
+            <button
+              onClick={shareViaEmail}
+              className="flex items-center justify-center space-x-2 p-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              <Mail className="h-5 w-5" />
+              <span>Email</span>
+            </button>
+          </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Share this event with your friends and family
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const AdvancedPaymentDialog = () => {
@@ -740,7 +946,12 @@ const EventDetails = () => {
                     </div>
                   )}
                   <div className="mt-6 flex gap-4 justify-center">
-                    <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-purple-600">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+                      onClick={handleNativeShare}
+                    >
                       <Share2 className="h-4 w-4 mr-2" />
                       Share
                     </Button>
@@ -752,6 +963,7 @@ const EventDetails = () => {
         </div>
       </div>
     </main>
+    <ShareModal />
     <AdvancedPaymentDialog />
     <Footer />
   </div>
