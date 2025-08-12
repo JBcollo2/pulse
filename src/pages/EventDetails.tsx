@@ -502,10 +502,10 @@ const EventDetails = () => {
                         </div>
                       </div>
                       <Button
-                        type="submit"
-                        className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all flex items-center"
-                        disabled={buyButtonDisabled}
-                      >
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+                      disabled={buyButtonDisabled}
+                    >
                         {buyButtonDisabled ? (
                           <>Processing...</>
                         ) : (
