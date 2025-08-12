@@ -89,23 +89,18 @@ const EventDetails = () => {
         const eventRes = await fetch(`${import.meta.env.VITE_API_URL}/events/${id}`, {
           credentials: 'include'
         });
-
         if (!eventRes.ok) {
           throw new Error('Failed to fetch event details.');
         }
-
         const eventData = await eventRes.json();
         setEvent(eventData);
-
         const ticketTypesUrl = `${import.meta.env.VITE_API_URL}/events/${id}/ticket-types`;
         const ticketRes = await fetch(ticketTypesUrl, {
           credentials: 'include'
         });
-
         if (!ticketRes.ok) {
           throw new Error('Failed to fetch ticket types.');
         }
-
         const ticketData = await ticketRes.json();
         if (Array.isArray(ticketData)) {
           setTicketTypes(ticketData);
@@ -124,7 +119,6 @@ const EventDetails = () => {
         setLoading(false);
       }
     };
-
     fetchEventAndTickets();
   }, [id]);
 
@@ -134,7 +128,6 @@ const EventDetails = () => {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
           credentials: 'include'
         });
-
         if (response.ok) {
           const userData = await response.json();
           setBuyerDetails({
@@ -147,7 +140,6 @@ const EventDetails = () => {
         console.error('Error fetching user profile:', error);
       }
     };
-
     fetchUserProfile();
   }, []);
 
@@ -166,9 +158,7 @@ const EventDetails = () => {
   const handlePaymentMethodSelect = async (method: string) => {
     setSelectedPaymentMethod(method);
     setIsProcessingPayment(true);
-
     if (!event) return;
-
     try {
       const ticketData = {
         event_id: event.id,
@@ -179,26 +169,20 @@ const EventDetails = () => {
         buyer_email: buyerDetails.email,
         phone_number: buyerDetails.phone_number
       };
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/tickets`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticketData),
       });
-
       if (!response.ok) {
         throw new Error("Payment initialization failed");
       }
-
       const data = await response.json();
-
-      // Simulate processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-
       if (method === "Paystack" && data.authorization_url) {
         window.location.href = data.authorization_url;
-      } else if (method === "M-Pesa") {
+      } else if (method === "Mpesa") {
         toast({
           title: "M-Pesa Payment Initiated",
           description: "Please check your phone for STK push notification and complete the payment",
@@ -235,7 +219,6 @@ const EventDetails = () => {
     } else if (location.pathname.includes('/payment-cancelled')) {
       setPaymentStatus('cancelled');
     }
-
     if (paymentReference && !paymentStatus) {
       verifyPaymentStatus(paymentReference);
     }
@@ -249,9 +232,7 @@ const EventDetails = () => {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
-
       const data = await response.json();
-
       if (response.ok && data.status === 'success') {
         setPaymentStatus('success');
         toast({
@@ -289,7 +270,6 @@ const EventDetails = () => {
 
   const renderPaymentStatusAlert = () => {
     if (!paymentStatus) return null;
-
     switch (paymentStatus) {
       case 'success':
         return (
@@ -368,13 +348,11 @@ const EventDetails = () => {
     }
   };
 
-  // Advanced Payment Dialog Component
   const AdvancedPaymentDialog = () => {
     if (!showPaymentDialog) return null;
-
     const paymentMethods = [
       {
-        id: "M-Pesa",
+        id: "Mpesa",
         name: "M-Pesa",
         description: "Pay with mobile money",
         icon: Phone,
@@ -397,16 +375,11 @@ const EventDetails = () => {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
-        <div 
+        <div
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           onClick={() => !isProcessingPayment && setShowPaymentDialog(false)}
         />
-        
-        {/* Dialog */}
         <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-          
-          {/* Header with gradient */}
           <div className="relative bg-gradient-to-r from-blue-500 to-[#10b981] px-8 py-8 text-white">
             <button
               onClick={() => !isProcessingPayment && setShowPaymentDialog(false)}
@@ -415,7 +388,7 @@ const EventDetails = () => {
             >
               <X className="h-5 w-5" />
             </button>
-            
+
             <div className="flex items-center space-x-3 mb-2">
               <Shield className="h-8 w-8" />
               <h2 className="text-2xl font-bold">Secure Payment</h2>
@@ -423,27 +396,22 @@ const EventDetails = () => {
             <p className="text-green-100 text-lg">
               Choose your preferred payment method to complete your purchase
             </p>
-            
-            {/* Decorative elements */}
+
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl" />
             <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-white/10 rounded-full blur-lg" />
           </div>
-
           <div className="p-8">
-            {/* Payment amount display */}
             <div className="text-center mb-8 p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Amount to pay</p>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(total * 1.1)}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Including service fee</p>
             </div>
-
-            {/* Payment Methods Grid */}
             <div className="grid md:grid-cols-2 gap-6 mb-8">
               {paymentMethods.map((method) => {
                 const Icon = method.icon;
                 const isSelected = selectedPaymentMethod === method.id;
                 const isCurrentlyProcessing = isProcessingPayment && isSelected;
-                
+
                 return (
                   <div
                     key={method.id}
@@ -454,10 +422,7 @@ const EventDetails = () => {
                       ${isProcessingPayment && !isSelected ? 'opacity-50 pointer-events-none' : ''}
                     `}
                   >
-                    {/* Card */}
                     <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
-                      
-                      {/* Header with icon and gradient background */}
                       <div className={`bg-gradient-to-r ${method.color} group-hover:bg-gradient-to-r group-hover:${method.hoverColor} rounded-xl p-4 mb-4 transition-all duration-300`}>
                         <div className="flex items-center justify-between text-white">
                           <div className="flex items-center space-x-3">
@@ -467,14 +432,11 @@ const EventDetails = () => {
                               <p className="text-sm opacity-90">{method.description}</p>
                             </div>
                           </div>
-                          
                           {isCurrentlyProcessing && (
                             <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
                           )}
                         </div>
                       </div>
-
-                      {/* Features */}
                       <div className="space-y-2 mb-4">
                         {method.features.map((feature, index) => (
                           <div key={index} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
@@ -483,35 +445,25 @@ const EventDetails = () => {
                           </div>
                         ))}
                       </div>
-
-                      {/* Processing time */}
                       <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
                         <Clock className="h-3 w-3" />
                         <span>Processing time: {method.processingTime}</span>
                       </div>
-
-                      {/* Selection indicator */}
                       {isSelected && (
                         <div className="absolute top-4 right-4 bg-blue-500 text-white rounded-full p-1">
                           <CheckCircle className="h-4 w-4" />
                         </div>
                       )}
-
-                      {/* Hover effect overlay */}
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-2xl transition-all duration-300 pointer-events-none" />
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            {/* Security badge */}
             <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
               <Shield className="h-4 w-4" />
               <span>256-bit SSL encryption • PCI DSS compliant • Your data is secure</span>
             </div>
-
-            {/* Action buttons */}
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowPaymentDialog(false)}
@@ -521,8 +473,6 @@ const EventDetails = () => {
                 Cancel
               </button>
             </div>
-
-            {/* Processing indicator */}
             {isProcessingPayment && (
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                 <div className="flex items-center justify-center space-x-3">
@@ -591,7 +541,6 @@ const EventDetails = () => {
               <p>Verifying your payment...</p>
             </div>
           ) : renderPaymentStatusAlert()}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="rounded-lg overflow-hidden mb-8">
@@ -601,13 +550,11 @@ const EventDetails = () => {
                   className="w-full max-h-96 object-cover"
                 />
               </div>
-
               <div className="mb-8">
                 {event.category && (
                   <Badge className="mb-4 bg-purple-600">{event.category}</Badge>
                 )}
                 <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
-
                 <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
                   <div className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
@@ -622,15 +569,12 @@ const EventDetails = () => {
                     <span>By {event.organizer.company_name}</span>
                   </div>
                 </div>
-
                 <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
-
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-bold mb-4">About This Event</h2>
                     <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
                   </div>
-
                   <div>
                     <h2 className="text-xl font-bold mb-4">Location</h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
@@ -639,7 +583,6 @@ const EventDetails = () => {
                 </div>
               </div>
             </div>
-
             <div className="lg:col-span-1">
               <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
                 {isCheckingOut ? (
@@ -687,7 +630,6 @@ const EventDetails = () => {
                           />
                         </div>
                       </div>
-
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
                         <div className="flex justify-between mb-2">
                           <span>Subtotal</span>
@@ -730,7 +672,6 @@ const EventDetails = () => {
                   <div>
                     <h2 className="text-xl font-bold mb-2">Tickets</h2>
                     <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
-
                     {ticketTypes.length > 0 ? (
                       <>
                         <div className="space-y-4 mb-6">
@@ -806,7 +747,6 @@ const EventDetails = () => {
                         </Button>
                       </div>
                     )}
-
                     <div className="mt-6 flex gap-4 justify-center">
                       <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-purple-600">
                         <Share2 className="h-4 w-4 mr-2" />
@@ -820,10 +760,7 @@ const EventDetails = () => {
           </div>
         </div>
       </main>
-
-      {/* Advanced Payment Dialog */}
       <AdvancedPaymentDialog />
-
       <Footer />
     </div>
   );
