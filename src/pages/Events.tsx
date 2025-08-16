@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import EventsSection from '@/components/EventsSection';
@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface Event {
   id: number;
@@ -35,10 +36,19 @@ interface Category {
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeCategory, setActiveCategory] = useState('');
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalEvents, setTotalEvents] = useState(0);
   const { toast } = useToast();
+
+  // Ref for intersection observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Events per page
+  const EVENTS_PER_PAGE = 12;
 
   // Memoized filtered events to prevent unnecessary recalculations
   const filteredEvents = useMemo(() => {
@@ -53,11 +63,6 @@ const Events = () => {
       return matchesCategory;
     });
   }, [activeCategory, events]);
-
-  // Memoized events to show based on showAllEvents state
-  const eventsToShow = useMemo(() => {
-    return showAllEvents ? filteredEvents : filteredEvents.slice(0, 6);
-  }, [showAllEvents, filteredEvents]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -87,12 +92,21 @@ const Events = () => {
     }
   }, [toast]);
 
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (page: number = 1, reset: boolean = false) => {
     try {
-      setIsLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
-        credentials: 'include'
-      });
+      if (page === 1) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const categoryParam = activeCategory ? `&category=${encodeURIComponent(activeCategory)}` : '';
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/events?page=${page}&per_page=${EVENTS_PER_PAGE}${categoryParam}`,
+        {
+          credentials: 'include'
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch events: ${response.status}`);
@@ -103,11 +117,26 @@ const Events = () => {
 
       if (!data.events || !Array.isArray(data.events)) {
         console.error('Invalid events data structure:', data);
-        setEvents([]);
+        if (reset) setEvents([]);
         return;
       }
 
-      setEvents(data.events);
+      if (reset || page === 1) {
+        setEvents(data.events);
+      } else {
+        // Append new events, avoiding duplicates
+        setEvents(prevEvents => {
+          const existingIds = new Set(prevEvents.map(event => event.id));
+          const newEvents = data.events.filter((event: Event) => !existingIds.has(event.id));
+          return [...prevEvents, ...newEvents];
+        });
+      }
+
+      // Update pagination info
+      setTotalEvents(data.total || data.events.length);
+      setHasMore(data.events.length === EVENTS_PER_PAGE && (data.total ? events.length + data.events.length < data.total : true));
+      setCurrentPage(page);
+
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -115,23 +144,59 @@ const Events = () => {
         description: "Failed to fetch events. Please try again later.",
         variant: "destructive"
       });
-      setEvents([]);
+      if (reset) setEvents([]);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [toast]);
+  }, [toast, activeCategory, events.length, EVENTS_PER_PAGE]);
+
+  // Load more events
+  const loadMoreEvents = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchEvents(currentPage + 1);
+    }
+  }, [fetchEvents, currentPage, isLoadingMore, hasMore]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreEvents();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px', // Start loading 100px before reaching the target
+        threshold: 0.1,
+      }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [loadMoreEvents, hasMore, isLoadingMore]);
 
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    fetchEvents(1, true); // Reset and fetch first page
+  }, [activeCategory]); // Re-fetch when category changes
 
   const handleCategoryClick = useCallback((category: string) => {
     setActiveCategory(prev => category === prev ? '' : category);
-    setShowAllEvents(false); // Reset to show limited events when changing category
+    setCurrentPage(1);
+    setHasMore(true);
   }, []);
 
   const handleLike = useCallback(async (eventId: number) => {
@@ -171,16 +236,6 @@ const Events = () => {
       });
     }
   }, [toast]);
-
-  const handleViewAllEvents = useCallback(() => {
-    setShowAllEvents(true);
-  }, []);
-
-  const handleShowLess = useCallback(() => {
-    setShowAllEvents(false);
-    // Scroll to events section
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -224,6 +279,23 @@ const Events = () => {
             >
               Discover amazing events happening around you
             </motion.p>
+
+            {/* Event Counter */}
+            {!isLoading && filteredEvents.length > 0 && (
+              <motion.div
+                className="text-sm text-gray-500 dark:text-gray-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+              >
+                Showing {filteredEvents.length} of {totalEvents} events
+                {activeCategory && (
+                  <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full text-xs">
+                    {activeCategory}
+                  </span>
+                )}
+              </motion.div>
+            )}
           </motion.div>
 
           {isLoading ? (
@@ -311,43 +383,42 @@ const Events = () => {
                 {filteredEvents.length > 0 ? (
                   <>
                     <EventsSection
-                      events={eventsToShow}
+                      events={filteredEvents}
                       onLike={handleLike}
                       showLikes={true}
+                      showTabs={false}
+                      showSearch={false}
                     />
 
-                    {/* View All Events Button */}
-                    {!showAllEvents && filteredEvents.length > 6 && (
+                    {/* Loading More Indicator */}
+                    {isLoadingMore && (
                       <motion.div
-                        className="text-center mt-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.5 }}
+                        className="flex justify-center items-center py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
                       >
-                        <Button
-                          onClick={handleViewAllEvents}
-                          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                        >
-                          View All Events ({filteredEvents.length})
-                        </Button>
+                        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                        <span className="ml-3 text-gray-600 dark:text-gray-300">Loading more events...</span>
                       </motion.div>
                     )}
 
-                    {/* Show fewer events button when viewing all */}
-                    {showAllEvents && filteredEvents.length > 6 && (
+                    {/* Load More Trigger (invisible) */}
+                    <div ref={loadMoreRef} className="h-10 w-full" />
+
+                    {/* End of Events Message */}
+                    {!hasMore && filteredEvents.length > 0 && (
                       <motion.div
-                        className="text-center mt-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-8"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
                       >
-                        <Button
-                          onClick={handleShowLess}
-                          variant="outline"
-                          className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300"
-                        >
-                          Show Less
-                        </Button>
+                        <div className="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-800 rounded-full">
+                          <span className="text-gray-600 dark:text-gray-300">
+                            🎉 You've seen all {filteredEvents.length} events!
+                          </span>
+                        </div>
                       </motion.div>
                     )}
                   </>
@@ -362,12 +433,21 @@ const Events = () => {
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                       {activeCategory ? `No events in "${activeCategory}"` : 'No Events Found'}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-300">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
                       {activeCategory 
                         ? 'Try selecting a different category or check back later.'
                         : 'Check back soon for exciting upcoming events!'
                       }
                     </p>
+                    {activeCategory && (
+                      <Button
+                        onClick={() => setActiveCategory('')}
+                        variant="outline"
+                        className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                      >
+                        View All Events
+                      </Button>
+                    )}
                   </motion.div>
                 )}
               </motion.div>

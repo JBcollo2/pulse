@@ -31,6 +31,8 @@ interface EventsSectionProps {
   onLike: (eventId: number) => Promise<void>;
   showLikes?: boolean;
   showPastEvents?: boolean;
+  showTabs?: boolean;
+  showSearch?: boolean;
 }
 
 const tabs = [
@@ -45,7 +47,9 @@ const EventsSection: React.FC<EventsSectionProps> = ({
   events,
   onLike,
   showLikes = false,
-  showPastEvents = true
+  showPastEvents = true,
+  showTabs = false,
+  showSearch = false
 }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
@@ -62,27 +66,32 @@ const EventsSection: React.FC<EventsSectionProps> = ({
     const todayStr = today.toISOString().split('T')[0];
     let result;
 
-    // First separate past and current events
-    const pastEvents = events.filter(event => new Date(event.date) < today);
-    const currentEvents = events.filter(event => new Date(event.date) >= today);
-
-    // Apply filters based on the active tab
-    if (activeTab === 'past') {
-      result = pastEvents;
-    } else if (activeTab === 'trending') {
-      result = currentEvents.filter(event => event.likes_count > 0);
-    } else if (activeTab === 'today') {
-      result = currentEvents.filter(event => event.date === todayStr);
-    } else if (activeTab === 'upcoming') {
-      result = currentEvents;
-    } else if (activeTab === 'all') {
-      result = events; // Include all events
+    // If tabs are disabled, just show all events passed to component
+    if (!showTabs) {
+      result = events;
     } else {
-      result = currentEvents; // Default to current events
+      // First separate past and current events
+      const pastEvents = events.filter(event => new Date(event.date) < today);
+      const currentEvents = events.filter(event => new Date(event.date) >= today);
+
+      // Apply filters based on the active tab
+      if (activeTab === 'past') {
+        result = pastEvents;
+      } else if (activeTab === 'trending') {
+        result = currentEvents.filter(event => event.likes_count > 0);
+      } else if (activeTab === 'today') {
+        result = currentEvents.filter(event => event.date === todayStr);
+      } else if (activeTab === 'upcoming') {
+        result = currentEvents;
+      } else if (activeTab === 'all') {
+        result = events; // Include all events
+      } else {
+        result = currentEvents; // Default to current events
+      }
     }
 
-    // Apply search filter if there's a query
-    if (searchQuery.trim() !== '') {
+    // Apply search filter if there's a query and search is enabled
+    if (showSearch && searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         event =>
@@ -111,51 +120,53 @@ const EventsSection: React.FC<EventsSectionProps> = ({
     navigate(`/events?tab=${tabId}`);
   };
 
-  const handleViewAll = () => {
-    navigate('/events');
-  };
-
   return (
     <section className="py-8 md:py-16 px-4 container mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-10">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-white">Discover Events</h2>
-          <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">Explore the most exciting events around you</p>
-        </div>
+      {/* Only show header with tabs if showTabs is true */}
+      {showTabs && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-10">
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900 dark:text-white">Discover Events</h2>
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-300">Explore the most exciting events around you</p>
+          </div>
 
-        <div className="mt-4 md:mt-0 overflow-x-auto">
-          <div className="glass-card dark:glass-card-dark p-1 flex gap-1 min-w-max">
-            {tabs.map((tab) => (
-              <Button
-                key={tab.id}
-                variant="ghost"
-                className={cn(
-                  "flex items-center rounded-lg text-xs md:text-sm whitespace-nowrap",
-                  activeTab === tab.id && "bg-purple-600 text-white"
-                )}
-                onClick={() => handleTabClick(tab.id)}
-              >
-                <tab.icon className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                {tab.label}
-              </Button>
-            ))}
+          <div className="mt-4 md:mt-0 overflow-x-auto">
+            <div className="glass-card dark:glass-card-dark p-1 flex gap-1 min-w-max">
+              {tabs.map((tab) => (
+                <Button
+                  key={tab.id}
+                  variant="ghost"
+                  className={cn(
+                    "flex items-center rounded-lg text-xs md:text-sm whitespace-nowrap",
+                    activeTab === tab.id && "bg-purple-600 text-white"
+                  )}
+                  onClick={() => handleTabClick(tab.id)}
+                >
+                  <tab.icon className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="mb-6 md:mb-8 max-w-md mx-auto">
-        <form onSubmit={handleSearchSubmit} className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />
-          <Input
-            type="text"
-            placeholder="Search events, venues, or categories"
-            className="pl-10 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-purple-600 dark:focus:border-purple-600 rounded-lg"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-          <Button type="submit" className="sr-only">Search</Button>
-        </form>
-      </div>
+      {/* Only show search if showSearch is true */}
+      {showSearch && (
+        <div className="mb-6 md:mb-8 max-w-md mx-auto">
+          <form onSubmit={handleSearchSubmit} className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300" />
+            <Input
+              type="text"
+              placeholder="Search events, venues, or categories"
+              className="pl-10 bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-purple-600 dark:focus:border-purple-600 rounded-lg"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
+            <Button type="submit" className="sr-only">Search</Button>
+          </form>
+        </div>
+      )}
 
       {filteredEvents.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -191,15 +202,7 @@ const EventsSection: React.FC<EventsSectionProps> = ({
         </div>
       )}
 
-      <div className="flex justify-center mt-8 md:mt-12">
-        <Button
-          variant="outline"
-          className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl px-6 md:px-8 py-4 md:py-6"
-          onClick={handleViewAll}
-        >
-          View All Events
-        </Button>
-      </div>
+      {/* Removed the "View All Events" button completely */}
     </section>
   );
 };

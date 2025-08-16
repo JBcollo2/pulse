@@ -153,11 +153,6 @@ const Index = () => {
     }
   };
 
-  // Remove the handleHeroSearch function since HeroSection doesn't need it
-  // const handleHeroSearch = (query: string) => {
-  //   navigate(`/events?search=${encodeURIComponent(query)}`);
-  // };
-
   // Function to get recent events for homepage display (limit to 8)
   const getRecentEvents = () => {
     const upcomingEvents = events.filter(event => new Date(event.date) >= currentDate);
@@ -176,7 +171,6 @@ const Index = () => {
       
       <main>
         <div className="animate-fadeIn">
-          {/* Remove the onSearch prop since HeroSection doesn't expect it */}
           <HeroSection />
         </div>
         
@@ -260,6 +254,8 @@ const Index = () => {
                   events={getRecentEvents()} 
                   onLike={handleLike}
                   showPastEvents={true}
+                  showTabs={false}
+                  showSearch={false}
                 />
               </div>
             )}
