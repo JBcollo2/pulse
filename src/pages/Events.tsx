@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import EventsSection from '@/components/EventsSection';
@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -16,13 +17,19 @@ interface Event {
   end_time: string | null;
   location: string;
   image: string | null;
-  organizer_id: number;
+  category: string | null;
+  category_id: number | null;
   featured: boolean;
   likes_count: number;
-  category: string | null;
+  created_at: string | null;
+  organizer_id: number; // Required by EventsSection component
   organizer: {
     id: number;
     company_name: string;
+    company_logo: string | null;
+    media: string | null;
+    address: string | null;
+    website: string | null;
     company_description: string;
   };
 }
@@ -32,13 +39,21 @@ interface Category {
   id?: number;
 }
 
+const EVENTS_PER_PAGE = 12;
+
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeCategory, setActiveCategory] = useState('');
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalEvents, setTotalEvents] = useState(0);
   const { toast } = useToast();
+  
+  // Ref for intersection observer
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Memoized filtered events to prevent unnecessary recalculations
   const filteredEvents = useMemo(() => {
@@ -53,11 +68,6 @@ const Events = () => {
       return matchesCategory;
     });
   }, [activeCategory, events]);
-
-  // Memoized events to show based on showAllEvents state
-  const eventsToShow = useMemo(() => {
-    return showAllEvents ? filteredEvents : filteredEvents.slice(0, 6);
-  }, [showAllEvents, filteredEvents]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -87,12 +97,34 @@ const Events = () => {
     }
   }, [toast]);
 
-  const fetchEvents = useCallback(async () => {
+  const fetchEvents = useCallback(async (page: number = 1, isLoadMore: boolean = false) => {
     try {
-      setIsLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
-        credentials: 'include'
+      if (isLoadMore) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+
+      // Build query parameters matching your API structure
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        per_page: EVENTS_PER_PAGE.toString(),
+        time_filter: 'all', // Show all events for public view
+        sort_by: 'date',
+        sort_order: 'desc' // Show newest events first
       });
+
+      // Add category filter if active (using 'category' for public view)
+      if (activeCategory) {
+        queryParams.append('category', activeCategory);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/events?${queryParams.toString()}`,
+        {
+          credentials: 'include'
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch events: ${response.status}`);
@@ -103,11 +135,36 @@ const Events = () => {
 
       if (!data.events || !Array.isArray(data.events)) {
         console.error('Invalid events data structure:', data);
-        setEvents([]);
+        if (!isLoadMore) {
+          setEvents([]);
+        }
         return;
       }
 
-      setEvents(data.events);
+      if (isLoadMore) {
+        // Append new events to existing ones, avoiding duplicates
+        setEvents(prevEvents => {
+          const existingIds = new Set(prevEvents.map(event => event.id));
+          const newEvents = data.events.filter((event: any) => !existingIds.has(event.id))
+            .map((event: any) => ({
+              ...event,
+              organizer_id: event.organizer.id // Map organizer.id to organizer_id for compatibility
+            }));
+          return [...prevEvents, ...newEvents];
+        });
+      } else {
+        // Replace events for initial load or category change
+        const mappedEvents = data.events.map((event: any) => ({
+          ...event,
+          organizer_id: event.organizer.id // Map organizer.id to organizer_id for compatibility
+        }));
+        setEvents(mappedEvents);
+      }
+
+      // Update pagination info using API response structure
+      setTotalEvents(data.total || 0);
+      setHasMore(data.has_next || false); // Use API's has_next property
+
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -115,23 +172,68 @@ const Events = () => {
         description: "Failed to fetch events. Please try again later.",
         variant: "destructive"
       });
-      setEvents([]);
+      if (!isLoadMore) {
+        setEvents([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (isLoadMore) {
+        setIsLoadingMore(false);
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [toast]);
+  }, [activeCategory, toast]);
 
+  // Load more events when intersection observer triggers
+  const loadMoreEvents = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchEvents(nextPage, true);
+    }
+  }, [currentPage, hasMore, isLoadingMore, fetchEvents]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          loadMoreEvents();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px', // Start loading 100px before the element comes into view
+      }
+    );
+
+    const currentLoadMoreRef = loadMoreRef.current;
+    if (currentLoadMoreRef) {
+      observer.observe(currentLoadMoreRef);
+    }
+
+    return () => {
+      if (currentLoadMoreRef) {
+        observer.unobserve(currentLoadMoreRef);
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMoreEvents]);
+
+  // Reset and fetch events when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchEvents(1, false);
+  }, [activeCategory]);
+
+  // Initial load
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
 
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
   const handleCategoryClick = useCallback((category: string) => {
     setActiveCategory(prev => category === prev ? '' : category);
-    setShowAllEvents(false); // Reset to show limited events when changing category
   }, []);
 
   const handleLike = useCallback(async (eventId: number) => {
@@ -172,16 +274,6 @@ const Events = () => {
     }
   }, [toast]);
 
-  const handleViewAllEvents = useCallback(() => {
-    setShowAllEvents(true);
-  }, []);
-
-  const handleShowLess = useCallback(() => {
-    setShowAllEvents(false);
-    // Scroll to events section
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Navbar />
@@ -217,13 +309,25 @@ const Events = () => {
               />
             </motion.h1>
             <motion.p
-              className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed"
+              className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-4 max-w-2xl mx-auto leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
               Discover amazing events happening around you
             </motion.p>
+            {/* Event counter */}
+            {totalEvents > 0 && (
+              <motion.p
+                className="text-sm text-gray-500 dark:text-gray-400"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                Showing {filteredEvents.length} of {totalEvents} events
+                {activeCategory && ` in "${activeCategory}"`}
+              </motion.p>
+            )}
           </motion.div>
 
           {isLoading ? (
@@ -233,7 +337,7 @@ const Events = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              {[...Array(9)].map((_, index) => (
+              {[...Array(12)].map((_, index) => (
                 <motion.div
                   key={index}
                   className="space-y-4 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg"
@@ -311,45 +415,43 @@ const Events = () => {
                 {filteredEvents.length > 0 ? (
                   <>
                     <EventsSection
-                      events={eventsToShow}
+                      events={filteredEvents}
                       onLike={handleLike}
                       showLikes={true}
                     />
 
-                    {/* View All Events Button */}
-                    {!showAllEvents && filteredEvents.length > 6 && (
-                      <motion.div
-                        className="text-center mt-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.5 }}
-                      >
-                        <Button
-                          onClick={handleViewAllEvents}
-                          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    {/* Infinite Scroll Loading Indicator */}
+                    <div ref={loadMoreRef} className="flex justify-center items-center py-8">
+                      {isLoadingMore && (
+                        <motion.div
+                          className="flex items-center gap-2 text-purple-600"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
                         >
-                          View All Events ({filteredEvents.length})
-                        </Button>
-                      </motion.div>
-                    )}
-
-                    {/* Show fewer events button when viewing all */}
-                    {showAllEvents && filteredEvents.length > 6 && (
-                      <motion.div
-                        className="text-center mt-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <Button
-                          onClick={handleShowLess}
-                          variant="outline"
-                          className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300"
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span className="text-lg font-medium">Loading more events...</span>
+                        </motion.div>
+                      )}
+                      {!hasMore && filteredEvents.length > 0 && (
+                        <motion.div
+                          className="text-center text-gray-500 dark:text-gray-400"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
                         >
-                          Show Less
-                        </Button>
-                      </motion.div>
-                    )}
+                          <div className="flex items-center justify-center gap-2 mb-2">
+                            <div className="h-px bg-gray-300 dark:bg-gray-600 flex-1 max-w-20"></div>
+                            <span className="text-sm font-medium">You've reached the end</span>
+                            <div className="h-px bg-gray-300 dark:bg-gray-600 flex-1 max-w-20"></div>
+                          </div>
+                          <p className="text-sm">
+                            You've seen all {filteredEvents.length} events
+                            {activeCategory && ` in "${activeCategory}"`}
+                          </p>
+                        </motion.div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <motion.div
