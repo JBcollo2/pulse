@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import EventsSection from '@/components/EventsSection';
@@ -27,101 +27,126 @@ interface Event {
   };
 }
 
+interface Category {
+  name: string;
+  id?: number;
+}
+
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('');
   const [showAllEvents, setShowAllEvents] = useState(false);
-  const { toast } = useToast();
   const [categories, setCategories] = useState<string[]>([]);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch categories');
-        }
-        const data = await response.json();
-        setCategories(data.categories.map((category: { name: string }) => category.name));
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch events');
-        }
-
-        const data = await response.json();
-        console.log('Events data:', data);
-
-        if (!data.events || !Array.isArray(data.events)) {
-          console.error('Invalid events data structure:', data);
-          setEvents([]);
-          setFilteredEvents([]);
-          return;
-        }
-
-        setEvents(data.events);
-        setFilteredEvents(data.events);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch events",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchEvents();
-  }, []);
-
-  useEffect(() => {
+  // Memoized filtered events to prevent unnecessary recalculations
+  const filteredEvents = useMemo(() => {
     if (!Array.isArray(events)) {
       console.error('Events is not an array:', events);
-      setFilteredEvents([]);
-      return;
+      return [];
     }
 
-    const filtered = events.filter(event => {
+    return events.filter(event => {
       const matchesCategory = activeCategory === '' ||
         (event.category && event.category.toLowerCase() === activeCategory.toLowerCase());
-
       return matchesCategory;
     });
-
-    setFilteredEvents(filtered);
   }, [activeCategory, events]);
 
-  const handleCategoryClick = (category: string) => {
-    setActiveCategory(category === activeCategory ? '' : category);
-  };
+  // Memoized events to show based on showAllEvents state
+  const eventsToShow = useMemo(() => {
+    return showAllEvents ? filteredEvents : filteredEvents.slice(0, 6);
+  }, [showAllEvents, filteredEvents]);
 
-  const handleLike = async (eventId: number) => {
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${eventId}/like`, {
-        method: 'POST',
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch categories: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.categories && Array.isArray(data.categories)) {
+        setCategories(data.categories.map((category: Category) => category.name));
+      } else {
+        console.warn('No categories found in response:', data);
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast({
+        title: "Warning",
+        description: "Could not load event categories",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
         credentials: 'include'
       });
 
       if (!response.ok) {
-        throw new Error('Failed to like event');
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Events data:', data);
+
+      if (!data.events || !Array.isArray(data.events)) {
+        console.error('Invalid events data structure:', data);
+        setEvents([]);
+        return;
+      }
+
+      setEvents(data.events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch events. Please try again later.",
+        variant: "destructive"
+      });
+      setEvents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const handleCategoryClick = useCallback((category: string) => {
+    setActiveCategory(prev => category === prev ? '' : category);
+    setShowAllEvents(false); // Reset to show limited events when changing category
+  }, []);
+
+  const handleLike = useCallback(async (eventId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${eventId}/like`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to like event: ${response.status}`);
       }
 
       setEvents(prevEvents =>
@@ -134,25 +159,28 @@ const Events = () => {
 
       toast({
         title: "Success",
-        description: "Event liked successfully",
+        description: "Event liked successfully!",
         variant: "default"
       });
     } catch (error) {
       console.error('Error liking event:', error);
       toast({
         title: "Error",
-        description: "Failed to like event",
+        description: error instanceof Error ? error.message : "Failed to like event",
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const handleViewAllEvents = () => {
+  const handleViewAllEvents = useCallback(() => {
     setShowAllEvents(true);
-    setActiveCategory('');
-  };
+  }, []);
 
-  const eventsToShow = showAllEvents ? filteredEvents : filteredEvents.slice(0, 6);
+  const handleShowLess = useCallback(() => {
+    setShowAllEvents(false);
+    // Scroll to events section
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
@@ -223,21 +251,21 @@ const Events = () => {
           ) : (
             <>
               {/* Enhanced Categories Section */}
-              <motion.div
-                className="mb-12"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <motion.h2
-                  className="text-3xl font-semibold mb-6 text-gray-900 dark:text-white text-center"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
+              {categories.length > 0 && (
+                <motion.div
+                  className="mb-12"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
                 >
-                  Browse by Category
-                </motion.h2>
-                {categories.length > 0 ? (
+                  <motion.h2
+                    className="text-3xl font-semibold mb-6 text-gray-900 dark:text-white text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  >
+                    Browse by Category
+                  </motion.h2>
                   <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
                     {categories.map((category, index) => (
                       <motion.div
@@ -262,17 +290,8 @@ const Events = () => {
                       </motion.div>
                     ))}
                   </div>
-                ) : (
-                  <motion.p
-                    className="text-gray-600 dark:text-gray-300 text-center text-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    No categories available.
-                  </motion.p>
-                )}
-              </motion.div>
+                </motion.div>
+              )}
 
               {/* Enhanced Events Section */}
               <motion.div
@@ -289,44 +308,75 @@ const Events = () => {
                   <div className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-600 to-indigo-600 w-12 h-1 rounded-full"></div>
                 </motion.div>
 
-                <EventsSection
-                  events={eventsToShow}
-                  onLike={handleLike}
-                  showLikes={true}
-                />
+                {filteredEvents.length > 0 ? (
+                  <>
+                    <EventsSection
+                      events={eventsToShow}
+                      onLike={handleLike}
+                      showLikes={true}
+                    />
 
-                {/* View All Events Button */}
-                {!showAllEvents && filteredEvents.length > 6 && (
-                  <motion.div
-                    className="text-center mt-12"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                  >
-                    <Button
-                      onClick={handleViewAllEvents}
-                      className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      View All Events ({filteredEvents.length})
-                    </Button>
-                  </motion.div>
-                )}
+                    {/* View All Events Button */}
+                    {!showAllEvents && filteredEvents.length > 6 && (
+                      <motion.div
+                        className="text-center mt-12"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
+                      >
+                        <Button
+                          onClick={handleViewAllEvents}
+                          className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                        >
+                          View All Events ({filteredEvents.length})
+                        </Button>
+                      </motion.div>
+                    )}
 
-                {/* Show fewer events button when viewing all */}
-                {showAllEvents && filteredEvents.length > 6 && (
+                    {/* Show fewer events button when viewing all */}
+                    {showAllEvents && filteredEvents.length > 6 && (
+                      <motion.div
+                        className="text-center mt-12"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <Button
+                          onClick={handleShowLess}
+                          variant="outline"
+                          className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300"
+                        >
+                          Show Less
+                        </Button>
+                      </motion.div>
+                    )}
+                  </>
+                ) : (
                   <motion.div
-                    className="text-center mt-12"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center py-16"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <Button
-                      onClick={() => setShowAllEvents(false)}
-                      variant="outline"
-                      className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300"
-                    >
-                      Show Less
-                    </Button>
+                    <div className="text-6xl mb-4">🎭</div>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {activeCategory ? `No events in "${activeCategory}"` : 'No Events Found'}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">
+                      {activeCategory 
+                        ? 'Try selecting a different category or check back later.'
+                        : 'Check back soon for exciting upcoming events!'
+                      }
+                    </p>
+                    {activeCategory && (
+                      <Button
+                        onClick={() => setActiveCategory('')}
+                        variant="outline"
+                        className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                      >
+                        View All Events
+                      </Button>
+                    )}
                   </motion.div>
                 )}
               </motion.div>

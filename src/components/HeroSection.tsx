@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Ticket, ChevronRight, Zap, Bell, Crown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Ticket, ChevronRight, Zap, Bell, Crown, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import AnimatedSection from '@/components/AnimatedSection';
 
 interface Slide {
@@ -12,20 +13,22 @@ interface Slide {
 
 const HeroSection: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const navigate = useNavigate();
 
   const slides: Slide[] = [
     {
-      image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
       title: 'Discover Amazing Events',
       subtitle: 'Find and book tickets for the best events in Kenya'
     },
     {
-      image: 'https://images.unsplash.com/photo-1547970810-dc1eac37d174?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80',
+      image: 'https://images.unsplash.com/photo-1547970810-dc1eac37d174?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80',
       title: 'Experience Unforgettable Moments',
       subtitle: 'From music festivals to cultural celebrations'
     },
     {
-      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
       title: 'Connect with Your Community',
       subtitle: 'Join thousands of event-goers across the country'
     }
@@ -38,6 +41,15 @@ const HeroSection: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [slides.length]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/events?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/events');
+    }
+  };
 
   return (
     <div className="w-full">
@@ -65,7 +77,7 @@ const HeroSection: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col md:flex-row h-full w-full min-h-[500px]">
-          <div className="flex-1 flex flex-col justify-end p-6 md:p-10">
+          <div className="flex-1 flex flex-col justify-center p-6 md:p-10">
             <div className="w-full max-w-3xl animate-fade-in">
               <AnimatedSection>
                 <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 drop-shadow-lg">
@@ -75,14 +87,52 @@ const HeroSection: React.FC = () => {
                   {slides[currentSlide].subtitle}
                 </p>
               </AnimatedSection>
+              
+              {/* Search Bar */}
+              <AnimatedSection delay={100}>
+                <form onSubmit={handleSearch} className="mb-8 max-w-md">
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Search for events..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/70 focus:bg-white/20 focus:border-white/40 transition-all duration-300"
+                    />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-5 w-5" />
+                    <Button
+                      type="submit"
+                      size="sm"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white rounded-full px-4 py-2"
+                    >
+                      Search
+                    </Button>
+                  </div>
+                </form>
+              </AnimatedSection>
+
               <AnimatedSection delay={200}>
-                <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 mb-8 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <Link to="/events">
-                    <Ticket className="h-5 w-5 mr-2" />
-                    Browse Events
-                    <ChevronRight className="h-5 w-5 ml-2" />
-                  </Link>
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <Link to="/events">
+                      <Ticket className="h-5 w-5 mr-2" />
+                      Browse Events
+                      <ChevronRight className="h-5 w-5 ml-2" />
+                    </Link>
+                  </Button>
+                  
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    variant="outline" 
+                    className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-300"
+                  >
+                    <Link to="/events?featured=true">
+                      <Crown className="h-5 w-5 mr-2" />
+                      Featured Events
+                    </Link>
+                  </Button>
+                </div>
               </AnimatedSection>
             </div>
           </div>

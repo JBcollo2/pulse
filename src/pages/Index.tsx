@@ -44,7 +44,8 @@ const Index = () => {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/events?per_page=12`, {
+        // Fetch more events for the homepage with better pagination
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/events?per_page=15&time_filter=all`, {
           credentials: 'include'
         });
         
@@ -70,17 +71,32 @@ const Index = () => {
         );
         
         if (upcomingEvents.length > 0) {
-          const mostLikedUpcoming = upcomingEvents.reduce(
-            (prev: Event, current: Event) => (current.likes_count > prev.likes_count) ? current : prev,
-            upcomingEvents[0]
-          );
-          setFeaturedEvent(mostLikedUpcoming);
-        } else {
+          // First check for explicitly featured events
+          const featuredUpcoming = upcomingEvents.filter((event: Event) => event.featured);
+          
+          if (featuredUpcoming.length > 0) {
+            // Use the featured event with most likes
+            const bestFeatured = featuredUpcoming.reduce(
+              (prev: Event, current: Event) => (current.likes_count > prev.likes_count) ? current : prev,
+              featuredUpcoming[0]
+            );
+            setFeaturedEvent(bestFeatured);
+          } else {
+            // Use the upcoming event with most likes
+            const mostLikedUpcoming = upcomingEvents.reduce(
+              (prev: Event, current: Event) => (current.likes_count > prev.likes_count) ? current : prev,
+              upcomingEvents[0]
+            );
+            setFeaturedEvent(mostLikedUpcoming);
+          }
+        } else if (data.events.length > 0) {
           // If no upcoming events, use the most recent past event
           const sortedByDate = [...data.events].sort(
             (a: Event, b: Event) => new Date(b.date).getTime() - new Date(a.date).getTime()
           );
-          setFeaturedEvent(sortedByDate[0] || null);
+          setFeaturedEvent(sortedByDate[0]);
+        } else {
+          setFeaturedEvent(null);
         }
       } catch (error) {
         console.error('Error fetching events:', error);
@@ -95,7 +111,7 @@ const Index = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [toast]);
 
   const handleLike = async (eventId: number) => {
     try {
@@ -137,9 +153,21 @@ const Index = () => {
     }
   };
 
-  
-  const handleHeroSearch = (query: string) => {
-    navigate(`/events?search=${encodeURIComponent(query)}`);
+  // Remove the handleHeroSearch function since HeroSection doesn't need it
+  // const handleHeroSearch = (query: string) => {
+  //   navigate(`/events?search=${encodeURIComponent(query)}`);
+  // };
+
+  // Function to get recent events for homepage display (limit to 8)
+  const getRecentEvents = () => {
+    const upcomingEvents = events.filter(event => new Date(event.date) >= currentDate);
+    const pastEvents = events.filter(event => new Date(event.date) < currentDate);
+    
+    // Show upcoming events first, then recent past events
+    const sortedUpcoming = upcomingEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedPast = pastEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    return [...sortedUpcoming, ...sortedPast].slice(0, 8);
   };
 
   return (
@@ -148,7 +176,8 @@ const Index = () => {
       
       <main>
         <div className="animate-fadeIn">
-          <HeroSection onSearch={handleHeroSearch} />
+          {/* Remove the onSearch prop since HeroSection doesn't expect it */}
+          <HeroSection />
         </div>
         
         {/* Featured Event Section */}
@@ -169,7 +198,7 @@ const Index = () => {
                   <Skeleton className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700" />
                 </div>
               </div>
-            ) : featuredEvent && (
+            ) : featuredEvent ? (
               <div className="animate-slideUp" style={{ animationDelay: '0.4s' }}>
                 <FeaturedEvent
                   id={featuredEvent.id.toString()}
@@ -190,16 +219,34 @@ const Index = () => {
                   isPast={new Date(featuredEvent.date) < currentDate}
                 />
               </div>
+            ) : (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🎭</div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  No Featured Events
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Check back soon for exciting upcoming events!
+                </p>
+              </div>
             )}
           </div>
         </div>
         
         {/* Events Section */}
         <div className="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-          {isLoading ? (
-            <div className="container mx-auto px-4 py-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {[...Array(6)].map((_, index) => (
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center mb-8">
+              <div className="animate-slideUp" style={{ animationDelay: '0.6s' }}>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                  Recent Events
+                </h2>
+              </div>
+            </div>
+            
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {[...Array(8)].map((_, index) => (
                   <div key={index} className="space-y-3 animate-pulse" style={{ animationDelay: `${index * 0.1}s` }}>
                     <Skeleton className="h-48 md:h-[200px] w-full rounded-lg bg-gray-200 dark:bg-gray-700" />
                     <Skeleton className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700" />
@@ -207,23 +254,23 @@ const Index = () => {
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="animate-slideUp" style={{ animationDelay: '0.6s' }}>
-              <EventsSection 
-                events={events.filter(event => new Date(event.date) >= currentDate)} 
-                onLike={handleLike}
-                showPastEvents={true}
-              />
-            </div>
-          )}
+            ) : (
+              <div className="animate-slideUp" style={{ animationDelay: '0.8s' }}>
+                <EventsSection 
+                  events={getRecentEvents()} 
+                  onLike={handleLike}
+                  showPastEvents={true}
+                />
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Digital Tickets Section */}
         <div className="bg-white dark:bg-gray-800 transition-colors duration-300">
           <div className="container mx-auto px-4 py-8 md:py-16">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-6 md:mb-10 animate-slideUp" style={{ animationDelay: '0.8s' }}>
+              <div className="text-center mb-6 md:mb-10 animate-slideUp" style={{ animationDelay: '1s' }}>
                 <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-white">
                   Digital Tickets, Real Experiences
                 </h2>
@@ -232,7 +279,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="animate-slideUp" style={{ animationDelay: '1s' }}>
+              <div className="animate-slideUp" style={{ animationDelay: '1.2s' }}>
                 <TicketPreview
                   eventName="Summer Music Festival"
                   date="Sat, Jun 15, 2025"
@@ -247,7 +294,7 @@ const Index = () => {
           </div>
         </div>
         
-        <div className="animate-slideUp" style={{ animationDelay: '1.2s' }}>
+        <div className="animate-slideUp" style={{ animationDelay: '1.4s' }}>
           <CTASection />
         </div>
       </main>
