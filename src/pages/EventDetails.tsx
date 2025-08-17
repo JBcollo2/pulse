@@ -580,39 +580,30 @@ const EventDetails = () => {
     ];
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           onClick={() => !isProcessingPayment && setShowPaymentDialog(false)}
         />
-        <div className="relative w-full max-w-2xl mx-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all">
-          <div className="relative bg-gradient-to-r from-blue-500 to-[#10b981] px-8 py-8 text-white">
-            <button
-              onClick={() => !isProcessingPayment && setShowPaymentDialog(false)}
-              disabled={isProcessingPayment}
-              className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
+        <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden transform transition-all max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-gradient-to-r from-blue-500 to-[#10b981] px-6 md:px-8 py-6 md:py-8 text-white">
             <div className="flex items-center space-x-3 mb-2">
-              <Shield className="h-8 w-8" />
-              <h2 className="text-2xl font-bold">Secure Payment</h2>
+              <Shield className="h-6 md:h-8 w-6 md:w-8" />
+              <h2 className="text-xl md:text-2xl font-bold">Secure Payment</h2>
             </div>
-            <p className="text-green-100 text-lg">
+            <p className="text-green-100 text-base md:text-lg">
               Choose your preferred payment method to complete your purchase
             </p>
 
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-            <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-white/10 rounded-full blur-lg" />
+            <div className="absolute -top-4 -right-4 w-16 md:w-24 h-16 md:h-24 bg-white/10 rounded-full blur-xl" />
+            <div className="absolute -bottom-2 -left-2 w-12 md:w-16 h-12 md:h-16 bg-white/10 rounded-full blur-lg" />
           </div>
-          <div className="p-8">
-            <div className="text-center mb-8 p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+          <div className="p-6 md:p-8">
+            <div className="text-center mb-6 md:mb-8 p-4 md:p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Amount to pay</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(total * 1.1)}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Including service fee</p>
+              <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(total)}</p>
             </div>
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
               {paymentMethods.map((method) => {
                 const Icon = method.icon;
                 const isSelected = selectedPaymentMethod === method.id;
@@ -628,25 +619,25 @@ const EventDetails = () => {
                       ${isProcessingPayment && !isSelected ? 'opacity-50 pointer-events-none' : ''}
                     `}
                   >
-                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
-                      <div className={`bg-gradient-to-r ${method.color} group-hover:bg-gradient-to-r group-hover:${method.hoverColor} rounded-xl p-4 mb-4 transition-all duration-300`}>
+                    <div className="bg-white dark:bg-gray-700 rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                      <div className={`bg-gradient-to-r ${method.color} group-hover:bg-gradient-to-r group-hover:${method.hoverColor} rounded-xl p-3 md:p-4 mb-4 transition-all duration-300`}>
                         <div className="flex items-center justify-between text-white">
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-8 w-8" />
+                          <div className="flex items-center space-x-2 md:space-x-3">
+                            <Icon className="h-6 md:h-8 w-6 md:w-8" />
                             <div>
-                              <h3 className="font-bold text-xl">{method.name}</h3>
-                              <p className="text-sm opacity-90">{method.description}</p>
+                              <h3 className="font-bold text-lg md:text-xl">{method.name}</h3>
+                              <p className="text-xs md:text-sm opacity-90">{method.description}</p>
                             </div>
                           </div>
                           {isCurrentlyProcessing && (
-                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
+                            <div className="animate-spin rounded-full h-5 md:h-6 w-5 md:w-6 border-2 border-white border-t-transparent" />
                           )}
                         </div>
                       </div>
                       <div className="space-y-2 mb-4">
                         {method.features.map((feature, index) => (
                           <div key={index} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-3 md:h-4 w-3 md:w-4 text-green-500 flex-shrink-0" />
                             <span>{feature}</span>
                           </div>
                         ))}
@@ -656,8 +647,8 @@ const EventDetails = () => {
                         <span>Processing time: {method.processingTime}</span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-4 right-4 bg-blue-500 text-white rounded-full p-1">
-                          <CheckCircle className="h-4 w-4" />
+                        <div className="absolute top-3 md:top-4 right-3 md:right-4 bg-blue-500 text-white rounded-full p-1">
+                          <CheckCircle className="h-3 md:h-4 w-3 md:w-4" />
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/5 group-hover:to-purple-500/5 rounded-2xl transition-all duration-300 pointer-events-none" />
@@ -666,8 +657,8 @@ const EventDetails = () => {
                 );
               })}
             </div>
-            <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-6">
-              <Shield className="h-4 w-4" />
+            <div className="flex items-center justify-center space-x-2 text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-6">
+              <Shield className="h-3 md:h-4 w-3 md:w-4" />
               <span>256-bit SSL encryption • PCI DSS compliant • Your data is secure</span>
             </div>
             <div className="flex space-x-4">
@@ -683,7 +674,7 @@ const EventDetails = () => {
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                 <div className="flex items-center justify-center space-x-3">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent" />
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  <span className="text-blue-700 dark:text-blue-300 font-medium text-sm md:text-base">
                     Processing your payment with {selectedPaymentMethod}...
                   </span>
                 </div>
@@ -949,7 +940,7 @@ const EventDetails = () => {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+                      className="text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
                       onClick={handleNativeShare}
                     >
                       <Share2 className="h-4 w-4 mr-2" />

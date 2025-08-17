@@ -105,7 +105,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-gray-900 dark:text-white">{price}</span>
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white transition-colors">
+            <Button className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white">
               Get Tickets
             </Button>
           </div>
