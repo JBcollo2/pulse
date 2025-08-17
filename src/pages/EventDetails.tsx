@@ -915,7 +915,7 @@ const EventDetails = () => {
                         </div>
                       </div>
                       <Button
-                        className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+                        className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#059669] hover:scale-105 transition-all text-white px-6 py-6 rounded-xl"
                         onClick={() => setIsCheckingOut(true)}
                       >
                         Get Tickets
