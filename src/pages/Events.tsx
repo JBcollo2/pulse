@@ -75,6 +75,31 @@ const FloatingShapes = () => (
         ease: "linear"
       }}
     />
+    <motion.div
+      className="absolute top-1/3 left-1/4 w-28 h-28 bg-gradient-to-br from-teal-400/8 to-mint-400/8 rounded-full blur-xl"
+      animate={{
+        x: [0, -60, 0],
+        y: [0, 40, 0],
+        rotate: [0, 270, 360],
+      }}
+      transition={{
+        duration: 18,
+        repeat: Infinity,
+        ease: "linear"
+      }}
+    />
+    <motion.div
+      className="absolute bottom-60 right-1/3 w-36 h-36 bg-gradient-to-br from-mint-300/6 to-teal-400/6 rounded-full blur-2xl"
+      animate={{
+        scale: [1, 1.1, 1],
+        x: [0, 40, 0],
+      }}
+      transition={{
+        duration: 22,
+        repeat: Infinity,
+        ease: "linear"
+      }}
+    />
   </div>
 );
 
@@ -256,7 +281,7 @@ const CategoryCard = ({ category, eventCount, isActive, onClick, index, isTrendi
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute top-2 right-2 bg-gradient-to-r from-orange-400 to-red-400 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"
+            className="absolute top-2 right-2 bg-gradient-to-r from-mint-400 to-mint-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1"
           >
             <TrendingUp className="w-3 h-3" />
             <span>Hot</span>
@@ -641,7 +666,7 @@ const Events = () => {
                   transition={{ duration: 0.6, delay: 0.5 }}
                 >
                   <div className="flex items-center gap-2 mb-4">
-                    <TrendingUp className="text-orange-500 w-5 h-5" />
+                    <TrendingUp className="text-mint-500 w-5 h-5" />
                     <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Trending Now</h3>
                   </div>
                   <div className="flex flex-wrap gap-3">
@@ -659,7 +684,7 @@ const Events = () => {
                           className={`rounded-full px-4 py-2 transition-all duration-300 ${
                             activeCategory === category
                               ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
-                              : 'border-orange-300 text-orange-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:border-orange-400'
+                              : 'border-mint-300 text-mint-600 hover:bg-gradient-to-r hover:from-mint-50 hover:to-mint-100 hover:border-mint-400'
                           }`}
                           onClick={() => handleCategoryClick(category)}
                         >

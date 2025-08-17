@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Heart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, Calendar, MapPin, Clock, Users, Star, Ticket, Eye, TrendingUp, Zap } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 
 interface EventCardProps {
   id: string;
@@ -20,134 +20,13 @@ interface EventCardProps {
   likesCount?: number;
   showLikes?: boolean;
   isPast?: boolean;
-}
-
-// Stylish Like Button Component (embedded in EventCard)
-const StylishLikeButton: React.FC<{
-  likes: number;
-  onLike: () => void;
-  className?: string;
-}> = ({ likes, onLike, className = '' }) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    setIsLiked(true);
-    onLike();
-    
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 600);
+  featured?: boolean;
+  organizer?: {
+    id: number;
+    company_name: string;
+    company_description?: string;
   };
-
-  return (
-    <motion.button
-      onClick={handleLike}
-      className={`
-        group relative inline-flex items-center gap-2 px-3 py-2 
-        bg-gradient-to-r from-blue-500 to-emerald-500 
-        hover:from-blue-600 hover:to-emerald-600
-        text-white rounded-full shadow-lg hover:shadow-xl
-        transition-all duration-300 ease-out
-        transform hover:scale-105 active:scale-95
-        text-sm font-medium
-        ${className}
-      `}
-      whileHover={{ 
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
-      }}
-      whileTap={{ scale: 0.95 }}
-      disabled={isAnimating}
-    >
-      {/* Ripple effect */}
-      <motion.div
-        className="absolute inset-0 bg-white/20 rounded-full"
-        initial={{ scale: 0, opacity: 1 }}
-        animate={isAnimating ? { scale: 2, opacity: 0 } : { scale: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      />
-      
-      {/* Heart icon with animation */}
-      <motion.div
-        className="relative z-10"
-        animate={isAnimating ? { 
-          scale: [1, 1.3, 1],
-          rotate: [0, -10, 0]
-        } : {}}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <Heart 
-          className={`
-            w-4 h-4 transition-all duration-200
-            ${isLiked ? 'fill-white text-white' : 'text-white'}
-          `}
-        />
-      </motion.div>
-      
-      {/* Like count with bounce animation */}
-      <motion.span
-        className="relative z-10"
-        animate={isAnimating ? { 
-          scale: [1, 1.2, 1],
-          y: [0, -2, 0]
-        } : {}}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        {likes}
-      </motion.span>
-      
-      {/* Floating hearts animation */}
-      {isAnimating && (
-        <>
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute text-blue-300 pointer-events-none"
-              initial={{ 
-                scale: 0, 
-                x: 0, 
-                y: 0, 
-                opacity: 1 
-              }}
-              animate={{ 
-                scale: [0, 1, 0], 
-                x: [0, (i - 1) * 15], 
-                y: [0, -25 - i * 8], 
-                opacity: [1, 1, 0] 
-              }}
-              transition={{ 
-                duration: 0.8, 
-                delay: i * 0.1,
-                ease: "easeOut" 
-              }}
-            >
-              <Heart className="w-2 h-2 fill-current" />
-            </motion.div>
-          ))}
-        </>
-      )}
-      
-      {/* Shimmer effect */}
-      <motion.div
-        className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-full"
-        initial={{ x: '-100%', opacity: 0 }}
-        animate={{ x: '100%', opacity: [0, 1, 0] }}
-        transition={{ 
-          duration: 2, 
-          repeat: Infinity, 
-          repeatDelay: 3,
-          ease: "easeInOut" 
-        }}
-      />
-    </motion.button>
-  );
-};
+}
 
 const EventCard: React.FC<EventCardProps> = ({
   id,
@@ -162,71 +41,328 @@ const EventCard: React.FC<EventCardProps> = ({
   onLike,
   likesCount = 0,
   showLikes = false,
-  isPast = false
+  isPast = false,
+  featured = false,
+  organizer
 }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
 
-  const handleLike = async () => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const time = new Date();
+    time.setHours(parseInt(hours), parseInt(minutes));
+    return time.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!onLike || isLiking) return;
+    
     try {
       setIsLiking(true);
+      setIsLiked(!isLiked);
       await onLike();
     } catch (error) {
       console.error('Error liking event:', error);
+      setIsLiked(isLiked); // Revert on error
     } finally {
       setIsLiking(false);
     }
   };
 
+  const getCategoryGradient = (category: string) => {
+    const gradients = {
+      'Technology': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Music': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Food': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Sports': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Business': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Art': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Health': 'from-emerald-400 via-teal-400 to-mint-500',
+      'Education': 'from-emerald-400 via-teal-400 to-mint-500',
+      default: 'from-emerald-400 via-teal-400 to-mint-500'
+    };
+    return gradients[category] || gradients.default;
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const icons = {
+      'Technology': '💻',
+      'Music': '🎵',
+      'Food': '🍽️',
+      'Sports': '⚽',
+      'Business': '💼',
+      'Art': '🎨',
+      'Health': '🏥',
+      'Education': '📚'
+    };
+    return icons[category] || '🎯';
+  };
+
   return (
     <Link to={`/event/${id}`} className="group block">
-      <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <div className="relative">
-          <img
-            src={image}
-            alt={title}
-            className="w-full h-48 object-cover"
-          />
-          {showLikes && (
-            <div className="absolute top-2 right-2">
-              <StylishLikeButton
-                likes={likesCount}
-                onLike={handleLike}
-              />
+      <motion.div
+        className="group relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 dark:border-gray-800/50"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        whileHover={{ 
+          y: -8, 
+          scale: 1.02,
+          transition: { duration: 0.3, ease: "easeOut" }
+        }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+      >
+        {/* Gradient Border Animation */}
+        <motion.div
+          className={`absolute inset-0 bg-gradient-to-r ${getCategoryGradient(category)} opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500`}
+          style={{ padding: '2px' }}
+        >
+          <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
+        </motion.div>
+
+        {/* Content Container */}
+        <div className="relative z-10 p-0 h-full">
+          
+          {/* Image Section with Overlays */}
+          <div className="relative h-56 overflow-hidden rounded-t-3xl">
+            {/* Background Image */}
+            <motion.img
+              src={image}
+              alt={title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+            />
+            
+            {/* Gradient Overlay */}
+            <div className={`absolute inset-0 bg-gradient-to-t ${getCategoryGradient(category)} opacity-20 group-hover:opacity-30 transition-opacity duration-500`} />
+            
+            {/* Dark Overlay for Text Readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+            {/* Top Badges */}
+            <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+              {/* Featured Badge */}
+              {featured && (
+                <motion.div
+                  className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient(category)} shadow-lg backdrop-blur-sm flex items-center gap-1`}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                >
+                  <Star className="w-3 h-3 fill-current" />
+                  FEATURED
+                </motion.div>
+              )}
+
+              {/* Category Badge */}
+              <motion.div
+                className="px-3 py-1 rounded-full text-xs font-semibold text-white bg-black/40 backdrop-blur-md border border-white/20 flex items-center gap-1"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <span>{getCategoryIcon(category)}</span>
+                {category}
+              </motion.div>
             </div>
-          )}
-        </div>
 
-        <div className="p-5">
-          <h3 className="text-xl font-bold line-clamp-2 mb-3 transition-colors text-gray-900 dark:text-white">
-            {title}
-          </h3>
+            {/* Like Button */}
+            {showLikes && (
+              <motion.button
+                onClick={handleLike}
+                disabled={isLiking}
+                className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
+                  isLiked 
+                    ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white shadow-lg scale-110' 
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.1 }}
+              >
+                <Heart 
+                  className={`w-4 h-4 transition-all duration-300 ${
+                    isLiked ? 'fill-current' : ''
+                  }`} 
+                />
+              </motion.button>
+            )}
 
-          <div className="space-y-2 mb-5">
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span className="text-sm">{date}</span>
-            </div>
+            {/* Bottom Info Bar */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <motion.div
+                className="flex items-center justify-between"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                {/* Date */}
+                <div className="flex items-center gap-2 text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm font-medium">{formatDate(date)}</span>
+                </div>
 
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <Clock className="h-4 w-4 mr-2" />
-              <span className="text-sm">{time}</span>
-            </div>
-
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <MapPin className="h-4 w-4 mr-2" />
-              <span className="text-sm line-clamp-1">{location}</span>
+                {/* Likes Count */}
+                {showLikes && (
+                  <div className="flex items-center gap-1 text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                    <Heart className="w-4 h-4" />
+                    <span className="text-sm font-medium">{likesCount}</span>
+                  </div>
+                )}
+              </motion.div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-gray-900 dark:text-white">{price}</span>
-            <Button className="bg-gradient-to-r from-blue-500 to-[#10b981] text-white px-6 py-6 rounded-xl">
-              Get Tickets
-            </Button>
+          {/* Content Section */}
+          <div className="p-6 space-y-4">
+            
+            {/* Title and Trending Indicator */}
+            <div className="flex items-start justify-between gap-3">
+              <motion.h3
+                className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+                style={{
+                  backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+                  '--tw-gradient-from': '#10b981',
+                  '--tw-gradient-to': '#06d6a0',
+                  '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
+                } as React.CSSProperties}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                {title}
+              </motion.h3>
+              
+              {likesCount > 100 && (
+                <motion.div
+                  className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient(category)} text-white text-xs font-bold flex-shrink-0`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                  HOT
+                </motion.div>
+              )}
+            </div>
+
+            {/* Description */}
+            <motion.p
+              className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              {description}
+            </motion.p>
+
+            {/* Event Details */}
+            <motion.div
+              className="space-y-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {/* Time */}
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient(category)} bg-opacity-10`}>
+                  <Clock className="w-4 h-4 text-current" />
+                </div>
+                <span className="text-sm font-medium">{formatTime(time)}</span>
+              </div>
+
+              {/* Location */}
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient(category)} bg-opacity-10`}>
+                  <MapPin className="w-4 h-4 text-current" />
+                </div>
+                <span className="text-sm font-medium truncate">{location}</span>
+              </div>
+
+              {/* Organizer */}
+              {organizer && (
+                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                  <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient(category)} bg-opacity-10`}>
+                    <Users className="w-4 h-4 text-current" />
+                  </div>
+                  <span className="text-sm font-medium truncate">{organizer.company_name}</span>
+                </div>
+              )}
+            </motion.div>
+
+            {/* Price and Action Buttons */}
+            <motion.div
+              className="flex items-center justify-between pt-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              {/* Price */}
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {price}
+                </span>
+                {isPast && (
+                  <Badge variant="secondary" className="w-fit text-xs">
+                    Past Event
+                  </Badge>
+                )}
+              </div>
+
+              {/* Get Tickets Button */}
+              <motion.button
+                className="flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
+                disabled={isPast}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ 
+                  boxShadow: `0 20px 40px -10px rgba(59, 130, 246, 0.3)`,
+                  y: -2
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Handle ticket purchase
+                }}
+              >
+                <Ticket className="w-5 h-5" />
+                <span>{isPast ? 'Ended' : 'Get Tickets'}</span>
+                <motion.div
+                  className="absolute inset-0 rounded-xl bg-white/20"
+                  initial={{ scale: 0, opacity: 0 }}
+                  whileHover={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.button>
+            </motion.div>
           </div>
         </div>
-      </div>
+
+        {/* Hover Glow Effect */}
+        <motion.div
+          className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient(category)} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10`}
+          initial={{ scale: 0.8 }}
+          animate={{ scale: isHovered ? 1.1 : 0.8 }}
+          transition={{ duration: 0.5 }}
+        />
+      </motion.div>
     </Link>
   );
 };
