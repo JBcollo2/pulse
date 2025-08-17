@@ -241,62 +241,26 @@ const Events = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Navbar />
 
-      <main className="py-12 pt-24 relative">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-          <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-2000"></div>
-        </div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          {/* Enhanced Header Section */}
-          <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
-            <motion.h1
-              className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-transparent bg-clip-text relative"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+      <main className="py-12 pt-24">
+        <div className="container mx-auto px-4">
+          {/* Event Counter - moved to top */}
+          {!isLoading && filteredEvents.length > 0 && (
+            <motion.div
+              className="text-center mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Events
-              <motion.div
-                className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: 96 }}
-                transition={{ duration: 1, delay: 0.5 }}
-              />
-            </motion.h1>
-            <motion.p
-              className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              Discover amazing events happening around you
-            </motion.p>
-
-            {/* Event Counter */}
-            {!isLoading && filteredEvents.length > 0 && (
-              <motion.div
-                className="text-sm text-gray-500 dark:text-gray-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-              >
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Showing {filteredEvents.length} of {totalEvents} events
                 {activeCategory && (
                   <span className="ml-2 px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full text-xs">
                     {activeCategory}
                   </span>
                 )}
-              </motion.div>
-            )}
-          </motion.div>
+              </div>
+            </motion.div>
+          )}
 
           {isLoading ? (
             <motion.div

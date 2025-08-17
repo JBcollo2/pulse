@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 interface EventCardProps {
   id: string;
@@ -21,6 +22,133 @@ interface EventCardProps {
   isPast?: boolean;
 }
 
+// Stylish Like Button Component (embedded in EventCard)
+const StylishLikeButton: React.FC<{
+  likes: number;
+  onLike: () => void;
+  className?: string;
+}> = ({ likes, onLike, className = '' }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    setIsLiked(true);
+    onLike();
+    
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 600);
+  };
+
+  return (
+    <motion.button
+      onClick={handleLike}
+      className={`
+        group relative inline-flex items-center gap-2 px-3 py-2 
+        bg-gradient-to-r from-blue-500 to-emerald-500 
+        hover:from-blue-600 hover:to-emerald-600
+        text-white rounded-full shadow-lg hover:shadow-xl
+        transition-all duration-300 ease-out
+        transform hover:scale-105 active:scale-95
+        text-sm font-medium
+        ${className}
+      `}
+      whileHover={{ 
+        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+      }}
+      whileTap={{ scale: 0.95 }}
+      disabled={isAnimating}
+    >
+      {/* Ripple effect */}
+      <motion.div
+        className="absolute inset-0 bg-white/20 rounded-full"
+        initial={{ scale: 0, opacity: 1 }}
+        animate={isAnimating ? { scale: 2, opacity: 0 } : { scale: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      />
+      
+      {/* Heart icon with animation */}
+      <motion.div
+        className="relative z-10"
+        animate={isAnimating ? { 
+          scale: [1, 1.3, 1],
+          rotate: [0, -10, 0]
+        } : {}}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <Heart 
+          className={`
+            w-4 h-4 transition-all duration-200
+            ${isLiked ? 'fill-white text-white' : 'text-white'}
+          `}
+        />
+      </motion.div>
+      
+      {/* Like count with bounce animation */}
+      <motion.span
+        className="relative z-10"
+        animate={isAnimating ? { 
+          scale: [1, 1.2, 1],
+          y: [0, -2, 0]
+        } : {}}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        {likes}
+      </motion.span>
+      
+      {/* Floating hearts animation */}
+      {isAnimating && (
+        <>
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-blue-300 pointer-events-none"
+              initial={{ 
+                scale: 0, 
+                x: 0, 
+                y: 0, 
+                opacity: 1 
+              }}
+              animate={{ 
+                scale: [0, 1, 0], 
+                x: [0, (i - 1) * 15], 
+                y: [0, -25 - i * 8], 
+                opacity: [1, 1, 0] 
+              }}
+              transition={{ 
+                duration: 0.8, 
+                delay: i * 0.1,
+                ease: "easeOut" 
+              }}
+            >
+              <Heart className="w-2 h-2 fill-current" />
+            </motion.div>
+          ))}
+        </>
+      )}
+      
+      {/* Shimmer effect */}
+      <motion.div
+        className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-full"
+        initial={{ x: '-100%', opacity: 0 }}
+        animate={{ x: '100%', opacity: [0, 1, 0] }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          repeatDelay: 3,
+          ease: "easeInOut" 
+        }}
+      />
+    </motion.button>
+  );
+};
+
 const EventCard: React.FC<EventCardProps> = ({
   id,
   title,
@@ -36,16 +164,13 @@ const EventCard: React.FC<EventCardProps> = ({
   showLikes = false,
   isPast = false
 }) => {
-  const [isLiked, setIsLiked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
 
-  const handleLike = async (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleLike = async () => {
     if (!onLike || isLiking) return;
     try {
       setIsLiking(true);
       await onLike();
-      setIsLiked(!isLiked);
     } catch (error) {
       console.error('Error liking event:', error);
     } finally {
@@ -66,18 +191,12 @@ const EventCard: React.FC<EventCardProps> = ({
             <Badge className="bg-purple-600 text-white">{category}</Badge>
           </div>
           {showLikes && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 dark:text-gray-300",
-                isLiked && "text-purple-500"
-              )}
-              onClick={handleLike}
-              disabled={isLiking}
-            >
-              <Heart className={cn("h-5 w-5", isLiked && "fill-current text-purple-500")} />
-            </Button>
+            <div className="absolute top-2 right-2">
+              <StylishLikeButton
+                likes={likesCount}
+                onLike={handleLike}
+              />
+            </div>
           )}
         </div>
 
@@ -105,7 +224,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-gray-900 dark:text-white">{price}</span>
-            <Button className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#059669] hover:scale-105 transition-all text-white px-6 py-6 rounded-xl">
+            <Button className="bg-gradient-to-r from-blue-500 to-[#10b981] text-white px-6 py-6 rounded-xl">
               Get Tickets
             </Button>
           </div>
