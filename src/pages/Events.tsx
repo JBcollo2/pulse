@@ -38,7 +38,7 @@ interface Category {
 const FloatingShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <motion.div
-      className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-full blur-xl"
+      className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-teal-400/10 to-mint-400/10 rounded-full blur-xl"
       animate={{
         x: [0, 100, 0],
         y: [0, -50, 0],
@@ -51,7 +51,7 @@ const FloatingShapes = () => (
       }}
     />
     <motion.div
-      className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-xl"
+      className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-mint-400/10 to-teal-500/10 rounded-full blur-xl"
       animate={{
         x: [0, -80, 0],
         y: [0, 60, 0],
@@ -64,7 +64,7 @@ const FloatingShapes = () => (
       }}
     />
     <motion.div
-      className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 rounded-full blur-2xl"
+      className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-teal-500/5 to-mint-500/5 rounded-full blur-2xl"
       animate={{
         scale: [1, 1.2, 1],
         x: [0, 50, 0],
@@ -242,13 +242,13 @@ const CategoryCard = ({ category, eventCount, isActive, onClick, index, isTrendi
       onClick={() => onClick(category)}
     >
       <div className={`
-        relative overflow-hidden rounded-2xl p-6 transition-all duration-300
+        relative overflow-hidden rounded-xl p-4 transition-all duration-300
         ${isActive 
-          ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25' 
-          : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-gradient-to-br hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/20 dark:hover:to-cyan-900/20'
+          ? 'bg-gradient-to-br from-teal-500 to-mint-500 text-white shadow-lg shadow-teal-500/25' 
+          : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-gradient-to-br hover:from-teal-50 hover:to-mint-50 dark:hover:from-teal-900/20 dark:hover:to-mint-900/20'
         }
-        border border-gray-200/50 dark:border-gray-700/50 hover:border-blue-300/50
-        shadow-sm hover:shadow-lg hover:shadow-blue-500/10
+        border border-gray-200/50 dark:border-gray-700/50 hover:border-teal-300/50
+        shadow-sm hover:shadow-lg hover:shadow-teal-500/10
       `}>
         
         {/* Trending Indicator */}
@@ -265,7 +265,7 @@ const CategoryCard = ({ category, eventCount, isActive, onClick, index, isTrendi
 
         {/* Category Icon */}
         <motion.div
-          className="text-4xl mb-4 filter drop-shadow-sm"
+          className="text-2xl mb-3 filter drop-shadow-sm"
           whileHover={{ scale: 1.2, rotate: 15 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
@@ -274,7 +274,7 @@ const CategoryCard = ({ category, eventCount, isActive, onClick, index, isTrendi
 
         {/* Category Name */}
         <h3 className={`
-          font-semibold text-lg mb-2 
+          font-semibold text-sm mb-2 
           ${isActive ? 'text-white' : 'text-gray-900 dark:text-white'}
         `}>
           {category}
@@ -282,16 +282,16 @@ const CategoryCard = ({ category, eventCount, isActive, onClick, index, isTrendi
 
         {/* Event Count */}
         <div className={`
-          flex items-center gap-2 text-sm
-          ${isActive ? 'text-blue-100' : 'text-gray-600 dark:text-gray-300'}
+          flex items-center gap-1 text-xs
+          ${isActive ? 'text-teal-100' : 'text-gray-600 dark:text-gray-300'}
         `}>
-          <Calendar className="w-4 h-4" />
+          <Calendar className="w-3 h-3" />
           <span>{eventCount} events</span>
         </div>
 
         {/* Hover Gradient Overlay */}
         {!isActive && (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/5 group-hover:to-cyan-500/5 transition-all duration-300 rounded-2xl" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-mint-500/0 group-hover:from-teal-500/5 group-hover:to-mint-500/5 transition-all duration-300 rounded-xl" />
         )}
       </div>
     </motion.div>
@@ -527,7 +527,7 @@ const Events = () => {
   }, [toast]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-teal-50/30 to-mint-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 relative">
       <FloatingShapes />
       <Navbar />
 
@@ -542,7 +542,7 @@ const Events = () => {
             transition={{ duration: 0.8 }}
           >
             <motion.h1
-              className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-800 bg-clip-text text-transparent mb-6"
+              className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-teal-600 via-mint-600 to-teal-800 bg-clip-text text-transparent mb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -571,7 +571,7 @@ const Events = () => {
               <div className="flex flex-col lg:flex-row justify-between items-center mb-10 gap-6">
                 <div className="text-center lg:text-left">
                   <motion.h2
-                    className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2"
+                    className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 to-mint-600 bg-clip-text text-transparent mb-2"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: 0.4 }}
@@ -601,7 +601,7 @@ const Events = () => {
                       placeholder="Search categories..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400 focus:ring-blue-400/20"
+                      className="pl-10 pr-4 py-2 w-64 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-teal-400 focus:ring-teal-400/20"
                     />
                   </motion.div>
 
@@ -616,7 +616,7 @@ const Events = () => {
                       variant={viewMode === 'grid' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
-                      className={`${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                      className={`${viewMode === 'grid' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
                     >
                       <Grid className="w-4 h-4" />
                     </Button>
@@ -624,7 +624,7 @@ const Events = () => {
                       variant={viewMode === 'list' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('list')}
-                      className={`${viewMode === 'list' ? 'bg-blue-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                      className={`${viewMode === 'list' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
                     >
                       <List className="w-4 h-4" />
                     </Button>
@@ -658,7 +658,7 @@ const Events = () => {
                           variant={activeCategory === category ? "default" : "outline"}
                           className={`rounded-full px-4 py-2 transition-all duration-300 ${
                             activeCategory === category
-                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
+                              ? 'bg-gradient-to-r from-teal-500 to-mint-500 text-white shadow-lg shadow-teal-500/25'
                               : 'border-orange-300 text-orange-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 hover:border-orange-400'
                           }`}
                           onClick={() => handleCategoryClick(category)}
@@ -685,7 +685,7 @@ const Events = () => {
                   transition={{ duration: 0.4 }}
                   className={
                     viewMode === 'grid'
-                      ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
                       : "space-y-4"
                   }
                 >
@@ -711,14 +711,14 @@ const Events = () => {
                 transition={{ duration: 0.5, delay: 0.8 }}
               >
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50">
-                  <Filter className="w-4 h-4 text-blue-500" />
+                  <Filter className="w-4 h-4 text-teal-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {activeCategory ? `Filtering by: ${activeCategory}` : `Showing all ${categories.length} categories`}
                   </span>
                 </div>
                 
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50">
-                  <Eye className="w-4 h-4 text-cyan-500" />
+                  <Eye className="w-4 h-4 text-mint-500" />
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {filteredEvents.length} events found
                   </span>
@@ -731,7 +731,7 @@ const Events = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveCategory('')}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full text-sm font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300"
+                    className="px-4 py-2 bg-gradient-to-r from-teal-500 to-mint-500 text-white rounded-full text-sm font-medium shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300"
                   >
                     Clear Filter
                   </motion.button>
@@ -773,12 +773,12 @@ const Events = () => {
               >
                 {/* Decorative Divider */}
                 <motion.div
-                  className="border-t border-gradient-to-r from-transparent via-blue-300 to-transparent dark:via-blue-700 my-12 relative"
+                  className="border-t border-gradient-to-r from-transparent via-teal-300 to-transparent dark:via-teal-700 my-12 relative"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 1, delay: 0.4 }}
                 >
-                  <div className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-blue-500 to-cyan-500 w-16 h-1 rounded-full shadow-lg shadow-blue-500/50"></div>
+                  <div className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-teal-500 to-mint-500 w-16 h-1 rounded-full shadow-lg shadow-teal-500/50"></div>
                 </motion.div>
 
                 {filteredEvents.length > 0 ? (
@@ -800,7 +800,7 @@ const Events = () => {
                         transition={{ duration: 0.3 }}
                       >
                         <div className="flex items-center gap-3 px-6 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50">
-                          <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                          <Loader2 className="h-5 w-5 animate-spin text-teal-500" />
                           <span className="text-gray-600 dark:text-gray-300 font-medium">Loading more events...</span>
                         </div>
                       </motion.div>
@@ -817,7 +817,7 @@ const Events = () => {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5 }}
                       >
-                        <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full border border-blue-200/50 dark:border-blue-700/50">
+                        <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-50 to-mint-50 dark:from-teal-900/20 dark:to-mint-900/20 rounded-full border border-teal-200/50 dark:border-teal-700/50">
                           <span className="text-2xl mr-3">🎉</span>
                           <span className="text-gray-700 dark:text-gray-300 font-medium">
                             You've discovered all {filteredEvents.length} amazing events!
@@ -840,7 +840,7 @@ const Events = () => {
                         animate={{ rotate: 360 }}
                         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                       >
-                        <div className="w-32 h-32 border-2 border-dashed border-blue-300/30 rounded-full"></div>
+                        <div className="w-32 h-32 border-2 border-dashed border-teal-300/30 rounded-full"></div>
                       </motion.div>
                       
                       {/* Main Content */}
@@ -861,7 +861,7 @@ const Events = () => {
                         </motion.div>
                         
                         <motion.h3
-                          className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4"
+                          className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-teal-600 to-mint-600 bg-clip-text text-transparent mb-4"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.5, delay: 0.2 }}
@@ -889,7 +889,7 @@ const Events = () => {
                           >
                             <Button
                               onClick={() => setActiveCategory('')}
-                              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-8 py-3 rounded-full font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300"
+                              className="bg-gradient-to-r from-teal-500 to-mint-500 hover:from-teal-600 hover:to-mint-600 text-white px-8 py-3 rounded-full font-medium shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300"
                             >
                               <Eye className="w-5 h-5 mr-2" />
                               View All Events
