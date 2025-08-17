@@ -187,9 +187,6 @@ const EventCard: React.FC<EventCardProps> = ({
             alt={title}
             className="w-full h-48 object-cover"
           />
-          <div className="absolute top-2 left-2">
-            <Badge className="bg-purple-600 text-white">{category}</Badge>
-          </div>
           {showLikes && (
             <div className="absolute top-2 right-2">
               <StylishLikeButton
@@ -201,7 +198,7 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <div className="p-5">
-          <h3 className="text-xl font-bold line-clamp-2 mb-3 group-hover:text-purple-600 transition-colors text-gray-900 dark:text-white">
+          <h3 className="text-xl font-bold line-clamp-2 mb-3 transition-colors text-gray-900 dark:text-white">
             {title}
           </h3>
 
