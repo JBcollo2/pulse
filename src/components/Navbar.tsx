@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LayoutDashboard } from "lucide-react";
 import { cn } from '@/lib/utils';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 import AuthCard from './AuthCard';
 
@@ -11,6 +11,7 @@ const Navbar: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string): boolean => {
@@ -41,6 +42,28 @@ const Navbar: React.FC = () => {
     };
     checkLogin();
   }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        setIsLoggedIn(false);
+        setIsMenuOpen(false);
+        // Optionally redirect to home page after logout
+        navigate('/');
+      }
+    } catch (err) {
+      console.error("Logout failed:", err);
+      // Fallback: set logged out state anyway
+      setIsLoggedIn(false);
+      setIsMenuOpen(false);
+    }
+  };
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -89,7 +112,17 @@ const Navbar: React.FC = () => {
 
       <header className="fixed top-0 left-0 right-0 z-50 navbar-backdrop border-b border-gray-200 dark:border-gray-700 shadow-lg">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-3 group">
+          {/* Brand/Logo - Fixed to always go to home */}
+          <Link 
+            to="/" 
+            className="flex items-center space-x-3 group"
+            onClick={(e) => {
+              // Prevent any interference and force navigation to home
+              e.preventDefault();
+              navigate('/');
+              setIsMenuOpen(false);
+            }}
+          >
             <div className="relative">
               <div className="w-12 h-12 bg-gray-800 dark:bg-gray-200 rounded-full flex items-center justify-center shadow-lg">
                 <span className="text-white dark:text-gray-800 font-bold text-xl">P</span>
@@ -187,7 +220,7 @@ const Navbar: React.FC = () => {
               <Button
                 variant="outline"
                 className="border-gray-800 text-gray-800 hover:bg-gray-50 dark:border-gray-200 dark:text-gray-200 dark:hover:bg-gray-800 font-medium px-6 py-2 rounded-lg"
-                onClick={() => setIsLoggedIn(false)}
+                onClick={handleLogout}
               >
                 Sign Out
               </Button>
@@ -239,6 +272,16 @@ const Navbar: React.FC = () => {
 
           <nav className="px-4 py-6 flex flex-col space-y-6">
             <Link
+              to="/"
+              className={cn(
+                "text-xl font-medium transition-colors relative",
+                isActive('/') ? "text-gray-900 dark:text-gray-100" : "hover:text-gray-600 dark:hover:text-gray-300 text-gray-700 dark:text-gray-300"
+              )}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
               to="/events"
               className={cn(
                 "text-xl font-medium transition-colors relative",
@@ -282,7 +325,10 @@ const Navbar: React.FC = () => {
             {isLoggedIn && (
               <Link
                 to="/dashboard"
-                className="text-xl font-medium hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-gray-700 dark:text-gray-300"
+                className={cn(
+                  "text-xl font-medium transition-colors relative",
+                  isActive('/dashboard') ? "text-gray-900 dark:text-gray-100" : "hover:text-gray-600 dark:hover:text-gray-300 text-gray-700 dark:text-gray-300"
+                )}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Dashboard
@@ -307,10 +353,7 @@ const Navbar: React.FC = () => {
                 variant="outline"
                 className="w-full border-gray-800 text-gray-800 dark:border-gray-200 dark:text-gray-200 font-medium py-3 rounded-lg"
                 size="lg"
-                onClick={() => {
-                  setIsLoggedIn(false);
-                  setIsMenuOpen(false);
-                }}
+                onClick={handleLogout}
               >
                 Sign Out
               </Button>
