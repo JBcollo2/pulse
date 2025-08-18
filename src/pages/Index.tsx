@@ -9,6 +9,8 @@ import TicketPreview from '@/components/TicketPreview';
 import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from 'framer-motion';
+import { Sparkles, TrendingUp, Calendar, MapPin } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -165,176 +167,271 @@ const Index = () => {
     return [...sortedUpcoming, ...sortedPast].slice(0, 8);
   };
 
+  // Custom animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        duration: 0.6
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white pt-16 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-teal-50/50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-gray-900 dark:text-white pt-16 transition-all duration-500">
       <Navbar />
       
-      <main>
-        <div className="animate-fadeIn">
-          <HeroSection />
+      <main className="relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-blue-500/10 to-teal-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-40 right-20 w-48 h-48 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-40 left-1/4 w-32 h-32 bg-gradient-to-r from-teal-500/20 to-emerald-500/20 rounded-full blur-xl"></div>
         </div>
-        
-        {/* Featured Event Section */}
-        <div className="bg-white dark:bg-gray-800 transition-colors duration-300">
-          <div className="container mx-auto px-4 py-8 md:py-16">
-            <div className="animate-slideUp" style={{ animationDelay: '0.2s' }}>
-              <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-10 text-center text-gray-900 dark:text-white">
-                Featured Event
-              </h2>
-            </div>
-            
-            {isLoading ? (
-              <div className="max-w-4xl mx-auto animate-pulse">
-                <Skeleton className="h-64 md:h-[400px] w-full rounded-lg mb-4 bg-gray-200 dark:bg-gray-700" />
-                <div className="space-y-2">
-                  <Skeleton className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700" />
-                  <Skeleton className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700" />
-                  <Skeleton className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700" />
+
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          <motion.div variants={itemVariants}>
+            <HeroSection />
+          </motion.div>
+          
+          {/* Featured Event Section */}
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-colors duration-300 border-y border-blue-100/50 dark:border-gray-700/50">
+            <div className="container mx-auto px-4 py-8 md:py-16">
+              <motion.div variants={itemVariants}>
+                <div className="text-center mb-6 md:mb-10">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-200/30 dark:border-gray-700/50 mb-4">
+                    <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Spotlight Event</span>
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-teal-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-blue-300 dark:to-teal-400">
+                    Featured Event
+                  </h2>
                 </div>
-              </div>
-            ) : featuredEvent ? (
-              <div className="animate-slideUp" style={{ animationDelay: '0.4s' }}>
-                <FeaturedEvent
-                  id={featuredEvent.id.toString()}
-                  title={featuredEvent.name}
-                  description={featuredEvent.description}
-                  date={new Date(featuredEvent.date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                  time={`${featuredEvent.start_time} - ${featuredEvent.end_time || 'Till Late'}`}
-                  location={featuredEvent.location}
-                  image={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
-                  price="Starting from $129.99"
-                  onLike={() => handleLike(featuredEvent.id)}
-                  likesCount={featuredEvent.likes_count}
-                  isPast={new Date(featuredEvent.date) < currentDate}
-                />
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🎭</div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  No Featured Events
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Check back soon for exciting upcoming events!
-                </p>
-              </div>
-            )}
+              </motion.div>
+              
+              {isLoading ? (
+                <motion.div variants={itemVariants} className="max-w-4xl mx-auto">
+                  <div className="relative overflow-hidden rounded-3xl">
+                    <Skeleton className="h-64 md:h-[400px] w-full bg-gradient-to-r from-blue-100 to-teal-100 dark:from-gray-700 dark:to-gray-600" />
+                    <div className="absolute bottom-6 left-6 space-y-2">
+                      <Skeleton className="h-6 w-64 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
+                      <Skeleton className="h-4 w-48 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
+                    </div>
+                  </div>
+                </motion.div>
+              ) : featuredEvent ? (
+                <motion.div variants={itemVariants}>
+                  <div className="relative max-w-4xl mx-auto">
+                    {/* Glow effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-teal-500/20 rounded-3xl blur-xl -z-10"></div>
+                    <FeaturedEvent
+                      id={featuredEvent.id.toString()}
+                      title={featuredEvent.name}
+                      description={featuredEvent.description}
+                      date={new Date(featuredEvent.date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                      time={`${featuredEvent.start_time} - ${featuredEvent.end_time || 'Till Late'}`}
+                      location={featuredEvent.location}
+                      image={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
+                      price="Starting from $129.99"
+                      onLike={() => handleLike(featuredEvent.id)}
+                      likesCount={featuredEvent.likes_count}
+                      isPast={new Date(featuredEvent.date) < currentDate}
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div variants={itemVariants} className="text-center py-16">
+                  <div className="relative inline-block">
+                    <div className="text-6xl mb-4 animate-bounce">🎭</div>
+                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-teal-500/20 rounded-full blur-xl -z-10"></div>
+                  </div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent mb-2">
+                    No Featured Events
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Check back soon for exciting upcoming events!
+                  </p>
+                </motion.div>
+              )}
+            </div>
           </div>
-        </div>
-        
-        {/* Events Section */}
-        <div className="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-          <div className="container mx-auto px-4 py-8">
-            <div className="text-center mb-8">
-              <div className="animate-slideUp" style={{ animationDelay: '0.6s' }}>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+          
+          {/* Events Section */}
+          <div className="bg-gradient-to-b from-gray-50/50 to-gray-100/30 dark:from-gray-900/50 dark:to-gray-900 transition-colors duration-300">
+            <div className="container mx-auto px-4 py-8 md:py-12">
+              <motion.div variants={itemVariants} className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-200/30 dark:border-gray-700/50 mb-4">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Popular Events</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-400 dark:to-blue-400">
                   Recent Events
                 </h2>
-              </div>
-            </div>
-            
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {[...Array(8)].map((_, index) => (
-                  <div key={index} className="space-y-3 animate-pulse" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <Skeleton className="h-48 md:h-[200px] w-full rounded-lg bg-gray-200 dark:bg-gray-700" />
-                    <Skeleton className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700" />
-                    <Skeleton className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="animate-slideUp" style={{ animationDelay: '0.8s' }}>
-                <EventsSection 
-                  events={getRecentEvents()} 
-                  onLike={handleLike}
-                  showPastEvents={true}
-                  showTabs={false}
-                  showSearch={false}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Digital Tickets Section */}
-        <div className="bg-white dark:bg-gray-800 transition-colors duration-300">
-          <div className="container mx-auto px-4 py-8 md:py-16">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-6 md:mb-10 animate-slideUp" style={{ animationDelay: '1s' }}>
-                <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-gray-900 dark:text-white">
-                  Digital Tickets, Real Experiences
-                </h2>
-                <p className="text-base md:text-xl text-gray-600 dark:text-gray-300">
-                  Our tickets come to life with animations and secure QR codes for easy scanning at venues
-                </p>
-              </div>
+              </motion.div>
               
-              <div className="animate-slideUp" style={{ animationDelay: '1.2s' }}>
-                <TicketPreview
-                  eventName="Summer Music Festival"
-                  date="Sat, Jun 15, 2025"
-                  time="2:00 PM - 11:00 PM"
-                  location="Central Park, New York"
-                  ticketHolder="John Doe"
-                  ticketType="VIP Pass"
-                  ticketId="PULSE2025X7891"
-                />
+              {isLoading ? (
+                <motion.div variants={itemVariants}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    {[...Array(8)].map((_, index) => (
+                      <div key={index} className="group">
+                        <div className="relative overflow-hidden rounded-3xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
+                          <Skeleton className="h-48 md:h-[200px] w-full bg-gradient-to-br from-blue-100 via-teal-100 to-emerald-100 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700" />
+                          <div className="p-4 space-y-2">
+                            <Skeleton className="h-4 w-3/4 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 rounded" />
+                            <Skeleton className="h-3 w-1/2 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700 rounded" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div variants={itemVariants}>
+                  <EventsSection 
+                    events={getRecentEvents()} 
+                    onLike={handleLike}
+                    showPastEvents={true}
+                    showTabs={false}
+                    showSearch={false}
+                  />
+                </motion.div>
+              )}
+            </div>
+          </div>
+          
+          {/* Digital Tickets Section */}
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm transition-colors duration-300 border-y border-teal-100/50 dark:border-gray-700/50">
+            <div className="container mx-auto px-4 py-8 md:py-16">
+              <div className="max-w-4xl mx-auto">
+                <motion.div variants={itemVariants} className="text-center mb-6 md:mb-10">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/10 to-blue-500/10 border border-teal-200/30 dark:border-gray-700/50 mb-4">
+                    <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-sm font-medium text-teal-700 dark:text-teal-300">Digital Experience</span>
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 bg-gradient-to-r from-teal-600 via-blue-600 to-emerald-600 bg-clip-text text-transparent dark:from-teal-400 dark:via-blue-400 dark:to-emerald-400">
+                    Digital Tickets, Real Experiences
+                  </h2>
+                  <p className="text-base md:text-xl text-gray-600 dark:text-gray-300">
+                    Our tickets come to life with animations and secure QR codes for easy scanning at venues
+                  </p>
+                </motion.div>
+                
+                <motion.div variants={itemVariants} className="relative">
+                  {/* Glow effect for ticket preview */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-emerald-500/20 rounded-3xl blur-2xl -z-10"></div>
+                  <TicketPreview
+                    eventName="Summer Music Festival"
+                    date="Sat, Jun 15, 2025"
+                    time="2:00 PM - 11:00 PM"
+                    location="Central Park, New York"
+                    ticketHolder="John Doe"
+                    ticketType="VIP Pass"
+                    ticketId="PULSE2025X7891"
+                  />
+                </motion.div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <div className="animate-slideUp" style={{ animationDelay: '1.4s' }}>
-          <CTASection />
-        </div>
+          
+          <motion.div variants={itemVariants}>
+            <CTASection />
+          </motion.div>
+        </motion.div>
       </main>
       
       <Footer />
       
-      {/* Custom Animation Styles */}
-      <style>
-        {`
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+      {/* Enhanced Custom Animation Styles */}
+      <style>{`
+        @keyframes gradientShift {
+          0%, 100% {
+            background-position: 0% 50%;
           }
-          
-          @keyframes slideUp {
-            from { 
-              opacity: 0;
-              transform: translateY(30px);
-            }
-            to { 
-              opacity: 1;
-              transform: translateY(0);
-            }
+          50% {
+            background-position: 100% 50%;
           }
-          
-          .animate-fadeIn {
-            animation: fadeIn 0.8s ease-out forwards;
+        }
+        
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
           }
-          
-          .animate-slideUp {
-            opacity: 0;
-            animation: slideUp 0.6s ease-out forwards;
+          50% {
+            transform: translateY(-10px);
           }
-          
-          .animate-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
           }
-          
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+          50% {
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.2);
           }
-        `}
-      </style>
+        }
+        
+        .animate-gradient-shift {
+          background-size: 200% 200%;
+          animation: gradientShift 8s ease infinite;
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-pulse-glow {
+          animation: pulse-glow 4s ease-in-out infinite;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+          background: rgba(107, 114, 128, 0.1);
+          border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(45deg, #3b82f6, #10b981);
+          border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(45deg, #2563eb, #059669);
+        }
+        
+        /* Smooth transitions for theme changes */
+        * {
+          transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          transition-duration: 200ms;
+        }
+      `}</style>
     </div>
   );
 };
