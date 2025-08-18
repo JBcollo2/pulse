@@ -25,8 +25,8 @@ const Navbar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Check if we're on a page where navbar should be hidden by default
-  const shouldHideNavbar = location.pathname !== '/';
+  // Check if we're on any page - navbar should be hidden by default on ALL pages now
+  const shouldHideNavbar = true; // Changed from location.pathname !== '/' to always true
 
   // Effect to check user login status on component mount
   useEffect(() => {
@@ -148,37 +148,27 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
   };
 
-  const toggleSidebar = () => {
-    if (shouldHideNavbar) {
-      setShowNavbarOnPage(!showNavbarOnPage);
-    } else {
-      setShowNavbarOnPage(!showNavbarOnPage);
-    }
-  };
-
   const toggleNavbarVisibility = () => {
     setShowNavbarOnPage(!showNavbarOnPage);
   };
 
   return (
     <>
-      {/* Top Access Button - Show on all pages except home */}
-      {shouldHideNavbar && (
-        <div className="fixed top-4 left-4 z-50">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleNavbarVisibility}
-            className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-          >
-            {showNavbarOnPage ? (
-              <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            ) : (
-              <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            )}
-          </Button>
-        </div>
-      )}
+      {/* Top Access Button - Show on all pages now */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={toggleNavbarVisibility}
+          className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+        >
+          {showNavbarOnPage ? (
+            <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          ) : (
+            <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+          )}
+        </Button>
+      </div>
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
@@ -206,8 +196,8 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Header - Show only on home page or when navbar is visible on other pages */}
-      {(!shouldHideNavbar || showNavbarOnPage) && (
+      {/* Desktop Header - Only show when navbar is visible */}
+      {showNavbarOnPage && (
         <div className="hidden md:block fixed top-0 right-0 left-72 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300">
           <div className="flex items-center justify-end gap-4">
             <ThemeToggle />
@@ -266,10 +256,8 @@ const Navbar: React.FC = () => {
         "fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out w-72",
         // Mobile positioning
         isMenuOpen ? "left-0" : "-left-72",
-        // Desktop positioning
-        shouldHideNavbar 
-          ? (showNavbarOnPage ? "md:left-0" : "md:-left-72")
-          : "md:left-0"
+        // Desktop positioning - now always based on showNavbarOnPage
+        showNavbarOnPage ? "md:left-0" : "md:-left-72"
       )}>
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
@@ -284,18 +272,6 @@ const Navbar: React.FC = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
                 </div>
               )}
-            </div>
-            
-            {/* Desktop Collapse Toggle Button */}
-            <div className="hidden md:block">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
-              >
-                <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              </Button>
             </div>
           </div>
 
@@ -468,12 +444,9 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Menu Overlay */}
-      {(isMenuOpen || (shouldHideNavbar && showNavbarOnPage)) && (
+      {(isMenuOpen || showNavbarOnPage) && (
         <div
-          className={cn(
-            "fixed inset-0 bg-black bg-opacity-50 z-30",
-            shouldHideNavbar ? "md:block" : "md:hidden"
-          )}
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:block"
           onClick={() => {
             setIsMenuOpen(false);
             setShowNavbarOnPage(false);
@@ -535,19 +508,19 @@ const Navbar: React.FC = () => {
           transition: padding-left 0.3s ease-in-out, padding-top 0.3s ease-in-out;
         }
 
-        /* Home page - always show navbar */
+        /* When navbar is visible */
         body.navbar-view {
-          padding-top: 80px;
+          padding-top: 0; /* No top padding since navbar is hidden by default */
         }
         
         @media (min-width: 768px) {
           body.navbar-view {
-            padding-top: 80px;
+            padding-top: 80px; /* Only add top padding on desktop when navbar is shown */
             padding-left: 288px; /* 72 * 4 = 288px for w-72 */
           }
         }
 
-        /* Non-home pages - hidden navbar by default */
+        /* When navbar is hidden (default state) */
         body.navbar-hidden {
           padding-top: 0;
           padding-left: 0;
