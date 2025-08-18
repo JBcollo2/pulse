@@ -154,22 +154,6 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Access Button - Show on all pages now */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleNavbarVisibility}
-          className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-        >
-          {showNavbarOnPage ? (
-            <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          ) : (
-            <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-          )}
-        </Button>
-      </div>
-
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
@@ -261,27 +245,25 @@ const Navbar: React.FC = () => {
       )}>
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <span className="text-white font-bold text-xl">P</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
-              </div>
+          {/* Desktop Close Button */}
+          <div className="hidden md:flex justify-end mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleNavbarVisibility}
+              className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
+            >
+              <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+              <span className="text-white font-bold text-xl">P</span>
             </div>
-            
-            {/* Desktop Close Button */}
-            <div className="hidden md:block">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleNavbarVisibility}
-                className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
-              >
-                <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              </Button>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
             </div>
           </div>
 
