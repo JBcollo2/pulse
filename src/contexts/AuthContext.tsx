@@ -87,7 +87,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       if (error.name === 'AbortError') {
+        console.log('Profile fetch timeout');
       } else {
+        console.error('Error fetching user profile:', error);
       }
       setUser(null);
       setIsAuthenticated(false);
@@ -110,9 +112,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const userData = await fetchUserProfile();
         if (userData) {
+          console.log('User authenticated on app start:', userData.email);
         } else {
+          console.log('No authenticated user found on app start');
         }
       } catch (error) {
+        console.error('Auth initialization error:', error);
       } finally {
         setLoading(false);
         setIsContextReady(true);
@@ -149,6 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             // Validate the user data
             if (!normalizedUser.email || !normalizedUser.role) {
+              console.error('Invalid user data in auth event');
               return;
             }
 
@@ -156,10 +162,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
             setLoading(false);
 
+            // 🔥 KEY FIX: Set the justLoggedIn flag for post-login redirect
+            sessionStorage.setItem('justLoggedIn', 'true');
+            console.log('✅ User login event processed, justLoggedIn flag set');
+
           } else if (event.detail && event.detail.action === 'logout') {
             setUser(null);
             setIsAuthenticated(false);
             setLoading(false);
+
+            // Clear the justLoggedIn flag on logout
+            sessionStorage.removeItem('justLoggedIn');
+            console.log('🚪 User logout event processed');
 
           } else if (event.detail && event.detail.action === 'refresh') {
             // Only refresh if not already loading
@@ -168,6 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               try {
                 const userData = await fetchUserProfile();
                 if (userData) {
+                  console.log('🔄 User profile refreshed');
                 }
               } finally {
                 setLoading(false);
@@ -175,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
           }
         } catch (error) {
+          console.error('Error handling auth state change:', error);
           setLoading(false);
         }
       }, 100); // 100ms debounce
@@ -204,6 +220,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (event.key === 'auth-logout') {
           setUser(null);
           setIsAuthenticated(false);
+          // Clear justLoggedIn flag on logout
+          sessionStorage.removeItem('justLoggedIn');
         } else if (event.key === 'auth-login') {
           // Only refresh if not already fetching
           if (!isFetchingRef.current) {
@@ -211,7 +229,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setTimeout(async () => {
               try {
                 await fetchUserProfile();
+                // 🔥 Set justLoggedIn flag for cross-tab login
+                sessionStorage.setItem('justLoggedIn', 'true');
               } catch (error) {
+                console.error('Error refreshing user after storage login event:', error);
               }
             }, 500);
           }
@@ -228,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [fetchUserProfile]);
 
-  // FIXED: Enhanced loginUser function with validation
+  // 🔥 FIXED: Enhanced loginUser function with justLoggedIn flag
   const loginUser = useCallback((userData: User) => {
     try {
       // Normalize user data
@@ -251,6 +272,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(true);
       setLoading(false);
 
+      // 🔥 KEY FIX: Set the justLoggedIn flag immediately when loginUser is called
+      sessionStorage.setItem('justLoggedIn', 'true');
+      console.log(`🎯 loginUser called for ${normalizedUser.role} user, justLoggedIn flag set`);
+
       // Trigger storage event for cross-tab sync (with error handling)
       try {
         localStorage.setItem('auth-login', Date.now().toString());
@@ -258,11 +283,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           try {
             localStorage.removeItem('auth-login');
           } catch (error) {
+            console.error('Error cleaning up auth-login storage:', error);
           }
         }, 100);
       } catch (storageError) {
+        console.error('Error setting auth-login storage:', storageError);
       }
     } catch (error) {
+      console.error('Error in loginUser:', error);
     }
   }, []);
 
@@ -277,16 +305,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (!response.ok) {
+        console.warn('Logout request failed, but proceeding with local cleanup');
       }
     } catch (error) {
       if (error.name === 'AbortError') {
+        console.log('Logout request timeout');
       } else {
+        console.error('Error during logout request:', error);
       }
     } finally {
       // Clear local state regardless of backend response
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
+
+      // 🔥 Clear the justLoggedIn flag on logout
+      sessionStorage.removeItem('justLoggedIn');
+      console.log('🚪 User logged out, justLoggedIn flag cleared');
 
       // Trigger storage event for cross-tab sync
       try {
@@ -295,9 +330,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           try {
             localStorage.removeItem('auth-logout');
           } catch (error) {
+            console.error('Error cleaning up auth-logout storage:', error);
           }
         }, 100);
       } catch (storageError) {
+        console.error('Error setting auth-logout storage:', storageError);
       }
 
       // Dispatch logout event
@@ -317,9 +354,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userData = await fetchUserProfile();
       if (userData) {
+        console.log('User profile refreshed successfully');
       } else {
+        console.log('No user found during refresh');
       }
     } catch (error) {
+      console.error('Error refreshing user:', error);
     } finally {
       if (!isFetchingRef.current) {
         setLoading(false);

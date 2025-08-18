@@ -142,25 +142,37 @@ const DashboardProtectedRoute: React.FC = () => {
   return <Outlet />;
 };
 
-// FIXED: Simplified App Router without aggressive redirects
+// FIXED: App Router with login-based redirect only
 const AppRouter: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, loading } = useAuth();
+  const hasRedirectedAfterLogin = useRef(false);
 
-  // REMOVED: All the aggressive redirect logic that was preventing navigation
-
-  // Only handle initial root redirect
+  // Only redirect to dashboard immediately after login, not on every home page visit
   useEffect(() => {
     if (loading) return;
 
     const currentPath = location.pathname + location.search;
     
-    // Only redirect from root path when user is authenticated
-    if (isAuthenticated && user && user.role && currentPath === '/') {
-      const redirectPath = getRoleBasedRedirect(user.role);
-      console.log(`🎯 Initial load: Redirecting authenticated ${user.role} user from root to: ${redirectPath}`);
-      navigate(redirectPath, { replace: true });
+    // Check if user just logged in and is on home page
+    // This should only happen once after authentication
+    if (isAuthenticated && user && user.role && currentPath === '/' && !hasRedirectedAfterLogin.current) {
+      // Check if this is a fresh login (not just navigating back to home)
+      const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+      
+      if (justLoggedIn) {
+        const redirectPath = getRoleBasedRedirect(user.role);
+        console.log(`🎯 Post-login redirect: Taking ${user.role} user to: ${redirectPath}`);
+        hasRedirectedAfterLogin.current = true;
+        sessionStorage.removeItem('justLoggedIn'); // Clean up
+        navigate(redirectPath, { replace: true });
+        
+        // Reset after some time to allow future logins
+        setTimeout(() => {
+          hasRedirectedAfterLogin.current = false;
+        }, 5000);
+      }
     }
   }, [isAuthenticated, user, loading, location.pathname, navigate]);
 
