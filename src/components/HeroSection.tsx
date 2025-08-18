@@ -53,8 +53,11 @@ const HeroSection: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Hero Section with Rounded Top */}
-      <div className="relative rounded-t-3xl overflow-hidden w-full">
+      {/* Hero Section with Rounded Top and Brand Gradient */}
+      <div className="relative rounded-t-3xl overflow-hidden w-full" 
+           style={{
+             background: 'linear-gradient(135deg, #3b82f6, #06b6d4, #14b8a6)'
+           }}>
         {/* Background Slides */}
         {slides.map((slide, index) => (
           <div
@@ -67,13 +70,16 @@ const HeroSection: React.FC = () => {
               backgroundImage: `url(${slide.image})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              filter: 'brightness(0.4) contrast(1.1) dark:brightness(0.25)'
+              filter: 'brightness(0.4) contrast(1.1)'
             }}
           />
         ))}
 
-        {/* Gradient Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/80" />
+        {/* Enhanced Gradient Overlay using brand colors */}
+        <div className="absolute inset-0" 
+             style={{
+               background: 'linear-gradient(to right, rgba(59, 130, 246, 0.6), rgba(6, 182, 212, 0.4), rgba(20, 184, 166, 0.6))'
+             }} />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col md:flex-row h-full w-full min-h-[500px]">
@@ -83,12 +89,12 @@ const HeroSection: React.FC = () => {
                 <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 drop-shadow-lg">
                   {slides[currentSlide].title}
                 </h1>
-                <p className="text-white/95 dark:text-white/90 text-base md:text-lg mb-8 max-w-2xl drop-shadow-md">
+                <p className="text-white/95 text-base md:text-lg mb-8 max-w-2xl drop-shadow-md">
                   {slides[currentSlide].subtitle}
                 </p>
               </AnimatedSection>
               
-              {/* Search Bar */}
+              {/* Search Bar with brand gradient hover */}
               <AnimatedSection delay={100}>
                 <form onSubmit={handleSearch} className="mb-8 max-w-md">
                   <div className="relative">
@@ -103,7 +109,16 @@ const HeroSection: React.FC = () => {
                     <Button
                       type="submit"
                       size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-700 text-white rounded-full px-4 py-2"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white rounded-full px-4 py-2 hover:shadow-lg transition-all duration-300"
+                      style={{
+                        background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #0891b2)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #06b6d4)';
+                      }}
                     >
                       Search
                     </Button>
@@ -113,7 +128,20 @@ const HeroSection: React.FC = () => {
 
               <AnimatedSection delay={200}>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button asChild size="lg" className="bg-gradient-to-r from-[#3b82f6] to-[#06b6d4] hover:from-[#1d4ed8] hover:to-[#0891b2] shadow-lg hover:shadow-xl transition-all duration-300">
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    style={{
+                      background: 'linear-gradient(to right, #3b82f6, #06b6d4, #1d4ed8)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #0891b2, #1e40af)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #06b6d4, #1d4ed8)';
+                    }}
+                  >
                     <Link to="/events">
                       <Ticket className="h-5 w-5 mr-2" />
                       Browse Events
@@ -125,7 +153,16 @@ const HeroSection: React.FC = () => {
                     asChild 
                     size="lg" 
                     variant="outline" 
-                    className="border-white/30 text-white hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all duration-300"
+                    className="border-white/30 text-white hover:border-white/50 backdrop-blur-sm transition-all duration-300"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.1)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.08), rgba(20, 184, 166, 0.06))';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    }}
                   >
                     <Link to="/events?featured=true">
                       <Crown className="h-5 w-5 mr-2" />
@@ -138,14 +175,19 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Slide Indicators */}
+        {/* Slide Indicators with brand colors */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
           {slides.map((_, index) => (
             <button
               key={index}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/75'
+              className={`h-3 rounded-full transition-all duration-300 ${
+                index === currentSlide ? 'w-6' : 'w-3 hover:bg-white/75'
               }`}
+              style={{
+                background: index === currentSlide 
+                  ? 'linear-gradient(to right, #3b82f6, #06b6d4)' 
+                  : 'rgba(255, 255, 255, 0.5)'
+              }}
               onClick={() => setCurrentSlide(index)}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -153,7 +195,7 @@ const HeroSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Features Section - Seamless Integration */}
+      {/* Features Section with enhanced gradients */}
       <div className="bg-white dark:bg-gray-900 py-12 md:py-16 transition-colors duration-300">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -170,27 +212,44 @@ const HeroSection: React.FC = () => {
                 title: "Instant Booking",
                 description: "Book tickets in seconds with our lightning-fast checkout process",
                 icon: <Zap className="w-8 h-8 text-white" />,
-                color: "bg-gray-600"
+                gradient: "linear-gradient(135deg, #3b82f6, #06b6d4)"
               },
               {
                 title: "Live Updates",
                 description: "Get real-time notifications about your favorite events and artists",
                 icon: <Bell className="w-8 h-8 text-white" />,
-                color: "bg-gray-700"
+                gradient: "linear-gradient(135deg, #06b6d4, #14b8a6)"
               },
               {
                 title: "Exclusive Access",
                 description: "Unlock VIP experiences and early bird tickets before anyone else",
                 icon: <Crown className="w-8 h-8 text-white" />,
-                color: "bg-gray-800"
+                gradient: "linear-gradient(135deg, #14b8a6, #10b981)"
               }
             ].map((feature, index) => (
               <div key={index} className="group cursor-pointer">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl dark:shadow-gray-900/20 dark:hover:shadow-gray-900/40 transition-all duration-300 transform hover:scale-105 text-center border border-gray-100 dark:border-gray-700">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 ${feature.color} rounded-full mb-6 group-hover:shadow-lg transition-all duration-300 mx-auto`}>
+                  <div 
+                    className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6 group-hover:shadow-lg transition-all duration-300 mx-auto"
+                    style={{
+                      background: feature.gradient
+                    }}
+                  >
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors group-hover:text-transparent group-hover:bg-clip-text"
+                      style={{
+                        background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
+                        WebkitBackgroundClip: 'text',
+                        backgroundClip: 'text'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = 'transparent';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '';
+                      }}
+                  >
                     {feature.title}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
