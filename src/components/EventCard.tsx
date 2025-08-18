@@ -361,7 +361,10 @@ const EventCard: React.FC<EventCardProps> = ({
               <div className="flex flex-col">
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {lowestPriceTicket ? `${lowestPriceTicket.price}` : price}
+                    {lowestPriceTicket 
+                      ? `${lowestPriceTicket.currency_symbol || 'KSh'}${lowestPriceTicket.price.toLocaleString()}`
+                      : price
+                    }
                   </span>
                   {lowestPriceTicket && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
