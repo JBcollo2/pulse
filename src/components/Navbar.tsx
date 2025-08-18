@@ -12,6 +12,7 @@ const Navbar: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showNavbarOnPage, setShowNavbarOnPage] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -23,6 +24,9 @@ const Navbar: React.FC = () => {
     }
     return location.pathname.startsWith(path);
   };
+
+  // Check if we're on a page where navbar should be hidden by default
+  const shouldHideNavbar = location.pathname !== '/';
 
   // Effect to check user login status on component mount
   useEffect(() => {
@@ -83,37 +87,30 @@ const Navbar: React.FC = () => {
     };
   }, [isMenuOpen]);
 
-  // Effect to close mobile menu on route change
+  // Effect to close mobile menu and reset navbar visibility on route change
   useEffect(() => {
     setIsMenuOpen(false);
+    setShowNavbarOnPage(false);
   }, [location.pathname]);
-
-  // Hide navbar on dashboard and admin routes, but show top access button
-  const shouldHideNavbar = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
-  const [showNavbarOnDashboard, setShowNavbarOnDashboard] = useState<boolean>(false);
 
   // Effect to manage body classes for proper spacing
   useEffect(() => {
     const body = document.body;
     
-    if (shouldHideNavbar) {
-      body.classList.add(location.pathname.startsWith('/dashboard') ? 'dashboard-view' : 'admin-view');
+    if (shouldHideNavbar && !showNavbarOnPage) {
+      // Hidden navbar state
+      body.classList.add('navbar-hidden');
       body.classList.remove('navbar-view', 'navbar-collapsed');
-    } else {
+    } else if ((shouldHideNavbar && showNavbarOnPage) || !shouldHideNavbar) {
+      // Navbar visible - always full width now
       body.classList.add('navbar-view');
-      body.classList.remove('dashboard-view', 'admin-view');
-      
-      if (isCollapsed) {
-        body.classList.add('navbar-collapsed');
-      } else {
-        body.classList.remove('navbar-collapsed');
-      }
+      body.classList.remove('navbar-hidden', 'navbar-collapsed');
     }
 
     return () => {
-      body.classList.remove('navbar-view', 'dashboard-view', 'admin-view', 'navbar-collapsed');
+      body.classList.remove('navbar-view', 'navbar-hidden', 'navbar-collapsed');
     };
-  }, [shouldHideNavbar, location.pathname, isCollapsed]);
+  }, [shouldHideNavbar, showNavbarOnPage]);
 
   const navigationItems = [
     { path: '/', label: 'Home', icon: Home, description: 'Welcome & overview', category: 'Main', color: 'text-blue-500' },
@@ -152,21 +149,29 @@ const Navbar: React.FC = () => {
   };
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    if (shouldHideNavbar) {
+      setShowNavbarOnPage(!showNavbarOnPage);
+    } else {
+      setShowNavbarOnPage(!showNavbarOnPage);
+    }
+  };
+
+  const toggleNavbarVisibility = () => {
+    setShowNavbarOnPage(!showNavbarOnPage);
   };
 
   return (
     <>
-      {/* Dashboard/Admin Top Access Button */}
+      {/* Top Access Button - Show on all pages except home */}
       {shouldHideNavbar && (
         <div className="fixed top-4 left-4 z-50">
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setShowNavbarOnDashboard(!showNavbarOnDashboard)}
+            onClick={toggleNavbarVisibility}
             className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
           >
-            {showNavbarOnDashboard ? (
+            {showNavbarOnPage ? (
               <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             ) : (
               <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -201,12 +206,9 @@ const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Desktop Header - Simplified top bar */}
-      {!shouldHideNavbar && (
-        <div className={cn(
-          "hidden md:block fixed top-0 right-0 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300",
-          isCollapsed ? "left-20" : "left-72"
-        )}>
+      {/* Desktop Header - Show only on home page or when navbar is visible on other pages */}
+      {(!shouldHideNavbar || showNavbarOnPage) && (
+        <div className="hidden md:block fixed top-0 right-0 left-72 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300">
           <div className="flex items-center justify-end gap-4">
             <ThemeToggle />
             
@@ -261,14 +263,13 @@ const Navbar: React.FC = () => {
 
       {/* Left Sidebar */}
       <div className={cn(
-        "fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out",
+        "fixed top-0 h-screen flex flex-col shadow-xl bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-all duration-300 ease-in-out w-72",
         // Mobile positioning
-        isMenuOpen ? "left-0 w-72" : "-left-72 w-72",
-        // Desktop positioning and width
+        isMenuOpen ? "left-0" : "-left-72",
+        // Desktop positioning
         shouldHideNavbar 
-          ? (showNavbarOnDashboard ? "md:left-0" : "md:-left-72")
-          : "md:left-0",
-        isCollapsed ? "md:w-20" : "md:w-72"
+          ? (showNavbarOnPage ? "md:left-0" : "md:-left-72")
+          : "md:left-0"
       )}>
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
@@ -293,42 +294,33 @@ const Navbar: React.FC = () => {
                 onClick={toggleSidebar}
                 className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
               >
-                {isCollapsed ? (
-                  <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                ) : (
-                  <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                )}
+                <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             </div>
           </div>
 
           {/* Search Bar */}
-          {!isCollapsed && (
-            <div className="mt-4 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search navigation..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="w-full pl-10 pr-10 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                  transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-colors"
-                >
-                  <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                </button>
-              )}
-            </div>
-          )}
+          <div className="mt-4 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search navigation..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-10 py-2 text-sm bg-gray-200 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
+                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                transition-all duration-200 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-colors"
+              >
+                <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+              </button>
+            )}
+          </div>
         </div>
-
-        {/* Desktop Collapse Toggle Button */}
-        {/* Removed - now in header */}
 
         {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -340,43 +332,35 @@ const Navbar: React.FC = () => {
                   key={item.path}
                   onClick={() => handleNavClick(item.path)}
                   className={cn(
-                    "group relative w-full flex items-center text-left text-sm rounded-xl transition-all duration-300 ease-out transform hover:scale-[1.02]",
-                    isCollapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3.5",
+                    "group relative w-full flex items-center text-left text-sm rounded-xl transition-all duration-300 ease-out transform hover:scale-[1.02] gap-3 px-4 py-3.5",
                     isActiveRoute
                       ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
                       : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
                   )}
                   style={{ animationDelay: `${index * 50}ms` }}
-                  title={isCollapsed ? item.label : undefined}
                 >
                   <item.icon className={cn(
                     "h-5 w-5 transition-all duration-300 flex-shrink-0",
                     isActiveRoute ? "text-white" : item.color
                   )} />
 
-                  {!isCollapsed && (
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{item.label}</div>
-                      <div className={cn(
-                        "text-xs truncate transition-colors duration-300",
-                        isActiveRoute ? "text-white/80" : "text-gray-500 dark:text-gray-400"
-                      )}>
-                        {item.description}
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{item.label}</div>
+                    <div className={cn(
+                      "text-xs truncate transition-colors duration-300",
+                      isActiveRoute ? "text-white/80" : "text-gray-500 dark:text-gray-400"
+                    )}>
+                      {item.description}
                     </div>
-                  )}
+                  </div>
 
-                  {isActiveRoute && !isCollapsed && (
+                  {isActiveRoute && (
                     <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80"></div>
-                  )}
-                  
-                  {isActiveRoute && isCollapsed && (
-                    <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-l-full opacity-80"></div>
                   )}
                 </button>
               );
             })
-          ) : !isCollapsed ? (
+          ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Search className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No pages found</p>
@@ -390,49 +374,40 @@ const Navbar: React.FC = () => {
                 Clear search
               </button>
             </div>
-          ) : null}
+          )}
 
           {/* Dashboard Link for Logged In Users */}
           {isLoggedIn && (
             <>
               <div className={cn(
-                "my-4 bg-gray-200 dark:bg-gray-700",
-                isCollapsed ? "mx-2 h-px" : "mx-2 h-px"
+                "my-4 bg-gray-200 dark:bg-gray-700 mx-2 h-px"
               )}></div>
               <button
                 onClick={() => handleNavClick('/dashboard')}
                 className={cn(
-                  "group relative w-full flex items-center text-left text-sm rounded-xl transition-all duration-300 ease-out transform hover:scale-[1.02]",
-                  isCollapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3.5",
+                  "group relative w-full flex items-center text-left text-sm rounded-xl transition-all duration-300 ease-out transform hover:scale-[1.02] gap-3 px-4 py-3.5",
                   isActive('/dashboard')
                     ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
                     : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
                 )}
-                title={isCollapsed ? "Dashboard" : undefined}
               >
                 <LayoutDashboard className={cn(
                   "h-5 w-5 transition-all duration-300 flex-shrink-0",
                   isActive('/dashboard') ? "text-white" : "text-emerald-500"
                 )} />
 
-                {!isCollapsed && (
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">Dashboard</div>
-                    <div className={cn(
-                      "text-xs truncate transition-colors duration-300",
-                      isActive('/dashboard') ? "text-white/80" : "text-gray-500 dark:text-gray-400"
-                    )}>
-                      Your personal space
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">Dashboard</div>
+                  <div className={cn(
+                    "text-xs truncate transition-colors duration-300",
+                    isActive('/dashboard') ? "text-white/80" : "text-gray-500 dark:text-gray-400"
+                  )}>
+                    Your personal space
                   </div>
-                )}
+                </div>
 
-                {isActive('/dashboard') && !isCollapsed && (
+                {isActive('/dashboard') && (
                   <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-l-full opacity-80"></div>
-                )}
-                
-                {isActive('/dashboard') && isCollapsed && (
-                  <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-l-full opacity-80"></div>
                 )}
               </button>
             </>
@@ -441,79 +416,59 @@ const Navbar: React.FC = () => {
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          {!isCollapsed && (
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              Account
-            </h3>
-          )}
+          <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            Account
+          </h3>
           <div className="space-y-2">
             <button
               onClick={() => {
                 setIsAuthOpen(true);
                 setIsMenuOpen(false);
               }}
-              className={cn(
-                "w-full flex items-center text-sm text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200 group",
-                isCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-4 py-2.5"
-              )}
-              title={isCollapsed ? "Profile" : undefined}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200 group"
             >
               <User className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
-              {!isCollapsed && <span>Profile</span>}
+              <span>Profile</span>
             </button>
             
             {!isLoggedIn ? (
               <Button
-                className={cn(
-                  "w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center",
-                  isCollapsed ? "py-3 px-2" : "py-3 space-x-2"
-                )}
+                className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center py-3 space-x-2"
                 onClick={() => {
                   setIsAuthOpen(true);
                   setIsMenuOpen(false);
                 }}
-                title={isCollapsed ? "Sign In" : undefined}
               >
                 <User size={18} />
-                {!isCollapsed && (
-                  <>
-                    <span>Sign In</span>
-                    <Sparkles size={16} className="opacity-80" />
-                  </>
-                )}
+                <span>Sign In</span>
+                <Sparkles size={16} className="opacity-80" />
               </Button>
             ) : (
               <button
                 onClick={handleLogout}
-                className={cn(
-                  "w-full flex items-center text-sm text-gray-800 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200 group",
-                  isCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-4 py-2.5"
-                )}
-                title={isCollapsed ? "Sign Out" : undefined}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200 group"
               >
                 <X className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
-                {!isCollapsed && <span>Sign Out</span>}
+                <span>Sign Out</span>
               </button>
             )}
           </div>
           
           {/* Status Indicator */}
-          {!isCollapsed && (
-            <div className="flex items-center justify-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                <div className={cn(
-                  "w-2 h-2 rounded-full animate-pulse",
-                  isLoggedIn ? "bg-green-500" : "bg-gray-500"
-                )}></div>
-                <span>{isLoggedIn ? "Connected" : "Welcome"}</span>
-              </div>
+          <div className="flex items-center justify-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className={cn(
+                "w-2 h-2 rounded-full animate-pulse",
+                isLoggedIn ? "bg-green-500" : "bg-gray-500"
+              )}></div>
+              <span>{isLoggedIn ? "Connected" : "Welcome"}</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* Mobile Menu Overlay */}
-      {(isMenuOpen || (shouldHideNavbar && showNavbarOnDashboard)) && (
+      {(isMenuOpen || (shouldHideNavbar && showNavbarOnPage)) && (
         <div
           className={cn(
             "fixed inset-0 bg-black bg-opacity-50 z-30",
@@ -521,7 +476,7 @@ const Navbar: React.FC = () => {
           )}
           onClick={() => {
             setIsMenuOpen(false);
-            setShowNavbarOnDashboard(false);
+            setShowNavbarOnPage(false);
           }}
         />
       )}
@@ -575,28 +530,36 @@ const Navbar: React.FC = () => {
           50% { background-position: 100% 50%; }
         }
 
-        /* Responsive body padding - only apply when navbar is visible */
-        body:not(.dashboard-view):not(.admin-view) {
+        /* Body padding management */
+        body {
+          transition: padding-left 0.3s ease-in-out, padding-top 0.3s ease-in-out;
+        }
+
+        /* Home page - always show navbar */
+        body.navbar-view {
           padding-top: 80px;
         }
         
         @media (min-width: 768px) {
-          body:not(.dashboard-view):not(.admin-view) {
+          body.navbar-view {
             padding-top: 80px;
             padding-left: 288px; /* 72 * 4 = 288px for w-72 */
-            transition: padding-left 0.3s ease-in-out;
-          }
-          
-          body:not(.dashboard-view):not(.admin-view).navbar-collapsed {
-            padding-left: 80px; /* 20 * 4 = 80px for w-20 */
           }
         }
 
-        /* Reset padding on dashboard/admin pages */
-        body.dashboard-view,
-        body.admin-view {
-          padding-top: 0 !important;
-          padding-left: 0 !important;
+        /* Non-home pages - hidden navbar by default */
+        body.navbar-hidden {
+          padding-top: 0;
+          padding-left: 0;
+        }
+        
+        /* Mobile always has top padding for mobile header */
+        @media (max-width: 767px) {
+          body.navbar-view,
+          body.navbar-hidden {
+            padding-top: 80px !important;
+            padding-left: 0 !important;
+          }
         }
 
         /* Tooltip styles for collapsed state */
