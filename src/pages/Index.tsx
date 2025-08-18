@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
@@ -31,16 +31,56 @@ interface Event {
   };
 }
 
+interface LowestPriceTicket {
+  id: number;
+  type_name: string;
+  price: number;
+  currency: string;
+  currency_symbol: string;
+  remaining_quantity: number;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [featuredEvent, setFeaturedEvent] = useState<Event | null>(null);
+  const [featuredEventTicket, setFeaturedEventTicket] = useState<LowestPriceTicket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTicket, setIsLoadingTicket] = useState(false);
   const { toast } = useToast();
 
   // Get current date for filtering upcoming events
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
+
+  // Fetch lowest price ticket for featured event
+  const fetchFeaturedEventTicket = useCallback(async (eventId: number) => {
+    if (!eventId) return;
+    
+    setIsLoadingTicket(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/lowest-price/${eventId}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Featured Event Ticket API Response:', data);
+        setFeaturedEventTicket(data.lowest_price_ticket);
+      } else {
+        console.error('Failed to fetch ticket data for featured event:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching lowest price ticket for featured event:', error);
+    } finally {
+      setIsLoadingTicket(false);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -114,6 +154,13 @@ const Index = () => {
 
     fetchEvents();
   }, [toast]);
+
+  // Fetch ticket data when featured event changes
+  useEffect(() => {
+    if (featuredEvent) {
+      fetchFeaturedEventTicket(featuredEvent.id);
+    }
+  }, [featuredEvent, fetchFeaturedEventTicket]);
 
   const handleLike = async (eventId: number) => {
     try {
@@ -315,10 +362,11 @@ const Index = () => {
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 lg:gap-6">
                               <button 
-                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-base lg:text-lg"
+                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-base lg:text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 onClick={() => navigate(`/events/${featuredEvent.id}`)}
+                                disabled={featuredEventTicket?.remaining_quantity === 0}
                               >
-                                Get Tickets
+                                {featuredEventTicket?.remaining_quantity === 0 ? 'Sold Out' : 'Get Tickets'}
                               </button>
                               
                               <button 
@@ -335,7 +383,25 @@ const Index = () => {
                         {/* Top Right Price Badge */}
                         <div className="absolute top-6 right-6 lg:top-8 lg:right-8">
                           <div className="px-4 py-2 lg:px-6 lg:py-3 bg-green-500/90 backdrop-blur-sm rounded-xl lg:rounded-2xl border border-green-400/30">
-                            <p className="text-white font-bold text-sm lg:text-base">Starting from KSh 1,299</p>
+                            {isLoadingTicket ? (
+                              <p className="text-white font-bold text-sm lg:text-base">Loading...</p>
+                            ) : featuredEventTicket ? (
+                              <div className="text-center">
+                                <p className="text-white font-bold text-sm lg:text-base">
+                                  Starting from {featuredEventTicket.currency_symbol || 'KSh'}{featuredEventTicket.price.toLocaleString()}
+                                </p>
+                                {featuredEventTicket.remaining_quantity <= 10 && featuredEventTicket.remaining_quantity > 0 && (
+                                  <p className="text-green-200 text-xs mt-1">
+                                    Only {featuredEventTicket.remaining_quantity} left!
+                                  </p>
+                                )}
+                                {featuredEventTicket.remaining_quantity === 0 && (
+                                  <p className="text-red-200 text-xs mt-1">Sold Out</p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-white font-bold text-sm lg:text-base">Starting from KSh 1,299</p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -722,4 +788,3 @@ const Index = () => {
 };
 
 export default Index;
-
