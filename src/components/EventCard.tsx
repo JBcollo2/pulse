@@ -75,7 +75,10 @@ const EventCard: React.FC<EventCardProps> = ({
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Ticket API Response for event', id, ':', data); // Debug log
         setLowestPriceTicket(data.lowest_price_ticket);
+      } else {
+        console.error('Failed to fetch ticket data:', response.status);
       }
     } catch (error) {
       console.error('Error fetching lowest price ticket:', error);
