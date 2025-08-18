@@ -90,10 +90,22 @@ const Navbar: React.FC = () => {
   // Hide navbar on dashboard and admin routes
   const shouldHideNavbar = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
 
-  // Don't render navbar on dashboard/admin pages
-  if (shouldHideNavbar) {
-    return null;
-  }
+  // Effect to manage body classes for proper spacing
+  useEffect(() => {
+    const body = document.body;
+    
+    if (shouldHideNavbar) {
+      body.classList.add(location.pathname.startsWith('/dashboard') ? 'dashboard-view' : 'admin-view');
+      body.classList.remove('navbar-view');
+    } else {
+      body.classList.add('navbar-view');
+      body.classList.remove('dashboard-view', 'admin-view');
+    }
+
+    return () => {
+      body.classList.remove('navbar-view', 'dashboard-view', 'admin-view');
+    };
+  }, [shouldHideNavbar, location.pathname]);
 
   const navigationItems = [
     { path: '/', label: 'Home', icon: Home, description: 'Welcome & overview', category: 'Main', color: 'text-blue-500' },
