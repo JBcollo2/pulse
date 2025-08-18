@@ -54,7 +54,7 @@ const HeroSection: React.FC = () => {
   return (
     <div className="w-full">
       {/* Hero Section with Rounded Top */}
-      <div className="relative rounded-t-3xl overflow-hidden w-full bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="relative rounded-t-3xl overflow-hidden w-full">
         {/* Background Slides */}
         {slides.map((slide, index) => (
           <div
@@ -73,7 +73,7 @@ const HeroSection: React.FC = () => {
         ))}
 
         {/* Gradient Overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/60 via-transparent to-blue-900/60 dark:from-gray-900/80 dark:via-gray-800/40 dark:to-gray-900/80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/80" />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col md:flex-row h-full w-full min-h-[500px]">
@@ -103,7 +103,7 @@ const HeroSection: React.FC = () => {
                     <Button
                       type="submit"
                       size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-purple-600 hover:bg-purple-700 text-white rounded-full px-4 py-2"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-700 text-white rounded-full px-4 py-2"
                     >
                       Search
                     </Button>
@@ -113,7 +113,7 @@ const HeroSection: React.FC = () => {
 
               <AnimatedSection delay={200}>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button asChild size="lg" className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <Button asChild size="lg" className="bg-gradient-to-r from-[#3b82f6] to-[#06b6d4] hover:from-[#1d4ed8] hover:to-[#0891b2] shadow-lg hover:shadow-xl transition-all duration-300">
                     <Link to="/events">
                       <Ticket className="h-5 w-5 mr-2" />
                       Browse Events
@@ -170,27 +170,27 @@ const HeroSection: React.FC = () => {
                 title: "Instant Booking",
                 description: "Book tickets in seconds with our lightning-fast checkout process",
                 icon: <Zap className="w-8 h-8 text-white" />,
-                color: "from-yellow-400 to-orange-500"
+                color: "bg-gray-600"
               },
               {
                 title: "Live Updates",
                 description: "Get real-time notifications about your favorite events and artists",
                 icon: <Bell className="w-8 h-8 text-white" />,
-                color: "from-blue-400 to-purple-500"
+                color: "bg-gray-700"
               },
               {
                 title: "Exclusive Access",
                 description: "Unlock VIP experiences and early bird tickets before anyone else",
                 icon: <Crown className="w-8 h-8 text-white" />,
-                color: "from-pink-400 to-purple-500"
+                color: "bg-gray-800"
               }
             ].map((feature, index) => (
               <div key={index} className="group cursor-pointer">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl dark:shadow-gray-900/20 dark:hover:shadow-gray-900/40 transition-all duration-300 transform hover:scale-105 text-center border border-gray-100 dark:border-gray-700">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r ${feature.color} rounded-full mb-6 group-hover:shadow-lg transition-all duration-300 mx-auto`}>
+                  <div className={`inline-flex items-center justify-center w-16 h-16 ${feature.color} rounded-full mb-6 group-hover:shadow-lg transition-all duration-300 mx-auto`}>
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                     {feature.title}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
