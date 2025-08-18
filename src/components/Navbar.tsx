@@ -90,6 +90,7 @@ const Navbar: React.FC = () => {
 
   // Hide navbar on dashboard and admin routes
   const shouldHideNavbar = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+  const [showSidebarOnDashboard, setShowSidebarOnDashboard] = useState<boolean>(false);
 
   // Effect to manage body classes for proper spacing
   useEffect(() => {
@@ -156,8 +157,25 @@ const Navbar: React.FC = () => {
 
   return (
     <>
+      {/* Dashboard Toggle Button - Shows when navbar is hidden */}
+      {shouldHideNavbar && !showSidebarOnDashboard && (
+        <div className="fixed top-4 left-4 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowSidebarOnDashboard(true)}
+            className="w-10 h-10 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 backdrop-blur-sm"
+          >
+            <Menu className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+          </Button>
+        </div>
+      )}
+
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+      <div className={cn(
+        "md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm",
+        shouldHideNavbar && "hidden"
+      )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -185,6 +203,7 @@ const Navbar: React.FC = () => {
       {/* Desktop Header - Simplified top bar */}
       <div className={cn(
         "hidden md:block fixed top-0 right-0 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300",
+        shouldHideNavbar && "hidden",
         isCollapsed ? "left-20" : "left-72"
       )}>
         <div className="flex items-center justify-end gap-4">
@@ -244,7 +263,9 @@ const Navbar: React.FC = () => {
         // Mobile positioning
         isMenuOpen ? "left-0 w-72" : "-left-72 w-72",
         // Desktop positioning and width
-        "md:left-0",
+        shouldHideNavbar ? (
+          showSidebarOnDashboard ? "md:left-0" : "md:-left-72"
+        ) : "md:left-0",
         isCollapsed ? "md:w-20" : "md:w-72"
       )}>
         {/* Sidebar Header */}
@@ -258,6 +279,17 @@ const Navbar: React.FC = () => {
                 <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
               </div>
+            )}
+            {/* Close button for dashboard pages */}
+            {shouldHideNavbar && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSidebarOnDashboard(false)}
+                className="ml-auto hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-colors rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             )}
           </div>
 
@@ -287,20 +319,22 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Desktop Collapse Toggle Button */}
-        <div className="hidden md:block absolute -right-3 top-24 z-50">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleSidebar}
-            className="w-6 h-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-3 w-3 text-gray-600 dark:text-gray-300" />
-            ) : (
-              <ChevronLeft className="h-3 w-3 text-gray-600 dark:text-gray-300" />
-            )}
-          </Button>
-        </div>
+        {!shouldHideNavbar && (
+          <div className="hidden md:block absolute -right-3 top-24 z-50">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleSidebar}
+              className="w-6 h-6 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+              ) : (
+                <ChevronLeft className="h-3 w-3 text-gray-600 dark:text-gray-300" />
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -485,10 +519,13 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Menu Overlay */}
-      {isMenuOpen && (
+      {(isMenuOpen || (shouldHideNavbar && showSidebarOnDashboard)) && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setIsMenuOpen(false)}
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => {
+            setIsMenuOpen(false);
+            setShowSidebarOnDashboard(false);
+          }}
         />
       )}
 
@@ -558,7 +595,7 @@ const Navbar: React.FC = () => {
           }
         }
 
-        /* Reset padding on dashboard/admin pages */
+        /* Reset padding on dashboard/admin pages - no sidebar interference */
         body.dashboard-view,
         body.admin-view {
           padding-top: 0 !important;
