@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Calendar, MapPin, Clock, Users, Star, Ticket, Eye, TrendingUp, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,13 @@ interface EventCardProps {
   };
 }
 
+interface LowestPriceTicket {
+  id: number;
+  type_name: string;
+  price: number;
+  remaining_quantity: number;
+}
+
 const EventCard: React.FC<EventCardProps> = ({
   id,
   title,
@@ -48,6 +55,36 @@ const EventCard: React.FC<EventCardProps> = ({
   const [isLiked, setIsLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const [lowestPriceTicket, setLowestPriceTicket] = useState<LowestPriceTicket | null>(null);
+  const [isLoadingTicket, setIsLoadingTicket] = useState(false);
+
+  // Fetch lowest price ticket for this event
+  const fetchLowestPriceTicket = useCallback(async () => {
+    setIsLoadingTicket(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/lowest-price/${id}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLowestPriceTicket(data.lowest_price_ticket);
+      }
+    } catch (error) {
+      console.error('Error fetching lowest price ticket:', error);
+    } finally {
+      setIsLoadingTicket(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchLowestPriceTicket();
+  }, [fetchLowestPriceTicket]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -192,7 +229,7 @@ const EventCard: React.FC<EventCardProps> = ({
                 disabled={isLiking}
                 className={`absolute top-4 right-4 p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
                   isLiked 
-                    ? 'bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white shadow-lg scale-110' 
+                    ? 'bg-gradient-to-r from-blue-500 to-[#10b981] text-white shadow-lg scale-110' 
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
                 whileTap={{ scale: 0.9 }}
@@ -315,26 +352,54 @@ const EventCard: React.FC<EventCardProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              {/* Price */}
+              {/* Price and Ticket Info */}
               <div className="flex flex-col">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {price}
-                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {lowestPriceTicket ? `${lowestPriceTicket.price}` : price}
+                  </span>
+                  {lowestPriceTicket && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      starting from
+                    </span>
+                  )}
+                </div>
+                {lowestPriceTicket && (
+                  <div className="space-y-1 mt-1">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {lowestPriceTicket.type_name}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        lowestPriceTicket.remaining_quantity > 10 
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                          : lowestPriceTicket.remaining_quantity > 0
+                          ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {lowestPriceTicket.remaining_quantity > 0 
+                          ? `${lowestPriceTicket.remaining_quantity} left`
+                          : 'Sold out'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
                 {isPast && (
-                  <Badge variant="secondary" className="w-fit text-xs">
+                  <Badge variant="secondary" className="w-fit text-xs mt-1">
                     Past Event
                   </Badge>
                 )}
               </div>
 
-              {/* Get Tickets Button */}
+              {/* Get Tickets Button - Made Smaller */}
               <motion.button
-                className="flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
-                disabled={isPast}
+                className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 text-sm"
+                disabled={isPast || (lowestPriceTicket && lowestPriceTicket.remaining_quantity === 0)}
                 whileTap={{ scale: 0.95 }}
                 whileHover={{ 
-                  boxShadow: `0 20px 40px -10px rgba(59, 130, 246, 0.3)`,
-                  y: -2
+                  boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
+                  y: -1
                 }}
                 onClick={(e) => {
                   e.preventDefault();
@@ -342,14 +407,15 @@ const EventCard: React.FC<EventCardProps> = ({
                   // Handle ticket purchase
                 }}
               >
-                <Ticket className="w-5 h-5" />
-                <span>{isPast ? 'Ended' : 'Get Tickets'}</span>
-                <motion.div
-                  className="absolute inset-0 rounded-xl bg-white/20"
-                  initial={{ scale: 0, opacity: 0 }}
-                  whileHover={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
+                <Ticket className="w-4 h-4" />
+                <span>
+                  {isPast 
+                    ? 'Ended' 
+                    : (lowestPriceTicket && lowestPriceTicket.remaining_quantity === 0)
+                    ? 'Sold Out'
+                    : 'Get Tickets'
+                  }
+                </span>
               </motion.button>
             </motion.div>
           </div>
