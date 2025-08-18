@@ -32,6 +32,8 @@ interface LowestPriceTicket {
   id: number;
   type_name: string;
   price: number;
+  currency: string;
+  currency_symbol: string;
   remaining_quantity: number;
 }
 
