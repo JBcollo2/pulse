@@ -266,12 +266,22 @@ const Navbar: React.FC = () => {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
                 <span className="text-white font-bold text-xl">P</span>
               </div>
-              {!isCollapsed && (
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
-                </div>
-              )}
+              <div className="min-w-0 flex-1">
+                <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
+              </div>
+            </div>
+            
+            {/* Desktop Close Button */}
+            <div className="hidden md:block">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleNavbarVisibility}
+                className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
+              >
+                <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              </Button>
             </div>
           </div>
 
