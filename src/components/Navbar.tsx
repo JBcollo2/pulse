@@ -87,6 +87,14 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  // Hide navbar on dashboard and admin routes
+  const shouldHideNavbar = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+
+  // Don't render navbar on dashboard/admin pages
+  if (shouldHideNavbar) {
+    return null;
+  }
+
   const navigationItems = [
     { path: '/', label: 'Home', icon: Home, description: 'Welcome & overview', category: 'Main', color: 'text-blue-500' },
     { path: '/events', label: 'Events', icon: Calendar, description: 'Discover events', category: 'Discover', color: 'text-purple-500' },
@@ -409,18 +417,6 @@ const Navbar: React.FC = () => {
       />
 
       <style>{`
-        /* Add padding to main content to account for sidebar */
-        body {
-          padding-top: 80px;
-        }
-        
-        @media (min-width: 768px) {
-          body {
-            padding-top: 80px;
-            padding-left: 288px; /* 72 * 4 = 288px for w-72 */
-          }
-        }
-        
         .navbar-backdrop {
           backdrop-filter: blur(20px);
           background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(239, 246, 255, 0.9), rgba(236, 254, 255, 0.9));
@@ -460,6 +456,25 @@ const Navbar: React.FC = () => {
         @keyframes gradientText {
           0%, 100% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
+        }
+
+        /* Responsive body padding - only apply when navbar is visible */
+        body:not(.dashboard-view):not(.admin-view) {
+          padding-top: 80px;
+        }
+        
+        @media (min-width: 768px) {
+          body:not(.dashboard-view):not(.admin-view) {
+            padding-top: 80px;
+            padding-left: 288px; /* 72 * 4 = 288px for w-72 */
+          }
+        }
+
+        /* Reset padding on dashboard/admin pages */
+        body.dashboard-view,
+        body.admin-view {
+          padding-top: 0 !important;
+          padding-left: 0 !important;
         }
       `}</style>
     </>
