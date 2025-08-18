@@ -88,8 +88,9 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
-  // Hide navbar on dashboard and admin routes
+  // Hide navbar on dashboard and admin routes, but show top access button
   const shouldHideNavbar = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+  const [showNavbarOnDashboard, setShowNavbarOnDashboard] = useState<boolean>(false);
 
   // Effect to manage body classes for proper spacing
   useEffect(() => {
@@ -156,6 +157,24 @@ const Navbar: React.FC = () => {
 
   return (
     <>
+      {/* Dashboard/Admin Top Access Button */}
+      {shouldHideNavbar && (
+        <div className="fixed top-4 left-4 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowNavbarOnDashboard(!showNavbarOnDashboard)}
+            className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          >
+            {showNavbarOnDashboard ? (
+              <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            ) : (
+              <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
         <div className="flex items-center justify-between">
@@ -183,60 +202,62 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Desktop Header - Simplified top bar */}
-      <div className={cn(
-        "hidden md:block fixed top-0 right-0 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300",
-        isCollapsed ? "left-20" : "left-72"
-      )}>
-        <div className="flex items-center justify-end gap-4">
-          <ThemeToggle />
-          
-          {isLoggedIn && (
-            <Link to="/dashboard">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "relative group transition-all duration-300 rounded-xl border border-transparent",
-                  isActive('/dashboard')
-                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
-                    : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
-                )}
-              >
-                <LayoutDashboard size={20} />
-              </Button>
-            </Link>
-          )}
+      {!shouldHideNavbar && (
+        <div className={cn(
+          "hidden md:block fixed top-0 right-0 z-40 bg-white dark:bg-gray-800 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm transition-all duration-300",
+          isCollapsed ? "left-20" : "left-72"
+        )}>
+          <div className="flex items-center justify-end gap-4">
+            <ThemeToggle />
+            
+            {isLoggedIn && (
+              <Link to="/dashboard">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "relative group transition-all duration-300 rounded-xl border border-transparent",
+                    isActive('/dashboard')
+                      ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25"
+                      : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  )}
+                >
+                  <LayoutDashboard size={20} />
+                </Button>
+              </Link>
+            )}
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative group hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-all duration-300 rounded-xl"
-            onClick={() => setIsAuthOpen(true)}
-          >
-            <User size={20} />
-          </Button>
-
-          {!isLoggedIn ? (
             <Button
+              variant="ghost"
+              size="icon"
+              className="relative group hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-all duration-300 rounded-xl"
               onClick={() => setIsAuthOpen(true)}
-              className="relative group bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium px-6 py-2 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 overflow-hidden"
             >
-              <span className="relative z-10 flex items-center space-x-2">
-                <span>Sign In</span>
-                <Sparkles size={16} className="opacity-80" />
-              </span>
+              <User size={20} />
             </Button>
-          ) : (
-            <Button
-              variant="outline"
-              className="relative group border-2 border-blue-300 dark:border-green-400 text-blue-600 dark:text-green-400 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-green-500 font-medium px-6 py-2 rounded-xl hover:border-transparent transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
-              onClick={handleLogout}
-            >
-              <span className="relative z-10">Sign Out</span>
-            </Button>
-          )}
+
+            {!isLoggedIn ? (
+              <Button
+                onClick={() => setIsAuthOpen(true)}
+                className="relative group bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium px-6 py-2 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 overflow-hidden"
+              >
+                <span className="relative z-10 flex items-center space-x-2">
+                  <span>Sign In</span>
+                  <Sparkles size={16} className="opacity-80" />
+                </span>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="relative group border-2 border-blue-300 dark:border-green-400 text-blue-600 dark:text-green-400 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-green-500 font-medium px-6 py-2 rounded-xl hover:border-transparent transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
+                onClick={handleLogout}
+              >
+                <span className="relative z-10">Sign Out</span>
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Left Sidebar */}
       <div className={cn(
@@ -244,21 +265,41 @@ const Navbar: React.FC = () => {
         // Mobile positioning
         isMenuOpen ? "left-0 w-72" : "-left-72 w-72",
         // Desktop positioning and width
-        "md:left-0",
+        shouldHideNavbar 
+          ? (showNavbarOnDashboard ? "md:left-0" : "md:-left-72")
+          : "md:left-0",
         isCollapsed ? "md:w-20" : "md:w-72"
       )}>
         {/* Sidebar Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 mt-16 md:mt-0">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <span className="text-white font-bold text-xl">P</span>
-            </div>
-            {!isCollapsed && (
-              <div className="min-w-0 flex-1">
-                <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <span className="text-white font-bold text-xl">P</span>
               </div>
-            )}
+              {!isCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-bold text-xl text-gray-800 dark:text-gray-200">Pulse</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Event Discovery</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Desktop Collapse Toggle Button */}
+            <div className="hidden md:block">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="w-8 h-8 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 hover:scale-110"
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -287,20 +328,7 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Desktop Collapse Toggle Button */}
-        <div className="hidden md:block absolute -right-3 top-1/2 transform -translate-y-1/2 z-50">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleSidebar}
-            className="w-7 h-7 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-2 border-blue-200 dark:border-blue-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 hover:from-blue-100 hover:to-green-100 dark:hover:from-blue-800/30 dark:hover:to-green-800/30"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            ) : (
-              <ChevronLeft className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            )}
-          </Button>
-        </div>
+        {/* Removed - now in header */}
 
         {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -485,10 +513,16 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Menu Overlay */}
-      {isMenuOpen && (
+      {(isMenuOpen || (shouldHideNavbar && showNavbarOnDashboard)) && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setIsMenuOpen(false)}
+          className={cn(
+            "fixed inset-0 bg-black bg-opacity-50 z-30",
+            shouldHideNavbar ? "md:block" : "md:hidden"
+          )}
+          onClick={() => {
+            setIsMenuOpen(false);
+            setShowNavbarOnDashboard(false);
+          }}
         />
       )}
 
