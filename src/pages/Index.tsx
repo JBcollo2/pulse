@@ -212,66 +212,146 @@ const Index = () => {
             <HeroSection />
           </motion.div>
           
-          {/* Featured Event Section */}
+          {/* Enhanced Large Featured Event Section */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-colors duration-300 border-y border-blue-100/50 dark:border-gray-700/50">
-            <div className="container mx-auto px-4 py-8 md:py-16">
+            <div className="container mx-auto px-4 py-12 md:py-24 lg:py-32">
               <motion.div variants={itemVariants}>
-                <div className="text-center mb-6 md:mb-10">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-200/30 dark:border-gray-700/50 mb-4">
-                    <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Spotlight Event</span>
+                <div className="text-center mb-12 md:mb-16 lg:mb-20">
+                  <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-200/30 dark:border-gray-700/50 mb-6">
+                    <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-base font-medium text-blue-700 dark:text-blue-300">Spotlight Event</span>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-teal-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-blue-300 dark:to-teal-400">
+                  <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-blue-600 via-blue-700 to-teal-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-blue-300 dark:to-teal-400 mb-4">
                     Featured Event
                   </h2>
+                  <p className="text-lg md:text-xl lg:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                    Don't miss out on this incredible experience
+                  </p>
                 </div>
               </motion.div>
               
               {isLoading ? (
-                <motion.div variants={itemVariants} className="max-w-4xl mx-auto">
-                  <div className="relative overflow-hidden rounded-3xl">
-                    <Skeleton className="h-64 md:h-[400px] w-full bg-gradient-to-r from-blue-100 to-teal-100 dark:from-gray-700 dark:to-gray-600" />
-                    <div className="absolute bottom-6 left-6 space-y-2">
+                <motion.div variants={itemVariants} className="max-w-7xl mx-auto">
+                  <div className="relative overflow-hidden rounded-3xl lg:rounded-[2rem]">
+                    <Skeleton className="h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] w-full bg-gradient-to-r from-blue-100 to-teal-100 dark:from-gray-700 dark:to-gray-600" />
+                    <div className="absolute bottom-8 left-8 space-y-3">
+                      <Skeleton className="h-8 w-80 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
                       <Skeleton className="h-6 w-64 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
-                      <Skeleton className="h-4 w-48 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
+                      <Skeleton className="h-6 w-48 bg-white/30 dark:bg-gray-600/30 backdrop-blur-sm rounded-lg" />
                     </div>
                   </div>
                 </motion.div>
               ) : featuredEvent ? (
                 <motion.div variants={itemVariants}>
-                  <div className="relative max-w-4xl mx-auto">
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-teal-500/20 rounded-3xl blur-xl -z-10"></div>
-                    <FeaturedEvent
-                      id={featuredEvent.id.toString()}
-                      title={featuredEvent.name}
-                      description={featuredEvent.description}
-                      date={new Date(featuredEvent.date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                      time={`${featuredEvent.start_time} - ${featuredEvent.end_time || 'Till Late'}`}
-                      location={featuredEvent.location}
-                      image={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}
-                      price="Starting from $129.99"
-                      onLike={() => handleLike(featuredEvent.id)}
-                      likesCount={featuredEvent.likes_count}
-                      isPast={new Date(featuredEvent.date) < currentDate}
-                    />
+                  <div className="relative max-w-7xl mx-auto">
+                    {/* Enhanced glow effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-teal-500/20 to-emerald-500/20 rounded-3xl lg:rounded-[2rem] blur-2xl -z-10"></div>
+                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 via-teal-500/10 to-emerald-500/10 rounded-3xl lg:rounded-[2rem] blur-3xl -z-20"></div>
+                    
+                    {/* Large Featured Event Card */}
+                    <div className="relative overflow-hidden rounded-3xl lg:rounded-[2rem] bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-white/20 dark:border-gray-700/50 shadow-2xl group hover:shadow-3xl transition-all duration-500">
+                      {/* Event Image */}
+                      <div className="relative h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] overflow-hidden">
+                        <img 
+                          src={featuredEvent.image || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'} 
+                          alt={featuredEvent.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                        
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
+                        
+                        {/* Event Details Overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12">
+                          <div className="max-w-4xl">
+                            {/* Event Badge */}
+                            {new Date(featuredEvent.date) < currentDate && (
+                              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/20 border border-orange-300/30 backdrop-blur-sm mb-4">
+                                <span className="text-sm font-medium text-orange-200">Past Event</span>
+                              </div>
+                            )}
+                            
+                            {/* Event Title */}
+                            <h3 className="text-2xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 lg:mb-6 leading-tight">
+                              {featuredEvent.name}
+                            </h3>
+                            
+                            {/* Event Description */}
+                            <p className="text-base md:text-lg lg:text-xl text-gray-200 mb-6 lg:mb-8 max-w-3xl leading-relaxed">
+                              {featuredEvent.description}
+                            </p>
+                            
+                            {/* Event Meta Info */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-8 mb-6 lg:mb-8">
+                              <div className="flex items-center gap-3 text-gray-200">
+                                <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
+                                  <Calendar className="w-5 h-5 lg:w-6 lg:h-6" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-300">Date & Time</p>
+                                  <p className="text-base lg:text-lg font-semibold">
+                                    {new Date(featuredEvent.date).toLocaleDateString('en-US', {
+                                      weekday: 'short',
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })} • {featuredEvent.start_time} - {featuredEvent.end_time || 'Till Late'}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3 text-gray-200">
+                                <div className="p-2 rounded-full bg-white/10 backdrop-blur-sm">
+                                  <MapPin className="w-5 h-5 lg:w-6 lg:h-6" />
+                                </div>
+                                <div>
+                                  <p className="text-sm text-gray-300">Location</p>
+                                  <p className="text-base lg:text-lg font-semibold">{featuredEvent.location}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-4 lg:gap-6">
+                              <button 
+                                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-semibold rounded-xl lg:rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-base lg:text-lg"
+                                onClick={() => navigate(`/events/${featuredEvent.id}`)}
+                              >
+                                Get Tickets
+                              </button>
+                              
+                              <button 
+                                className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl lg:rounded-2xl border border-white/20 backdrop-blur-sm hover:border-white/30 transition-all duration-300 text-base lg:text-lg flex items-center justify-center gap-2"
+                                onClick={() => handleLike(featuredEvent.id)}
+                              >
+                                <span>♥</span>
+                                <span>{featuredEvent.likes_count} Likes</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Top Right Price Badge */}
+                        <div className="absolute top-6 right-6 lg:top-8 lg:right-8">
+                          <div className="px-4 py-2 lg:px-6 lg:py-3 bg-green-500/90 backdrop-blur-sm rounded-xl lg:rounded-2xl border border-green-400/30">
+                            <p className="text-white font-bold text-sm lg:text-base">Starting from KSh 1,299</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               ) : (
-                <motion.div variants={itemVariants} className="text-center py-16">
+                <motion.div variants={itemVariants} className="text-center py-24 lg:py-32">
                   <div className="relative inline-block">
-                    <div className="text-6xl mb-4 animate-bounce">🎭</div>
-                    <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-teal-500/20 rounded-full blur-xl -z-10"></div>
+                    <div className="text-8xl lg:text-9xl mb-6 animate-bounce">🎭</div>
+                    <div className="absolute -inset-8 bg-gradient-to-r from-blue-500/20 to-teal-500/20 rounded-full blur-2xl -z-10"></div>
                   </div>
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent mb-2">
+                  <h3 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent mb-4">
                     No Featured Events
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
+                  <p className="text-lg lg:text-xl text-gray-600 dark:text-gray-300">
                     Check back soon for exciting upcoming events!
                   </p>
                 </motion.div>
@@ -322,37 +402,194 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Digital Tickets Section */}
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm transition-colors duration-300 border-y border-teal-100/50 dark:border-gray-700/50">
-            <div className="container mx-auto px-4 py-8 md:py-16">
-              <div className="max-w-4xl mx-auto">
-                <motion.div variants={itemVariants} className="text-center mb-6 md:mb-10">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/10 to-blue-500/10 border border-teal-200/30 dark:border-gray-700/50 mb-4">
-                    <Calendar className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                    <span className="text-sm font-medium text-teal-700 dark:text-teal-300">Digital Experience</span>
+          {/* Advanced Digital Experience Section */}
+          <div className="relative bg-gradient-to-br from-gray-900 via-blue-900/50 to-purple-900/30 dark:from-gray-950 dark:via-blue-950/50 dark:to-purple-950/30 transition-colors duration-300 overflow-hidden">
+            {/* Animated Background */}
+            <div className="absolute inset-0">
+              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-400/10 via-transparent to-transparent"></div>
+              <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-purple-400/10 via-transparent to-transparent"></div>
+              <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+            </div>
+            
+            {/* Floating Elements */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-20 left-20 w-2 h-2 bg-blue-400 rounded-full animate-ping delay-1000"></div>
+              <div className="absolute top-40 right-32 w-1 h-1 bg-purple-400 rounded-full animate-pulse delay-2000"></div>
+              <div className="absolute bottom-40 left-40 w-3 h-3 bg-teal-400 rounded-full animate-bounce delay-3000"></div>
+              <div className="absolute bottom-60 right-20 w-2 h-2 bg-emerald-400 rounded-full animate-ping delay-500"></div>
+            </div>
+            
+            <div className="container mx-auto px-4 py-16 md:py-24 lg:py-32 relative z-10">
+              <motion.div variants={itemVariants} className="text-center mb-12 md:mb-16">
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-400/20 dark:border-blue-400/10 backdrop-blur-xl mb-6">
+                  <div className="w-5 h-5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse"></div>
+                  <span className="text-base font-medium text-blue-200 dark:text-blue-300">Next-Gen Technology</span>
+                </div>
+                <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 bg-gradient-to-r from-blue-200 via-purple-200 to-teal-200 bg-clip-text text-transparent dark:from-blue-100 dark:via-purple-100 dark:to-teal-100">
+                  The Future of Event Tickets
+                </h2>
+                <p className="text-lg md:text-xl lg:text-2xl text-blue-100/80 dark:text-blue-100/70 max-w-4xl mx-auto leading-relaxed">
+                  Experience cutting-edge digital tickets powered by AI, blockchain security, and immersive AR technology
+                </p>
+              </motion.div>
+              
+              {/* Feature Grid */}
+              <motion.div variants={itemVariants} className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-16 lg:mb-20">
+                <div className="group">
+                  <div className="relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-blue-400/30 transition-all duration-500 hover:transform hover:scale-105">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent rounded-2xl lg:rounded-3xl group-hover:from-blue-500/20 transition-all duration-500"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-6 group-hover:rotate-12 transition-transform duration-500">
+                        <svg className="w-6 h-6 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 lg:mb-3">Blockchain Security</h3>
+                      <p className="text-blue-200/80 text-sm lg:text-base leading-relaxed">Military-grade encryption with immutable blockchain verification prevents fraud and counterfeiting</p>
+                    </div>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 bg-gradient-to-r from-teal-600 via-blue-600 to-emerald-600 bg-clip-text text-transparent dark:from-teal-400 dark:via-blue-400 dark:to-emerald-400">
-                    Digital Tickets, Real Experiences
-                  </h2>
-                  <p className="text-base md:text-xl text-gray-600 dark:text-gray-300">
-                    Our tickets come to life with animations and secure QR codes for easy scanning at venues
-                  </p>
-                </motion.div>
+                </div>
                 
-                <motion.div variants={itemVariants} className="relative">
-                  {/* Glow effect for ticket preview */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 via-blue-500/20 to-emerald-500/20 rounded-3xl blur-2xl -z-10"></div>
-                  <TicketPreview
-                    eventName="Summer Music Festival"
-                    date="Sat, Jun 15, 2025"
-                    time="2:00 PM - 11:00 PM"
-                    location="Central Park, New York"
-                    ticketHolder="John Doe"
-                    ticketType="VIP Pass"
-                    ticketId="PULSE2025X7891"
-                  />
-                </motion.div>
-              </div>
+                <div className="group">
+                  <div className="relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-purple-400/30 transition-all duration-500 hover:transform hover:scale-105">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent rounded-2xl lg:rounded-3xl group-hover:from-purple-500/20 transition-all duration-500"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-6 group-hover:rotate-12 transition-transform duration-500">
+                        <svg className="w-6 h-6 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 lg:mb-3">AR Experience</h3>
+                      <p className="text-purple-200/80 text-sm lg:text-base leading-relaxed">Interactive augmented reality previews let you explore venues and artists before the event</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="group">
+                  <div className="relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-teal-400/30 transition-all duration-500 hover:transform hover:scale-105">
+                    <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent rounded-2xl lg:rounded-3xl group-hover:from-teal-500/20 transition-all duration-500"></div>
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl lg:rounded-2xl flex items-center justify-center mb-4 lg:mb-6 group-hover:rotate-12 transition-transform duration-500">
+                        <svg className="w-6 h-6 lg:w-8 lg:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 lg:mb-3">Instant Transfer</h3>
+                      <p className="text-teal-200/80 text-sm lg:text-base leading-relaxed">Lightning-fast ticket transfers and resale with smart contracts and automated verification</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+              
+              {/* Interactive Ticket Demo */}
+              <motion.div variants={itemVariants} className="relative max-w-6xl mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-teal-500/20 rounded-3xl lg:rounded-[2rem] blur-3xl -z-10"></div>
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-teal-500/10 rounded-3xl lg:rounded-[2rem] blur-2xl -z-20"></div>
+                
+                {/* Main Demo Container */}
+                <div className="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-2xl rounded-3xl lg:rounded-[2rem] border border-white/20 p-6 md:p-8 lg:p-12 overflow-hidden">
+                  {/* Animated Grid Background */}
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: `linear-gradient(rgba(59, 130, 246, 0.5) 1px, transparent 1px),
+                                       linear-gradient(90deg, rgba(59, 130, 246, 0.5) 1px, transparent 1px)`,
+                      backgroundSize: '20px 20px'
+                    }}></div>
+                  </div>
+                  
+                  <div className="relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                    {/* Left Side - Features */}
+                    <div className="space-y-6 lg:space-y-8">
+                      <div>
+                        <h3 className="text-2xl lg:text-3xl font-bold text-white mb-4 lg:mb-6">Revolutionary Digital Tickets</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-4">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 animate-pulse"></div>
+                            <div>
+                              <h4 className="text-white font-semibold mb-1">Animated QR Codes</h4>
+                              <p className="text-blue-200/80 text-sm">Dynamic, impossible-to-counterfeit QR codes with real-time validation</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 animate-pulse delay-500"></div>
+                            <div>
+                              <h4 className="text-white font-semibold mb-1">Smart Notifications</h4>
+                              <p className="text-purple-200/80 text-sm">AI-powered alerts for travel, weather, and event updates</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="w-2 h-2 bg-teal-400 rounded-full mt-2 animate-pulse delay-1000"></div>
+                            <div>
+                              <h4 className="text-white font-semibold mb-1">Contactless Entry</h4>
+                              <p className="text-teal-200/80 text-sm">NFC and biometric scanning for seamless venue access</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <button className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                          Try Demo
+                        </button>
+                        <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 backdrop-blur-sm hover:border-white/30 transition-all duration-300">
+                          Learn More
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Right Side - 3D Ticket Preview */}
+                    <div className="relative">
+                      <div className="relative transform rotate-y-12 perspective-1000 hover:rotate-y-0 transition-transform duration-700">
+                        {/* Ticket Card */}
+                        <div className="relative w-full max-w-sm mx-auto bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700/50 hover:shadow-blue-500/20 transition-all duration-500">
+                          {/* Holographic Effect */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-teal-400/20 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
+                          
+                          {/* Ticket Header */}
+                          <div className="relative z-10 mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs text-gray-400 uppercase tracking-wider">Digital Ticket</div>
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg animate-pulse"></div>
+                            </div>
+                            <h4 className="text-white font-bold text-lg mb-1">Summer Music Festival 2025</h4>
+                            <div className="flex items-center gap-4 text-sm text-gray-300">
+                              <span>📅 Jun 15, 2025</span>
+                              <span>🕐 8:00 PM</span>
+                            </div>
+                          </div>
+                          
+                          {/* Animated QR Code Area */}
+                          <div className="relative mb-4">
+                            <div className="w-20 h-20 bg-white rounded-lg p-2 mx-auto relative overflow-hidden">
+                              <div className="w-full h-full bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 rounded animate-pulse"></div>
+                              {/* Scanning line animation */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-400/50 to-transparent animate-scan"></div>
+                            </div>
+                            <p className="text-center text-xs text-gray-400 mt-2">Tap to scan</p>
+                          </div>
+                          
+                          {/* Ticket Details */}
+                          <div className="text-center space-y-1">
+                            <p className="text-white font-semibold">John Doe</p>
+                            <p className="text-purple-300 text-sm">VIP Experience</p>
+                            <p className="text-gray-400 text-xs">ID: PULSE2025X7891</p>
+                          </div>
+                          
+                          {/* Interactive Elements */}
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Floating Tech Elements */}
+                      <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full animate-float"></div>
+                      <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full animate-bounce delay-1000"></div>
+                      <div className="absolute top-1/2 -right-8 w-4 h-4 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full animate-pulse delay-2000"></div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
           
@@ -393,6 +630,35 @@ const Index = () => {
           }
         }
         
+        @keyframes scan {
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(100%);
+          }
+        }
+        
+        @keyframes rotate-y-12 {
+          0% {
+            transform: rotateY(12deg);
+          }
+          100% {
+            transform: rotateY(0deg);
+          }
+        }
+        
+        @keyframes holographic {
+          0%, 100% {
+            background-position: 0% 50%;
+            opacity: 0.3;
+          }
+          50% {
+            background-position: 100% 50%;
+            opacity: 0.7;
+          }
+        }
+        
         .animate-gradient-shift {
           background-size: 200% 200%;
           animation: gradientShift 8s ease infinite;
@@ -404,6 +670,25 @@ const Index = () => {
         
         .animate-pulse-glow {
           animation: pulse-glow 4s ease-in-out infinite;
+        }
+        
+        .animate-scan {
+          animation: scan 2s ease-in-out infinite;
+        }
+        
+        .rotate-y-12 {
+          transform: rotateY(12deg);
+        }
+        
+        .perspective-1000 {
+          perspective: 1000px;
+        }
+        
+        .bg-grid-pattern {
+          background-image: 
+            linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+          background-size: 50px 50px;
         }
         
         /* Custom scrollbar */
@@ -437,3 +722,4 @@ const Index = () => {
 };
 
 export default Index;
+
