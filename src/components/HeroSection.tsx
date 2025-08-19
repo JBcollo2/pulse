@@ -1,264 +1,391 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Ticket, ChevronRight, Zap, Bell, Crown, Search } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import AnimatedSection from '@/components/AnimatedSection';
+import { Ticket, ChevronRight, Zap, Bell, Crown, Search, Play, Pause } from 'lucide-react';
 
 interface Slide {
   image: string;
   title: string;
   subtitle: string;
+  accent?: string;
 }
+
+const AnimatedSection: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div
+      className={`transition-all duration-700 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
 
 const HeroSection: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const navigate = useNavigate();
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [searchFocused, setSearchFocused] = useState<boolean>(false);
 
   const slides: Slide[] = [
     {
       image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
       title: 'Discover Amazing Events',
-      subtitle: 'Find and book tickets for the best events in Kenya'
+      subtitle: 'Find and book tickets for the best events in Kenya',
+      accent: 'Music & Entertainment'
     },
     {
       image: 'https://images.unsplash.com/photo-1547970810-dc1eac37d174?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80',
       title: 'Experience Unforgettable Moments',
-      subtitle: 'From music festivals to cultural celebrations'
+      subtitle: 'From music festivals to cultural celebrations',
+      accent: 'Cultural Events'
     },
     {
       image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
       title: 'Connect with Your Community',
-      subtitle: 'Join thousands of event-goers across the country'
+      subtitle: 'Join thousands of event-goers across the country',
+      accent: 'Social Gatherings'
     }
   ];
 
   useEffect(() => {
+    if (!isPlaying) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+    }, 6000);
 
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, isPlaying]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/events?search=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      navigate('/events');
+      alert(`Searching for: ${searchQuery.trim()}`);
     }
   };
 
-  return (
-    <div className="w-full">
-      {/* Hero Section with Rounded Top and Brand Gradient */}
-      <div className="relative rounded-t-3xl overflow-hidden w-full" 
-           style={{
-             background: 'linear-gradient(135deg, #3b82f6, #06b6d4, #14b8a6)'
-           }}>
-        {/* Background Slides */}
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              height: '566px',
-              backgroundImage: `url(${slide.image})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              filter: 'brightness(0.4) contrast(1.1)'
-            }}
-          />
-        ))}
+  const togglePlayback = () => {
+    setIsPlaying(!isPlaying);
+  };
 
-        {/* Enhanced Gradient Overlay using brand colors */}
-        <div className="absolute inset-0" 
-             style={{
-               background: 'linear-gradient(to right, rgba(59, 130, 246, 0.6), rgba(6, 182, 212, 0.4), rgba(20, 184, 166, 0.6))'
-             }} />
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  const handleNavigation = (path: string) => {
+    alert(`Navigating to: ${path}`);
+  };
+
+  return (
+    <div className="w-full bg-gray-50">
+      {/* Enhanced Hero Section */}
+      <div className="relative overflow-hidden w-full bg-gradient-to-br from-gray-900 via-blue-900 to-green-900">
+        {/* Background Slides with better visibility */}
+        <div className="absolute inset-0" style={{ height: '500px' }}>
+          {slides.map((slide, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+                index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+              }`}
+            >
+              <div
+                className="w-full h-full bg-cover bg-center"
+                style={{
+                  backgroundImage: `url(${slide.image})`,
+                  filter: 'brightness(0.6) contrast(1.2) saturate(1.1)'
+                }}
+              />
+              {/* Enhanced gradient overlay for better visibility */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-blue-900/40 to-green-900/60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            </div>
+          ))}
+        </div>
+
+        {/* Slide Controls */}
+        <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
+          <button
+            onClick={togglePlayback}
+            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          
+          <button
+            onClick={prevSlide}
+            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" />
+          </button>
+          
+          <button
+            onClick={nextSlide}
+            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col md:flex-row h-full w-full min-h-[500px]">
-          <div className="flex-1 flex flex-col justify-center p-6 md:p-10">
-            <div className="w-full max-w-3xl animate-fade-in">
+        <div className="relative z-10 flex flex-col h-full w-full min-h-[500px]">
+          <div className="flex-1 flex flex-col justify-center p-4 md:p-8 lg:p-12">
+            <div className="w-full max-w-4xl">
+              {/* Accent Badge */}
               <AnimatedSection>
-                <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-4 drop-shadow-lg">
-                  {slides[currentSlide].title}
+                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mb-4 text-white/90 text-sm font-medium">
+                  <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-green-400 rounded-full animate-pulse" />
+                  {slides[currentSlide].accent}
+                </div>
+              </AnimatedSection>
+
+              <AnimatedSection>
+                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                  <span className="bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent">
+                    {slides[currentSlide].title}
+                  </span>
                 </h1>
-                <p className="text-white/95 text-base md:text-lg mb-8 max-w-2xl drop-shadow-md">
+                <p className="text-white/90 text-base md:text-lg lg:text-xl mb-6 max-w-3xl leading-relaxed font-light">
                   {slides[currentSlide].subtitle}
                 </p>
               </AnimatedSection>
               
-              {/* Search Bar with brand gradient hover */}
+              {/* Enhanced Search Bar */}
               <AnimatedSection delay={100}>
-                <form onSubmit={handleSearch} className="mb-8 max-w-md">
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Search for events..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-white/70 focus:bg-white/20 focus:border-white/40 transition-all duration-300"
-                    />
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-5 w-5" />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white rounded-full px-4 py-2 hover:shadow-lg transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #0891b2)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #06b6d4)';
-                      }}
-                    >
-                      Search
-                    </Button>
+                <div className="mb-6 max-w-lg">
+                  <div className={`relative transition-all duration-300 ${
+                    searchFocused ? 'transform scale-105' : ''
+                  }`}>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search for events..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={() => setSearchFocused(false)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                        className="w-full pl-12 pr-20 py-3 rounded-2xl bg-white/10 backdrop-blur-md border-2 border-white/20 text-white placeholder-white/60 focus:bg-white/15 focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all duration-300 text-base focus:outline-none"
+                      />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-4 w-4" />
+                      <button
+                        onClick={handleSearch}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white rounded-xl px-4 py-2 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm"
+                      >
+                        Search
+                      </button>
+                    </div>
+                    {searchFocused && (
+                      <div className="absolute inset-0 -z-10 bg-white/5 rounded-2xl blur-xl transition-all duration-300" />
+                    )}
                   </div>
-                </form>
+                </div>
               </AnimatedSection>
 
               <AnimatedSection delay={200}>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    className="text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    style={{
-                      background: 'linear-gradient(to right, #3b82f6, #06b6d4, #1d4ed8)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(to right, #1d4ed8, #0891b2, #1e40af)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(to right, #3b82f6, #06b6d4, #1d4ed8)';
-                    }}
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                  <button 
+                    onClick={() => handleNavigation('/events')}
+                    className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-xl px-6 py-3 text-base flex items-center justify-center gap-2"
                   >
-                    <Link to="/events">
-                      <Ticket className="h-5 w-5 mr-2" />
-                      Browse Events
-                      <ChevronRight className="h-5 w-5 ml-2" />
-                    </Link>
-                  </Button>
+                    <Ticket className="h-4 w-4" />
+                    Browse Events
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                   
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    variant="outline" 
-                    className="border-white/30 text-white hover:border-white/50 backdrop-blur-sm transition-all duration-300"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(6, 182, 212, 0.08), rgba(20, 184, 166, 0.06))';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                    }}
+                  <button 
+                    onClick={() => handleNavigation('/events?featured=true')}
+                    className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium border-2 border-white/30 hover:border-white/50 backdrop-blur-md rounded-xl px-6 py-3 text-base transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
                   >
-                    <Link to="/events?featured=true">
-                      <Crown className="h-5 w-5 mr-2" />
-                      Featured Events
-                    </Link>
-                  </Button>
+                    <Crown className="h-4 w-4" />
+                    Featured Events
+                  </button>
+                </div>
+              </AnimatedSection>
+
+              {/* Quick Stats */}
+              <AnimatedSection delay={300}>
+                <div className="flex flex-wrap items-center gap-4 text-white/80 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                    <span>1000+ Events</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                    <span>50+ Cities</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
+                    <span>100k+ Customers</span>
+                  </div>
                 </div>
               </AnimatedSection>
             </div>
           </div>
         </div>
 
-        {/* Slide Indicators with brand colors */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
+        {/* Enhanced Slide Indicators */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2">
           {slides.map((_, index) => (
             <button
               key={index}
-              className={`h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'w-6' : 'w-3 hover:bg-white/75'
+              className={`relative transition-all duration-500 rounded-full overflow-hidden ${
+                index === currentSlide ? 'w-8 h-2' : 'w-2 h-2 hover:w-4'
               }`}
-              style={{
-                background: index === currentSlide 
-                  ? 'linear-gradient(to right, #3b82f6, #06b6d4)' 
-                  : 'rgba(255, 255, 255, 0.5)'
-              }}
-              onClick={() => setCurrentSlide(index)}
+              onClick={() => goToSlide(index)}
               aria-label={`Go to slide ${index + 1}`}
-            />
+            >
+              <div className={`absolute inset-0 transition-all duration-500 ${
+                index === currentSlide 
+                  ? 'bg-gradient-to-r from-blue-400 to-green-400' 
+                  : 'bg-white/50 hover:bg-white/70'
+              }`} />
+              {index === currentSlide && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-green-400 animate-pulse" />
+              )}
+            </button>
           ))}
+        </div>
+
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-300 ease-linear"
+            style={{
+              width: isPlaying ? `${((currentSlide + 1) / slides.length) * 100}%` : '0%',
+            }}
+          />
         </div>
       </div>
 
-      {/* Features Section with enhanced gradients */}
+      {/* Enhanced Features Section */}
       <div className="bg-white dark:bg-gray-900 py-12 md:py-16 transition-colors duration-300">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 max-w-7xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Why Choose Our Platform?
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Experience seamless event discovery with cutting-edge features designed for modern event-goers
-            </p>
+            <AnimatedSection>
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30 rounded-full px-6 py-2 mb-6">
+                <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-blue-600 dark:text-blue-400 font-medium text-sm">
+                  Why Choose Pulse
+                </span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                  Elevate Your Event Experience
+                </span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Join thousands of event enthusiasts who trust our platform for seamless ticket booking
+              </p>
+            </AnimatedSection>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {[
               {
-                title: "Instant Booking",
-                description: "Book tickets in seconds with our lightning-fast checkout process",
+                title: "Lightning Fast Booking",
+                description: "Complete your ticket purchase in under 30 seconds with our streamlined checkout process",
                 icon: <Zap className="w-8 h-8 text-white" />,
-                gradient: "linear-gradient(135deg, #3b82f6, #06b6d4)"
+                gradient: "from-blue-500 to-cyan-500",
+                delay: 0
               },
               {
-                title: "Live Updates",
-                description: "Get real-time notifications about your favorite events and artists",
+                title: "Smart Notifications",
+                description: "Never miss out on your favorite artists or venues with intelligent alerts and recommendations",
                 icon: <Bell className="w-8 h-8 text-white" />,
-                gradient: "linear-gradient(135deg, #06b6d4, #14b8a6)"
+                gradient: "from-cyan-500 to-green-500",
+                delay: 100
               },
               {
-                title: "Exclusive Access",
-                description: "Unlock VIP experiences and early bird tickets before anyone else",
+                title: "VIP Treatment",
+                description: "Access exclusive pre-sales, backstage passes, and premium experiences for our community",
                 icon: <Crown className="w-8 h-8 text-white" />,
-                gradient: "linear-gradient(135deg, #14b8a6, #10b981)"
+                gradient: "from-green-500 to-emerald-500",
+                delay: 200
               }
             ].map((feature, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl dark:shadow-gray-900/20 dark:hover:shadow-gray-900/40 transition-all duration-300 transform hover:scale-105 text-center border border-gray-100 dark:border-gray-700">
-                  <div 
-                    className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6 group-hover:shadow-lg transition-all duration-300 mx-auto"
-                    style={{
-                      background: feature.gradient
-                    }}
-                  >
-                    {feature.icon}
+              <AnimatedSection key={index} delay={feature.delay}>
+                <div className="group cursor-pointer h-full">
+                  <div className="relative bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg hover:shadow-2xl dark:shadow-gray-900/20 dark:hover:shadow-gray-900/40 transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 text-center border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+                    {/* Gradient background effect */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/10 dark:to-green-900/10 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                    
+                    <div className="relative z-10 flex-1 flex flex-col">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 group-hover:shadow-2xl transition-all duration-500 mx-auto bg-gradient-to-r ${feature.gradient} group-hover:scale-110`}>
+                        {feature.icon}
+                      </div>
+                      
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-green-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-500">
+                        {feature.title}
+                      </h3>
+                      
+                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed flex-1">
+                        {feature.description}
+                      </p>
+                    </div>
+                    
+                    {/* Hover indicator */}
+                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-1 bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500 group-hover:w-16" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 transition-colors group-hover:text-transparent group-hover:bg-clip-text"
-                      style={{
-                        background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
-                        WebkitBackgroundClip: 'text',
-                        backgroundClip: 'text'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'transparent';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = '';
-                      }}
-                  >
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {feature.description}
-                  </p>
                 </div>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
+
+          {/* Call to Action */}
+          <AnimatedSection delay={400}>
+            <div className="text-center mt-12">
+              <button
+                onClick={() => handleNavigation('/events')}
+                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-2xl px-10 py-3 text-lg flex items-center gap-3 mx-auto"
+              >
+                <Ticket className="h-5 w-5" />
+                Start Exploring Events
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </AnimatedSection>
+        </div>
+      </div>
+
+      {/* Compact Newsletter Section */}
+      <div className="bg-gradient-to-r from-blue-500 to-green-500 py-12">
+        <div className="container mx-auto px-6 max-w-4xl text-center">
+          <AnimatedSection>
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+              Stay in the Loop
+            </h3>
+            <p className="text-white/90 text-base mb-6 max-w-2xl mx-auto">
+              Get notified about the hottest events and exclusive offers
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-white/60 focus:bg-white/15 focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all duration-300 focus:outline-none"
+              />
+              <button className="bg-white text-blue-600 font-medium px-6 py-3 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-lg">
+                Subscribe
+              </button>
+            </div>
+          </AnimatedSection>
         </div>
       </div>
     </div>
