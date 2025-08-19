@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Zap, Users, Calendar, ArrowRight, CheckCircle } from 'lucide-react';
+import { Sparkles, Zap, Users, ArrowRight, CheckCircle } from 'lucide-react';
 
 const CTASection = () => {
   const [email, setEmail] = useState('');
@@ -16,7 +16,22 @@ const CTASection = () => {
   };
 
   return (
-    <section className="relative py-20 px-4 bg-gray-50 dark:bg-gray-800">
+    <section className="relative py-20 px-4 bg-white dark:bg-gray-800">
+      <style>{`
+        .navbar-backdrop {
+          backdrop-filter: blur(20px);
+          background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(239, 246, 255, 0.9), rgba(236, 254, 255, 0.9));
+          transition: all 0.3s ease;
+          border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+          box-shadow: 0 4px 30px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .navbar-backdrop {
+          background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(30, 58, 138, 0.1), rgba(22, 78, 99, 0.1));
+          border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+          box-shadow: 0 4px 30px rgba(34, 211, 238, 0.05);
+        }
+      `}</style>
       <div className="container mx-auto">
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
@@ -36,7 +51,7 @@ const CTASection = () => {
             </h2>
             
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Experience the future of event management with our powerful platform. 
+              Experience the future of event management with our powerful platform.
               Join thousands of successful event organizers who've elevated their events with Pulse.
             </p>
           </div>
@@ -69,7 +84,7 @@ const CTASection = () => {
                   Start Your Event Journey Today
                 </h3>
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                  Get instant access to professional event tools, detailed analytics, 
+                  Get instant access to professional event tools, detailed analytics,
                   and dedicated support. No setup fees, no hidden costs.
                 </p>
                 
@@ -87,67 +102,27 @@ const CTASection = () => {
                     </div>
                   ))}
                 </div>
+                {/* Book a Demo Button */}
+                <Button
+                  variant="default"
+                  className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Book a Demo
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                </Button>
               </div>
 
-              {/* Right Side - Form */}
-              <div className="bg-gray-50 dark:bg-gray-800 p-8 rounded-2xl">
-                <div className="text-center mb-6">
-                  <h4 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                    Get Started Free
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No credit card required • 14-day free trial
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubscribe} className="space-y-4">
-                  <input
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
-                    required
-                  />
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
-                  >
-                    {isSubscribed ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <CheckCircle className="h-5 w-5" />
-                        Welcome to Pulse!
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2">
-                        Start Free Trial
-                        <ArrowRight className="h-5 w-5" />
-                      </div>
-                    )}
-                  </Button>
-                </form>
-
-                <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <Users className="h-4 w-4" />
-                    <span>10,000+ organizers trust Pulse</span>
-                  </div>
+              {/* Right Side - Image or Placeholder */}
+              <div className="hidden lg:block">
+                <div className="aspect-w-16 aspect-h-9 w-full h-full rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  <span className="text-center p-4">
+                    
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Alternative CTA */}
-          <div className="text-center mt-12">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Want to see it in action first?
-            </p>
-            <Button
-              variant="outline"
-              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-6 py-3 rounded-xl transition-all duration-200"
-            >
-              Book a Demo
-            </Button>
           </div>
         </div>
       </div>
