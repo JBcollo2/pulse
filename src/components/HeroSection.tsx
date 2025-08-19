@@ -53,6 +53,36 @@ const HeroSection: React.FC = () => {
       title: 'Connect with Your Community',
       subtitle: 'Join thousands of event-goers across the country',
       accent: 'Social Gatherings'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Immerse in Art & Culture',
+      subtitle: 'Discover galleries, exhibitions and creative workshops',
+      accent: 'Art & Culture'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Professional Networking',
+      subtitle: 'Connect with industry leaders at business events',
+      accent: 'Business & Tech'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1567653418876-5bb0e566e1c2?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Foodie Adventures',
+      subtitle: 'Explore culinary events and taste local flavors',
+      accent: 'Food & Dining'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Wellness & Fitness',
+      subtitle: 'Join yoga sessions, marathons and health workshops',
+      accent: 'Health & Wellness'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
+      title: 'Family Fun Time',
+      subtitle: 'Create memories with family-friendly events',
+      accent: 'Family & Kids'
     }
   ];
 
@@ -212,7 +242,7 @@ const HeroSection: React.FC = () => {
                   
                   <button 
                     onClick={() => handleNavigation('/events?featured=true')}
-                    className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium border-2 border-white/30 hover:border-white/50 backdrop-blur-md rounded-xl px-6 py-3 text-base transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+                    className="bg-white/10 backdrop-blur-md text-white font-medium border-2 border-white/30 hover:border-white/50 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-teal-500/20 rounded-xl px-6 py-3 text-base transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
                   >
                     <Crown className="h-4 w-4" />
                     Featured Events
@@ -349,43 +379,7 @@ const HeroSection: React.FC = () => {
             ))}
           </div>
 
-          {/* Call to Action */}
-          <AnimatedSection delay={400}>
-            <div className="text-center mt-12">
-              <button
-                onClick={() => handleNavigation('/events')}
-                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-2xl px-10 py-3 text-lg flex items-center gap-3 mx-auto"
-              >
-                <Ticket className="h-5 w-5" />
-                Start Exploring Events
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            </div>
-          </AnimatedSection>
-        </div>
-      </div>
 
-      {/* Compact Newsletter Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-green-500 py-12">
-        <div className="container mx-auto px-6 max-w-4xl text-center">
-          <AnimatedSection>
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-              Stay in the Loop
-            </h3>
-            <p className="text-white/90 text-base mb-6 max-w-2xl mx-auto">
-              Get notified about the hottest events and exclusive offers
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-white/60 focus:bg-white/15 focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all duration-300 focus:outline-none"
-              />
-              <button className="bg-white text-blue-600 font-medium px-6 py-3 rounded-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-lg">
-                Subscribe
-              </button>
-            </div>
-          </AnimatedSection>
         </div>
       </div>
     </div>
