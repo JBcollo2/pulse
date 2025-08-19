@@ -217,22 +217,13 @@ const Navbar: React.FC = () => {
               </Link>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative group hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 transition-all duration-300 rounded-xl"
-              onClick={() => setIsAuthOpen(true)}
-            >
-              <User size={20} />
-            </Button>
-
             {!isLoggedIn ? (
               <Button
                 onClick={() => setIsAuthOpen(true)}
                 className="relative group bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium px-6 py-2 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 overflow-hidden"
               >
                 <span className="relative z-10 flex items-center space-x-2">
-                  <span>Sign In</span>
+                  <span>Login</span>
                   <Sparkles size={16} className="opacity-80" />
                 </span>
               </Button>
@@ -242,7 +233,7 @@ const Navbar: React.FC = () => {
                 className="relative group border-2 border-blue-300 dark:border-green-400 text-blue-600 dark:text-green-400 hover:text-white hover:bg-gradient-to-r hover:from-blue-500 hover:to-green-500 font-medium px-6 py-2 rounded-xl hover:border-transparent transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
                 onClick={handleLogout}
               >
-                <span className="relative z-10">Sign Out</span>
+                <span className="relative z-10">Log Out</span>
               </Button>
             )}
           </div>
@@ -404,17 +395,6 @@ const Navbar: React.FC = () => {
             Account
           </h3>
           <div className="space-y-2">
-            <button
-              onClick={() => {
-                setIsAuthOpen(true);
-                setIsMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all duration-200 group"
-            >
-              <User className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
-              <span>Profile</span>
-            </button>
-            
             {!isLoggedIn ? (
               <Button
                 className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/30 flex items-center justify-center py-3 space-x-2"
@@ -424,7 +404,7 @@ const Navbar: React.FC = () => {
                 }}
               >
                 <User size={18} />
-                <span>Sign In</span>
+                <span>Login</span>
                 <Sparkles size={16} className="opacity-80" />
               </Button>
             ) : (
@@ -433,7 +413,7 @@ const Navbar: React.FC = () => {
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200 group"
               >
                 <X className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
-                <span>Sign Out</span>
+                <span>Log Out</span>
               </button>
             )}
           </div>
