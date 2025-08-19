@@ -244,6 +244,17 @@ const Index = () => {
     return new Date(eventDate) < currentDate;
   };
 
+  // Handle hero search
+  const handleHeroSearch = (query: string) => {
+    navigate(`/events?search=${encodeURIComponent(query)}`);
+  };
+
+  // Handle get tickets navigation - FIXED
+  const handleGetTickets = (eventId: number) => {
+    // Navigate to the events page with eventId parameter (same as working old version)
+    navigate(`/events?eventId=${eventId}`);
+  };
+
   // Custom animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -280,7 +291,7 @@ const Index = () => {
           className="space-y-0"
         >
           <motion.div variants={itemVariants}>
-            <HeroSection />
+            <HeroSection onSearch={handleHeroSearch} />
           </motion.div>
           
           {/* Enhanced Featured Event Section */}
@@ -395,10 +406,10 @@ const Index = () => {
                               </div>
                             </div>
                             
-                            {/* Action Buttons */}
+                            {/* Action Buttons - FIXED NAVIGATION */}
                             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                               <Button
-                                onClick={() => navigate(`/events/${featuredEvent.id}`)}
+                                onClick={() => handleGetTickets(featuredEvent.id)}
                                 disabled={featuredEventTicket?.remaining_quantity === 0}
                                 className="flex-1 sm:flex-none bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm sm:text-base"
                               >

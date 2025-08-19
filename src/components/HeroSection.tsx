@@ -8,6 +8,10 @@ interface Slide {
   accent?: string;
 }
 
+interface HeroSectionProps {
+  onSearch?: (query: string) => void;
+}
+
 const AnimatedSection: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -29,7 +33,7 @@ const AnimatedSection: React.FC<{ children: React.ReactNode; delay?: number }> =
   );
 };
 
-const HeroSection: React.FC = () => {
+const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
   const [currentSlide, setCurrentSlide] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -99,7 +103,11 @@ const HeroSection: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      alert(`Searching for: ${searchQuery.trim()}`);
+      if (onSearch) {
+        onSearch(searchQuery.trim());
+      } else {
+        alert(`Searching for: ${searchQuery.trim()}`);
+      }
     }
   };
 
@@ -378,8 +386,6 @@ const HeroSection: React.FC = () => {
               </AnimatedSection>
             ))}
           </div>
-
-
         </div>
       </div>
     </div>
