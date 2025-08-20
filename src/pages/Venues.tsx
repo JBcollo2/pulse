@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { MapPin, Star, Search, Globe, Calendar, Loader2, TrendingUp, Filter, Eye, Grid, List } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface Organizer {
   id: number;
@@ -595,15 +596,16 @@ const Venues: React.FC = () => {
           
           <Dialog>
             <DialogTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full text-sm font-medium shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300"
+              <Button
                 onClick={() => handleViewDetails(venue)}
+                className={cn(
+                  "w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 text-lg"
+                )}
               >
                 View Details
-              </motion.button>
+              </Button>
             </DialogTrigger>
+            
             
             {/* Dialog Content - Same as before but with updated colors */}
             <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200/50 dark:border-gray-700/50 rounded-2xl">
