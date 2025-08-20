@@ -10,7 +10,7 @@ import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from 'framer-motion';
-import { Sparkles, TrendingUp, Calendar, MapPin, Clock, Users, Star, Ticket } from 'lucide-react';
+import { Sparkles, TrendingUp, Calendar, MapPin, Clock, Users, Star, Ticket, CreditCard, Smartphone, Mail, QrCode, Shield, Zap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface Event {
@@ -48,11 +48,29 @@ const Index = () => {
   const [featuredEventTicket, setFeaturedEventTicket] = useState<LowestPriceTicket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingTicket, setIsLoadingTicket] = useState(false);
+  const [currentQRCode, setCurrentQRCode] = useState(0);
   const { toast } = useToast();
 
   // Get current date for filtering upcoming events
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
+
+  // QR Code patterns for animation
+  const qrPatterns = [
+    'from-gray-900 via-blue-900 to-green-900',
+    'from-blue-900 via-green-900 to-purple-900',
+    'from-green-900 via-purple-900 to-blue-900',
+    'from-purple-900 via-blue-900 to-green-900'
+  ];
+
+  // Animate QR code pattern
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQRCode((prev) => (prev + 1) % qrPatterns.length);
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch lowest price ticket for featured event
   const fetchFeaturedEventTicket = useCallback(async (eventId: number) => {
@@ -520,7 +538,7 @@ const Index = () => {
               </div>
             </div>
             
-            {/* Digital Experience Section */}
+            {/* Enhanced Digital Experience Section with Payment Info */}
             <div className="relative bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300 overflow-hidden">
               {/* Decorative Background Elements */}
               <div className="absolute inset-0 pointer-events-none">
@@ -538,76 +556,106 @@ const Index = () => {
                     The Future of Event Tickets
                   </h2>
                   <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
-                    Experience cutting-edge digital tickets powered by AI, blockchain security, and immersive technology
+                    Secure Paystack card payments, instant M-Pesa transactions, and real-time QR codes delivered via email
                   </p>
                 </motion.div>
                 
-                {/* Feature Grid */}
+                {/* Enhanced Payment & Feature Grid */}
                 <motion.div variants={itemVariants} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12 lg:mb-16">
                   <div className="group">
                     <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400/50 dark:hover:border-blue-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-blue-500/25">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
+                        <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Blockchain Security</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Military-grade encryption with immutable blockchain verification prevents fraud</p>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Paystack Payments</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Secure card payments powered by Paystack with international support and fraud protection</p>
                     </div>
                   </div>
                   
                   <div className="group">
                     <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-green-400/50 dark:hover:border-green-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-green-500/25">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
+                        <Smartphone className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">AR Experience</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Interactive augmented reality previews let you explore venues before events</p>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">M-Pesa Integration</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Instant mobile payments via M-Pesa for seamless transactions using your phone number</p>
                     </div>
                   </div>
                   
                   <div className="group">
                     <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-400/50 dark:hover:border-purple-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
                       <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-purple-500/25">
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                        <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Instant Transfer</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Lightning-fast ticket transfers with smart contracts and automated verification</p>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Email Delivery</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Digital tickets with real-time QR codes delivered instantly to your email inbox</p>
+                    </div>
+                  </div>
+                  
+                  <div className="group">
+                    <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-orange-400/50 dark:hover:border-orange-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-orange-500/25">
+                        <QrCode className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Live QR Codes</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Dynamic QR codes that update in real-time with encryption for maximum security</p>
+                    </div>
+                  </div>
+                  
+                  <div className="group">
+                    <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-red-400/50 dark:hover:border-red-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-red-500/25">
+                        <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Fraud Protection</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Advanced security measures prevent ticket duplication and unauthorized access</p>
+                    </div>
+                  </div>
+                  
+                  <div className="group">
+                    <div className="relative p-4 sm:p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-yellow-400/50 dark:hover:border-yellow-400/50 transition-all duration-500 hover:transform hover:scale-105 shadow-lg hover:shadow-xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:rotate-12 transition-transform duration-500 shadow-lg shadow-yellow-500/25">
+                        <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">Instant Verification</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Lightning-fast ticket validation at event entrances with offline capability</p>
                     </div>
                   </div>
                 </motion.div>
                 
-                {/* Interactive Ticket Demo */}
+                {/* Interactive Ticket Demo with Moses Juma */}
                 <motion.div variants={itemVariants} className="relative max-w-5xl mx-auto">
                   <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                    {/* Left Side - Features */}
+                    {/* Left Side - Payment Features */}
                     <div className="space-y-6 order-2 lg:order-1">
                       <div>
-                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">Revolutionary Digital Tickets</h3>
+                        <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">Revolutionary Payment & Delivery</h3>
                         <div className="space-y-4">
                           <div className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400/50 dark:hover:border-blue-400/50 transition-all duration-300">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 animate-pulse flex-shrink-0"></div>
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <CreditCard className="w-4 h-4 text-white" />
+                            </div>
                             <div>
-                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">Animated QR Codes</h4>
-                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Dynamic, impossible-to-counterfeit QR codes with real-time validation</p>
+                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">Paystack Integration</h4>
+                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Pay securely with Visa, MasterCard, or any international card via Paystack's encrypted gateway</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-green-400/50 dark:hover:border-green-400/50 transition-all duration-300">
-                            <div className="w-2 h-2 bg-green-500 rounded-full mt-2 animate-pulse delay-500 flex-shrink-0"></div>
+                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Smartphone className="w-4 h-4 text-white" />
+                            </div>
                             <div>
-                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">Smart Notifications</h4>
-                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">AI-powered alerts for travel, weather, and event updates</p>
+                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">M-Pesa Payments</h4>
+                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Quick mobile money transactions - just enter your phone number and confirm payment</p>
                             </div>
                           </div>
                           <div className="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-400/50 dark:hover:border-purple-400/50 transition-all duration-300">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 animate-pulse delay-1000 flex-shrink-0"></div>
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Mail className="w-4 h-4 text-white" />
+                            </div>
                             <div>
-                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">Contactless Entry</h4>
-                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">NFC and biometric scanning for seamless venue access</p>
+                              <h4 className="text-gray-800 dark:text-gray-200 font-semibold mb-1 text-sm sm:text-base">Instant Email Delivery</h4>
+                              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Receive your digital ticket with live QR code within seconds of payment confirmation</p>
                             </div>
                           </div>
                         </div>
@@ -615,66 +663,154 @@ const Index = () => {
                       
                       <div className="flex flex-col sm:flex-row gap-3">
                         <Button className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105">
-                          Try Demo
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Try Payment Demo
                         </Button>
                         <Button 
                           variant="outline"
                           className="border-2 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold px-6 py-3 rounded-xl transition-all duration-300"
                         >
-                          Learn More
+                          <Smartphone className="w-4 h-4 mr-2" />
+                          M-Pesa Guide
                         </Button>
                       </div>
                     </div>
                     
-                    {/* Right Side - 3D Ticket Preview */}
+                    {/* Right Side - Enhanced Digital Ticket with Moses Juma */}
                     <div className="relative order-1 lg:order-2">
                       <div className="relative transform hover:scale-105 transition-transform duration-700 max-w-sm mx-auto">
-                        {/* Ticket Card */}
-                        <div className="relative w-full bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-900 dark:to-black rounded-2xl p-4 sm:p-6 shadow-2xl border border-gray-700/50 dark:border-gray-600/50 hover:shadow-blue-500/20 transition-all duration-500">
+                        {/* Enhanced Ticket Card */}
+                        <div className="relative w-full bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-2xl p-4 sm:p-6 shadow-2xl border border-gray-700/50 hover:shadow-blue-500/20 transition-all duration-500 overflow-hidden">
                           {/* Holographic Effect */}
                           <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-green-400/10 to-purple-400/10 rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-500"></div>
+                          
+                          {/* Animated Background Pattern */}
+                          <div className="absolute inset-0 opacity-5">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-green-500/20 to-purple-500/20 animate-pulse"></div>
+                          </div>
                           
                           {/* Ticket Header */}
                           <div className="relative z-10 mb-4">
                             <div className="flex items-center justify-between mb-2">
-                              <div className="text-xs text-gray-400 uppercase tracking-wider">Digital Ticket</div>
-                              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg animate-pulse shadow-lg shadow-blue-500/25"></div>
+                              <div className="text-xs text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                Digital Ticket
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg animate-pulse shadow-lg shadow-blue-500/25 flex items-center justify-center">
+                                  <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                </div>
+                                <div className="text-xs text-green-400 font-medium">LIVE</div>
+                              </div>
                             </div>
                             <h4 className="text-white font-bold text-base sm:text-lg mb-1">Summer Music Festival 2025</h4>
                             <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-300">
-                              <span>📅 Jun 15, 2025</span>
-                              <span>🕐 8:00 PM</span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Jun 15, 2025
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                8:00 PM
+                              </span>
                             </div>
                           </div>
                           
-                          {/* Animated QR Code Area */}
+                          {/* Real-time Animated QR Code Area */}
                           <div className="relative mb-4">
-                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-lg p-2 mx-auto relative overflow-hidden">
-                              <div className="w-full h-full bg-gradient-to-br from-gray-900 via-blue-900 to-green-900 rounded animate-pulse"></div>
-                              {/* Scanning line animation */}
-                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-400/50 to-transparent animate-scan"></div>
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-lg p-2 mx-auto relative overflow-hidden shadow-lg">
+                              <div className={`w-full h-full bg-gradient-to-br ${qrPatterns[currentQRCode]} rounded transition-all duration-1000`}>
+                                {/* QR Code Pattern Simulation */}
+                                <div className="grid grid-cols-8 gap-px p-1 h-full">
+                                  {[...Array(64)].map((_, i) => (
+                                    <div 
+                                      key={i}
+                                      className={`bg-black rounded-sm transition-all duration-500 ${
+                                        Math.random() > 0.5 ? 'opacity-100' : 'opacity-0'
+                                      }`}
+                                      style={{
+                                        animationDelay: `${i * 50}ms`
+                                      }}
+                                    ></div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Real-time scanning line animation */}
+                              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-green-400/50 to-transparent animate-scan"></div>
+                              {/* Security indicators */}
+                              <div className="absolute top-1 right-1">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                              </div>
                             </div>
-                            <p className="text-center text-xs text-gray-400 mt-2">Tap to scan</p>
+                            <div className="flex items-center justify-center gap-2 mt-2">
+                              <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                              <p className="text-center text-xs text-green-400 font-medium">Live • Secure • Verified</p>
+                              <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse delay-1000"></div>
+                            </div>
                           </div>
                           
-                          {/* Ticket Details */}
-                          <div className="text-center space-y-1">
-                            <p className="text-white font-semibold text-sm sm:text-base">John Doe</p>
-                            <p className="text-green-400 text-xs sm:text-sm">VIP Experience</p>
-                            <p className="text-gray-400 text-xs">ID: PULSE2025X7891</p>
+                          {/* Ticket Details - Updated with Moses Juma */}
+                          <div className="text-center space-y-2 mb-4">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">MJ</span>
+                              </div>
+                              <p className="text-white font-semibold text-sm sm:text-base">Moses Juma</p>
+                            </div>
+                            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-gradient-to-r from-green-500/20 to-blue-500/20 border border-green-400/30">
+                              <Star className="w-3 h-3 text-yellow-400" />
+                              <p className="text-green-400 text-xs sm:text-sm font-medium">VIP Experience</p>
+                            </div>
+                            <p className="text-gray-400 text-xs font-mono">ID: PULSE2025X7891</p>
                           </div>
                           
-                          {/* Status Indicator */}
-                          <div className="absolute top-2 right-2">
+                          {/* Payment Method Indicators */}
+                          <div className="flex items-center justify-center gap-2 mb-3">
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/20 border border-blue-400/30">
+                              <CreditCard className="w-3 h-3 text-blue-400" />
+                              <span className="text-xs text-blue-400">Paystack</span>
+                            </div>
+                            <div className="text-gray-500 text-xs">or</div>
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/20 border border-green-400/30">
+                              <Smartphone className="w-3 h-3 text-green-400" />
+                              <span className="text-xs text-green-400">M-Pesa</span>
+                            </div>
+                          </div>
+                          
+                          {/* Email Delivery Status */}
+                          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                            <Mail className="w-3 h-3" />
+                            <span>Delivered via email</span>
+                            <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                          </div>
+                          
+                          {/* Security Status Indicator */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            <Shield className="w-3 h-3 text-green-400" />
                             <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                          </div>
+                          
+                          {/* Live Update Indicator */}
+                          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/20 border border-green-400/20">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span className="text-xs text-green-400 font-medium">LIVE</span>
                           </div>
                         </div>
                       </div>
                       
-                      {/* Floating Tech Elements */}
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full animate-float shadow-lg shadow-blue-500/25"></div>
-                      <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gradient-to-br from-green-500 to-green-600 rounded-full animate-bounce delay-1000 shadow-lg shadow-green-500/25"></div>
-                      <div className="absolute top-1/2 -right-4 w-3 h-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full animate-pulse delay-2000 shadow-lg shadow-purple-500/25"></div>
+                      {/* Enhanced Floating Tech Elements */}
+                      <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full animate-float shadow-lg shadow-blue-500/25 flex items-center justify-center">
+                        <CreditCard className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-gradient-to-br from-green-500 to-green-600 rounded-full animate-bounce delay-1000 shadow-lg shadow-green-500/25 flex items-center justify-center">
+                        <Smartphone className="w-3 h-3 text-white" />
+                      </div>
+                      <div className="absolute top-1/2 -right-6 w-5 h-5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full animate-pulse delay-2000 shadow-lg shadow-purple-500/25 flex items-center justify-center">
+                        <Mail className="w-2 h-2 text-white" />
+                      </div>
+                      <div className="absolute top-1/4 -left-6 w-4 h-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full animate-float delay-3000 shadow-lg shadow-orange-500/25 flex items-center justify-center">
+                        <QrCode className="w-2 h-2 text-white" />
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -703,9 +839,14 @@ const Index = () => {
           @keyframes scan {
             0% {
               transform: translateY(-100%);
+              opacity: 0;
+            }
+            50% {
+              opacity: 1;
             }
             100% {
               transform: translateY(100%);
+              opacity: 0;
             }
           }
           
@@ -714,7 +855,17 @@ const Index = () => {
           }
           
           .animate-scan {
-            animation: scan 2s ease-in-out infinite;
+            animation: scan 3s ease-in-out infinite;
+          }
+          
+          /* QR Code Animation */
+          @keyframes qr-update {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.7;
+            }
           }
           
           /* Line clamp utilities */
@@ -789,6 +940,19 @@ const Index = () => {
             .dark .backdrop-blur-sm {
               background-color: rgba(31, 41, 55, 0.8);
             }
+          }
+          
+          /* Enhanced animation delays for staggered effects */
+          .delay-1000 {
+            animation-delay: 1s;
+          }
+          
+          .delay-2000 {
+            animation-delay: 2s;
+          }
+          
+          .delay-3000 {
+            animation-delay: 3s;
           }
         `}</style>
       </div>
