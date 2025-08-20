@@ -16,23 +16,16 @@ const CTASection = () => {
   };
 
   return (
-    <section className="relative py-20 px-4 bg-white dark:bg-gray-800">
-      <style>{`
-        .navbar-backdrop {
-          backdrop-filter: blur(20px);
-          background: linear-gradient(135deg, rgba(249, 250, 251, 0.95), rgba(239, 246, 255, 0.9), rgba(236, 254, 255, 0.9));
-          transition: all 0.3s ease;
-          border-bottom: 1px solid rgba(59, 130, 246, 0.15);
-          box-shadow: 0 4px 30px rgba(59, 130, 246, 0.1);
-        }
-        
-        .dark .navbar-backdrop {
-          background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(30, 58, 138, 0.1), rgba(22, 78, 99, 0.1));
-          border-bottom: 1px solid rgba(34, 211, 238, 0.2);
-          box-shadow: 0 4px 30px rgba(34, 211, 238, 0.05);
-        }
-      `}</style>
-      <div className="container mx-auto">
+    <section className="relative py-20 px-4 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Background Pattern Overlay */}
+      <div 
+        className="absolute inset-0 z-0 opacity-10 dark:opacity-5" 
+        style={{ 
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")'
+        }}
+      ></div>
+
+      <div className="container mx-auto relative z-10">
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-16">
@@ -64,7 +57,7 @@ const CTASection = () => {
               { number: "99.9%", label: "Uptime" },
               { number: "24/7", label: "Support" }
             ].map((stat, index) => (
-              <div key={index} className="text-center p-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm">
+              <div key={index} className="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 text-transparent bg-clip-text mb-2">
                   {stat.number}
                 </div>
@@ -76,7 +69,7 @@ const CTASection = () => {
           </div>
 
           {/* Main CTA Card */}
-          <div className="bg-white dark:bg-gray-700 rounded-3xl p-8 md:p-12 shadow-xl border border-gray-200 dark:border-gray-600">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 md:p-12 shadow-xl border border-gray-200 dark:border-gray-700">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Left Side - Content */}
               <div>
@@ -116,7 +109,7 @@ const CTASection = () => {
 
               {/* Right Side - Image or Placeholder */}
               <div className="hidden lg:block">
-                <div className="aspect-w-16 aspect-h-9 w-full h-full rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <div className="aspect-w-16 aspect-h-9 w-full h-full rounded-2xl overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
                   <span className="text-center p-4">
                     
                   </span>

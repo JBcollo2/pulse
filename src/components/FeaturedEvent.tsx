@@ -95,42 +95,50 @@ const FeaturedEvent: React.FC<FeaturedEventProps> = ({
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl shadow-lg">
-      {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-gray-800/70 z-10"></div>
+    <div className="relative overflow-hidden rounded-3xl shadow-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+      {/* Background Pattern Overlay */}
+      <div 
+        className="absolute inset-0 z-0 opacity-10 dark:opacity-5" 
+        style={{ 
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")'
+        }}
+      ></div>
+
+      {/* Event Image Section */}
+      <div className="relative h-64 md:h-80 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-transparent z-10"></div>
         <img
           src={image}
           alt={title}
-          className="w-full h-full object-cover scale-105 animate-pulse-slow"
+          className="w-full h-full object-cover scale-105"
         />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 p-8 md:p-12 lg:p-16 flex flex-col h-full min-h-[500px] justify-end">
-        <div className="max-w-xl animate-fade-in">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+      {/* Content Section */}
+      <div className="relative z-10 p-8 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="animate-fade-in">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             {title}
           </h2>
 
-          <p className="text-white/80 mb-6 line-clamp-3">
+          <p className="text-gray-600 dark:text-gray-300 mb-6 line-clamp-3">
             {description}
           </p>
 
           <div className="grid grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-800/50 backdrop-blur-md p-3 flex flex-col items-center justify-center rounded-lg border border-white/10">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 flex flex-col items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600">
               <Calendar className="h-5 w-5 text-purple-500 mb-1" />
-              <span className="text-sm text-white/80">{formatDate(date)}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{formatDate(date)}</span>
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-md p-3 flex flex-col items-center justify-center rounded-lg border border-white/10">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 flex flex-col items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600">
               <Clock className="h-5 w-5 text-blue-500 mb-1" />
-              <span className="text-sm text-white/80">{formatTime(time)}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{formatTime(time)}</span>
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-md p-3 flex flex-col items-center justify-center rounded-lg border border-white/10">
+            <div className="bg-gray-50 dark:bg-gray-700 p-3 flex flex-col items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600">
               <MapPin className="h-5 w-5 text-orange-500 mb-1" />
-              <span className="text-sm text-white/80 line-clamp-1">{location}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1">{location}</span>
             </div>
           </div>
 
@@ -138,14 +146,14 @@ const FeaturedEvent: React.FC<FeaturedEventProps> = ({
             {/* Price and Ticket Info */}
             <div className="flex flex-col">
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-2xl lg:text-3xl font-bold text-white">
+                <span className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100">
                   {lowestPriceTicket 
                     ? `${lowestPriceTicket.currency_symbol || 'KSh'}${lowestPriceTicket.price.toLocaleString()}`
                     : price
                   }
                 </span>
                 {lowestPriceTicket && (
-                  <span className="text-sm text-white/60">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
                     starting from
                   </span>
                 )}
@@ -153,16 +161,16 @@ const FeaturedEvent: React.FC<FeaturedEventProps> = ({
               
               {lowestPriceTicket && (
                 <div className="space-y-1">
-                  <div className="text-sm font-medium text-white/80">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     {lowestPriceTicket.type_name}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${
                       lowestPriceTicket.remaining_quantity > 10 
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700'
                         : lowestPriceTicket.remaining_quantity > 0
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700'
                     }`}>
                       {lowestPriceTicket.remaining_quantity > 0 
                         ? `${lowestPriceTicket.remaining_quantity} left`
@@ -176,7 +184,7 @@ const FeaturedEvent: React.FC<FeaturedEventProps> = ({
 
             {/* Get Tickets Button */}
             <Button 
-              className={`bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:hover:scale-100 ${
+              className={`bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-700 hover:to-green-700 text-white px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:hover:scale-100 ${
                 isPast || (lowestPriceTicket && lowestPriceTicket.remaining_quantity === 0) 
                   ? 'cursor-not-allowed' 
                   : 'hover:shadow-blue-500/25'
