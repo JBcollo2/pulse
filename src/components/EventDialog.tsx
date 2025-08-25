@@ -1128,15 +1128,15 @@ export const EventDialog = ({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-gray-700 dark:text-gray-300">Price ($)</Label>
+                    <Label className="text-gray-700 dark:text-gray-300">Price (KSh)</Label>
                     <Input
                       type="number"
                       min="0"
-                      step="0.01"
+                      step="1"
                       value={ticket.price || ''}
                       onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value) || 0)}
                       required
-                      placeholder="0.00"
+                      placeholder="0"
                       className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                     />
                   </div>
@@ -1293,11 +1293,11 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketType
           </div>
 
           <div className="space-y-2">
-            <Label className="text-gray-700 dark:text-gray-300">Price ($)</Label>
+            <Label className="text-gray-700 dark:text-gray-300">Price (KSh)</Label>
             <Input
               type="number"
               min="0"
-              step="0.01"
+              step="1"
               value={editData.price}
               onChange={(e) => setEditData({...editData, price: parseFloat(e.target.value) || 0})}
               required
@@ -1356,7 +1356,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketType
 
         <div className="space-y-1">
           <Label className="text-gray-500 dark:text-gray-400 text-xs">Price</Label>
-          <p className="text-gray-800 dark:text-gray-200 font-medium">${ticket.price}</p>
+          <p className="text-gray-800 dark:text-gray-200 font-medium">KSh {ticket.price}</p>
         </div>
 
         <div className="space-y-1">
