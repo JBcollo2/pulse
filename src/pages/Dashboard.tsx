@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth, hasTabPermission } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
@@ -39,6 +39,7 @@ import UserProfile from './UserProfile';
 import Admin from './Admin';
 import ManageOrganizersPage from './Manage_organizer';
 import { useToast } from "@/components/ui/use-toast";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -54,19 +55,21 @@ const Dashboard = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const { toast } = useToast();
 
-  // Pagination state
+  // Infinite scroll pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [totalEvents, setTotalEvents] = useState(0);
-  const [pageSize, setPageSize] = useState(12);
+  const pageSize = 12; // Fixed page size for consistency
 
   // Filtering state
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [timeFilter, setTimeFilter] = useState("upcoming");
   const [locationFilter, setLocationFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState(""); // New city filter
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -75,6 +78,7 @@ const Dashboard = () => {
   // Available filter options from API
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
+    cities: [], // New cities array
     time_filters: [],
     organizers: [],
     sort_options: [],
@@ -83,6 +87,9 @@ const Dashboard = () => {
       max_date: ""
     }
   });
+
+  // Ref for intersection observer
+  const loadMoreRef = useRef(null);
 
   useEffect(() => {
     if (hasInitializedRef.current) {
@@ -106,13 +113,26 @@ const Dashboard = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  const fetchEvents = async (page = 1, resetPage = false) => {
+  // Memoized filtered events for performance
+  const filteredEvents = useMemo(() => {
+    if (!Array.isArray(events)) {
+      return [];
+    }
+    return events;
+  }, [events]);
+
+  const fetchEvents = useCallback(async (page = 1, reset = false) => {
     if (!user) return;
+    
     try {
-      setEventsLoading(true);
-      const targetPage = resetPage ? 1 : page;
+      if (page === 1) {
+        setEventsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
       const params = new URLSearchParams({
-        page: targetPage.toString(),
+        page: page.toString(),
         per_page: pageSize.toString(),
         dashboard: 'true',
         sort_by: sortBy,
@@ -128,6 +148,9 @@ const Dashboard = () => {
       }
       if (locationFilter.trim()) {
         params.append('location', locationFilter.trim());
+      }
+      if (cityFilter.trim()) { // New city filter
+        params.append('city', cityFilter.trim());
       }
       if (featuredOnly) {
         params.append('featured', 'true');
@@ -146,10 +169,25 @@ const Dashboard = () => {
       }
 
       const data = await response.json();
-      setEvents(data.events || []);
-      setTotalPages(data.pages || 1);
-      setTotalEvents(data.total || 0);
-      setCurrentPage(targetPage);
+      
+      if (!data.events || !Array.isArray(data.events)) {
+        if (reset || page === 1) setEvents([]);
+        return;
+      }
+
+      if (reset || page === 1) {
+        setEvents(data.events);
+      } else {
+        setEvents(prevEvents => {
+          const existingIds = new Set(prevEvents.map(event => event.id));
+          const newEvents = data.events.filter(event => !existingIds.has(event.id));
+          return [...prevEvents, ...newEvents];
+        });
+      }
+
+      setTotalEvents(data.total || data.events.length);
+      setHasMore(data.events.length === pageSize && (data.total ? events.length + data.events.length < data.total : true));
+      setCurrentPage(page);
 
       if (data.available_filters) {
         setAvailableFilters(data.available_filters);
@@ -160,26 +198,59 @@ const Dashboard = () => {
         description: "Failed to fetch events",
         variant: "destructive"
       });
-      setEvents([]);
-      setTotalPages(1);
-      setTotalEvents(0);
-      setCurrentPage(1);
+      if (reset || page === 1) {
+        setEvents([]);
+        setTotalEvents(0);
+        setCurrentPage(1);
+        setHasMore(false);
+      }
     } finally {
       setEventsLoading(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, cityFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder, pageSize, events.length, toast]);
 
+  const loadMoreEvents = useCallback(() => {
+    if (!isLoadingMore && hasMore && !eventsLoading) {
+      fetchEvents(currentPage + 1);
+    }
+  }, [fetchEvents, currentPage, isLoadingMore, hasMore, eventsLoading]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isLoadingMore && !eventsLoading) {
+          loadMoreEvents();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [loadMoreEvents, hasMore, isLoadingMore, eventsLoading]);
+
+  // Reset pagination when filters change
   useEffect(() => {
     if (user) {
+      setCurrentPage(1);
+      setHasMore(true);
       fetchEvents(1, true);
     }
-  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder, pageSize]);
-
-  useEffect(() => {
-    if (currentPage > 1 && user && !eventsLoading) {
-      fetchEvents(currentPage, false);
-    }
-  }, [currentPage]);
+  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, cityFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder]);
 
   const allMenuItems = [
     {
@@ -423,7 +494,10 @@ const Dashboard = () => {
         prevEvents.map(event => (event.id === eventData.id ? eventData : event))
       );
     } else {
-      fetchEvents(currentPage);
+      // Reset pagination and fetch fresh data for new events
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchEvents(1, true);
     }
     setShowEventDialog(false);
     setEditingEvent(null);
@@ -438,7 +512,9 @@ const Dashboard = () => {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-      fetchEvents(currentPage);
+      // Remove the event from local state
+      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+      setTotalEvents(prev => prev - 1);
       toast({
         title: "Success",
         description: "Event deleted successfully",
@@ -458,116 +534,24 @@ const Dashboard = () => {
     setCategoryFilter("");
     setTimeFilter("upcoming");
     setLocationFilter("");
+    setCityFilter("");
     setFeaturedOnly(false);
     setOrganizerCompanyFilter("");
     setSortBy("date");
     setSortOrder("asc");
     setCurrentPage(1);
-    setTimeout(() => {
-      if (user) {
-        fetchEvents(1, true);
-      }
-    }, 0);
+    setHasMore(true);
   };
 
   const hasActiveFilters = eventSearchQuery !== "" ||
     categoryFilter !== "" ||
     timeFilter !== "upcoming" ||
     locationFilter !== "" ||
+    cityFilter !== "" ||
     featuredOnly ||
     organizerCompanyFilter !== "" ||
     sortBy !== "date" ||
     sortOrder !== "asc";
-
-  const PaginationControls = () => {
-    const getPageNumbers = () => {
-      const delta = 2;
-      const range = [];
-      const rangeWithDots = [];
-      for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
-        range.push(i);
-      }
-      if (currentPage - delta > 2) {
-        rangeWithDots.push(1, '...');
-      } else {
-        rangeWithDots.push(1);
-      }
-      rangeWithDots.push(...range);
-      if (currentPage + delta < totalPages - 1) {
-        rangeWithDots.push('...', totalPages);
-      } else if (totalPages > 1) {
-        rangeWithDots.push(totalPages);
-      }
-      return rangeWithDots;
-    };
-
-    if (totalPages <= 1) return null;
-
-    const handlePageChange = (newPage) => {
-      if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage && !eventsLoading) {
-        setCurrentPage(newPage);
-      }
-    };
-
-    return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="text-sm text-gray-700 dark:text-gray-300">
-          Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalEvents)} of {totalEvents} events
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1 || eventsLoading}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Previous
-          </button>
-          <div className="flex items-center gap-1">
-            {getPageNumbers().map((page, index) => (
-              <button
-                key={index}
-                onClick={() => typeof page === 'number' && handlePageChange(page)}
-                disabled={page === '...' || eventsLoading || page === currentPage}
-                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                  page === currentPage
-                    ? 'bg-blue-500 text-white'
-                    : page === '...'
-                    ? 'cursor-default'
-                    : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || eventsLoading}
-            className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-700 dark:text-gray-300">Per page:</label>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            disabled={eventsLoading}
-            className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 disabled:opacity-50"
-          >
-            <option value={6}>6</option>
-            <option value={12}>12</option>
-            <option value={24}>24</option>
-            <option value={48}>48</option>
-          </select>
-        </div>
-      </div>
-    );
-  };
 
   const MyEventsComponent = () => {
     return (
@@ -578,6 +562,7 @@ const Dashboard = () => {
           editingEvent={editingEvent}
           onEventCreated={handleEventSave}
         />
+        
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
@@ -600,12 +585,14 @@ const Dashboard = () => {
             </button>
           )}
         </div>
+
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-2 mb-4">
               <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Filters & Search</h3>
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
@@ -615,22 +602,17 @@ const Dashboard = () => {
                     type="text"
                     placeholder="Search by name, description..."
                     value={eventSearchQuery}
-                    onChange={(e) => {
-                      setEventSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setEventSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-800 dark:text-gray-200"
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Range</label>
                 <select
                   value={timeFilter}
-                  onChange={(e) => {
-                    setTimeFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setTimeFilter(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
                   {availableFilters.time_filters?.map((filter) => (
@@ -645,15 +627,12 @@ const Dashboard = () => {
                   ]}
                 </select>
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <select
                   value={categoryFilter}
-                  onChange={(e) => {
-                    const newCategoryFilter = e.target.value;
-                    setCategoryFilter(newCategoryFilter);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
                   <option value="">All Categories</option>
@@ -664,15 +643,13 @@ const Dashboard = () => {
                   ))}
                 </select>
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <div className="flex gap-2">
                   <select
                     value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setSortBy(e.target.value)}
                     className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                   >
                     {availableFilters.sort_options?.map((option) => (
@@ -687,10 +664,7 @@ const Dashboard = () => {
                     ]}
                   </select>
                   <button
-                    onClick={() => {
-                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-                      setCurrentPage(1);
-                    }}
+                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                     className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
                     title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
                   >
@@ -699,6 +673,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+
             {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
@@ -711,23 +686,34 @@ const Dashboard = () => {
                         type="text"
                         placeholder="Filter by location..."
                         value={locationFilter}
-                        onChange={(e) => {
-                          setLocationFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
+                        onChange={(e) => setLocationFilter(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
+                    <select
+                      value={cityFilter}
+                      onChange={(e) => setCityFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                    >
+                      <option value="">All Cities</option>
+                      {availableFilters.cities?.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   {user?.role === "ADMIN" && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Organizer Company</label>
                       <select
                         value={organizerCompanyFilter}
-                        onChange={(e) => {
-                          setOrganizerCompanyFilter(e.target.value);
-                          setCurrentPage(1);
-                        }}
+                        onChange={(e) => setOrganizerCompanyFilter(e.target.value)}
                         className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                       >
                         <option value="">All Organizers</option>
@@ -745,10 +731,7 @@ const Dashboard = () => {
                     <input
                       type="checkbox"
                       checked={featuredOnly}
-                      onChange={(e) => {
-                        setFeaturedOnly(e.target.checked);
-                        setCurrentPage(1);
-                      }}
+                      onChange={(e) => setFeaturedOnly(e.target.checked)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Featured events only</span>
@@ -756,6 +739,7 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
+            
             {hasActiveFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -783,6 +767,11 @@ const Dashboard = () => {
                       Location: {locationFilter}
                     </span>
                   )}
+                  {cityFilter && (
+                    <span className="px-2 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-xs rounded-full">
+                      City: {cityFilter}
+                    </span>
+                  )}
                   {featuredOnly && (
                     <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs rounded-full">
                       Featured Only
@@ -805,6 +794,7 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+
         <div className="relative">
           {eventsLoading && (
             <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg">
@@ -814,117 +804,176 @@ const Dashboard = () => {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.length > 0 ? (
-              events.map((event) => (
-                <Card key={event.id} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-200 group">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
-                        {event.name}
-                        {event.featured && (
-                          <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
-                            ⭐ Featured
-                          </span>
-                        )}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {event.max_attendees && (
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                            {event.current_attendees || 0}/{event.max_attendees}
-                          </span>
-                        )}
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full
-                          ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                            event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
-                              event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
-                                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
-                          {event.status}
-                        </span>
-                      </div>
-                    </div>
-                    <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
-                      {event.description || 'No description available'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-2 text-sm mb-4">
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Calendar className="h-4 w-4" />
-                        <span>Date:</span>
-                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                          {new Date(event.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {event.location && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <MapPin className="h-4 w-4" />
-                          <span>Location:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto truncate">
-                            {event.location}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Building className="h-4 w-4" />
-                        <span>Company:</span>
-                        <span className="text-gray-800 dark:text-gray-200 ml-auto">
-                          {event.organizer?.company_name || 'N/A'}
-                        </span>
-                      </div>
-                      {event.category && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                          <div className="h-4 w-4 rounded-full bg-gradient-to-r from-blue-500 to-[#10b981] shadow-sm ring-1 ring-white/20"></div>
-                          <span>Category:</span>
-                          <span className="text-gray-800 dark:text-gray-200 ml-auto font-medium">
-                            {event.category}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
-                        <button
-                          onClick={() => handleEditEventClick(event)}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Manage
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleViewEventClick(event)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No events found</h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  {hasActiveFilters
-                    ? "Try adjusting your filters to find more events."
-                    : "Create your first event to get started."}
-                </p>
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+          
+          <AnimatePresence>
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {events.length > 0 ? (
+                events.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    layout
                   >
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+                    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-200 group">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                            {event.name}
+                            {event.featured && (
+                              <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                                ⭐ Featured
+                              </span>
+                            )}
+                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            {event.max_attendees && (
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                {event.current_attendees || 0}/{event.max_attendees}
+                              </span>
+                            )}
+                            <span className={`px-3 py-1 text-xs font-medium rounded-full
+                              ${event.status === 'Active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                                event.status === 'Upcoming' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                                  event.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                                    'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
+                              {event.status}
+                            </span>
+                          </div>
+                        </div>
+                        <CardDescription className="text-gray-600 dark:text-gray-400 mb-3">
+                          {event.description || 'No description available'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2 text-sm mb-4">
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Calendar className="h-4 w-4" />
+                            <span>Date:</span>
+                            <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                              {new Date(event.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <MapPin className="h-4 w-4" />
+                              <span>Location:</span>
+                              <span className="text-gray-800 dark:text-gray-200 ml-auto truncate">
+                                {event.location}
+                              </span>
+                            </div>
+                          )}
+                          {event.city && (
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <Building className="h-4 w-4" />
+                              <span>City:</span>
+                              <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                                {event.city}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Building className="h-4 w-4" />
+                            <span>Company:</span>
+                            <span className="text-gray-800 dark:text-gray-200 ml-auto">
+                              {event.organizer?.company_name || 'N/A'}
+                            </span>
+                          </div>
+                          {event.category && (
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <div className="h-4 w-4 rounded-full bg-gradient-to-r from-blue-500 to-[#10b981] shadow-sm ring-1 ring-white/20"></div>
+                              <span>Category:</span>
+                              <span className="text-gray-800 dark:text-gray-200 ml-auto font-medium">
+                                {event.category}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
+                            <button
+                              onClick={() => handleEditEventClick(event)}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0ea372] text-white text-sm font-medium rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Manage
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleViewEventClick(event)}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))
+              ) : !eventsLoading ? (
+                <div className="col-span-full text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <Calendar className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No events found</h3>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {hasActiveFilters
+                      ? "Try adjusting your filters to find more events."
+                      : "Create your first event to get started."}
+                  </p>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearAllFilters}
+                      className="mt-3 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              ) : null}
+            </motion.div>
+          </AnimatePresence>
         </div>
-        <PaginationControls />
+
+        {/* Loading More Indicator */}
+        {isLoadingMore && (
+          <motion.div
+            className="flex justify-center items-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="flex items-center gap-3 px-6 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50">
+              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              <span className="text-gray-600 dark:text-gray-300 font-medium">Loading more events...</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Load More Trigger */}
+        <div ref={loadMoreRef} className="h-10 w-full" />
+
+        {/* End Message */}
+        {!hasMore && events.length > 0 && (
+          <motion.div
+            className="text-center py-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full border border-blue-200/50 dark:border-blue-700/50">
+              <span className="text-2xl mr-3">🎉</span>
+              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                You've seen all {events.length} events!
+              </span>
+            </div>
+          </motion.div>
+        )}
       </div>
     );
   };

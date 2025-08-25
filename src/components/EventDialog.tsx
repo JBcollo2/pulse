@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, Edit, Star } from "lucide-react";
+import { Plus, Trash2, Edit, Star, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Utility function to format Date object to YYYY-MM-DD string format
@@ -54,8 +55,22 @@ const validateEventData = (eventData) => {
     errors.push('Event description is required');
   }
   
+  if (!eventData.city?.trim()) {
+    errors.push('City is required');
+  }
+  
   if (!eventData.location?.trim()) {
     errors.push('Event location is required');
+  }
+  
+  // Validate that city is entered before location can be set
+  if (eventData.location?.trim() && !eventData.city?.trim()) {
+    errors.push('Please enter the city before setting the event location');
+  }
+  
+  // Validate maximum amenities limit
+  if (eventData.amenities && eventData.amenities.length > 5) {
+    errors.push('Maximum of 5 amenities allowed per event');
   }
   
   if (!eventData.category_id) {
@@ -117,8 +132,12 @@ const validateEventData = (eventData) => {
   return errors;
 };
 
-// Predefined ticket types available for events
-const TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
+// Common amenities list for quick selection
+const COMMON_AMENITIES = [
+  "Parking", "WiFi", "Sound System", "DJ", "Live Band", "Catering", 
+  "Bar Service", "Photography", "Security", "Air Conditioning", 
+  "Stage", "Dance Floor", "VIP Area", "Coat Check", "Valet Parking"
+];
 
 /**
  * Main EventDialog Component
@@ -138,8 +157,9 @@ export const EventDialog = ({
   onEventCreated,
   userRole = null
 }) => {
-  // State for storing event categories fetched from API
+  // State for storing event categories and ticket types fetched from API
   const [categories, setCategories] = useState([]);
+  const [availableTicketTypes, setAvailableTicketTypes] = useState([]);
 
   // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
@@ -147,6 +167,7 @@ export const EventDialog = ({
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isLoadingTicketTypes, setIsLoadingTicketTypes] = useState(false);
 
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
@@ -156,12 +177,17 @@ export const EventDialog = ({
     end_date: new Date(),
     start_time: '',
     end_time: '',
+    city: '',
     location: '',
+    amenities: [],
     image: null,
     ticket_types: [],
     category_id: null,
-    featured: false // Add featured support
+    featured: false
   });
+
+  // State for amenity input
+  const [currentAmenity, setCurrentAmenity] = useState('');
 
   // Form validation state
   const [validationErrors, setValidationErrors] = useState([]);
@@ -201,13 +227,41 @@ export const EventDialog = ({
   }, [toast]);
 
   /**
-   * Effect: Fetch event categories from API on component mount
+   * Fetch available ticket types from the database
+   */
+  const fetchTicketTypes = useCallback(async () => {
+    setIsLoadingTicketTypes(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
+      }
+
+      const data = await response.json();
+      // Extract unique ticket type names from the organizer's ticket types
+      const uniqueTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
+      setAvailableTicketTypes(uniqueTypes.length > 0 ? uniqueTypes : ["REGULAR", "VIP", "STUDENT"]);
+    } catch (error) {
+      console.error('Error fetching ticket types:', error);
+      // Fallback to basic ticket types if fetch fails
+      setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
+    } finally {
+      setIsLoadingTicketTypes(false);
+    }
+  }, [toast]);
+
+  /**
+   * Effect: Fetch event categories and ticket types from API on component mount
    */
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchTicketTypes();
     }
-  }, [open, fetchCategories]);
+  }, [open, fetchCategories, fetchTicketTypes]);
 
   /**
    * Effect: Fetch existing ticket types when editing an event
@@ -253,7 +307,9 @@ export const EventDialog = ({
         end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
         start_time: editingEvent.start_time || '',
         end_time: editingEvent.end_time || '',
+        city: editingEvent.city || '',
         location: editingEvent.location || '',
+        amenities: editingEvent.amenities || [],
         image: null,
         ticket_types: [],
         category_id: editingEvent.category_id || null,
@@ -267,7 +323,9 @@ export const EventDialog = ({
         end_date: new Date(),
         start_time: '',
         end_time: '',
+        city: '',
         location: '',
+        amenities: [],
         image: null,
         ticket_types: [],
         category_id: null,
@@ -292,18 +350,59 @@ export const EventDialog = ({
   }, [validationErrors.length]);
 
   /**
+   * Handle adding amenities
+   */
+  const handleAddAmenity = useCallback((amenity) => {
+    const amenityToAdd = amenity || currentAmenity.trim();
+    
+    // Check maximum amenities limit
+    if (newEvent.amenities.length >= 5) {
+      toast({
+        title: "Maximum Limit Reached",
+        description: "You can only add a maximum of 5 amenities per event",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (amenityToAdd && !newEvent.amenities.includes(amenityToAdd)) {
+      setNewEvent(prev => ({
+        ...prev,
+        amenities: [...prev.amenities, amenityToAdd]
+      }));
+      setCurrentAmenity('');
+    } else if (newEvent.amenities.includes(amenityToAdd)) {
+      toast({
+        title: "Duplicate Amenity",
+        description: "This amenity has already been added",
+        variant: "destructive"
+      });
+    }
+  }, [currentAmenity, newEvent.amenities, toast]);
+
+  /**
+   * Handle removing amenities
+   */
+  const handleRemoveAmenity = useCallback((amenityToRemove) => {
+    setNewEvent(prev => ({
+      ...prev,
+      amenities: prev.amenities.filter(amenity => amenity !== amenityToRemove)
+    }));
+  }, []);
+
+  /**
    * Add a new ticket type to the form
    */
   const handleAddTicketType = useCallback(() => {
     setNewEvent(prev => ({
       ...prev,
       ticket_types: [...prev.ticket_types, { 
-        type_name: TICKET_TYPES[0], 
+        type_name: availableTicketTypes[0] || 'REGULAR', 
         price: 0, 
         quantity: 0 
       }]
     }));
-  }, []);
+  }, [availableTicketTypes]);
 
   /**
    * Remove a ticket type from the form by index
@@ -449,6 +548,7 @@ export const EventDialog = ({
       const fieldsToAdd = [
         { key: 'name', value: newEvent.name?.trim() },
         { key: 'description', value: newEvent.description?.trim() },
+        { key: 'city', value: newEvent.city?.trim() },
         { key: 'location', value: newEvent.location?.trim() }
       ];
 
@@ -484,6 +584,11 @@ export const EventDialog = ({
           }
         }
       });
+
+      // Add amenities as JSON string
+      if (newEvent.amenities.length > 0) {
+        formData.append('amenities', JSON.stringify(newEvent.amenities));
+      }
 
       // Add featured flag
       if (newEvent.featured) {
@@ -581,7 +686,9 @@ export const EventDialog = ({
         end_date: new Date(),
         start_time: '',
         end_time: '',
+        city: '',
         location: '',
+        amenities: [],
         image: null,
         ticket_types: [],
         category_id: null,
@@ -664,6 +771,45 @@ export const EventDialog = ({
             />
           </div>
 
+          {/* City and Location Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="city" className="text-gray-700 dark:text-gray-300">
+                City <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="city"
+                value={newEvent.city}
+                onChange={(e) => handleFieldChange('city', e.target.value)}
+                required
+                className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                placeholder="Enter city..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">
+                Location <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="location"
+                value={newEvent.location}
+                onChange={(e) => handleFieldChange('location', e.target.value)}
+                required
+                disabled={!newEvent.city?.trim()} // Disable if city is not entered
+                className={`bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 ${
+                  !newEvent.city?.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                placeholder={!newEvent.city?.trim() ? "Please enter city first..." : "Enter event location..."}
+              />
+              {!newEvent.city?.trim() && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ Please enter the city before setting the event location
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Category Selection Field */}
           <div className="space-y-2">
             <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
@@ -691,6 +837,95 @@ export const EventDialog = ({
                   ))}
                 </SelectContent>
               </Select>
+            )}
+          </div>
+
+          {/* Amenities Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-gray-700 dark:text-gray-300">Amenities</Label>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {newEvent.amenities.length}/5 amenities
+              </span>
+            </div>
+            
+            {/* Current Amenities Display */}
+            {newEvent.amenities.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {newEvent.amenities.map((amenity, index) => (
+                  <Badge
+                    key={index}
+                    variant="secondary"
+                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700 px-2 py-1 flex items-center gap-1"
+                  >
+                    {amenity}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAmenity(amenity)}
+                      className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Maximum limit warning */}
+            {newEvent.amenities.length >= 5 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-2 mb-2">
+                <p className="text-amber-800 dark:text-amber-200 text-sm">
+                  ⚠️ Maximum limit reached. You can only add 5 amenities per event.
+                </p>
+              </div>
+            )}
+
+            {/* Add Custom Amenity */}
+            {newEvent.amenities.length < 5 && (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    value={currentAmenity}
+                    onChange={(e) => setCurrentAmenity(e.target.value)}
+                    placeholder="Add custom amenity..."
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddAmenity(currentAmenity);
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddAmenity(currentAmenity)}
+                    disabled={!currentAmenity.trim() || newEvent.amenities.length >= 5}
+                    className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Quick Add Common Amenities */}
+                <div className="space-y-2">
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">Quick add:</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {COMMON_AMENITIES.filter(amenity => !newEvent.amenities.includes(amenity)).slice(0, Math.min(8, 5 - newEvent.amenities.length)).map((amenity) => (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => handleAddAmenity(amenity)}
+                        disabled={newEvent.amenities.length >= 5}
+                        className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        + {amenity}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -785,21 +1020,6 @@ export const EventDialog = ({
             </div>
           </div>
 
-          {/* Location Field */}
-          <div className="space-y-2">
-            <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">
-              Location <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="location"
-              value={newEvent.location}
-              onChange={(e) => handleFieldChange('location', e.target.value)}
-              required
-              className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
-              placeholder="Enter event location..."
-            />
-          </div>
-
           {/* Image Upload Field */}
           <div className="space-y-2">
             <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Event Image</Label>
@@ -850,6 +1070,7 @@ export const EventDialog = ({
                   ticket={ticket}
                   onUpdate={handleUpdateExistingTicketType}
                   onDelete={handleDeleteExistingTicketType}
+                  availableTicketTypes={availableTicketTypes}
                 />
               ))}
             </div>
@@ -866,6 +1087,7 @@ export const EventDialog = ({
                 variant="outline"
                 size="sm"
                 onClick={handleAddTicketType}
+                disabled={isLoadingTicketTypes}
                 className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -873,7 +1095,14 @@ export const EventDialog = ({
               </Button>
             </div>
 
-            {newEvent.ticket_types.length === 0 && (
+            {isLoadingTicketTypes && (
+              <div className="text-center py-4">
+                <div className="animate-spin h-6 w-6 border-b-2 border-blue-500 rounded-full mx-auto"></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading ticket types...</p>
+              </div>
+            )}
+
+            {newEvent.ticket_types.length === 0 && !isLoadingTicketTypes && (
               <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
                 <p className="text-gray-500 dark:text-gray-400 mb-2">No ticket types added yet</p>
                 <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -892,7 +1121,7 @@ export const EventDialog = ({
                       value={ticket.type_name}
                       onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
                     >
-                      {TICKET_TYPES.map(type => (
+                      {availableTicketTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
                       ))}
                     </select>
@@ -1001,7 +1230,7 @@ export const EventDialog = ({
  * ExistingTicketTypeRow Component
  * Enhanced version with better UX and error handling
  */
-const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
+const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketTypes }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     type_name: ticket.type_name,
@@ -1057,7 +1286,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete }) => {
               onChange={(e) => setEditData({...editData, type_name: e.target.value})}
               disabled={isLoading}
             >
-              {TICKET_TYPES.map(type => (
+              {availableTicketTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
