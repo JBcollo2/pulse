@@ -42,7 +42,8 @@ import {
   ArrowUpDown,
   RefreshCw,
   Menu,
-  X
+  X,
+  Ticket
 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -269,7 +270,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
   );
 };
 
-// Modern Venue Card Component with blue-cyan styling
+// Modern Venue Card Component with EventCard styling
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -288,8 +289,38 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
 
+  const getCategoryGradient = () => {
+    return 'from-emerald-400 via-teal-400 to-mint-500';
+  };
+
+  const getCategoryIcon = () => {
+    return '🏢';
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const time = new Date();
+    time.setHours(parseInt(hours), parseInt(minutes));
+    return time.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
   return (
     <motion.div
+      className="group relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 dark:border-gray-800/50 cursor-pointer"
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -300,12 +331,11 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
       }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 dark:border-gray-800/50 cursor-pointer"
       onClick={() => onViewDetails(venue)}
     >
       {/* Gradient Border Animation */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500"
+        className={`absolute inset-0 bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500`}
         style={{ padding: '2px' }}
       >
         <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
@@ -325,9 +355,9 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-mint-600 flex items-center justify-center relative overflow-hidden">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-cyan-400/20 to-blue-500/20"
+                className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 via-teal-400/20 to-mint-500/20"
                 animate={{ opacity: [0.2, 0.4, 0.2] }}
                 transition={{ duration: 3, repeat: Infinity }}
               />
@@ -338,7 +368,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
           )}
           
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 via-cyan-500/10 to-blue-500/5 group-hover:from-blue-500/30 group-hover:via-cyan-500/20 group-hover:to-blue-500/10 transition-all duration-500" />
+          <div className={`absolute inset-0 bg-gradient-to-t ${getCategoryGradient()} opacity-20 group-hover:opacity-30 transition-opacity duration-500`} />
           
           {/* Dark Overlay for Text Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -348,7 +378,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             {/* Featured Badge */}
             {venue.totalEvents > 10 && (
               <motion.div
-                className="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 shadow-lg backdrop-blur-sm flex items-center gap-1"
+                className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient()} shadow-lg backdrop-blur-sm flex items-center gap-1`}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
@@ -367,29 +397,13 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
                 }}
                 className={`p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
                   isLiked
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg scale-110'
+                    ? 'bg-gradient-to-r from-blue-500 to-[#10b981] text-white shadow-lg scale-110'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.1 }}
               >
                 <Heart className={`w-4 h-4 transition-all duration-300 ${isLiked ? 'fill-current' : ''}`} />
-              </motion.button>
-              
-              <motion.button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsBookmarked(!isBookmarked);
-                }}
-                className={`p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
-                  isBookmarked
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg scale-110'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-                whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.1 }}
-              >
-                <Bookmark className={`w-4 h-4 transition-all duration-300 ${isBookmarked ? 'fill-current' : ''}`} />
               </motion.button>
             </div>
           </div>
@@ -402,16 +416,16 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
-              {/* Rating */}
-              <div className="flex items-center gap-2 text-white bg-black/40 backdrop-blur-md px-3 py-2 rounded-full border border-white/20">
-                <Star className="w-4 h-4 fill-current text-yellow-400" />
-                <span className="text-sm font-medium">{venue.avgRating.toFixed(1)}</span>
+              {/* Category Badge */}
+              <div className="flex items-center gap-2 text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span>{getCategoryIcon()}</span>
+                <span className="text-sm font-medium">Venue</span>
               </div>
 
               {/* Events Count */}
-              <div className="flex items-center gap-2 text-white bg-gradient-to-r from-blue-500/80 to-cyan-500/80 backdrop-blur-md px-3 py-2 rounded-full border border-white/20 shadow-lg">
+              <div className="flex items-center gap-2 text-white bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                 <Calendar className="w-4 h-4" />
-                <span className="text-sm font-medium">{venue.totalEvents} Events</span>
+                <span className="text-sm font-medium">{venue.totalEvents}</span>
               </div>
             </motion.div>
           </div>
@@ -423,7 +437,13 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
           {/* Title and Trending Indicator */}
           <div className="flex items-start justify-between gap-3">
             <motion.h3
-              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:via-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+              style={{
+                backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+                '--tw-gradient-from': '#10b981',
+                '--tw-gradient-to': '#06d6a0',
+                '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
+              } as React.CSSProperties}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -433,7 +453,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             
             {venue.totalEvents > 20 && (
               <motion.div
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 text-white text-xs font-bold flex-shrink-0"
+                className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} text-white text-xs font-bold flex-shrink-0`}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
@@ -444,37 +464,45 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             )}
           </div>
 
-          {/* Location */}
-          <motion.div
-            className="flex items-center gap-3 text-gray-600 dark:text-gray-300"
+          {/* Description */}
+          <motion.p
+            className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
-              <MapPin className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="text-sm font-medium">{venue.city}</span>
-          </motion.div>
+            {venue.city} - {venue.totalEvents} events hosted at this location
+          </motion.p>
 
-          {/* Stats */}
+          {/* Event Details */}
           <motion.div
-            className="flex items-center justify-between text-sm"
+            className="space-y-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
+            {/* Location */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
-                <Users className="w-4 h-4 text-cyan-600" />
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+                <MapPin className="w-4 h-4 text-current" />
               </div>
-              <span className="font-medium">{venue.totalEvents} Events</span>
+              <span className="text-sm font-medium truncate">{venue.city}</span>
             </div>
+
+            {/* Rating */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
-                <Award className="w-4 h-4 text-blue-600" />
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+                <Star className="w-4 h-4 text-current" />
               </div>
-              <span className="font-medium">{venue.avgRating.toFixed(1)} Rating</span>
+              <span className="text-sm font-medium">{venue.avgRating.toFixed(1)} Rating</span>
+            </div>
+
+            {/* Events Count */}
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+                <Users className="w-4 h-4 text-current" />
+              </div>
+              <span className="text-sm font-medium">{venue.totalEvents} Events</span>
             </div>
           </motion.div>
 
@@ -488,7 +516,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium border border-blue-200/50 dark:border-blue-700/50"
+                className={`flex items-center gap-1 px-3 py-2 bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium`}
               >
                 {getAmenityIcon(amenity)}
                 <span className="capitalize">{amenity}</span>
@@ -501,29 +529,54 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             )}
           </motion.div>
 
-          {/* Action Button */}
+          {/* Price and Action Buttons */}
           <motion.div
+            className="flex items-center justify-between pt-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.4 }}
           >
-            <Button
+            {/* Price and Venue Info */}
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {venue.avgRating.toFixed(1)}/5
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  rating
+                </span>
+              </div>
+              <div className="space-y-1 mt-1">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {venue.totalEvents} events hosted
+                </div>
+              </div>
+            </div>
+
+            {/* Explore Venue Button */}
+            <motion.button
+              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ 
+                boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
+                y: -1
+              }}
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 onViewDetails(venue);
               }}
-              className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 hover:from-blue-600 hover:via-cyan-600 hover:to-blue-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30"
             >
+              <Ticket className="w-4 h-4" />
               <span>Explore Venue</span>
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
+            </motion.button>
           </motion.div>
         </div>
       </div>
 
       {/* Hover Glow Effect */}
       <motion.div
-        className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10"
+        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10`}
         initial={{ scale: 0.8 }}
         animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
@@ -1195,7 +1248,7 @@ const Venues = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   onClick={() => handleGetDirections(selectedVenue)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
                 >
                   <Navigation className="w-4 h-4 mr-2" />
                   Get Directions
@@ -1203,7 +1256,7 @@ const Venues = () => {
 
                 <Button
                   onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   View All Events
