@@ -69,7 +69,7 @@ const Dashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [timeFilter, setTimeFilter] = useState("upcoming");
   const [locationFilter, setLocationFilter] = useState("");
-  const [cityFilter, setCityFilter] = useState(""); // New city filter
+  const [cityFilter, setCityFilter] = useState(""); // City filter
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [sortBy, setSortBy] = useState("date");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -78,7 +78,8 @@ const Dashboard = () => {
   // Available filter options from API
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
-    cities: [], // New cities array
+    cities: [], // Cities array
+    locations: [], // Locations for selected city
     time_filters: [],
     organizers: [],
     sort_options: [],
@@ -113,6 +114,86 @@ const Dashboard = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // Fetch cities data
+  const fetchCities = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/cities`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cities');
+      }
+
+      const data = await response.json();
+      
+      setAvailableFilters(prev => ({
+        ...prev,
+        cities: data.cities || []
+      }));
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+    }
+  }, []);
+
+  // Fetch locations for selected city
+  const fetchCityLocations = useCallback(async (city) => {
+    if (!city) {
+      setAvailableFilters(prev => ({
+        ...prev,
+        locations: []
+      }));
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/events/city/${encodeURIComponent(city)}?per_page=1`, 
+        {
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch city locations');
+      }
+
+      const data = await response.json();
+      
+      setAvailableFilters(prev => ({
+        ...prev,
+        locations: data.available_filters?.locations || []
+      }));
+    } catch (error) {
+      console.error('Error fetching city locations:', error);
+      setAvailableFilters(prev => ({
+        ...prev,
+        locations: []
+      }));
+    }
+  }, []);
+
+  // Reset location filter when city changes
+  useEffect(() => {
+    if (cityFilter) {
+      setLocationFilter(""); // Clear location when city changes
+      fetchCityLocations(cityFilter);
+    } else {
+      setAvailableFilters(prev => ({
+        ...prev,
+        locations: []
+      }));
+      setLocationFilter("");
+    }
+  }, [cityFilter, fetchCityLocations]);
+
+  // Load cities on component mount
+  useEffect(() => {
+    if (user) {
+      fetchCities();
+    }
+  }, [user, fetchCities]);
+
   // Memoized filtered events for performance
   const filteredEvents = useMemo(() => {
     if (!Array.isArray(events)) {
@@ -131,26 +212,47 @@ const Dashboard = () => {
         setIsLoadingMore(true);
       }
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: pageSize.toString(),
-        dashboard: 'true',
-        sort_by: sortBy,
-        sort_order: sortOrder,
-        time_filter: timeFilter
-      });
+      let url;
+      let params;
 
+      // If city is selected, use city-specific endpoint
+      if (cityFilter) {
+        url = `${import.meta.env.VITE_API_URL}/events/city/${encodeURIComponent(cityFilter)}`;
+        params = new URLSearchParams({
+          page: page.toString(),
+          per_page: pageSize.toString(),
+          time_filter: timeFilter,
+          sort_by: sortBy,
+          sort_order: sortOrder
+        });
+
+        // Add location filter if specified (works within the selected city)
+        if (locationFilter.trim()) {
+          params.append('location', locationFilter.trim());
+        }
+      } else {
+        // Use regular events endpoint
+        url = `${import.meta.env.VITE_API_URL}/events`;
+        params = new URLSearchParams({
+          page: page.toString(),
+          per_page: pageSize.toString(),
+          dashboard: 'true',
+          sort_by: sortBy,
+          sort_order: sortOrder,
+          time_filter: timeFilter
+        });
+
+        if (locationFilter.trim()) {
+          params.append('location', locationFilter.trim());
+        }
+      }
+
+      // Common parameters for both endpoints
       if (eventSearchQuery.trim()) {
         params.append('search', eventSearchQuery.trim());
       }
       if (categoryFilter && categoryFilter.trim() !== "") {
         params.append('category_id', categoryFilter.trim());
-      }
-      if (locationFilter.trim()) {
-        params.append('location', locationFilter.trim());
-      }
-      if (cityFilter.trim()) { // New city filter
-        params.append('city', cityFilter.trim());
       }
       if (featuredOnly) {
         params.append('featured', 'true');
@@ -159,8 +261,7 @@ const Dashboard = () => {
         params.append('organizer_company', organizerCompanyFilter.trim());
       }
 
-      const url = `${import.meta.env.VITE_API_URL}/events?${params.toString()}`;
-      const response = await fetch(url, {
+      const response = await fetch(`${url}?${params.toString()}`, {
         credentials: 'include',
       });
 
@@ -185,12 +286,23 @@ const Dashboard = () => {
         });
       }
 
-      setTotalEvents(data.total || data.events.length);
-      setHasMore(data.events.length === pageSize && (data.total ? events.length + data.events.length < data.total : true));
+      // Handle pagination
+      if (data.pagination) {
+        setTotalEvents(data.pagination.total || 0);
+        setHasMore(data.pagination.has_next || false);
+      } else {
+        setTotalEvents(data.total || data.events.length);
+        setHasMore(data.events.length === pageSize && (data.total ? events.length + data.events.length < data.total : true));
+      }
       setCurrentPage(page);
 
+      // Update available filters
       if (data.available_filters) {
-        setAvailableFilters(data.available_filters);
+        setAvailableFilters(prev => ({
+          ...prev,
+          ...data.available_filters,
+          cities: prev.cities // Preserve cities from the cities endpoint
+        }));
       }
     } catch (error) {
       toast({
@@ -615,16 +727,18 @@ const Dashboard = () => {
                   onChange={(e) => setTimeFilter(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                 >
-                  {availableFilters.time_filters?.map((filter) => (
-                    <option key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </option>
-                  )) || [
-                    <option key="upcoming" value="upcoming">Upcoming Events</option>,
-                    <option key="today" value="today">Today</option>,
-                    <option key="past" value="past">Past Events</option>,
-                    <option key="all" value="all">All Events</option>
-                  ]}
+                  {availableFilters.time_filters?.length > 0 ? 
+                    availableFilters.time_filters.map((filter) => (
+                      <option key={filter.value || filter} value={filter.value || filter}>
+                        {filter.label || filter}
+                      </option>
+                    )) : [
+                      <option key="upcoming" value="upcoming">Upcoming Events</option>,
+                      <option key="today" value="today">Today</option>,
+                      <option key="past" value="past">Past Events</option>,
+                      <option key="all" value="all">All Events</option>
+                    ]
+                  }
                 </select>
               </div>
 
@@ -652,16 +766,18 @@ const Dashboard = () => {
                     onChange={(e) => setSortBy(e.target.value)}
                     className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                   >
-                    {availableFilters.sort_options?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    )) || [
-                      <option key="date" value="date">Date</option>,
-                      <option key="name" value="name">Name</option>,
-                      <option key="featured" value="featured">Featured</option>,
-                      <option key="created_at" value="created_at">Created</option>
-                    ]}
+                    {availableFilters.sort_options?.length > 0 ? 
+                      availableFilters.sort_options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      )) : [
+                        <option key="date" value="date">Date</option>,
+                        <option key="name" value="name">Name</option>,
+                        <option key="featured" value="featured">Featured</option>,
+                        <option key="created_at" value="created_at">Created</option>
+                      ]
+                    }
                   </select>
                   <button
                     onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
@@ -679,20 +795,6 @@ const Dashboard = () => {
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Filter by location..."
-                        value={locationFilter}
-                        onChange={(e) => setLocationFilter(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
                     <select
                       value={cityFilter}
@@ -700,12 +802,51 @@ const Dashboard = () => {
                       className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
                     >
                       <option value="">All Cities</option>
-                      {availableFilters.cities?.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
+                      {availableFilters.cities?.map((cityData) => (
+                        <option key={cityData.city || cityData} value={cityData.city || cityData}>
+                          {cityData.city || cityData} {cityData.event_count ? `(${cityData.event_count} events)` : ''}
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Location {cityFilter && `in ${cityFilter}`}
+                    </label>
+                    <div className="relative">
+                      {cityFilter ? (
+                        <select
+                          value={locationFilter}
+                          onChange={(e) => setLocationFilter(e.target.value)}
+                          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                          disabled={!cityFilter}
+                        >
+                          <option value="">All Locations</option>
+                          {availableFilters.locations?.map((location) => (
+                            <option key={location} value={location}>
+                              {location}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <>
+                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Filter by location..."
+                            value={locationFilter}
+                            onChange={(e) => setLocationFilter(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                          />
+                        </>
+                      )}
+                    </div>
+                    {!cityFilter && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Select a city first to filter by specific locations
+                      </p>
+                    )}
                   </div>
 
                   {user?.role === "ADMIN" && (
@@ -759,17 +900,17 @@ const Dashboard = () => {
                   )}
                   {timeFilter !== "upcoming" && (
                     <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs rounded-full">
-                      Time: {availableFilters.time_filters?.find(f => f.value === timeFilter)?.label || timeFilter}
-                    </span>
-                  )}
-                  {locationFilter && (
-                    <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
-                      Location: {locationFilter}
+                      Time: {availableFilters.time_filters?.find(f => (f.value || f) === timeFilter)?.label || timeFilter}
                     </span>
                   )}
                   {cityFilter && (
                     <span className="px-2 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-800 dark:text-cyan-200 text-xs rounded-full">
                       City: {cityFilter}
+                    </span>
+                  )}
+                  {locationFilter && (
+                    <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 text-xs rounded-full">
+                      Location: {locationFilter}
                     </span>
                   )}
                   {featuredOnly && (
@@ -958,22 +1099,7 @@ const Dashboard = () => {
         {/* Load More Trigger */}
         <div ref={loadMoreRef} className="h-10 w-full" />
 
-        {/* End Message */}
-        {!hasMore && events.length > 0 && (
-          <motion.div
-            className="text-center py-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full border border-blue-200/50 dark:border-blue-700/50">
-              <span className="text-2xl mr-3">🎉</span>
-              <span className="text-gray-700 dark:text-gray-300 font-medium">
-                You've seen all {events.length} events!
-              </span>
-            </div>
-          </motion.div>
-        )}
+        {/* Removed the "End Message" section that showed "You've seen all events!" */}
       </div>
     );
   };
