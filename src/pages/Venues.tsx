@@ -94,11 +94,11 @@ interface LocationFilters {
   sort_order: 'asc' | 'desc';
 }
 
-// Floating background shapes component with updated gradients
+// Floating background shapes component with blue-cyan gradients
 const FloatingShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
     <motion.div
-      className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-emerald-400/10 via-teal-400/10 to-mint-500/10 rounded-full blur-xl"
+      className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-blue-500/10 rounded-full blur-xl"
       animate={{
         x: [0, 100, 0],
         y: [0, -50, 0],
@@ -111,7 +111,7 @@ const FloatingShapes = () => (
       }}
     />
     <motion.div
-      className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-teal-400/10 via-mint-400/10 to-emerald-500/10 rounded-full blur-xl"
+      className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 via-blue-400/10 to-cyan-500/10 rounded-full blur-xl"
       animate={{
         x: [0, -80, 0],
         y: [0, 60, 0],
@@ -124,7 +124,7 @@ const FloatingShapes = () => (
       }}
     />
     <motion.div
-      className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-mint-500/5 via-teal-500/5 to-emerald-500/5 rounded-full blur-2xl"
+      className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-blue-500/5 rounded-full blur-2xl"
       animate={{
         scale: [1, 1.2, 1],
         x: [0, 50, 0],
@@ -138,7 +138,7 @@ const FloatingShapes = () => (
   </div>
 );
 
-// City Selection Component with Pagination and updated styling
+// City Selection Component with Pagination and updated blue-cyan styling
 const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -161,7 +161,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
   return (
     <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 dark:border-gray-700/50 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold bg-gradient-to-r from-emerald-600 via-teal-600 to-mint-600 bg-clip-text text-transparent">Select City</h3>
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">Select City</h3>
         <span className="text-sm text-gray-500">{filteredCities.length} cities available</span>
       </div>
 
@@ -172,7 +172,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
           placeholder="Search cities..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-emerald-400 focus:ring-emerald-400/20"
+          className="pl-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400 focus:ring-blue-400/20"
         />
       </div>
 
@@ -191,8 +191,8 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                 onClick={() => onCitySelect(city.city)}
                 className={`p-4 rounded-xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
                   selectedCity === city.city
-                    ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300 hover:bg-gradient-to-br hover:from-emerald-50/50 hover:via-teal-50/50 hover:to-mint-50/50 dark:hover:from-emerald-900/10 dark:hover:via-teal-900/10 dark:hover:to-mint-900/10'
+                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-50/50 hover:via-cyan-50/50 hover:to-blue-50/50 dark:hover:from-blue-900/10 dark:hover:via-cyan-900/10 dark:hover:to-blue-900/10'
                 }`}
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -200,7 +200,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                 {/* Gradient border animation for selected city */}
                 {selectedCity === city.city && (
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 opacity-20 rounded-xl"
+                    className="absolute inset-0 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-20 rounded-xl"
                     animate={{ opacity: [0.2, 0.3, 0.2] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
@@ -213,7 +213,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {city.top_amenities.slice(0, 3).map((amenity, idx) => (
-                      <span key={idx} className="text-xs bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
+                      <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
                         {amenity}
                       </span>
                     ))}
@@ -230,7 +230,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"
+                className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -244,7 +244,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={currentPage === pageNum ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white" : "border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"}
+                      className={currentPage === pageNum ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white" : "border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"}
                     >
                       {pageNum}
                     </Button>
@@ -257,7 +257,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"
+                className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -269,7 +269,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
   );
 };
 
-// Modern Venue Card Component with Event Card styling
+// Modern Venue Card Component with blue-cyan styling
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -305,7 +305,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     >
       {/* Gradient Border Animation */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500"
+        className="absolute inset-0 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 rounded-3xl transition-opacity duration-500"
         style={{ padding: '2px' }}
       >
         <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
@@ -325,9 +325,9 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-mint-600 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600 flex items-center justify-center relative overflow-hidden">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-emerald-400/20 via-teal-400/20 to-mint-500/20"
+                className="absolute inset-0 bg-gradient-to-br from-blue-400/20 via-cyan-400/20 to-blue-500/20"
                 animate={{ opacity: [0.2, 0.4, 0.2] }}
                 transition={{ duration: 3, repeat: Infinity }}
               />
@@ -338,7 +338,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
           )}
           
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 via-teal-500/10 to-mint-500/5 group-hover:from-emerald-500/30 group-hover:via-teal-500/20 group-hover:to-mint-500/10 transition-all duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 via-cyan-500/10 to-blue-500/5 group-hover:from-blue-500/30 group-hover:via-cyan-500/20 group-hover:to-blue-500/10 transition-all duration-500" />
           
           {/* Dark Overlay for Text Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -348,7 +348,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             {/* Featured Badge */}
             {venue.totalEvents > 10 && (
               <motion.div
-                className="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 shadow-lg backdrop-blur-sm flex items-center gap-1"
+                className="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 shadow-lg backdrop-blur-sm flex items-center gap-1"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
@@ -367,7 +367,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
                 }}
                 className={`p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
                   isLiked
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg scale-110'
+                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg scale-110'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
                 whileTap={{ scale: 0.9 }}
@@ -383,7 +383,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
                 }}
                 className={`p-2 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 ${
                   isBookmarked
-                    ? 'bg-gradient-to-r from-teal-500 to-mint-500 text-white shadow-lg scale-110'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg scale-110'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
                 whileTap={{ scale: 0.9 }}
@@ -409,7 +409,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               </div>
 
               {/* Events Count */}
-              <div className="flex items-center gap-2 text-white bg-gradient-to-r from-emerald-500/80 to-teal-500/80 backdrop-blur-md px-3 py-2 rounded-full border border-white/20 shadow-lg">
+              <div className="flex items-center gap-2 text-white bg-gradient-to-r from-blue-500/80 to-cyan-500/80 backdrop-blur-md px-3 py-2 rounded-full border border-white/20 shadow-lg">
                 <Calendar className="w-4 h-4" />
                 <span className="text-sm font-medium">{venue.totalEvents} Events</span>
               </div>
@@ -423,7 +423,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
           {/* Title and Trending Indicator */}
           <div className="flex items-start justify-between gap-3">
             <motion.h3
-              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-emerald-600 group-hover:via-teal-600 group-hover:to-mint-600 group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:via-cyan-600 group-hover:to-blue-600 group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
@@ -433,7 +433,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             
             {venue.totalEvents > 20 && (
               <motion.div
-                className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white text-xs font-bold flex-shrink-0"
+                className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 text-white text-xs font-bold flex-shrink-0"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
@@ -451,8 +451,8 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20">
-              <MapPin className="w-4 h-4 text-emerald-600" />
+            <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
+              <MapPin className="w-4 h-4 text-blue-600" />
             </div>
             <span className="text-sm font-medium">{venue.city}</span>
           </motion.div>
@@ -465,14 +465,14 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             transition={{ delay: 0.3 }}
           >
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20">
-                <Users className="w-4 h-4 text-teal-600" />
+              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
+                <Users className="w-4 h-4 text-cyan-600" />
               </div>
               <span className="font-medium">{venue.totalEvents} Events</span>
             </div>
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20">
-                <Award className="w-4 h-4 text-mint-600" />
+              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-100 via-cyan-100 to-blue-100 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20">
+                <Award className="w-4 h-4 text-blue-600" />
               </div>
               <span className="font-medium">{venue.avgRating.toFixed(1)} Rating</span>
             </div>
@@ -488,7 +488,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium border border-emerald-200/50 dark:border-emerald-700/50"
+                className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium border border-blue-200/50 dark:border-blue-700/50"
               >
                 {getAmenityIcon(amenity)}
                 <span className="capitalize">{amenity}</span>
@@ -512,7 +512,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
                 e.stopPropagation();
                 onViewDetails(venue);
               }}
-              className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-mint-500 hover:from-emerald-600 hover:via-teal-600 hover:to-mint-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30"
+              className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 hover:from-blue-600 hover:via-cyan-600 hover:to-blue-600 text-white font-medium rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30"
             >
               <span>Explore Venue</span>
               <ChevronRight className="w-4 h-4 ml-2" />
@@ -523,7 +523,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
 
       {/* Hover Glow Effect */}
       <motion.div
-        className="absolute inset-0 rounded-3xl bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10"
+        className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 -z-10"
         initial={{ scale: 0.8 }}
         animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
@@ -775,7 +775,7 @@ const Venues = () => {
   }, [filteredVenues, activeTab]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-emerald-50/30 to-teal-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 relative">
       <Navbar />
       <FloatingShapes />
 
@@ -790,7 +790,7 @@ const Venues = () => {
             transition={{ duration: 0.8 }}
           >
             <motion.h1
-              className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-mint-600 bg-clip-text text-transparent mb-6"
+              className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -840,13 +840,13 @@ const Venues = () => {
                       setSelectedCity('');
                       setSearchParams({});
                     }}
-                    className="border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"
+                    className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back to Cities
                   </Button>
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-mint-600 bg-clip-text text-transparent">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
                       {selectedCity}
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -860,7 +860,7 @@ const Venues = () => {
                     variant="outline"
                     onClick={() => fetchCityEvents(1, true)}
                     disabled={loading}
-                    className="border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"
+                    className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -880,7 +880,7 @@ const Venues = () => {
                         placeholder="Search venues..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-emerald-400 focus:ring-emerald-400/20"
+                        className="pl-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400 focus:ring-blue-400/20"
                       />
                     </div>
                   </div>
@@ -889,7 +889,7 @@ const Venues = () => {
                   <select
                     value={filters.location}
                     onChange={(e) => handleFilterChange('location', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-emerald-400"
+                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
                   >
                     <option value="">All Locations</option>
                     {availableFilters.locations?.map(location => (
@@ -901,7 +901,7 @@ const Venues = () => {
                   <select
                     value={filters.amenity}
                     onChange={(e) => handleFilterChange('amenity', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-emerald-400"
+                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
                   >
                     <option value="">All Amenities</option>
                     {availableFilters.amenities?.map(amenity => (
@@ -913,7 +913,7 @@ const Venues = () => {
                   <select
                     value={filters.time_filter}
                     onChange={(e) => handleFilterChange('time_filter', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-emerald-400"
+                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
                   >
                     <option value="upcoming">Upcoming Events</option>
                     <option value="today">Today</option>
@@ -927,7 +927,7 @@ const Venues = () => {
                       variant={viewMode === 'grid' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
-                      className={viewMode === 'grid' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : ''}
+                      className={viewMode === 'grid' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : ''}
                     >
                       <Grid className="w-4 h-4" />
                     </Button>
@@ -935,7 +935,7 @@ const Venues = () => {
                       variant={viewMode === 'list' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('list')}
-                      className={viewMode === 'list' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : ''}
+                      className={viewMode === 'list' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : ''}
                     >
                       <List className="w-4 h-4" />
                     </Button>
@@ -946,10 +946,10 @@ const Venues = () => {
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">All Venues</TabsTrigger>
-                  <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">Trending</TabsTrigger>
-                  <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">Top Rated</TabsTrigger>
-                  <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white">Popular</TabsTrigger>
+                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">All Venues</TabsTrigger>
+                  <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Trending</TabsTrigger>
+                  <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Top Rated</TabsTrigger>
+                  <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Popular</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value={activeTab} className="mt-6">
@@ -986,7 +986,7 @@ const Venues = () => {
                       {!error && sortedVenues.length === 0 && (
                         <div className="text-center py-20">
                           <div className="text-8xl mb-6">🏢</div>
-                          <h3 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-mint-600 bg-clip-text text-transparent mb-4">
+                          <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-4">
                             No venues found
                           </h3>
                           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
@@ -997,7 +997,7 @@ const Venues = () => {
                               setSearchQuery('');
                               setFilters(prev => ({ ...prev, location: '', amenity: '' }));
                             }}
-                            className="bg-gradient-to-r from-emerald-500 via-teal-500 to-mint-500 text-white"
+                            className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 text-white"
                           >
                             Clear Filters
                           </Button>
@@ -1026,7 +1026,7 @@ const Venues = () => {
                       {isLoadingMore && (
                         <div className="flex justify-center items-center py-12">
                           <div className="flex items-center gap-3 px-6 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
-                            <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                             <span className="text-gray-600 dark:text-gray-300">Loading more venues...</span>
                           </div>
                         </div>
@@ -1038,7 +1038,7 @@ const Venues = () => {
                       {/* End Message */}
                       {!hasMore && sortedVenues.length > 0 && (
                         <div className="text-center py-12">
-                          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 rounded-full border border-emerald-200/50 dark:border-emerald-700/50">
+                          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 rounded-full border border-blue-200/50 dark:border-blue-700/50">
                             <span className="text-gray-700 dark:text-gray-300">
                               You've explored all venues in {selectedCity}!
                             </span>
@@ -1060,11 +1060,11 @@ const Venues = () => {
       <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-white/20 dark:border-gray-700/50">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-mint-600 bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
               {selectedVenue?.location}
             </DialogTitle>
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <MapPin className="w-4 h-4 text-emerald-500" />
+              <MapPin className="w-4 h-4 text-blue-500" />
               <span>{selectedVenue?.city}</span>
             </div>
           </DialogHeader>
@@ -1087,7 +1087,7 @@ const Venues = () => {
                       <Star className="w-4 h-4 text-yellow-500 fill-current" />
                       <span className="font-medium">{selectedVenue.avgRating.toFixed(1)}</span>
                     </div>
-                    <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full flex items-center gap-2">
+                    <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       <span className="font-medium">{selectedVenue.totalEvents} Events</span>
                     </div>
@@ -1099,9 +1099,9 @@ const Venues = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Venue Info */}
                 <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 rounded-xl p-6 border border-emerald-200/50 dark:border-emerald-700/50">
+                  <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-blue-200/50 dark:border-blue-700/50">
                     <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Building className="w-5 h-5 text-emerald-500" />
+                      <Building className="w-5 h-5 text-blue-500" />
                       Venue Details
                     </h4>
                     <div className="space-y-2">
@@ -1125,9 +1125,9 @@ const Venues = () => {
                   </div>
 
                   {/* Amenities */}
-                  <div className="bg-gradient-to-br from-teal-50 via-mint-50 to-emerald-50 dark:from-teal-900/20 dark:via-mint-900/20 dark:to-emerald-900/20 rounded-xl p-6 border border-teal-200/50 dark:border-teal-700/50">
+                  <div className="bg-gradient-to-br from-cyan-50 via-blue-50 to-cyan-50 dark:from-cyan-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 rounded-xl p-6 border border-cyan-200/50 dark:border-cyan-700/50">
                     <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Award className="w-5 h-5 text-teal-500" />
+                      <Award className="w-5 h-5 text-cyan-500" />
                       Available Amenities
                     </h4>
                     <div className="grid grid-cols-2 gap-2">
@@ -1157,9 +1157,9 @@ const Venues = () => {
 
                 {/* Recent Events */}
                 <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-mint-50 via-emerald-50 to-teal-50 dark:from-mint-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 rounded-xl p-6 border border-mint-200/50 dark:border-mint-700/50">
+                  <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-blue-200/50 dark:border-blue-700/50">
                     <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-mint-600" />
+                      <Calendar className="w-5 h-5 text-blue-600" />
                       Recent Events
                     </h4>
                     <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -1180,7 +1180,7 @@ const Venues = () => {
                             </div>
                           </div>
                           {event.category && (
-                            <span className="inline-block mt-2 px-2 py-1 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                            <span className="inline-block mt-2 px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full">
                               {event.category}
                             </span>
                           )}
@@ -1195,7 +1195,7 @@ const Venues = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   onClick={() => handleGetDirections(selectedVenue)}
-                  className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white"
                 >
                   <Navigation className="w-4 h-4 mr-2" />
                   Get Directions
@@ -1203,7 +1203,7 @@ const Venues = () => {
 
                 <Button
                   onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                  className="flex-1 bg-gradient-to-r from-teal-500 to-mint-500 hover:from-teal-600 hover:to-mint-600 text-white"
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   View All Events
@@ -1212,7 +1212,7 @@ const Venues = () => {
                 <Button
                   variant="outline"
                   onClick={() => handleShare(selectedVenue)}
-                  className="flex-1 border-emerald-200 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50"
+                  className="flex-1 border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Venue
