@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  MapPin, 
-  Star, 
-  Search, 
-  Globe, 
-  Calendar, 
+import {
+  MapPin,
+  Star,
+  Search,
+  Globe,
+  Calendar,
   Filter,
   Grid,
   List,
@@ -92,46 +94,6 @@ interface LocationFilters {
   sort_order: 'asc' | 'desc';
 }
 
-// Navbar Toggle Component
-const NavbarToggle = () => {
-  const [showNavbarOnPage, setShowNavbarOnPage] = useState(false);
-
-  const toggleNavbarVisibility = () => {
-    setShowNavbarOnPage(!showNavbarOnPage);
-    // Trigger a custom event that the navbar can listen to
-    window.dispatchEvent(new CustomEvent('toggleNavbar', { 
-      detail: { show: !showNavbarOnPage } 
-    }));
-  };
-
-  // Listen for navbar state changes
-  useEffect(() => {
-    const handleNavbarToggle = (event) => {
-      setShowNavbarOnPage(event.detail.show);
-    };
-
-    window.addEventListener('toggleNavbar', handleNavbarToggle);
-    return () => window.removeEventListener('toggleNavbar', handleNavbarToggle);
-  }, []);
-
-  return (
-    <div className="fixed top-4 left-4 z-50">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={toggleNavbarVisibility}
-        className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-      >
-        {showNavbarOnPage ? (
-          <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-        ) : (
-          <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-        )}
-      </Button>
-    </div>
-  );
-};
-
 // Floating background shapes component
 const FloatingShapes = () => (
   <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -183,7 +145,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
   const citiesPerPage = 12;
 
   const filteredCities = useMemo(() => {
-    return cities.filter(city => 
+    return cities.filter(city =>
       city.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [cities, searchTerm]);
@@ -202,7 +164,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
         <h3 className="text-lg font-semibold">Select City</h3>
         <span className="text-sm text-gray-500">{filteredCities.length} cities available</span>
       </div>
-      
+
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <Input
@@ -260,7 +222,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              
+
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
@@ -276,7 +238,7 @@ const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
                   );
                 })}
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -333,10 +295,8 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             </span>
           </div>
         )}
-
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex gap-2">
           <button
@@ -345,8 +305,8 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               setIsLiked(!isLiked);
             }}
             className={`p-2 rounded-full transition-all duration-300 ${
-              isLiked 
-                ? 'bg-red-500 text-white' 
+              isLiked
+                ? 'bg-red-500 text-white'
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
@@ -358,21 +318,19 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
               setIsBookmarked(!isBookmarked);
             }}
             className={`p-2 rounded-full transition-all duration-300 ${
-              isBookmarked 
-                ? 'bg-blue-500 text-white' 
+              isBookmarked
+                ? 'bg-blue-500 text-white'
                 : 'bg-white/20 text-white hover:bg-white/30'
             }`}
           >
             <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
           </button>
         </div>
-
         {/* Rating Badge */}
         <div className="absolute top-4 left-4 bg-yellow-400 text-black px-3 py-1 rounded-full flex items-center gap-1">
           <Star className="w-3 h-3 fill-current" />
           <span className="text-sm font-semibold">{venue.avgRating.toFixed(1)}</span>
         </div>
-
         {/* Events Count */}
         <div className="absolute bottom-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full">
           <span className="text-sm font-medium">{venue.totalEvents} Events</span>
@@ -461,7 +419,7 @@ const Venues = () => {
     sort_by: 'date',
     sort_order: 'asc'
   });
-  
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
@@ -502,11 +460,9 @@ const Venues = () => {
         threshold: 0.1,
       }
     );
-
     if (loadMoreRef.current) {
       observer.observe(loadMoreRef.current);
     }
-
     return () => {
       if (loadMoreRef.current) {
         observer.unobserve(loadMoreRef.current);
@@ -520,9 +476,9 @@ const Venues = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/cities`, {
         credentials: 'include',
       });
-      
+
       if (!response.ok) throw new Error('Failed to fetch cities');
-      
+
       const data = await response.json();
       setCities(data.cities || []);
     } catch (err) {
@@ -535,14 +491,12 @@ const Venues = () => {
 
   const fetchCityEvents = async (page = 1, reset = false) => {
     if (!selectedCity) return;
-
     try {
       if (page === 1) {
         setLoading(true);
       } else {
         setIsLoadingMore(true);
       }
-
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '20',
@@ -552,19 +506,16 @@ const Venues = () => {
         sort_by: filters.sort_by,
         sort_order: filters.sort_order
       });
-
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/events/city/${encodeURIComponent(selectedCity)}?${params}`,
         { credentials: 'include' }
       );
-
       if (!response.ok) throw new Error('Failed to fetch events');
-
       const data = await response.json();
-      
+
       // Group events by location to create venues
       const venueMap = new Map();
-      
+
       data.events.forEach(event => {
         const key = event.location;
         if (!venueMap.has(key)) {
@@ -578,16 +529,16 @@ const Venues = () => {
             avgRating: 4.0 + Math.random() * 1.0 // Mock rating
           });
         }
-        
+
         const venue = venueMap.get(key);
         venue.events.push(event);
         venue.totalEvents++;
-        
+
         // Add amenities
         if (event.amenities) {
           event.amenities.forEach(amenity => venue.uniqueAmenities.add(amenity));
         }
-        
+
         // Set top event (featured or first)
         if (!venue.topEvent || event.featured) {
           venue.topEvent = event;
@@ -606,7 +557,6 @@ const Venues = () => {
       } else {
         setVenues(prev => [...prev, ...processedVenues]);
       }
-
       setCurrentPage(page);
       setHasMore(data.pagination.has_next);
       setAvailableFilters(data.available_filters || {
@@ -614,7 +564,6 @@ const Venues = () => {
         amenities: [],
         time_filters: ['upcoming', 'today', 'past', 'all']
       });
-
     } catch (err) {
       setError('Failed to load venues');
       console.error('Error fetching city events:', err);
@@ -656,7 +605,6 @@ const Venues = () => {
       text: `Check out this venue in ${venue.city}!`,
       url: window.location.href,
     };
-
     if (navigator.share) {
       navigator.share(shareData);
     } else {
@@ -666,10 +614,9 @@ const Venues = () => {
 
   const filteredVenues = useMemo(() => {
     return venues.filter(venue => {
-      const matchesSearch = !searchQuery || 
+      const matchesSearch = !searchQuery ||
         venue.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         venue.city.toLowerCase().includes(searchQuery.toLowerCase());
-
       return matchesSearch;
     });
   }, [venues, searchQuery]);
@@ -690,14 +637,12 @@ const Venues = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
-      {/* Navbar Toggle Button */}
-      <NavbarToggle />
-      
+      <Navbar />
       <FloatingShapes />
-      
+
       <main className="py-12 pt-24 relative z-10">
         <div className="container mx-auto px-4">
-          
+
           {/* Header */}
           <motion.div
             className="text-center mb-16"
@@ -759,15 +704,17 @@ const Venues = () => {
                     </p>
                   </div>
                 </div>
-                
-                <Button
-                  variant="outline"
-                  onClick={() => fetchCityEvents(1, true)}
-                  disabled={loading}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
+
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchCityEvents(1, true)}
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
               </div>
 
               {/* Filters */}
@@ -841,118 +788,120 @@ const Venues = () => {
                     </Button>
                   </div>
                 </div>
+              </div>
 
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="all">All Venues</TabsTrigger>
-                    <TabsTrigger value="trending">Trending</TabsTrigger>
-                    <TabsTrigger value="top-rated">Top Rated</TabsTrigger>
-                    <TabsTrigger value="nearby">Popular</TabsTrigger>
-                  </TabsList>
+              {/* Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="all">All Venues</TabsTrigger>
+                  <TabsTrigger value="trending">Trending</TabsTrigger>
+                  <TabsTrigger value="top-rated">Top Rated</TabsTrigger>
+                  <TabsTrigger value="nearby">Popular</TabsTrigger>
+                </TabsList>
 
-                  <TabsContent value={activeTab} className="mt-6">
-                    {loading ? (
+                <TabsContent value={activeTab} className="mt-6">
+                  {loading ? (
+                    <div className={`grid gap-6 ${
+                      viewMode === 'grid'
+                        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                        : 'grid-cols-1 max-w-4xl mx-auto'
+                    }`}>
+                      {Array(6).fill(0).map((_, index) => (
+                        <div key={index} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg">
+                          <Skeleton className="h-48 w-full" />
+                          <div className="p-6 space-y-4">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <div className="flex gap-2">
+                              <Skeleton className="h-6 w-16" />
+                              <Skeleton className="h-6 w-16" />
+                            </div>
+                            <Skeleton className="h-10 w-full" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      {error && (
+                        <div className="text-center text-red-500 py-8 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                          <div className="text-4xl mb-4">⚠️</div>
+                          <p className="text-lg font-medium">{error}</p>
+                        </div>
+                      )}
+
+                      {!error && sortedVenues.length === 0 && (
+                        <div className="text-center py-20">
+                          <div className="text-8xl mb-6">🏢</div>
+                          <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                            No venues found
+                          </h3>
+                          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                            Try adjusting your search or filters
+                          </p>
+                          <Button
+                            onClick={() => {
+                              setSearchQuery('');
+                              setFilters(prev => ({ ...prev, location: '', amenity: '' }));
+                            }}
+                            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                          >
+                            Clear Filters
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Venues Grid */}
                       <div className={`grid gap-6 ${
-                        viewMode === 'grid' 
-                          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                        viewMode === 'grid'
+                          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
                           : 'grid-cols-1 max-w-4xl mx-auto'
                       }`}>
-                        {Array(6).fill(0).map((_, index) => (
-                          <div key={index} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg">
-                            <Skeleton className="h-48 w-full" />
-                            <div className="p-6 space-y-4">
-                              <Skeleton className="h-6 w-3/4" />
-                              <Skeleton className="h-4 w-1/2" />
-                              <div className="flex gap-2">
-                                <Skeleton className="h-6 w-16" />
-                                <Skeleton className="h-6 w-16" />
-                              </div>
-                              <Skeleton className="h-10 w-full" />
-                            </div>
-                          </div>
-                        ))}
+                        <AnimatePresence>
+                          {sortedVenues.map((venue, index) => (
+                            <VenueCard
+                              key={`${venue.location}-${venue.city}`}
+                              venue={venue}
+                              index={index}
+                              onViewDetails={handleViewDetails}
+                            />
+                          ))}
+                        </AnimatePresence>
                       </div>
-                    ) : (
-                      <>
-                        {error && (
-                          <div className="text-center text-red-500 py-8 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-                            <div className="text-4xl mb-4">⚠️</div>
-                            <p className="text-lg font-medium">{error}</p>
-                          </div>
-                        )}
-                        
-                        {!error && sortedVenues.length === 0 && (
-                          <div className="text-center py-20">
-                            <div className="text-8xl mb-6">🏢</div>
-                            <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                              No venues found
-                            </h3>
-                            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                              Try adjusting your search or filters
-                            </p>
-                            <Button
-                              onClick={() => {
-                                setSearchQuery('');
-                                setFilters(prev => ({ ...prev, location: '', amenity: '' }));
-                              }}
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white"
-                            >
-                              Clear Filters
-                            </Button>
-                          </div>
-                        )}
 
-                        {/* Venues Grid */}
-                        <div className={`grid gap-6 ${
-                          viewMode === 'grid' 
-                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-                            : 'grid-cols-1 max-w-4xl mx-auto'
-                        }`}>
-                          <AnimatePresence>
-                            {sortedVenues.map((venue, index) => (
-                              <VenueCard
-                                key={`${venue.location}-${venue.city}`}
-                                venue={venue}
-                                index={index}
-                                onViewDetails={handleViewDetails}
-                              />
-                            ))}
-                          </AnimatePresence>
+                      {/* Loading More Indicator */}
+                      {isLoadingMore && (
+                        <div className="flex justify-center items-center py-12">
+                          <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-full shadow-lg">
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                            <span className="text-gray-600 dark:text-gray-300">Loading more venues...</span>
+                          </div>
                         </div>
+                      )}
 
-                        {/* Loading More Indicator */}
-                        {isLoadingMore && (
-                          <div className="flex justify-center items-center py-12">
-                            <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-full shadow-lg">
-                              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                              <span className="text-gray-600 dark:text-gray-300">Loading more venues...</span>
-                            </div>
+                      {/* Load More Trigger */}
+                      <div ref={loadMoreRef} className="h-10 w-full" />
+
+                      {/* End Message */}
+                      {!hasMore && sortedVenues.length > 0 && (
+                        <div className="text-center py-12">
+                          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full">
+                            <span className="text-gray-700 dark:text-gray-300">
+                              You've explored all venues in {selectedCity}!
+                            </span>
                           </div>
-                        )}
-
-                        {/* Load More Trigger */}
-                        <div ref={loadMoreRef} className="h-10 w-full" />
-
-                        {/* End Message */}
-                        {!hasMore && sortedVenues.length > 0 && (
-                          <div className="text-center py-12">
-                            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-full">
-                              <span className="text-gray-700 dark:text-gray-300">
-                                You've explored all venues in {selectedCity}!
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+              </Tabs>
             </motion.div>
           )}
         </div>
       </main>
+
+      <Footer />
 
       {/* Venue Details Modal */}
       <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
@@ -978,7 +927,7 @@ const Venues = () => {
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  
+
                   {/* Stats Overlay */}
                   <div className="absolute bottom-4 left-4 right-4 flex justify-between">
                     <div className="bg-white/90 dark:bg-gray-800/90 px-4 py-2 rounded-full flex items-center gap-2">
@@ -1098,7 +1047,7 @@ const Venues = () => {
                   <Navigation className="w-4 h-4 mr-2" />
                   Get Directions
                 </Button>
-                
+
                 <Button
                   onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
                   className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
