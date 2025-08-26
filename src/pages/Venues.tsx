@@ -38,7 +38,9 @@ import {
   Mail,
   Building,
   ArrowUpDown,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  X
 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -89,6 +91,46 @@ interface LocationFilters {
   sort_by: 'date' | 'name';
   sort_order: 'asc' | 'desc';
 }
+
+// Navbar Toggle Component
+const NavbarToggle = () => {
+  const [showNavbarOnPage, setShowNavbarOnPage] = useState(false);
+
+  const toggleNavbarVisibility = () => {
+    setShowNavbarOnPage(!showNavbarOnPage);
+    // Trigger a custom event that the navbar can listen to
+    window.dispatchEvent(new CustomEvent('toggleNavbar', { 
+      detail: { show: !showNavbarOnPage } 
+    }));
+  };
+
+  // Listen for navbar state changes
+  useEffect(() => {
+    const handleNavbarToggle = (event) => {
+      setShowNavbarOnPage(event.detail.show);
+    };
+
+    window.addEventListener('toggleNavbar', handleNavbarToggle);
+    return () => window.removeEventListener('toggleNavbar', handleNavbarToggle);
+  }, []);
+
+  return (
+    <div className="fixed top-4 left-4 z-50">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={toggleNavbarVisibility}
+        className="w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+      >
+        {showNavbarOnPage ? (
+          <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+        ) : (
+          <Menu className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+        )}
+      </Button>
+    </div>
+  );
+};
 
 // Floating background shapes component
 const FloatingShapes = () => (
@@ -648,6 +690,9 @@ const Venues = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      {/* Navbar Toggle Button */}
+      <NavbarToggle />
+      
       <FloatingShapes />
       
       <main className="py-12 pt-24 relative z-10">
