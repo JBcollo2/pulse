@@ -277,8 +277,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
   index: number;
   onViewDetails: (venue: VenueLocation) => void;
 }) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const getAmenityIcon = (amenity: string) => {
@@ -304,10 +302,10 @@ const VenueCard = ({ venue, index, onViewDetails }: {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -316,26 +314,26 @@ const VenueCard = ({ venue, index, onViewDetails }: {
     const [hours, minutes] = timeString.split(':');
     const time = new Date();
     time.setHours(parseInt(hours), parseInt(minutes));
-    return time.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return time.toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
   // Get the next upcoming event or most recent event for display
   const getDisplayEvent = () => {
     if (!venue.events || venue.events.length === 0) return null;
-    
+
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    
+
     // Sort events by date
     const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    
+
     // Find next upcoming event
     const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
-    
+
     // Return upcoming event or the most recent event
     return upcomingEvent || sortedEvents[sortedEvents.length - 1];
   };
@@ -345,15 +343,15 @@ const VenueCard = ({ venue, index, onViewDetails }: {
     if (!venue.events || venue.events.length === 0) {
       return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
     }
-    
+
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    
+
     const upcoming = venue.events.filter(event => new Date(event.date).getTime() >= currentDate.getTime()).length;
     const nextEvent = venue.events
       .filter(event => new Date(event.date).getTime() >= currentDate.getTime())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-    
+
     return {
       upcoming,
       total: venue.totalEvents || venue.events.length,
@@ -370,8 +368,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ 
-        y: -8, 
+      whileHover={{
+        y: -8,
         scale: 1.02,
         transition: { duration: 0.3, ease: "easeOut" }
       }}
@@ -389,7 +387,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
 
       {/* Content Container */}
       <div className="relative z-10 p-0 h-full">
-        
+
         {/* Image Section with Improved Overlays */}
         <div className="relative h-56 overflow-hidden rounded-t-3xl">
           {/* Background Image */}
@@ -412,10 +410,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </span>
             </div>
           )}
-          
-          {/* Reduced Gradient Overlay for Better Image Visibility */}
-          <div className={`absolute inset-0 bg-gradient-to-t ${getCategoryGradient()} opacity-5 group-hover:opacity-10 transition-opacity duration-500`} />
-          
+
           {/* Lighter Dark Overlay for Text Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
@@ -433,25 +428,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 POPULAR
               </motion.div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <motion.button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsLiked(!isLiked);
-                }}
-                className={`p-2 rounded-full backdrop-blur-md border border-white/30 transition-all duration-300 ${
-                  isLiked
-                    ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-lg scale-110 opacity-90'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-                whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.1 }}
-              >
-                <Heart className={`w-4 h-4 transition-all duration-300 ${isLiked ? 'fill-current' : ''}`} />
-              </motion.button>
-            </div>
           </div>
 
           {/* Bottom Info Bar */}
@@ -481,7 +457,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
 
         {/* Content Section */}
         <div className="p-6 space-y-4">
-          
+
           {/* Title and Trending Indicator */}
           <div className="flex items-start justify-between gap-3">
             <motion.h3
@@ -498,7 +474,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             >
               {venue.location}
             </motion.h3>
-            
+
             {eventStats.upcoming > 3 && (
               <motion.div
                 className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
@@ -571,7 +547,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             </div>
           </motion.div>
 
-          {/* Amenities */}
+          {/* Amenities with Improved Visibility */}
           {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
             <motion.div
               className="flex flex-wrap gap-2"
@@ -582,7 +558,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
                 <div
                   key={idx}
-                  className={`flex items-center gap-1 px-3 py-2 bg-gradient-to-r ${getCategoryGradient()} opacity-10 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium`}
+                  className={`flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium`}
                 >
                   {getAmenityIcon(amenity)}
                   <span className="capitalize">{amenity}</span>
@@ -639,7 +615,7 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             <motion.button
               className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
               whileTap={{ scale: 0.95 }}
-              whileHover={{ 
+              whileHover={{
                 boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
                 y: -1
               }}
