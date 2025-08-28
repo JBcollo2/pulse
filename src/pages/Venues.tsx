@@ -1170,10 +1170,7 @@ const Venues = () => {
                         <span className="text-gray-600 dark:text-gray-300">Total Events:</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.totalEvents}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Rating:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.avgRating.toFixed(1)}/5.0</span>
-                      </div>
+                      
                     </div>
                   </div>
 
