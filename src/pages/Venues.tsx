@@ -1168,231 +1168,238 @@ const Venues = () => {
       <Footer />
 
 {/* Venue Details Modal */}
-      <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {selectedVenue?.location}
-            </DialogTitle>
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <MapPin className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span>{selectedVenue?.city}</span>
+<Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
+  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <DialogHeader>
+      <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        {selectedVenue?.location}
+      </DialogTitle>
+      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+        <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
+          <MapPin className="w-4 h-4 text-white" />
+        </div>
+        <span className="font-medium">{selectedVenue?.city}</span>
+      </div>
+    </DialogHeader>
+
+    {selectedVenue && (
+      <div className="space-y-6">
+        {/* Hero Image */}
+        {selectedVenue.topEvent?.image && (
+          <div className="relative h-64 rounded-xl overflow-hidden">
+            <img
+              src={selectedVenue.topEvent.image}
+              alt={selectedVenue.location}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+
+            {/* Stats Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between">
+              <div className="bg-white/90 dark:bg-gray-800/90 px-4 py-2 rounded-full flex items-center gap-2">
+                <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.avgRating.toFixed(1)}</span>
+              </div>
+              <div className="bg-gray-800/90 dark:bg-gray-700/90 text-white px-4 py-2 rounded-full flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span className="font-medium">{selectedVenue.totalEvents} Events</span>
+              </div>
             </div>
-          </DialogHeader>
+          </div>
+        )}
 
-          {selectedVenue && (
-            <div className="space-y-6">
-              {/* Hero Image */}
-              {selectedVenue.topEvent?.image && (
-                <div className="relative h-64 rounded-xl overflow-hidden">
-                  <img
-                    src={selectedVenue.topEvent.image}
-                    alt={selectedVenue.location}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-
-                  {/* Stats Overlay */}
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between">
-                    <div className="bg-white/90 dark:bg-gray-800/90 px-4 py-2 rounded-full flex items-center gap-2">
-                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                      <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.avgRating.toFixed(1)}</span>
-                    </div>
-                    <div className="bg-gray-800/90 dark:bg-gray-700/90 text-white px-4 py-2 rounded-full flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span className="font-medium">{selectedVenue.totalEvents} Events</span>
-                    </div>
-                  </div>
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Venue Info */}
+          <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
+                  <Building className="w-4 h-4 text-white" />
                 </div>
-              )}
+                Venue Details
+              </h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Location:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.location}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">City:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.city}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-300">Total Events:</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.totalEvents}</span>
+                </div>
+              </div>
+            </div>
 
-              {/* Content Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Venue Info */}
-                <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <Building className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      Venue Details
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Location:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.location}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">City:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.city}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-gray-300">Total Events:</span>
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.totalEvents}</span>
+            {/* Amenities */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
+                  <Award className="w-4 h-4 text-white" />
+                </div>
+                Available Amenities
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {selectedVenue.uniqueAmenities.map((amenity, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                  >
+                    {(() => {
+                      const iconMap = {
+                        'wifi': <Wifi className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'parking': <Car className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'food': <Utensils className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'music': <Music className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'coffee': <Coffee className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'security': <ShieldCheck className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                        'activities': <Activity className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
+                      };
+                      return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+                    })()}
+                    <span className="capitalize text-sm text-gray-700 dark:text-gray-300">{amenity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Events - Enhanced for Multiple Events */}
+          <div className="space-y-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                  <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
+                    <Calendar className="w-4 h-4 text-white" />
+                  </div>
+                  Events at this Venue
+                </h4>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {selectedVenue.events.length > 5 ? `Showing 5 of ${selectedVenue.events.length}` : `${selectedVenue.events.length} events`}
+                </div>
+              </div>
+              
+              {selectedVenue.events.length > 0 ? (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {selectedVenue.events.slice(0, 10).map((event, index) => (
+                    <div
+                      key={event.id || index}
+                      className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-300 border border-gray-200 dark:border-gray-600"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h5 className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 mr-2">
+                          {event.name}
+                        </h5>
+                        {event.status && (
+                          <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
+                            event.status === 'active' 
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                              : event.status === 'completed'
+                              ? 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
+                              : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                          }`}>
+                            {event.status}
+                          </span>
+                        )}
                       </div>
                       
-                    </div>
-                  </div>
-
-                  {/* Amenities */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                    <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <Award className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                      Available Amenities
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {selectedVenue.uniqueAmenities.map((amenity, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
-                        >
-                          {(() => {
-                            const iconMap = {
-                              'wifi': <Wifi className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'parking': <Car className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'food': <Utensils className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'music': <Music className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'coffee': <Coffee className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'security': <ShieldCheck className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                              'activities': <Activity className="w-4 h-4 text-gray-600 dark:text-gray-400" />,
-                            };
-                            return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
-                          })()}
-                          <span className="capitalize text-sm text-gray-700 dark:text-gray-300">{amenity}</span>
+                      <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 gap-4 mb-2">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(event.date).toLocaleDateString()}</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Events - Enhanced for Multiple Events */}
-                <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                        Events at this Venue
-                      </h4>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {selectedVenue.events.length > 5 ? `Showing 5 of ${selectedVenue.events.length}` : `${selectedVenue.events.length} events`}
-                      </div>
-                    </div>
-                    
-                    {selectedVenue.events.length > 0 ? (
-                      <div className="space-y-3 max-h-80 overflow-y-auto">
-                        {selectedVenue.events.slice(0, 10).map((event, index) => (
-                          <div
-                            key={event.id || index}
-                            className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-300 border border-gray-200 dark:border-gray-600"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 mr-2">
-                                {event.name}
-                              </h5>
-                              {event.status && (
-                                <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap ${
-                                  event.status === 'active' 
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                    : event.status === 'completed'
-                                    ? 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'
-                                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                                }`}>
-                                  {event.status}
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 gap-4 mb-2">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                <span>{new Date(event.date).toLocaleDateString()}</span>
-                              </div>
-                              {event.start_time && (
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{event.start_time}</span>
-                                </div>
-                              )}
-                              {event.price_per_ticket && (
-                                <div className="flex items-center gap-1">
-                                  <span>KES {event.price_per_ticket}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              {event.category && (
-                                <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                                  {event.category}
-                                </span>
-                              )}
-                              
-                              {(event.total_tickets || event.tickets_available) && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {event.tickets_available && event.total_tickets 
-                                    ? `${event.tickets_available}/${event.total_tickets} available`
-                                    : event.total_tickets 
-                                    ? `${event.total_tickets} tickets`
-                                    : `${event.tickets_available} available`
-                                  }
-                                </div>
-                              )}
-                            </div>
+                        {event.start_time && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{event.start_time}</span>
                           </div>
-                        ))}
-                        
-                        {selectedVenue.events.length > 10 && (
-                          <div className="text-center pt-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                              className="text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              View all {selectedVenue.events.length} events
-                            </Button>
+                        )}
+                        {event.price_per_ticket && (
+                          <div className="flex items-center gap-1">
+                            <span>KES {event.price_per_ticket}</span>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>No events scheduled at this venue</p>
+                      
+                      <div className="flex items-center justify-between">
+                        {event.category && (
+                          <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                            {event.category}
+                          </span>
+                        )}
+                        
+                        {(event.total_tickets || event.tickets_available) && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {event.tickets_available && event.total_tickets 
+                              ? `${event.tickets_available}/${event.total_tickets} available`
+                              : event.total_tickets 
+                              ? `${event.total_tickets} tickets`
+                              : `${event.tickets_available} available`
+                            }
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
+                  
+                  {selectedVenue.events.length > 10 && (
+                    <div className="text-center pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
+                        className="text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        View all {selectedVenue.events.length} events
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <Button
-                  onClick={() => handleGetDirections(selectedVenue)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
-                >
-                  <Navigation className="w-4 h-4 mr-2" />
-                  Get Directions
-                </Button>
-
-                <Button
-                  onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  View All Events
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => handleShare(selectedVenue)}
-                  className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share Venue
-                </Button>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No events scheduled at this venue</p>
+                </div>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            onClick={() => handleGetDirections(selectedVenue)}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
+          >
+            <Navigation className="w-4 h-4 mr-2" />
+            Get Directions
+          </Button>
+
+          <Button
+            onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            View All Events
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => handleShare(selectedVenue)}
+            className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Share Venue
+          </Button>
+        </div>
+      </div>
+    )}
+  </DialogContent>
+</Dialog>
     </div>
   );
 };
