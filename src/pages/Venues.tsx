@@ -512,8 +512,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
           >
             {/* Location */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} opacity-10`}>
-                <MapPin className="w-4 h-4 text-current" />
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </div>
               <span className="text-sm font-medium truncate">{venue.city}</span>
             </div>
@@ -521,8 +521,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             {/* Next Event Date */}
             {displayEvent && (
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} opacity-10`}>
-                  <Clock className="w-4 h-4 text-current" />
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <Clock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                 </div>
                 <span className="text-sm font-medium">
                   {formatDate(displayEvent.date)}
@@ -533,8 +533,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
 
             {/* Events Count with Status */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} opacity-10`}>
-                <Users className="w-4 h-4 text-current" />
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </div>
               <span className="text-sm font-medium">
                 {eventStats.total} Total Events
