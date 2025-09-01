@@ -226,7 +226,7 @@ export const EventDialog = ({
     }
   }, [toast]);
 
- /**
+/**
  * Fetch available ticket types from the database
  */
 const fetchTicketTypes = useCallback(async () => {
@@ -242,11 +242,12 @@ const fetchTicketTypes = useCallback(async () => {
 
     const data = await response.json();
     // Extract unique ticket type names from the organizer's ticket types
-    const uniqueTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
-    
-    // Use fallback if we have fewer than 3 ticket types or no types at all
+    const apiTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
     const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
-    setAvailableTicketTypes(uniqueTypes.length >= 3 ? uniqueTypes : fallbackTypes);
+    
+    // Always include fallback types, merged with any additional types from API
+    const allTypes = [...new Set([...fallbackTypes, ...apiTypes])];
+    setAvailableTicketTypes(allTypes);
     
   } catch (error) {
     console.error('Error fetching ticket types:', error);
