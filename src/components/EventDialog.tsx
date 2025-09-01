@@ -226,32 +226,36 @@ export const EventDialog = ({
     }
   }, [toast]);
 
-  /**
-   * Fetch available ticket types from the database
-   */
-  const fetchTicketTypes = useCallback(async () => {
-    setIsLoadingTicketTypes(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
-        credentials: 'include'
-      });
+ /**
+ * Fetch available ticket types from the database
+ */
+const fetchTicketTypes = useCallback(async () => {
+  setIsLoadingTicketTypes(true);
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
+      credentials: 'include'
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
-      }
-
-      const data = await response.json();
-      // Extract unique ticket type names from the organizer's ticket types
-      const uniqueTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
-      setAvailableTicketTypes(uniqueTypes.length > 0 ? uniqueTypes : ["REGULAR", "VIP", "STUDENT"]);
-    } catch (error) {
-      console.error('Error fetching ticket types:', error);
-      // Fallback to basic ticket types if fetch fails
-      setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
-    } finally {
-      setIsLoadingTicketTypes(false);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
     }
-  }, [toast]);
+
+    const data = await response.json();
+    // Extract unique ticket type names from the organizer's ticket types
+    const uniqueTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
+    
+    // Use fallback if we have fewer than 3 ticket types or no types at all
+    const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
+    setAvailableTicketTypes(uniqueTypes.length >= 3 ? uniqueTypes : fallbackTypes);
+    
+  } catch (error) {
+    console.error('Error fetching ticket types:', error);
+    // Fallback to basic ticket types if fetch fails
+    setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
+  } finally {
+    setIsLoadingTicketTypes(false);
+  }
+}, [toast]);
 
   /**
    * Effect: Fetch event categories and ticket types from API on component mount
