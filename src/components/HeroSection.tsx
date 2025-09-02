@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Ticket, ChevronRight, Zap, Bell, Crown, Search, Play, Pause } from 'lucide-react';
+
+interface Event {
+  id: number;
+  name: string;
+  description: string;
+  image: string;
+  category: string;
+  city: string;
+  location: string;
+  featured: boolean;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 interface Slide {
   image: string;
   title: string;
   subtitle: string;
-  accent?: string;
+  accent: string;
+  eventName?: string;
 }
 
 interface HeroSectionProps {
@@ -38,60 +55,106 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [searchFocused, setSearchFocused] = useState<boolean>(false);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const slides: Slide[] = [
+  // Fallback slides when no events are available
+  const fallbackSlides: Slide[] = [
     {
       image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
       title: 'Discover Amazing Events',
       subtitle: 'Find and book tickets for the best events in Kenya',
-      accent: 'Music & Entertainment'
+      accent: 'Coming Soon'
     },
     {
       image: 'https://images.unsplash.com/photo-1547970810-dc1eac37d174?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80',
       title: 'Experience Unforgettable Moments',
       subtitle: 'From music festivals to cultural celebrations',
-      accent: 'Cultural Events'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Connect with Your Community',
-      subtitle: 'Join thousands of event-goers across the country',
-      accent: 'Social Gatherings'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Immerse in Art & Culture',
-      subtitle: 'Discover galleries, exhibitions and creative workshops',
-      accent: 'Art & Culture'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Professional Networking',
-      subtitle: 'Connect with industry leaders at business events',
-      accent: 'Business & Tech'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1567653418876-5bb0e566e1c2?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Foodie Adventures',
-      subtitle: 'Explore culinary events and taste local flavors',
-      accent: 'Food & Dining'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Wellness & Fitness',
-      subtitle: 'Join yoga sessions, marathons and health workshops',
-      accent: 'Health & Wellness'
-    },
-    {
-      image: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?ixlib=rb-4.0.3&ixid=M3wxMJA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      title: 'Family Fun Time',
-      subtitle: 'Create memories with family-friendly events',
-      accent: 'Family & Kids'
+      accent: 'Event Platform'
     }
   ];
 
+  // API function to fetch events
+  const fetchEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/events?featured=true&per_page=10&sort_by=featured&sort_order=desc`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch events: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Filter events that have images and featured status
+      const eventsWithImages = data.events?.filter((event: Event) => 
+        event.image && event.image.trim() !== ''
+      ) || [];
+
+      setEvents(eventsWithImages.slice(0, 8)); // Limit to 8 events for performance
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch events');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // API function to fetch categories
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/categories`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  }, []);
+
+  // Create slides from events data
+  const createSlidesFromEvents = useCallback((): Slide[] => {
+    if (events.length === 0) return fallbackSlides;
+
+    return events.map((event) => ({
+      image: event.image,
+      title: event.name,
+      subtitle: `${event.location}, ${event.city}`,
+      accent: event.category || 'Event',
+      eventName: event.name
+    }));
+  }, [events]);
+
+  const slides = createSlidesFromEvents();
+
+  // Fetch events and categories on component mount
   useEffect(() => {
-    if (!isPlaying) return;
+    fetchEvents();
+    fetchCategories();
+  }, [fetchEvents, fetchCategories]);
+
+  useEffect(() => {
+    if (!isPlaying || slides.length === 0) return;
     
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -135,7 +198,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
     <div className="w-full bg-gray-50">
       {/* Enhanced Hero Section */}
       <div className="relative overflow-hidden w-full bg-gradient-to-br from-gray-900 via-blue-900 to-green-900">
-        {/* Background Slides with better visibility */}
+        {/* Background Slides with Error Handling */}
         <div className="absolute inset-0" style={{ height: '500px' }}>
           {slides.map((slide, index) => (
             <div
@@ -150,6 +213,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                   backgroundImage: `url(${slide.image})`,
                   filter: 'brightness(0.6) contrast(1.2) saturate(1.1)'
                 }}
+                onError={(e) => {
+                  // Fallback to default image if event image fails to load
+                  const target = e.target as HTMLDivElement;
+                  target.style.backgroundImage = `url(${fallbackSlides[0].image})`;
+                }}
               />
               {/* Enhanced gradient overlay for better visibility */}
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-blue-900/40 to-green-900/60" />
@@ -158,27 +226,30 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           ))}
         </div>
 
-        {/* Slide Controls */}
-        <div className="absolute top-8 right-8 z-20 flex items-center gap-3">
+        {/* Slide Controls - More Responsive */}
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20 flex items-center gap-2">
           <button
             onClick={togglePlayback}
-            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+            className="w-8 h-8 md:w-9 md:h-9 bg-black/20 backdrop-blur-sm border border-white/20 text-white hover:bg-black/30 rounded-lg transition-all duration-300 flex items-center justify-center"
+            aria-label={isPlaying ? 'Pause slideshow' : 'Play slideshow'}
           >
-            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isPlaying ? <Pause className="h-3 w-3 md:h-3.5 md:w-3.5" /> : <Play className="h-3 w-3 md:h-3.5 md:w-3.5" />}
           </button>
           
           <button
             onClick={prevSlide}
-            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+            className="w-8 h-8 md:w-9 md:h-9 bg-black/20 backdrop-blur-sm border border-white/20 text-white hover:bg-black/30 rounded-lg transition-all duration-300 flex items-center justify-center"
+            aria-label="Previous slide"
           >
-            <ChevronRight className="h-4 w-4 rotate-180" />
+            <ChevronRight className="h-3 w-3 md:h-3.5 md:w-3.5 rotate-180" />
           </button>
           
           <button
             onClick={nextSlide}
-            className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 rounded-xl transition-all duration-300 flex items-center justify-center"
+            className="w-8 h-8 md:w-9 md:h-9 bg-black/20 backdrop-blur-sm border border-white/20 text-white hover:bg-black/30 rounded-lg transition-all duration-300 flex items-center justify-center"
+            aria-label="Next slide"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3 md:h-3.5 md:w-3.5" />
           </button>
         </div>
 
@@ -186,22 +257,22 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
         <div className="relative z-10 flex flex-col h-full w-full min-h-[500px]">
           <div className="flex-1 flex flex-col justify-center p-4 md:p-8 lg:p-12">
             <div className="w-full max-w-4xl">
-              {/* Accent Badge */}
+              {/* Accent Badge with Loading/Error State */}
               <AnimatedSection>
                 <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mb-4 text-white/90 text-sm font-medium">
-                  <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-green-400 rounded-full animate-pulse" />
-                  {slides[currentSlide].accent}
+                  <div className={`w-2 h-2 ${isLoading ? 'bg-yellow-400' : 'bg-gradient-to-r from-blue-400 to-green-400'} rounded-full ${isLoading ? 'animate-bounce' : 'animate-pulse'}`} />
+                  {isLoading ? 'Loading Events...' : slides[currentSlide]?.accent || 'Events'}
                 </div>
               </AnimatedSection>
 
               <AnimatedSection>
                 <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
                   <span className="bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent">
-                    {slides[currentSlide].title}
+                    {slides[currentSlide]?.title || 'Discover Amazing Events'}
                   </span>
                 </h1>
                 <p className="text-white/90 text-base md:text-lg lg:text-xl mb-6 max-w-3xl leading-relaxed font-light">
-                  {slides[currentSlide].subtitle}
+                  {slides[currentSlide]?.subtitle || 'Find and book tickets for the best events'}
                 </p>
               </AnimatedSection>
               
@@ -258,16 +329,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                 </div>
               </AnimatedSection>
 
-              {/* Quick Stats */}
+              {/* Quick Stats - Dynamic when possible */}
               <AnimatedSection delay={300}>
                 <div className="flex flex-wrap items-center gap-4 text-white/80 text-xs sm:text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    <span>1000+ Events</span>
+                    <span>{events.length > 0 ? `${events.length}+ Events` : '1000+ Events'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-                    <span>50+ Cities</span>
+                    <span>{categories.length > 0 ? `${categories.length}+ Categories` : '50+ Cities'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" />
