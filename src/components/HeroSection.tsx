@@ -173,14 +173,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
 
   useEffect(() => {
     const slides = events.length > 0 ? events : fallbackSlides;
-    if (!isPlaying || slides.length === 0) return;
+    console.log(`Slideshow: ${slides.length} slides, playing: ${isPlaying}, current: ${currentSlide}`);
+    
+    if (!isPlaying || slides.length <= 1) return;
 
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Slightly faster transition
+      setCurrentSlide((prev) => {
+        const next = (prev + 1) % slides.length;
+        console.log(`Slide change: ${prev} -> ${next}`);
+        return next;
+      });
+    }, 5000);
 
     return () => clearInterval(timer);
-  }, [events.length, isPlaying, fallbackSlides]);
+  }, [events, isPlaying]);
 
   // Create slides from events or use fallback
   const slides = events.length > 0 ? events.map(event => ({
@@ -234,11 +240,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                 className="w-full h-full bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: `url(${slide.image})`,
-                  filter: 'brightness(0.5) contrast(1.2) saturate(1.1)'
+                  filter: 'brightness(0.75) contrast(1.1) saturate(1.0)'
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-blue-900/50 to-green-900/60" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-blue-900/30 to-green-900/40" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </div>
           ))}
         </div>
