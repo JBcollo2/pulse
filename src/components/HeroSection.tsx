@@ -361,13 +361,13 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
 
             {/* Enhanced Main Title with Strong Text Shadow */}
             <h1 
-              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 md:mb-4 leading-tight"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 md:mb-4 leading-tight"
               style={{
                 textShadow: '3px 3px 8px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.8), 2px 2px 4px rgba(0,0,0,1)',
                 filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.8))'
               }}
             >
-              <span className="bg-gradient-to-r from-cyan-200 via-blue-200 to-emerald-200 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-300 to-green-300 bg-clip-text text-transparent">
                 {slides[currentSlide]?.title || 'Discover Amazing Events'}
               </span>
             </h1>
