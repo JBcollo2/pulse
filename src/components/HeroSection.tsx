@@ -265,38 +265,38 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
         </div>
 
         {/* Responsive Slide Controls */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 lg:top-8 lg:right-8 z-20 flex items-center gap-2">
+        <div className="absolute top-3 right-3 md:top-4 md:right-4 lg:top-5 lg:right-5 z-20 flex items-center gap-1.5">
           <button
             onClick={togglePlayback}
-            className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
+            className="w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
             aria-label={isPlaying ? 'Pause slideshow' : 'Play slideshow'}
           >
             {isPlaying ? 
-              <Pause className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5" /> : 
-              <Play className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+              <Pause className="w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4" /> : 
+              <Play className="w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4" />
             }
           </button>
           
           <button
             onClick={prevSlide}
-            className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
+            className="w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
             aria-label="Previous slide"
           >
-            <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 rotate-180" />
+            <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4 rotate-180" />
           </button>
           
           <button
             onClick={nextSlide}
-            className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
+            className="w-7 h-7 md:w-8 md:h-8 lg:w-9 lg:h-9 bg-black/30 backdrop-blur-sm border border-white/30 text-white hover:bg-black/40 rounded-full transition-all duration-200 flex items-center justify-center shadow-lg"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+            <ChevronRight className="w-3 h-3 md:w-3.5 md:h-3.5 lg:w-4 lg:h-4" />
           </button>
         </div>
 
         {/* Slide Indicators - Bottom Center */}
         <div 
-          className="absolute bottom-6 md:bottom-8 lg:bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex gap-2 md:gap-3"
+          className="absolute bottom-5 md:bottom-6 lg:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-1.5 md:gap-2"
           style={{
             transform: `translateX(-50%) translateY(${scrollY * 0.2}px)`,
             opacity: Math.max(0.2, 1 - scrollY * 0.003),
@@ -306,45 +306,32 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-300 ${
                 index === currentSlide 
-                  ? 'bg-white w-8 md:w-10 lg:w-12' 
-                  : 'bg-white/50 hover:bg-white/70 w-2 md:w-3 lg:w-3'
+                  ? 'bg-white w-6 md:w-8 lg:w-10' 
+                  : 'bg-white/50 hover:bg-white/70 w-1.5 md:w-2 lg:w-2'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
 
-        {/* Scroll Indicator */}
-        <div 
-          className="absolute bottom-20 md:bottom-24 lg:bottom-28 left-1/2 transform -translate-x-1/2 animate-bounce z-20"
-          style={{
-            transform: `translateX(-50%) translateY(${scrollY * 0.3}px)`,
-            opacity: Math.max(0, 1 - scrollY * 0.005),
-          }}
-        >
-          <div className="w-6 h-10 md:w-8 md:h-12 border-2 border-white/40 rounded-full flex justify-center">
-            <div className="w-1 h-3 md:w-1.5 md:h-4 bg-white/60 rounded-full mt-2 animate-pulse"></div>
-          </div>
-        </div>
-
         {/* Content - Top Left Positioning with Navbar Space */}
-        <div className="relative z-10 flex flex-col h-full w-full px-4 md:px-6 lg:px-8">
+        <div className="relative z-10 flex flex-col h-full w-full px-3 md:px-4 lg:px-5">
           <div 
-            className="w-full max-w-4xl pt-20 md:pt-24 lg:pt-28"
+            className="w-full max-w-4xl pt-16 md:pt-20 lg:pt-24"
             style={{
               transform: `translateY(${scrollY * 0.3}px)`,
               opacity: Math.max(0.3, 1 - scrollY * 0.002),
             }}
           >
             
-            {/* Status Indicators */}
-            <div className="flex flex-wrap items-center gap-3 mb-6 md:mb-8">
-              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 md:px-6 md:py-3 text-white/90 text-sm md:text-base font-medium">
+            {/* Status Indicators (Finance & Price TBA) */}
+            <div className="flex flex-wrap items-center gap-2 mb-4 md:mb-5">
+              <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-white/90 text-xs md:text-sm font-medium">
                 {isLoadingEvents ? (
                   <>
-                    <div className="w-3 h-3 bg-white/60 rounded-full animate-pulse"></div>
+                    <div className="w-2.5 h-2.5 bg-white/60 rounded-full animate-pulse"></div>
                     Loading Events...
                   </>
                 ) : (
@@ -353,33 +340,33 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
               </div>
               
               {slides[currentSlide] && !isLoadingEvents && (
-                <div className="inline-flex items-center gap-2 bg-green-500/20 backdrop-blur-md border border-green-400/30 rounded-full px-4 py-2 md:px-6 md:py-3 text-green-100 text-sm md:text-base font-medium">
-                  <Ticket className="w-3 h-3 md:w-4 md:h-4" />
+                <div className="inline-flex items-center gap-1.5 bg-green-500/20 backdrop-blur-md border border-green-400/30 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-green-100 text-xs md:text-sm font-medium">
+                  <Ticket className="w-3 h-3 md:w-3.5 md:h-3.5" />
                   {formatPrice(slides[currentSlide].lowestPrice, slides[currentSlide].currency)}
                 </div>
               )}
               
               {events.length === 0 && !isLoadingEvents && (
-                <div className="inline-flex items-center gap-2 bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-full px-4 py-2 md:px-6 md:py-3 text-yellow-100 text-sm md:text-base font-medium">
+                <div className="inline-flex items-center gap-1.5 bg-yellow-500/20 backdrop-blur-md border border-yellow-400/30 rounded-full px-3 py-1.5 md:px-4 md:py-2 text-yellow-100 text-xs md:text-sm font-medium">
                   Preview Mode
                 </div>
               )}
             </div>
 
-            {/* Main Title - Responsive Typography */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white mb-4 md:mb-6 leading-tight">
+            {/* Main Title - Smallest Responsive Typography */}
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 md:mb-4 leading-tight">
               <span className="bg-gradient-to-r from-white via-blue-100 to-green-100 bg-clip-text text-transparent">
                 {slides[currentSlide]?.title || 'Discover Amazing Events'}
               </span>
             </h1>
             
-            {/* Subtitle - Responsive Typography */}
-            <p className="text-white/90 text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 max-w-3xl leading-relaxed font-light">
+            {/* Subtitle - Smallest Responsive Typography */}
+            <p className="text-white/90 text-sm sm:text-base md:text-lg lg:text-xl mb-5 md:mb-6 max-w-2xl leading-relaxed font-light">
               {slides[currentSlide]?.subtitle || 'Find and book tickets for the best events across Kenya'}
             </p>
             
-            {/* Search Bar - Responsive Width */}
-            <div className="mb-8 md:mb-12 w-full max-w-xl">
+            {/* Search Bar - Smallest Responsive Width */}
+            <div className="mb-6 md:mb-8 w-full max-w-lg">
               <div className="relative">
                 <input
                   type="text"
@@ -392,21 +379,21 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                       handleSearch(e as any);
                     }
                   }}
-                  className="w-full pl-10 md:pl-12 pr-18 md:pr-20 py-2 md:py-3 rounded-xl md:rounded-2xl bg-white/15 backdrop-blur-md border-2 border-white/25 text-white placeholder-white/60 focus:bg-white/20 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all duration-300 text-sm md:text-base focus:outline-none"
+                  className="w-full pl-9 md:pl-10 pr-16 md:pr-18 py-1.5 md:py-2 rounded-lg md:rounded-xl bg-white/15 backdrop-blur-md border-2 border-white/25 text-white placeholder-white/60 focus:bg-white/20 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all duration-300 text-xs md:text-sm focus:outline-none"
                 />
-                <Search className="absolute left-3 md:left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-4 w-4 md:h-5 md:w-5" />
+                <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-white/70 h-3.5 w-3.5 md:h-4 md:w-4" />
                 <button
                   onClick={(e) => handleSearch(e as any)}
                   disabled={!searchQuery.trim()}
-                  className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg md:rounded-xl px-4 md:px-6 py-1.5 md:py-2.5 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-sm md:text-base"
+                  className="absolute right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-md md:rounded-lg px-3 md:px-5 py-1 md:py-2 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-xs md:text-sm"
                 >
                   Search
                 </button>
               </div>
             </div>
 
-            {/* Action Button - Responsive Sizing */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
+            {/* Action Button - Smallest Responsive Sizing */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start">
               <button
                 onClick={() => {
                   // Navigate to events page or trigger event listing
@@ -417,11 +404,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                     window.location.href = '/events';
                   }
                 }}
-                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-xl md:rounded-2xl px-6 md:px-8 lg:px-10 py-3 md:py-4 lg:py-5 text-sm md:text-base lg:text-lg flex items-center justify-center gap-2 group"
+                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 rounded-lg md:rounded-xl px-4 md:px-6 lg:px-7 py-2 md:py-3 lg:py-3.5 text-sm md:text-base flex items-center justify-center gap-1.5 group"
               >
-                <Ticket className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 group-hover:rotate-12 transition-transform duration-300" />
+                <Ticket className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 group-hover:rotate-12 transition-transform duration-300" />
                 {events.length > 0 ? `Browse ${events.length}+ Events` : 'Browse All Events'}
-                <ChevronRight className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 group-hover:translate-x-1 transition-transform duration-300" />
+                <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
             </div>
           </div>
