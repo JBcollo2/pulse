@@ -44,11 +44,11 @@ const CityCard = ({ city, onSelect, index }) => {
           <div className="flex items-center justify-between text-white/80">
             <div className="flex items-center gap-2">
               <Building className="w-4 h-4" />
-              <span className="text-sm">{city.venues || 'N/A'} venues</span>
+              <span className="text-sm">{city.venues || city.event_count || 0} venues</span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span className="text-sm">{city.event_count} events</span>
+              <span className="text-sm">{city.event_count || 0} events</span>
             </div>
           </div>
         </div>
@@ -58,6 +58,15 @@ const CityCard = ({ city, onSelect, index }) => {
           <span>Explore {city.city}</span>
           <ArrowRight className="w-4 h-4" />
         </button>
+      </div>
+      <div className="p-4">
+        <div className="flex flex-wrap gap-2">
+          {(city.top_amenities || []).slice(0, 3).map((amenity, idx) => (
+            <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+              {amenity}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -120,7 +129,7 @@ const LandingPage = () => {
         const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
         const featuredVenues = data.cities.filter(city => city.popular).length;
         setStats({
-          totalVenues: data.cities.length * 5,
+          totalVenues: data.cities.length * 5, // Mock calculation; replace with real logic
           totalEvents,
           activeCities: data.cities.length,
           featuredVenues,
