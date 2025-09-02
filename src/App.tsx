@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { ThemeProvider } from "./components/ThemeProvider";
-import LandingPage from "./pages/LandingPage"; // Import your LandingPage component
+import Index from "./pages/Index";
 import Events from "./pages/Events";
 import VenuePage from "./pages/VenuePage";
 import Artists from "./pages/Artists";
@@ -16,7 +16,6 @@ import EventDetails from "./pages/EventDetails";
 import GoogleCallback from "./components/GoogleCallback";
 import AuthCard from './components/AuthCard';
 import PaymentStatus from "./pages/PaymentStatus";
-// Import the AuthProvider and useAuth hook
 import { AuthProvider, useAuth, getRoleBasedRedirect } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -155,8 +154,7 @@ const AppRouter: React.FC = () => {
 
   return (
     <Routes>
-      {/* Change this line - use LandingPage instead of Index */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<Index />} />
       <Route path="/events" element={<Events />} />
       <Route path="/venues" element={<VenuePage />} />
       <Route path="/artists" element={<Artists />} />

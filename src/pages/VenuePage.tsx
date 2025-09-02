@@ -2,7 +2,10 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  MapPin, Star, Search, Globe, Calendar, Filter, Grid, List, TrendingUp, Eye, Navigation, Phone, Clock, Users, Heart, Share2, Bookmark, ChevronRight, ChevronLeft, Loader2, Award, Camera, Music, Coffee, Wifi, Car, Utensils, ShieldCheck, Activity, Mail, Building, ArrowUpDown, RefreshCw, Menu, X, Ticket, Tag
+  MapPin, Star, Search, Globe, Calendar, Filter, Grid, List, TrendingUp, Eye, Navigation,
+  Phone, Clock, Users, Heart, Share2, Bookmark, ChevronRight, ChevronLeft, Loader2,
+  Award, Camera, Music, Coffee, Wifi, Car, Utensils, ShieldCheck, Activity, Mail,
+  Building, ArrowUpDown, RefreshCw, Menu, X, Ticket, Tag, ArrowRight, Zap
 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -99,126 +102,75 @@ const FloatingShapes = () => (
   </div>
 );
 
-// City Selection Component
-const CitySelector = ({ cities, selectedCity, onCitySelect, isLoading }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const citiesPerPage = 12;
+// StatsCard Component
+const StatsCard = ({ icon, value, label, gradient }) => (
+  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 hover:scale-105">
+    <div className="flex items-center gap-4">
+      <div className={`p-3 rounded-xl bg-gradient-to-r ${gradient} text-white shadow-lg`}>
+        {icon}
+      </div>
+      <div>
+        <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
+        <div className="text-sm text-gray-600 dark:text-gray-300">{label}</div>
+      </div>
+    </div>
+  </div>
+);
 
-  const filteredCities = useMemo(() => {
-    return cities.filter(city =>
-      city.city.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [cities, searchTerm]);
-
-  const totalPages = Math.ceil(filteredCities.length / citiesPerPage);
-  const startIndex = (currentPage - 1) * citiesPerPage;
-  const currentCities = filteredCities.slice(startIndex, startIndex + citiesPerPage);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
+// CityCard Component
+const CityCard = ({ city, onSelect, index }) => {
+  const [isHovered, setIsHovered] = useState(false);
   return (
-    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 dark:border-gray-700/50 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">Select City</h3>
-        <span className="text-sm text-gray-500">{filteredCities.length} cities available</span>
-      </div>
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-        <input
-          type="text"
-          placeholder="Search cities..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-2 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+    <div
+      className={`group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer`}
+      onClick={() => onSelect(city.city)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={city.image || `https://source.unsplash.com/random/800x600/?${city.city}`}
+          alt={city.city}
+          className={`w-full h-full object-cover transition-transform duration-500 ${isHovered ? 'scale-110' : ''}`}
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {city.popular && (
+          <div className="absolute top-3 right-3">
+            <div className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-lg animate-pulse">
+              <TrendingUp className="w-3 h-3" />
+              HOT
+            </div>
+          </div>
+        )}
+        <div className="absolute bottom-4 left-4 right-4">
+          <h3 className="text-xl font-bold text-white mb-1">{city.city}</h3>
+          <div className="flex items-center justify-between text-white/80">
+            <div className="flex items-center gap-2">
+              <Building className="w-4 h-4" />
+              <span className="text-sm">{city.venues || city.event_count || 0} venues</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm">{city.event_count} events</span>
+            </div>
+          </div>
+        </div>
       </div>
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array(6).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
+      <div className="p-4">
+        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
+          <span>Explore {city.city}</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="p-4">
+        <div className="flex flex-wrap gap-2">
+          {(city.top_amenities || []).slice(0, 3).map((amenity, idx) => (
+            <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
+              {amenity}
+            </span>
           ))}
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {currentCities.map((city) => (
-              <motion.button
-                key={city.city}
-                onClick={() => onCitySelect(city.city)}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
-                  selectedCity === city.city
-                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-50/50 hover:via-cyan-50/50 hover:to-blue-50/50 dark:hover:from-blue-900/10 dark:hover:via-cyan-900/10 dark:hover:to-blue-900/10'
-                }`}
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {selectedCity === city.city && (
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 opacity-20 rounded-xl"
-                    animate={{ opacity: [0.2, 0.3, 0.2] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                )}
-                <div className="relative z-10">
-                  <div className="font-medium text-gray-900 dark:text-white">{city.city}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">
-                    {city.event_count} venues
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {city.top_amenities?.slice(0, 3).map((amenity, idx) => (
-                      <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = Math.max(1, Math.min(totalPages, currentPage - 2 + i));
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={currentPage === pageNum ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white" : "border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      </div>
     </div>
   );
 };
@@ -531,6 +483,12 @@ const VenuePage = () => {
     sort_by: 'date',
     sort_order: 'asc'
   });
+  const [stats, setStats] = useState({
+    totalVenues: 0,
+    totalEvents: 0,
+    activeCities: 0,
+    featuredVenues: 0,
+  });
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
@@ -590,6 +548,16 @@ const VenuePage = () => {
       if (!response.ok) throw new Error('Failed to fetch cities');
       const data = await response.json();
       setCities(data.cities || []);
+
+      // Calculate stats
+      const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
+      const featuredVenues = data.cities.filter(city => city.popular).length;
+      setStats({
+        totalVenues: data.cities.length * 5,
+        totalEvents,
+        activeCities: data.cities.length,
+        featuredVenues,
+      });
     } catch (err) {
       setError('Failed to load cities');
       console.error('Error fetching cities:', err);
@@ -745,12 +713,100 @@ const VenuePage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <CitySelector
-                cities={cities}
-                selectedCity={selectedCity}
-                onCitySelect={handleCitySelect}
-                isLoading={loading}
-              />
+              {/* Hero Section */}
+              <div className="text-center mb-16">
+                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-6 leading-tight">
+                  Find Perfect<br />Event Venues
+                </h1>
+                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed">
+                  Explore thousands of unique venues across cities worldwide.
+                </p>
+                <div className="max-w-2xl mx-auto mb-12">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      placeholder="Search for cities..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-6 py-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/30 dark:border-gray-700/50 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 shadow-lg placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Section */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <StatsCard
+                  icon={<Building className="w-6 h-6" />}
+                  value={stats.totalVenues}
+                  label="Total Venues"
+                  gradient="from-blue-500 to-blue-600"
+                />
+                <StatsCard
+                  icon={<Calendar className="w-6 h-6" />}
+                  value={stats.totalEvents}
+                  label="Events Hosted"
+                  gradient="from-cyan-500 to-cyan-600"
+                />
+                <StatsCard
+                  icon={<MapPin className="w-6 h-6" />}
+                  value={stats.activeCities}
+                  label="Active Cities"
+                  gradient="from-emerald-500 to-emerald-600"
+                />
+                <StatsCard
+                  icon={<Star className="w-6 h-6" />}
+                  value={stats.featuredVenues}
+                  label="Featured Venues"
+                  gradient="from-amber-500 to-orange-500"
+                />
+              </div>
+
+              {/* Cities Grid */}
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                      Explore Cities
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      {cities.filter(city => city.city.toLowerCase().includes(searchQuery.toLowerCase())).length} cities available
+                    </p>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array(6).fill(0).map((_, i) => (
+                      <div key={i} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-700/50 animate-pulse">
+                        <div className="h-40 w-full bg-gray-200 dark:bg-gray-700" />
+                        <div className="p-4">
+                          <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+                          <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-20 text-red-500">
+                    <p>{error}</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {cities
+                      .filter(city => city.city.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((city, index) => (
+                        <CityCard
+                          key={city.city}
+                          city={city}
+                          onSelect={handleCitySelect}
+                          index={index}
+                        />
+                      ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           ) : (
             <motion.div

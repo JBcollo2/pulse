@@ -5,15 +5,6 @@ import {
   ArrowRight, Zap, Users, Award, Coffee, Wifi, Car, Utensils
 } from 'lucide-react';
 
-// Floating background shapes
-const FloatingShapes = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-blue-500/10 rounded-full blur-xl animate-pulse" />
-    <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 via-blue-400/10 to-cyan-500/10 rounded-full blur-xl" />
-    <div className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-blue-500/5 rounded-full blur-2xl" />
-  </div>
-);
-
 // CityCard Component
 const CityCard = ({ city, onSelect, index }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -48,7 +39,7 @@ const CityCard = ({ city, onSelect, index }) => {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span className="text-sm">{city.event_count || 0} events</span>
+              <span className="text-sm">{city.event_count} events</span>
             </div>
           </div>
         </div>
@@ -87,14 +78,12 @@ const StatsCard = ({ icon, value, label, gradient }) => (
   </div>
 );
 
-// FeatureCard Component
-const FeatureCard = ({ icon, title, description, gradient }) => (
-  <div className="group bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 hover:scale-105">
-    <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${gradient} text-white mb-4 group-hover:scale-110 transition-transform duration-300`}>
-      {icon}
-    </div>
-    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-    <p className="text-sm text-gray-600 dark:text-gray-300">{description}</p>
+// Floating background shapes
+const FloatingShapes = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-blue-500/10 rounded-full blur-xl animate-pulse" />
+    <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 via-blue-400/10 to-cyan-500/10 rounded-full blur-xl" />
+    <div className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-blue-500/5 rounded-full blur-2xl" />
   </div>
 );
 
@@ -129,7 +118,7 @@ const LandingPage = () => {
         const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
         const featuredVenues = data.cities.filter(city => city.popular).length;
         setStats({
-          totalVenues: data.cities.length * 5, // Mock calculation; replace with real logic
+          totalVenues: data.cities.length * 5,
           totalEvents,
           activeCities: data.cities.length,
           featuredVenues,
