@@ -35,6 +35,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [scrollY, setScrollY] = useState<number>(0);
 
   // Fallback slides for when no events are available
   const fallbackSlides: Slide[] = [
@@ -171,6 +172,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
     fetchEvents();
   }, [fetchEvents]);
 
+  // Scroll event listener for animations
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const slides = events.length > 0 ? events : fallbackSlides;
     console.log(`Slideshow: ${slides.length} slides, playing: ${isPlaying}, current: ${currentSlide}`);
@@ -228,7 +239,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
       {/* Full Viewport Hero Section */}
       <div className="relative overflow-hidden w-full h-screen min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-green-900">
         
-        {/* Background Slides */}
+        {/* Background Slides with Parallax Effect */}
         <div className="absolute inset-0">
           {slides.map((slide, index) => (
             <div
@@ -241,7 +252,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                 className="w-full h-full bg-cover bg-center bg-no-repeat"
                 style={{
                   backgroundImage: `url(${slide.image})`,
-                  filter: 'brightness(0.7) contrast(1.1) saturate(1.0)'
+                  filter: 'brightness(0.7) contrast(1.1) saturate(1.0)',
+                  transform: `translateY(${scrollY * 0.5}px) scale(${1 + scrollY * 0.0005})`,
                 }}
               />
               {/* Enhanced overlay gradients for better text readability */}
@@ -282,8 +294,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           </button>
         </div>
 
-        {/* Slide Indicators */}
-        <div className="absolute bottom-6 md:bottom-8 lg:bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex gap-2 md:gap-3">
+        {/* Slide Indicators - Bottom Center */}
+        <div 
+          className="absolute bottom-6 md:bottom-8 lg:bottom-12 left-1/2 transform -translate-x-1/2 z-20 flex gap-2 md:gap-3"
+          style={{
+            transform: `translateX(-50%) translateY(${scrollY * 0.2}px)`,
+            opacity: Math.max(0.2, 1 - scrollY * 0.003),
+          }}
+        >
           {slides.map((_, index) => (
             <button
               key={index}
@@ -298,12 +316,31 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
           ))}
         </div>
 
-        {/* Content - Centered Vertically and Horizontally */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full w-full px-4 md:px-6 lg:px-8">
-          <div className="w-full max-w-7xl mx-auto text-center">
+        {/* Scroll Indicator */}
+        <div 
+          className="absolute bottom-20 md:bottom-24 lg:bottom-28 left-1/2 transform -translate-x-1/2 animate-bounce z-20"
+          style={{
+            transform: `translateX(-50%) translateY(${scrollY * 0.3}px)`,
+            opacity: Math.max(0, 1 - scrollY * 0.005),
+          }}
+        >
+          <div className="w-6 h-10 md:w-8 md:h-12 border-2 border-white/40 rounded-full flex justify-center">
+            <div className="w-1 h-3 md:w-1.5 md:h-4 bg-white/60 rounded-full mt-2 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Content - Top Left Positioning with Navbar Space */}
+        <div className="relative z-10 flex flex-col h-full w-full px-4 md:px-6 lg:px-8">
+          <div 
+            className="w-full max-w-4xl pt-20 md:pt-24 lg:pt-28"
+            style={{
+              transform: `translateY(${scrollY * 0.3}px)`,
+              opacity: Math.max(0.3, 1 - scrollY * 0.002),
+            }}
+          >
             
             {/* Status Indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mb-6 md:mb-8">
+            <div className="flex flex-wrap items-center gap-3 mb-6 md:mb-8">
               <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-4 py-2 md:px-6 md:py-3 text-white/90 text-sm md:text-base font-medium">
                 {isLoadingEvents ? (
                   <>
@@ -337,12 +374,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
             </h1>
             
             {/* Subtitle - Responsive Typography */}
-            <p className="text-white/90 text-lg sm:text-xl md:text-2xl lg:text-3xl mb-8 md:mb-12 max-w-4xl mx-auto leading-relaxed font-light px-4">
+            <p className="text-white/90 text-lg sm:text-xl md:text-2xl lg:text-3xl mb-8 md:mb-12 max-w-3xl leading-relaxed font-light">
               {slides[currentSlide]?.subtitle || 'Find and book tickets for the best events across Kenya'}
             </p>
             
             {/* Search Bar - Responsive Width */}
-            <div className="mb-8 md:mb-12 w-full max-w-2xl mx-auto">
+            <div className="mb-8 md:mb-12 w-full max-w-2xl">
               <div className="relative">
                 <input
                   type="text"
@@ -369,7 +406,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
             </div>
 
             {/* Action Button - Responsive Sizing */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
               <button
                 onClick={() => {
                   // Navigate to events page or trigger event listing
@@ -386,13 +423,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                 {events.length > 0 ? `Browse ${events.length}+ Events` : 'Browse All Events'}
                 <ChevronRight className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
-            </div>
-
-            {/* Scroll Indicator */}
-            <div className="absolute bottom-8 md:bottom-12 lg:bottom-16 left-1/2 transform -translate-x-1/2 animate-bounce">
-              <div className="w-6 h-10 md:w-8 md:h-12 border-2 border-white/40 rounded-full flex justify-center">
-                <div className="w-1 h-3 md:w-1.5 md:h-4 bg-white/60 rounded-full mt-2 animate-pulse"></div>
-              </div>
             </div>
           </div>
         </div>
