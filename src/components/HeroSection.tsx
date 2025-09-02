@@ -82,7 +82,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/events?featured=true&per_page=10&sort_by=featured&sort_order=desc`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL }/events?featured=true&per_page=10&sort_by=featured&sort_order=desc`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -114,7 +114,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
   // API function to fetch categories
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/categories`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL }/categories`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

@@ -5,98 +5,15 @@ import HeroSection from '@/components/HeroSection';
 import EventsSection from '@/components/EventsSection';
 import FeaturedEvent from '@/components/FeaturedEvent';
 import CTASection from '@/components/CTASection';
-import TicketPreview from '@/components/TicketPreview';
 import Footer from '@/components/Footer';
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from 'framer-motion';
 import {
   Sparkles, TrendingUp, Calendar, MapPin, Clock, Users, Star, Ticket, CreditCard,
-  Smartphone, Mail, QrCode, Shield, Zap, Search, Building, ArrowRight, Heart
+  Smartphone, Mail, QrCode, Shield, Zap,Heart
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-
-// Import the CityCard component from the LandingPage
-const CityCard = ({ city, onSelect, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  return (
-    <div
-      className={`group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer`}
-      onClick={() => onSelect(city.city)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative h-40 overflow-hidden">
-        <img
-          src={city.image || `https://source.unsplash.com/random/800x600/?${city.city}`}
-          alt={city.city}
-          className={`w-full h-full object-cover transition-transform duration-500 ${isHovered ? 'scale-110' : ''}`}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        {city.popular && (
-          <div className="absolute top-3 right-3">
-            <div className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-lg animate-pulse">
-              <TrendingUp className="w-3 h-3" />
-              HOT
-            </div>
-          </div>
-        )}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="text-xl font-bold text-white mb-1">{city.city}</h3>
-          <div className="flex items-center justify-between text-white/80">
-            <div className="flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              <span className="text-sm">{city.venues || city.event_count || 0} venues</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm">{city.event_count} events</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="p-4">
-        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-          <span>Explore {city.city}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-      <div className="p-4">
-        <div className="flex flex-wrap gap-2">
-          {(city.top_amenities || []).slice(0, 3).map((amenity, idx) => (
-            <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
-              {amenity}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// StatsCard Component
-const StatsCard = ({ icon, value, label, gradient }) => (
-  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 hover:scale-105">
-    <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-xl bg-gradient-to-r ${gradient} text-white shadow-lg`}>
-        {icon}
-      </div>
-      <div>
-        <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-        <div className="text-sm text-gray-600 dark:text-gray-300">{label}</div>
-      </div>
-    </div>
-  </div>
-);
-
-// Floating background shapes
-const FloatingShapes = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-blue-500/10 rounded-full blur-xl animate-pulse" />
-    <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 via-blue-400/10 to-cyan-500/10 rounded-full blur-xl" />
-    <div className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-blue-500/5 rounded-full blur-2xl" />
-  </div>
-);
 
 interface Event {
   id: number;
@@ -134,15 +51,6 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingTicket, setIsLoadingTicket] = useState(false);
   const [currentQRCode, setCurrentQRCode] = useState(0);
-  const [cities, setCities] = useState([]);
-  const [filteredCities, setFilteredCities] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [stats, setStats] = useState({
-    totalVenues: 0,
-    totalEvents: 0,
-    activeCities: 0,
-    featuredVenues: 0,
-  });
   const { toast } = useToast();
 
   // QR Code patterns for animation
@@ -161,42 +69,6 @@ const Index = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Fetch cities and calculate stats
-  useEffect(() => {
-    const fetchCities = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/cities`, {
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to fetch cities');
-        const data = await response.json();
-        setCities(data.cities || []);
-
-        // Calculate stats
-        const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
-        const featuredVenues = data.cities.filter(city => city.popular).length;
-        setStats({
-          totalVenues: data.cities.length * 5,
-          totalEvents,
-          activeCities: data.cities.length,
-          featuredVenues,
-        });
-      } catch (err) {
-        console.error('Error fetching cities:', err);
-      }
-    };
-
-    fetchCities();
-  }, []);
-
-  // Filter cities based on search
-  useEffect(() => {
-    const filtered = cities.filter(city =>
-      city.city.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredCities(filtered);
-  }, [searchQuery, cities]);
 
   // Fetch lowest price ticket for featured event
   const fetchFeaturedEventTicket = useCallback(async (eventId: number) => {
@@ -329,10 +201,6 @@ const Index = () => {
     }
   };
 
-  const handleCitySelect = (cityName) => {
-    navigate(`/venues?city=${encodeURIComponent(cityName)}`);
-  };
-
   // Function to get recent events for homepage display (limit to 8)
   const getRecentEvents = () => {
     const upcomingEvents = events.filter(event => new Date(event.date) >= currentDate);
@@ -412,8 +280,6 @@ const Index = () => {
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
-      <FloatingShapes />
-
       <div className="relative z-10">
         <Navbar />
 
@@ -428,90 +294,6 @@ const Index = () => {
             <motion.div variants={itemVariants}>
               <HeroSection onSearch={handleHeroSearch} />
             </motion.div>
-
-            {/* Landing Page Content - Cities Section */}
-            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
-              <div className="container mx-auto px-4 py-8 md:py-12 lg:py-16">
-                <motion.div variants={itemVariants} className="text-center mb-8 md:mb-12">
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                    Explore Cities
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    {filteredCities.length} cities available
-                  </p>
-                </motion.div>
-
-                <div className="max-w-2xl mx-auto mb-8">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      placeholder="Search for cities..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-6 py-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/30 dark:border-gray-700/50 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 shadow-lg placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
-                    />
-                  </div>
-                </div>
-
-                {cities.length === 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array(6).fill(0).map((_, i) => (
-                      <div key={i} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-700/50 animate-pulse">
-                        <div className="h-40 w-full bg-gray-200 dark:bg-gray-700" />
-                        <div className="p-4">
-                          <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                          <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredCities.map((city, index) => (
-                      <CityCard
-                        key={city.city}
-                        city={city}
-                        onSelect={handleCitySelect}
-                        index={index}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Stats Section */}
-            <div className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
-              <div className="container mx-auto px-4 py-8 md:py-12">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-                  <StatsCard
-                    icon={<Building className="w-6 h-6" />}
-                    value={stats.totalVenues}
-                    label="Total Venues"
-                    gradient="from-blue-500 to-blue-600"
-                  />
-                  <StatsCard
-                    icon={<Calendar className="w-6 h-6" />}
-                    value={stats.totalEvents}
-                    label="Events Hosted"
-                    gradient="from-cyan-500 to-cyan-600"
-                  />
-                  <StatsCard
-                    icon={<MapPin className="w-6 h-6" />}
-                    value={stats.activeCities}
-                    label="Active Cities"
-                    gradient="from-emerald-500 to-emerald-600"
-                  />
-                  <StatsCard
-                    icon={<Star className="w-6 h-6" />}
-                    value={stats.featuredVenues}
-                    label="Featured Venues"
-                    gradient="from-amber-500 to-orange-500"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Featured Event Section */}
             <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 transition-colors duration-300">
