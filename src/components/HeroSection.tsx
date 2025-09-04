@@ -381,7 +381,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
               {slides[currentSlide]?.subtitle || 'Find and book tickets for the best events across Kenya'}
             </p>
             
-            {/* Enhanced Search Bar with Better Contrast */}
+            {/* Enhanced Search Bar with Strong Light Mode Visibility */}
             <div className="mb-6 md:mb-8 w-full max-w-lg">
               <div className="relative">
                 <input
@@ -395,9 +395,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
                       handleSearch(e as any);
                     }
                   }}
-                  className="w-full pl-9 md:pl-10 pr-16 md:pr-18 py-1.5 md:py-2 rounded-lg md:rounded-xl bg-white/85 dark:bg-gray-800/85 backdrop-blur-lg border-2 border-white/90 dark:border-gray-700/90 text-gray-900 dark:text-white placeholder-gray-600 dark:placeholder-gray-300 focus:bg-white/95 dark:focus:bg-gray-800/95 focus:border-blue-500 dark:focus:border-green-400 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-green-400/50 transition-all duration-300 text-xs md:text-sm focus:outline-none shadow-xl"
+                  className="w-full pl-9 md:pl-10 pr-16 md:pr-18 py-1.5 md:py-2 rounded-lg md:rounded-xl bg-white/95 dark:bg-gray-800/85 backdrop-blur-lg border-2 border-white/95 dark:border-gray-700/90 text-gray-900 dark:text-white placeholder-gray-700 dark:placeholder-gray-300 focus:bg-white dark:focus:bg-gray-800/95 focus:border-blue-500 dark:focus:border-green-400 focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-green-400/50 transition-all duration-300 text-xs md:text-sm focus:outline-none shadow-xl"
                 />
-                <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-300 h-3.5 w-3.5 md:h-4 md:w-4" />
+                <Search className="absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-700 dark:text-gray-300 h-3.5 w-3.5 md:h-4 md:w-4" />
                 <button
                   onClick={(e) => handleSearch(e as any)}
                   disabled={!searchQuery.trim()}
