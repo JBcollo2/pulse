@@ -13,6 +13,7 @@ interface Event {
   featured: boolean;
   lowestPrice?: number;
   currency?: string;
+  price_per_ticket?: string | number; // Added this property to fix TypeScript error
 }
 
 interface Slide {
@@ -129,32 +130,104 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSearch }) => {
         const eventsWithPrices = await Promise.all(
           eventsList.map(async (event: Event) => {
             try {
-              const priceResponse = await fetch(
-                `${import.meta.env.VITE_API_URL}/ticket-types/lowest-price/${event.id}`, 
-                {
-                  method: 'GET',
-                  credentials: 'include'
+              // First attempt: lowest price endpoint (matches your API structure)
+              try {
+                const priceResponse = await fetch(
+                  `${import.meta.env.VITE_API_URL}/ticket-types/lowest-price/${event.id}`, 
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}` // Add auth header
+                    },
+                    credentials: 'include'
+                  }
+                );
+                
+                if (priceResponse.ok) {
+                  const responseData = await priceResponse.json();
+                  console.log(`Price data for event ${event.id}:`, responseData);
+                  
+                  // Match your API response structure
+                  if (responseData.lowest_price_ticket) {
+                    const ticket = responseData.lowest_price_ticket;
+                    return {
+                      ...event,
+                      lowestPrice: ticket.price,
+                      currency: ticket.currency || 'KES'
+                    };
+                  }
                 }
-              );
-              
-              if (priceResponse.ok) {
-                const priceData = await priceResponse.json();
-                return {
-                  ...event,
-                  lowestPrice: priceData.lowest_price,
-                  currency: priceData.currency
-                };
+              } catch (err) {
+                console.warn(`Lowest price endpoint failed for event ${event.id}:`, err);
               }
+
+              // Second attempt: try public ticket types endpoint (no auth required)
+              try {
+                const ticketTypesResponse = await fetch(
+                  `${import.meta.env.VITE_API_URL}/events/${event.id}/ticket-types`, 
+                  {
+                    method: 'GET',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                  }
+                );
+                
+                if (ticketTypesResponse.ok) {
+                  const ticketTypesData = await ticketTypesResponse.json();
+                  console.log(`Ticket types data for event ${event.id}:`, ticketTypesData);
+                  
+                  // Extract lowest price from ticket types
+                  const ticketTypes = ticketTypesData.ticket_types || [];
+                  if (Array.isArray(ticketTypes) && ticketTypes.length > 0) {
+                    const prices = ticketTypes
+                      .map(ticket => parseFloat(ticket.price || 0))
+                      .filter(price => !isNaN(price) && price >= 0);
+                    
+                    if (prices.length > 0) {
+                      const lowestPrice = Math.min(...prices);
+                      console.log(`Calculated lowest price for event ${event.id}: ${lowestPrice}`);
+                      return {
+                        ...event,
+                        lowestPrice: lowestPrice,
+                        currency: ticketTypes[0].currency || 'KES'
+                      };
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn(`Ticket types endpoint failed for event ${event.id}:`, err);
+              }
+
+              // Third attempt: check if event already has price data
+              if (event.price_per_ticket || event.lowestPrice) {
+                const eventPrice = parseFloat(String(event.price_per_ticket || event.lowestPrice || '0'));
+                if (!isNaN(eventPrice) && eventPrice >= 0) {
+                  console.log(`Using event's existing price for event ${event.id}: ${eventPrice}`);
+                  return {
+                    ...event,
+                    lowestPrice: eventPrice,
+                    currency: event.currency || 'KES'
+                  };
+                }
+              }
+              
             } catch (priceErr) {
-              // Silently continue without price if price fetch fails
-              console.warn(`Could not fetch price for event ${event.id}`);
+              console.error(`Error fetching price for event ${event.id}:`, priceErr);
             }
+            
+            // Return event without price data if all attempts fail
+            console.log(`No price data available for event ${event.id}`);
             return event;
           })
         );
 
         setEvents(eventsWithPrices);
-        console.log(`Successfully loaded ${eventsWithPrices.length} events with images`);
+        console.log(`Successfully loaded ${eventsWithPrices.length} events with images and prices`);
       } else {
         console.log('No events with images found, using fallback slides');
         setEvents([]);
