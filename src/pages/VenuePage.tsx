@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import {
   MapPin, Star, Search, Globe, Calendar, Filter, Grid, List, TrendingUp, Eye, Navigation,
   Phone, Clock, Users, Heart, Share2, Bookmark, ChevronRight, ChevronLeft, Loader2,
@@ -27,9 +29,6 @@ interface Event {
   category?: string;
   featured: boolean;
   status?: string;
-  price_per_ticket?: number;
-  total_tickets?: number;
-  tickets_available?: number;
   organizer: {
     id: number;
     company_name: string;
@@ -58,127 +57,60 @@ interface LocationFilters {
   sort_order: 'asc' | 'desc';
 }
 
-// Floating background shapes
-const FloatingShapes = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <motion.div
-      className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/10 via-cyan-400/10 to-blue-500/10 rounded-full blur-xl"
-      animate={{
-        x: [0, 100, 0],
-        y: [0, -50, 0],
-        rotate: [0, 180, 360],
-      }}
-      transition={{
-        duration: 20,
-        repeat: Infinity,
-        ease: "linear"
-      }}
-    />
-    <motion.div
-      className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-cyan-400/10 via-blue-400/10 to-cyan-500/10 rounded-full blur-xl"
-      animate={{
-        x: [0, -80, 0],
-        y: [0, 60, 0],
-        rotate: [0, -180, -360],
-      }}
-      transition={{
-        duration: 15,
-        repeat: Infinity,
-        ease: "linear"
-      }}
-    />
-    <motion.div
-      className="absolute bottom-40 left-1/3 w-40 h-40 bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-blue-500/5 rounded-full blur-2xl"
-      animate={{
-        scale: [1, 1.2, 1],
-        x: [0, 50, 0],
-      }}
-      transition={{
-        duration: 25,
-        repeat: Infinity,
-        ease: "linear"
-      }}
-    />
-  </div>
-);
-
-// StatsCard Component
-const StatsCard = ({ icon, value, label, gradient }) => (
-  <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 hover:scale-105">
-    <div className="flex items-center gap-4">
-      <div className={`p-3 rounded-xl bg-gradient-to-r ${gradient} text-white shadow-lg`}>
+// StatsCard Component (simplified)
+const StatsCard = ({ icon, value, label }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-200 dark:border-gray-700">
+    <div className="flex items-center gap-3">
+      <div className="p-2 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
         {icon}
       </div>
       <div>
-        <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-        <div className="text-sm text-gray-600 dark:text-gray-300">{label}</div>
+        <div className="text-lg font-semibold text-gray-900 dark:text-white">{value}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
       </div>
     </div>
   </div>
 );
 
-// CityCard Component
-const CityCard = ({ city, onSelect, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  return (
-    <div
-      className={`group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer`}
-      onClick={() => onSelect(city.city)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative h-40 overflow-hidden">
-        <img
-          src={city.image || `https://source.unsplash.com/random/800x600/?${city.city}`}
-          alt={city.city}
-          className={`w-full h-full object-cover transition-transform duration-500 ${isHovered ? 'scale-110' : ''}`}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        {city.popular && (
-          <div className="absolute top-3 right-3">
-            <div className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-bold rounded-full flex items-center gap-1 shadow-lg animate-pulse">
-              <TrendingUp className="w-3 h-3" />
-              HOT
-            </div>
+// CityCard Component (simplified)
+const CityCard = ({ city, onSelect, index }) => (
+  <div
+    className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
+    onClick={() => onSelect(city.city)}
+  >
+    <div className="relative h-40 overflow-hidden">
+      <img
+        src={city.image || `https://source.unsplash.com/random/800x600/?${city.city}`}
+        alt={city.city}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      <div className="absolute bottom-4 left-4 right-4 text-white">
+        <h3 className="text-xl font-bold">{city.city}</h3>
+        <div className="flex items-center justify-between text-sm mt-1">
+          <div className="flex items-center gap-1">
+            <Building className="w-4 h-4" />
+            <span>{city.venues || city.event_count || 0} venues</span>
           </div>
-        )}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="text-xl font-bold text-white mb-1">{city.city}</h3>
-          <div className="flex items-center justify-between text-white/80">
-            <div className="flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              <span className="text-sm">{city.venues || city.event_count || 0} venues</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm">{city.event_count} events</span>
-            </div>
+          <div className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            <span>{city.event_count} events</span>
           </div>
-        </div>
-      </div>
-      <div className="p-4">
-        <button className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-          <span>Explore {city.city}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-      <div className="p-4">
-        <div className="flex flex-wrap gap-2">
-          {(city.top_amenities || []).slice(0, 3).map((amenity, idx) => (
-            <span key={idx} className="text-xs bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full">
-              {amenity}
-            </span>
-          ))}
         </div>
       </div>
     </div>
-  );
-};
+    <div className="p-4">
+      <button className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+        <span>Explore {city.city}</span>
+        <ArrowRight className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
+);
 
-// VenueCard Component
+// VenueCard Component (simplified, no rates)
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
-
   const getAmenityIcon = (amenity: string) => {
     const iconMap = {
       'wifi': <Wifi className="w-4 h-4" />,
@@ -191,8 +123,6 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     };
     return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
-
-  const getCategoryGradient = () => 'from-emerald-400 via-teal-400 to-emerald-500';
 
   const getDisplayEvent = () => {
     if (!venue.events || venue.events.length === 0) return null;
@@ -220,7 +150,6 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
 
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -244,203 +173,74 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
 
   return (
     <motion.div
-      className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{
-        y: -8,
-        scale: 1.02,
-        transition: { duration: 0.3, ease: "easeOut" }
-      }}
+      className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-shadow"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(venue)}
     >
-      <div className="relative h-56 overflow-hidden rounded-t-3xl">
+      <div className="relative h-48 overflow-hidden">
         {displayEvent?.image ? (
-          <motion.img
+          <img
             src={displayEvent.image}
             alt={venue.location}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 flex items-center justify-center relative overflow-hidden">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-teal-400/10 to-emerald-500/10"
-              animate={{ opacity: [0.1, 0.2, 0.1] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-            <span className="text-6xl font-bold text-white relative z-10 drop-shadow-2xl">
-              {venue.location.charAt(0)}
-            </span>
+          <div className="w-full h-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-4xl font-bold text-blue-600 dark:text-blue-300">
+            {venue.location.charAt(0)}
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-          {venue.totalEvents > 5 && (
-            <motion.div
-              className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient()} opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1`}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.9 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-            >
-              <Star className="w-3 h-3 fill-current" />
-              POPULAR
-            </motion.div>
-          )}
-        </div>
-        <div className="absolute bottom-4 left-4 right-4">
-          <motion.div
-            className="flex items-center justify-between"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-              <span>{venue.location}</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute bottom-4 left-4 right-4 text-white">
+          <div className="flex justify-between items-end">
+            <div className="bg-black/50 px-3 py-1 rounded-full text-sm">
+              {venue.location}
             </div>
-            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+            <div className="bg-black/50 px-3 py-1 rounded-full text-sm flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                {eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}
-              </span>
+              <span>{eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}</span>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
-      <div className="p-6 space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <motion.h3
-            className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
-            style={{
-              backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
-              '--tw-gradient-from': '#10b981',
-              '--tw-gradient-to': '#06d6a0',
-              '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
-            } as React.CSSProperties}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {venue.location}
-          </motion.h3>
-          {eventStats.upcoming > 3 && (
-            <motion.div
-              className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
-            >
-              <TrendingUp className="w-3 h-3" />
-              ACTIVE
-            </motion.div>
-          )}
-        </div>
-        <motion.p
-          className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {venue.city} - {eventStats.total} events hosted at this location
+      <div className="p-4 space-y-3">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-1">{venue.location}</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+          {venue.city} - {eventStats.total} events hosted
           {eventStats.nextEventDate && (
-            <span className="block text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+            <span className="block text-blue-600 dark:text-blue-300 font-medium mt-1">
               Next event: {formatDate(eventStats.nextEventDate)}
             </span>
           )}
-        </motion.p>
-        <motion.div
-          className="space-y-3"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {venue.uniqueAmenities?.slice(0, 3).map((amenity, idx) => (
+            <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs">
+              {getAmenityIcon(amenity)}
+              <span className="capitalize">{amenity}</span>
             </div>
-            <span className="text-sm font-medium truncate">{venue.city}</span>
-          </div>
-          {displayEvent && (
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <Clock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              </div>
-              <span className="text-sm font-medium">
-                {formatDate(displayEvent.date)}
-                {displayEvent.start_time && ` at ${formatTime(displayEvent.start_time)}`}
-              </span>
-            </div>
-          )}
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            </div>
-            <span className="text-sm font-medium">
-              {eventStats.total} Total Events
-              {eventStats.upcoming > 0 && (
-                <span className="text-emerald-600 dark:text-emerald-400 ml-1">
-                  ({eventStats.upcoming} upcoming)
-                </span>
-              )}
+          ))}
+          {venue.uniqueAmenities?.length > 3 && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
+              +{venue.uniqueAmenities.length - 3} more
             </span>
-          </div>
-        </motion.div>
-        {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
-          <motion.div
-            className="flex flex-wrap gap-2"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
-              <div
-                key={idx}
-                className={`flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium`}
-              >
-                {getAmenityIcon(amenity)}
-                <span className="capitalize">{amenity}</span>
+          )}
+        </div>
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            <div className="text-lg font-bold text-gray-900 dark:text-white">{eventStats.total}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">events</div>
+            {eventStats.upcoming > 0 && (
+              <div className="text-sm font-medium text-blue-600 dark:text-blue-300">
+                {eventStats.upcoming} upcoming
               </div>
-            ))}
-            {venue.uniqueAmenities.length > 4 && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-                +{venue.uniqueAmenities.length - 4} more
-              </span>
             )}
-          </motion.div>
-        )}
-        <motion.div
-          className="flex items-center justify-between pt-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                {eventStats.total}
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                events
-              </span>
-            </div>
-            <div className="space-y-1 mt-1">
-              {eventStats.upcoming > 0 && (
-                <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                  {eventStats.upcoming} upcoming
-                </div>
-              )}
-            </div>
           </div>
-          <motion.button
-            className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
-            whileTap={{ scale: 0.95 }}
-            whileHover={{
-              boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
-              y: -1
-            }}
+          <Button
+            className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white text-sm"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -448,9 +248,9 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             }}
           >
             <Ticket className="w-4 h-4" />
-            <span>Explore Venue</span>
-          </motion.button>
-        </motion.div>
+            Explore Venue
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
@@ -548,8 +348,6 @@ const VenuePage = () => {
       if (!response.ok) throw new Error('Failed to fetch cities');
       const data = await response.json();
       setCities(data.cities || []);
-
-      // Calculate stats
       const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
       const featuredVenues = data.cities.filter(city => city.popular).length;
       setStats({
@@ -600,7 +398,7 @@ const VenuePage = () => {
             totalEvents: 0,
             uniqueAmenities: new Set(),
             topEvent: null,
-            avgRating: 4.0 + Math.random() * 1.0 // Mock rating
+            avgRating: 4.0 + Math.random() * 1.0
           });
         }
         const venue = venueMap.get(key);
@@ -702,8 +500,8 @@ const VenuePage = () => {
   }, [filteredVenues, activeTab]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 relative">
-      <FloatingShapes />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 relative">
+      <Navbar />
       <main className="py-12 pt-24 relative z-10">
         <div className="container mx-auto px-4">
           {!selectedCity ? (
@@ -713,12 +511,11 @@ const VenuePage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* Hero Section */}
               <div className="text-center mb-16">
-                <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-6 leading-tight">
+                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
                   Find Perfect<br />Event Venues
                 </h1>
-                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed">
+                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
                   Explore thousands of unique venues across cities worldwide.
                 </p>
                 <div className="max-w-2xl mx-auto mb-12">
@@ -729,45 +526,37 @@ const VenuePage = () => {
                       placeholder="Search for cities..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-6 py-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/30 dark:border-gray-700/50 rounded-2xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 shadow-lg placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
+                      className="w-full pl-12 pr-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Stats Section */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
                 <StatsCard
                   icon={<Building className="w-6 h-6" />}
                   value={stats.totalVenues}
                   label="Total Venues"
-                  gradient="from-blue-500 to-blue-600"
                 />
                 <StatsCard
                   icon={<Calendar className="w-6 h-6" />}
                   value={stats.totalEvents}
                   label="Events Hosted"
-                  gradient="from-cyan-500 to-cyan-600"
                 />
                 <StatsCard
                   icon={<MapPin className="w-6 h-6" />}
                   value={stats.activeCities}
                   label="Active Cities"
-                  gradient="from-emerald-500 to-emerald-600"
                 />
                 <StatsCard
                   icon={<Star className="w-6 h-6" />}
                   value={stats.featuredVenues}
                   label="Featured Venues"
-                  gradient="from-amber-500 to-orange-500"
                 />
               </div>
-
-              {/* Cities Grid */}
               <div>
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                       Explore Cities
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -775,14 +564,13 @@ const VenuePage = () => {
                     </p>
                   </div>
                 </div>
-
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Array(6).fill(0).map((_, i) => (
-                      <div key={i} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-700/50 animate-pulse">
+                      <div key={i} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow border border-gray-200 dark:border-gray-700 animate-pulse">
                         <div className="h-40 w-full bg-gray-200 dark:bg-gray-700" />
-                        <div className="p-4">
-                          <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+                        <div className="p-4 space-y-2">
+                          <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
                           <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-700 rounded" />
                         </div>
                       </div>
@@ -822,13 +610,13 @@ const VenuePage = () => {
                       setSelectedCity('');
                       setSearchParams({});
                     }}
-                    className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
+                    className="border-gray-200 dark:border-gray-700"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back to Cities
                   </Button>
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
                       {selectedCity}
                     </h2>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -841,7 +629,7 @@ const VenuePage = () => {
                     variant="outline"
                     onClick={() => fetchCityEvents(1, true)}
                     disabled={loading}
-                    className="border-blue-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50"
+                    className="border-gray-200 dark:border-gray-700"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
@@ -858,14 +646,14 @@ const VenuePage = () => {
                         placeholder="Search venues..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-4 py-2 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
                   <select
                     value={filters.location}
                     onChange={(e) => handleFilterChange('location', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
+                    className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400"
                   >
                     <option value="">All Locations</option>
                     {availableFilters.locations?.map(location => (
@@ -875,7 +663,7 @@ const VenuePage = () => {
                   <select
                     value={filters.amenity}
                     onChange={(e) => handleFilterChange('amenity', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
+                    className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400"
                   >
                     <option value="">All Amenities</option>
                     {availableFilters.amenities?.map(amenity => (
@@ -885,19 +673,19 @@ const VenuePage = () => {
                   <select
                     value={filters.time_filter}
                     onChange={(e) => handleFilterChange('time_filter', e.target.value)}
-                    className="px-4 py-2 border rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-gray-200/50 dark:border-gray-700/50 focus:border-blue-400"
+                    className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400"
                   >
                     <option value="upcoming">Upcoming Events</option>
                     <option value="today">Today</option>
                     <option value="past">Past Events</option>
                     <option value="all">All Events</option>
                   </select>
-                  <div className="flex bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-700/50 p-1">
+                  <div className="flex bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-1">
                     <Button
                       variant={viewMode === 'grid' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('grid')}
-                      className={viewMode === 'grid' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : ''}
+                      className={viewMode === 'grid' ? 'bg-blue-500 text-white' : 'text-gray-600 dark:text-gray-300'}
                     >
                       <Grid className="w-4 h-4" />
                     </Button>
@@ -905,7 +693,7 @@ const VenuePage = () => {
                       variant={viewMode === 'list' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setViewMode('list')}
-                      className={viewMode === 'list' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : ''}
+                      className={viewMode === 'list' ? 'bg-blue-500 text-white' : 'text-gray-600 dark:text-gray-300'}
                     >
                       <List className="w-4 h-4" />
                     </Button>
@@ -913,11 +701,11 @@ const VenuePage = () => {
                 </div>
               </div>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">All Venues</TabsTrigger>
-                  <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Trending</TabsTrigger>
-                  <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Top Rated</TabsTrigger>
-                  <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Popular</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">All Venues</TabsTrigger>
+                  <TabsTrigger value="trending" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">Trending</TabsTrigger>
+                  <TabsTrigger value="top-rated" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">Top Rated</TabsTrigger>
+                  <TabsTrigger value="nearby" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">Popular</TabsTrigger>
                 </TabsList>
                 <TabsContent value={activeTab} className="mt-6">
                   {loading ? (
@@ -927,7 +715,7 @@ const VenuePage = () => {
                         : 'grid-cols-1 max-w-4xl mx-auto'
                     }`}>
                       {Array(6).fill(0).map((_, index) => (
-                        <div key={index} className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-700/50">
+                        <div key={index} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow border border-gray-200 dark:border-gray-700">
                           <Skeleton className="h-48 w-full" />
                           <div className="p-6 space-y-4">
                             <Skeleton className="h-6 w-3/4" />
@@ -952,7 +740,7 @@ const VenuePage = () => {
                       {!error && sortedVenues.length === 0 && (
                         <div className="text-center py-20">
                           <div className="text-8xl mb-6">🏢</div>
-                          <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent mb-4">
+                          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
                             No venues found
                           </h3>
                           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
@@ -963,7 +751,7 @@ const VenuePage = () => {
                               setSearchQuery('');
                               setFilters(prev => ({ ...prev, location: '', amenity: '' }));
                             }}
-                            className="bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 text-white"
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
                           >
                             Clear Filters
                           </Button>
@@ -987,7 +775,7 @@ const VenuePage = () => {
                       </div>
                       {isLoadingMore && (
                         <div className="flex justify-center items-center py-12">
-                          <div className="flex items-center gap-3 px-6 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 shadow-lg">
+                          <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg">
                             <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                             <span className="text-gray-600 dark:text-gray-300">Loading more venues...</span>
                           </div>
@@ -996,7 +784,7 @@ const VenuePage = () => {
                       <div ref={loadMoreRef} className="h-10 w-full" />
                       {!hasMore && sortedVenues.length > 0 && (
                         <div className="text-center py-12">
-                          <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 dark:from-blue-900/20 dark:via-cyan-900/20 dark:to-blue-900/20 rounded-full border border-blue-200/50 dark:border-blue-700/50">
+                          <div className="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700">
                             <span className="text-gray-700 dark:text-gray-300">
                               You've explored all venues in {selectedCity}!
                             </span>
@@ -1011,7 +799,6 @@ const VenuePage = () => {
           )}
         </div>
       </main>
-
       {/* Venue Details Modal */}
       <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -1020,8 +807,8 @@ const VenuePage = () => {
               {selectedVenue?.location}
             </DialogTitle>
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
-                <MapPin className="w-4 h-4 text-white" />
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+                <MapPin className="w-4 h-4" />
               </div>
               <span className="font-medium">{selectedVenue?.city}</span>
             </div>
@@ -1050,10 +837,10 @@ const VenuePage = () => {
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow">
                     <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
-                        <Building className="w-4 h-4 text-white" />
+                      <div className="p-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+                        <Building className="w-4 h-4" />
                       </div>
                       Venue Details
                     </h4>
@@ -1072,10 +859,10 @@ const VenuePage = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow">
                     <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                      <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
-                        <Award className="w-4 h-4 text-white" />
+                      <div className="p-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+                        <Award className="w-4 h-4" />
                       </div>
                       Available Amenities
                     </h4>
@@ -1104,11 +891,11 @@ const VenuePage = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <div className="p-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500">
-                          <Calendar className="w-4 h-4 text-white" />
+                        <div className="p-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">
+                          <Calendar className="w-4 h-4" />
                         </div>
                         Events at this Venue
                       </h4>
@@ -1150,27 +937,12 @@ const VenuePage = () => {
                                   <span>{event.start_time}</span>
                                 </div>
                               )}
-                              {event.price_per_ticket && (
-                                <div className="flex items-center gap-1">
-                                  <span>KES {event.price_per_ticket}</span>
-                                </div>
-                              )}
                             </div>
                             <div className="flex items-center justify-between">
                               {event.category && (
                                 <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-full">
                                   {event.category}
                                 </span>
-                              )}
-                              {(event.total_tickets || event.tickets_available) && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {event.tickets_available && event.total_tickets
-                                    ? `${event.tickets_available}/${event.total_tickets} available`
-                                    : event.total_tickets
-                                    ? `${event.total_tickets} tickets`
-                                    : `${event.tickets_available} available`
-                                  }
-                                </div>
                               )}
                             </div>
                           </div>
@@ -1200,14 +972,14 @@ const VenuePage = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   onClick={() => handleGetDirections(selectedVenue)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   <Navigation className="w-4 h-4 mr-2" />
                   Get Directions
                 </Button>
                 <Button
                   onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-600 hover:to-[#0f9b76] text-white"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   View All Events
@@ -1225,6 +997,7 @@ const VenuePage = () => {
           )}
         </DialogContent>
       </Dialog>
+      <Footer />
     </div>
   );
 };
