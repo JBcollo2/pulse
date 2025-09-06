@@ -298,7 +298,7 @@ const FloatingElements = () => (
 );
 
 // Main Landing Page Component
-const VenueLandingPage = () => {
+const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [cities, setCities] = useState([]);
   const [filteredCities, setFilteredCities] = useState([]);
@@ -816,4 +816,4 @@ const VenueLandingPage = () => {
   );
 };
 
-export default VenueLandingPage;
+export default LandingPage;
