@@ -45,7 +45,7 @@ const searchCityImage = async (cityName, index = 0) => {
     if (!response.ok) throw new Error('Failed to fetch location data');
     const data = await response.json();
     console.log(`[searchCityImage] Response data:`, data);
-
+    
     if (!data || data.length === 0) {
       console.warn(`[searchCityImage] No results found`);
       const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
@@ -65,20 +65,20 @@ const searchCityImage = async (cityName, index = 0) => {
 
     const wikidataId = place.extratags?.wikidata;
     let photoUrl = null;
-
+    
     if (wikidataId) {
       const wikiImage = await fetchWikiImage(wikidataId);
       if (wikiImage) {
         photoUrl = wikiImage;
       }
     }
-
+    
     if (!photoUrl) {
       const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
       const colorIndex = index % colors.length;
       photoUrl = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
     }
-
+    
     console.log(`[searchCityImage] Final photo URL: ${photoUrl}`);
     return photoUrl;
   } catch (error) {
@@ -206,7 +206,7 @@ const LandingPage = () => {
           { city: 'Kisumu', event_count: 14, venues: 8 },
           { city: 'Thika', event_count: 6, venues: 3 }
         ];
-
+        
         // Fetch real images for each city
         const citiesWithImages = await Promise.all(
           mockCities.map(async (city, index) => {
@@ -221,14 +221,14 @@ const LandingPage = () => {
               console.error(`Error fetching image for ${city.city}:`, error);
               const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
               const colorIndex = index % colors.length;
-              return {
-                ...city,
+              return { 
+                ...city, 
                 imageUrl: `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`
               };
             }
           })
         );
-
+        
         setCities(citiesWithImages);
 
         // Calculate stats
@@ -260,14 +260,14 @@ const LandingPage = () => {
   }, [searchQuery, cities]);
 
   const handleCitySelect = (cityName) => {
-    console.log(`Maps to venues for ${cityName}`);
+    console.log(`Navigate to venues for ${cityName}`);
     // In real app: navigate(`/venues?city=${encodeURIComponent(cityName)}`);
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      const exactMatch = cities.find(city =>
+      const exactMatch = cities.find(city => 
         city.city.toLowerCase() === searchQuery.toLowerCase()
       );
       if (exactMatch) {
@@ -294,13 +294,11 @@ const LandingPage = () => {
               variants={containerVariants}
             >
               <motion.div variants={itemVariants} className="text-center mb-8 sm:mb-12 lg:mb-16">
-                {/* Updated Gradient for the Sparkles Icon */}
-                <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white mb-4 sm:mb-6 shadow-lg shadow-teal-500/25">
+                <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white mb-4 sm:mb-6 shadow-lg shadow-blue-500/25">
                   <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm font-medium">Discover Amazing Venues</span>
                 </div>
-                {/* Updated Gradient for the Title */}
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent leading-tight">
                   Find Perfect<br />Event Venues
                 </h1>
                 <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
@@ -318,37 +316,36 @@ const LandingPage = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 sm:pl-12 pr-4 sm:pr-6 py-3 sm:py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
                     />
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-500/10 to-cyan-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-green-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                   </div>
                 </div>
               </motion.div>
 
               {/* Stats Section */}
               <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12 lg:mb-16">
-                {/* Updated Gradient for each Stats Card Icon Background */}
                 <StatsCard
                   icon={<Building />}
                   value={stats.totalVenues}
                   label="Total Venues"
-                  gradient="bg-gradient-to-br from-teal-500 to-cyan-500"
+                  gradient="bg-gradient-to-br from-blue-500 to-green-500"
                 />
                 <StatsCard
                   icon={<Calendar />}
                   value={stats.totalEvents}
                   label="Events Hosted"
-                  gradient="bg-gradient-to-br from-teal-500 to-cyan-500"
+                  gradient="bg-gradient-to-br from-blue-500 to-green-500"
                 />
                 <StatsCard
                   icon={<MapPin />}
                   value={stats.activeCities}
                   label="Active Cities"
-                  gradient="bg-gradient-to-br from-teal-500 to-cyan-500"
+                  gradient="bg-gradient-to-br from-blue-500 to-green-500"
                 />
                 <StatsCard
                   icon={<Sparkles />}
                   value={stats.featuredVenues}
                   label="Featured Venues"
-                  gradient="bg-gradient-to-br from-teal-500 to-cyan-500"
+                  gradient="bg-gradient-to-br from-blue-500 to-green-500"
                 />
               </motion.div>
 
@@ -356,17 +353,16 @@ const LandingPage = () => {
               <motion.div variants={itemVariants}>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
                   <div>
-                    {/* Updated Gradient for the Section Title */}
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
                       Explore Cities
                     </h2>
                     <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
                       {filteredCities.length} cities available
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-200/50 dark:border-gray-600">
-                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-teal-600 dark:text-teal-300" />
-                    <span className="text-xs sm:text-sm font-medium text-teal-600 dark:text-teal-300">Popular Destinations</span>
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-200/50 dark:border-gray-600">
+                    <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-300" />
+                    <span className="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-300">Popular Destinations</span>
                   </div>
                 </div>
 
@@ -393,7 +389,7 @@ const LandingPage = () => {
                     <p className="text-red-500 text-base sm:text-lg mb-4 sm:mb-6">{error}</p>
                     <button
                       onClick={() => window.location.reload()}
-                      className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
+                      className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
                     >
                       <RefreshCw className="w-4 h-4" />
                       Try Again
@@ -417,7 +413,7 @@ const LandingPage = () => {
                       <div className="text-center mt-8 sm:mt-12">
                         <button
                           onClick={() => setShowAllCities(!showAllCities)}
-                          className="border border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 dark:hover:from-teal-900/20 dark:hover:to-cyan-900/20 transition-all duration-300 px-6 py-3 rounded-xl text-gray-700 dark:text-gray-300 font-medium flex items-center gap-2 mx-auto"
+                          className="border border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 transition-all duration-300 px-6 py-3 rounded-xl text-gray-700 dark:text-gray-300 font-medium flex items-center gap-2 mx-auto"
                         >
                           <span>
                             {showAllCities ? 'Show Less' : `View ${filteredCities.length - 6} More Cities`}
@@ -434,9 +430,9 @@ const LandingPage = () => {
                       <div className="text-center py-12 sm:py-20">
                         <div className="relative inline-block mb-4 sm:mb-6">
                           <div className="text-6xl sm:text-8xl animate-bounce">🏢</div>
-                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 sm:w-16 h-2 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 rounded-full blur-sm"></div>
+                          <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 sm:w-16 h-2 bg-gradient-to-r from-blue-500/20 to-green-500/20 rounded-full blur-sm"></div>
                         </div>
-                        <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
+                        <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
                           No cities found
                         </h3>
                         <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 px-4">
@@ -444,7 +440,7 @@ const LandingPage = () => {
                         </p>
                         <button
                           onClick={() => setSearchQuery('')}
-                          className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-cyan-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
+                          className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
                         >
                           <RefreshCw className="w-4 h-4" />
                           Show All Cities
@@ -473,11 +469,11 @@ const LandingPage = () => {
             border-radius: 4px;
           }
           ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #20c997, #17a2b8); /* Teal to Cyan */
+            background: linear-gradient(45deg, #3b82f6, #10b981);
             border-radius: 4px;
           }
           ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #18a87b, #138496); /* Darker shades for hover */
+            background: linear-gradient(45deg, #2563eb, #059669);
           }
           .group:hover .group-hover\\:rotate-12 {
             transform: rotate(12deg);
