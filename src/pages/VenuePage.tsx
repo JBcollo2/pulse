@@ -45,32 +45,28 @@ interface VenueLocation {
   totalEvents: number;
   uniqueAmenities: string[];
   topEvent?: Event;
+  avgRating: number;
 }
 
 interface LocationFilters {
   city: string;
   location?: string;
+  amenity?: string;
   time_filter: 'upcoming' | 'today' | 'past' | 'all';
   sort_by: 'date' | 'name';
   sort_order: 'asc' | 'desc';
 }
 
-// Function to get city image from Unsplash
-const getCityImage = (cityName: string) => {
-  // Using Unsplash's free random image service with city search
-  return `https://source.unsplash.com/800x600/?${encodeURIComponent(cityName)},city,cityscape,urban`;
-};
-
 // StatsCard Component with updated gradients
 const StatsCard = ({ icon, value, label, gradient }) => (
-  <motion.div 
+  <motion.div
     className="relative overflow-hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl p-4 sm:p-6 shadow-lg border border-white/20 dark:border-gray-800/50 hover:shadow-xl transition-all duration-300 group"
     whileHover={{ scale: 1.02, y: -2 }}
     whileTap={{ scale: 0.98 }}
   >
     {/* Background Pattern */}
     <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-    
+
     <div className="relative z-10 flex items-center gap-3">
       <div className={`p-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
         {icon}
@@ -96,14 +92,14 @@ const CityCard = ({ city, onSelect, index }) => (
   >
     <div className="relative h-40 sm:h-48 overflow-hidden">
       <img
-        src={getCityImage(city.city)}
+        src={city.image || `https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop&crop=city`}
         alt={city.city}
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         loading="lazy"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-teal-400/20 to-mint-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
+
       <div className="absolute bottom-3 left-3 right-3 text-white">
         <h3 className="text-lg sm:text-xl font-bold mb-2">{city.city}</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
@@ -127,7 +123,6 @@ const CityCard = ({ city, onSelect, index }) => (
   </motion.div>
 );
 
-
 // Modern Venue Card Component with improved visibility and real API data
 const VenueCard = ({ venue, index, onViewDetails }: {
   venue: VenueLocation;
@@ -135,7 +130,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
   onViewDetails: (venue: VenueLocation) => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-
   const getAmenityIcon = (amenity: string) => {
     const iconMap: Record<string, React.ReactNode> = {
       'wifi': <Wifi className="w-4 h-4" />,
@@ -148,15 +142,12 @@ const VenueCard = ({ venue, index, onViewDetails }: {
     };
     return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
-
   const getCategoryGradient = () => {
     return 'from-emerald-400 via-teal-400 to-emerald-500';
   };
-
   const getCategoryIcon = () => {
     return '🏢';
   };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -165,7 +156,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       day: 'numeric'
     });
   };
-
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
     const [hours, minutes] = timeString.split(':');
@@ -177,48 +167,37 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       hour12: true
     });
   };
-
   // Get the next upcoming event or most recent event for display
   const getDisplayEvent = () => {
     if (!venue.events || venue.events.length === 0) return null;
-
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-
     // Sort events by date
     const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
     // Find next upcoming event
     const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
-
     // Return upcoming event or the most recent event
     return upcomingEvent || sortedEvents[sortedEvents.length - 1];
   };
-
   // Get event statistics
   const getEventStats = () => {
     if (!venue.events || venue.events.length === 0) {
       return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
     }
-
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-
     const upcoming = venue.events.filter(event => new Date(event.date).getTime() >= currentDate.getTime()).length;
     const nextEvent = venue.events
       .filter(event => new Date(event.date).getTime() >= currentDate.getTime())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
     return {
       upcoming,
       total: venue.totalEvents || venue.events.length,
       nextEventDate: nextEvent ? nextEvent.date : null
     };
   };
-
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
-
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
@@ -241,10 +220,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       >
         <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
       </motion.div>
-
       {/* Content Container */}
       <div className="relative z-10 p-0 h-full">
-
         {/* Image Section with Improved Overlays */}
         <div className="relative h-56 overflow-hidden rounded-t-3xl">
           {/* Background Image */}
@@ -267,10 +244,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </span>
             </div>
           )}
-
           {/* Lighter Dark Overlay for Text Readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
           {/* Top Badges */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
             {/* Popular Badge */}
@@ -286,7 +261,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </motion.div>
             )}
           </div>
-
           {/* Bottom Info Bar */}
           <div className="absolute bottom-4 left-4 right-4">
             <motion.div
@@ -300,7 +274,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 <span>{getCategoryIcon()}</span>
                 <span className="text-sm font-medium">Venue</span>
               </div>
-
               {/* Events Count with Upcoming */}
               <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                 <Calendar className="w-4 h-4" />
@@ -311,10 +284,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             </motion.div>
           </div>
         </div>
-
         {/* Content Section */}
         <div className="p-6 space-y-4">
-
           {/* Title and Trending Indicator */}
           <div className="flex items-start justify-between gap-3">
             <motion.h3
@@ -331,7 +302,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             >
               {venue.location}
             </motion.h3>
-
             {eventStats.upcoming > 3 && (
               <motion.div
                 className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
@@ -344,7 +314,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </motion.div>
             )}
           </div>
-
           {/* Description */}
           <motion.p
             className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
@@ -359,7 +328,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </span>
             )}
           </motion.p>
-
           {/* Event Details */}
           <motion.div
             className="space-y-3"
@@ -374,7 +342,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </div>
               <span className="text-sm font-medium truncate">{venue.city}</span>
             </div>
-
             {/* Next Event Date */}
             {displayEvent && (
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
@@ -387,7 +354,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 </span>
               </div>
             )}
-
             {/* Events Count with Status */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
               <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -403,7 +369,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </span>
             </div>
           </motion.div>
-
           {/* Amenities with Improved Visibility */}
           {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
             <motion.div
@@ -428,7 +393,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               )}
             </motion.div>
           )}
-
           {/* Event Category from Latest Event */}
           {displayEvent?.category && (
             <motion.div
@@ -441,7 +405,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               <span>Latest: {displayEvent.category}</span>
             </motion.div>
           )}
-
           {/* Action Section */}
           <motion.div
             className="flex items-center justify-between pt-2"
@@ -467,7 +430,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 )}
               </div>
             </div>
-
             {/* Explore Venue Button */}
             <motion.button
               className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
@@ -488,7 +450,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
           </motion.div>
         </div>
       </div>
-
       {/* Subtle Hover Glow Effect */}
       <motion.div
         className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10`}
@@ -516,11 +477,13 @@ const VenuePage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [availableFilters, setAvailableFilters] = useState({
     locations: [],
+    amenities: [],
     time_filters: ['upcoming', 'today', 'past', 'all']
   });
   const [filters, setFilters] = useState<LocationFilters>({
     city: '',
     location: '',
+    amenity: '',
     time_filter: 'upcoming',
     sort_by: 'date',
     sort_order: 'asc'
@@ -546,7 +509,6 @@ const VenuePage = () => {
       }
     }
   };
-
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -578,7 +540,7 @@ const VenuePage = () => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
-  }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
+  }, [selectedCity, filters.location, filters.amenity, filters.time_filter, filters.sort_by, filters.sort_order]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -642,6 +604,7 @@ const VenuePage = () => {
         page: page.toString(),
         per_page: '20',
         ...(filters.location && { location: filters.location }),
+        ...(filters.amenity && { amenity: filters.amenity }),
         time_filter: filters.time_filter,
         sort_by: filters.sort_by,
         sort_order: filters.sort_order
@@ -662,7 +625,8 @@ const VenuePage = () => {
             events: [],
             totalEvents: 0,
             uniqueAmenities: new Set(),
-            topEvent: null
+            topEvent: null,
+            avgRating: 4.0 + Math.random() * 1.0
           });
         }
         const venue = venueMap.get(key);
@@ -689,6 +653,7 @@ const VenuePage = () => {
       setHasMore(data.pagination.has_next);
       setAvailableFilters(data.available_filters || {
         locations: [],
+        amenities: [],
         time_filters: ['upcoming', 'today', 'past', 'all']
       });
     } catch (err) {
@@ -754,7 +719,7 @@ const VenuePage = () => {
       case 'trending':
         return sorted.sort((a, b) => b.totalEvents - a.totalEvents);
       case 'top-rated':
-        return sorted.sort((a, b) => b.totalEvents - a.totalEvents);
+        return sorted.sort((a, b) => b.avgRating - a.avgRating);
       case 'nearby':
         return sorted.sort(() => Math.random() - 0.5);
       default:
@@ -766,10 +731,10 @@ const VenuePage = () => {
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-      
+
       <div className="relative z-10">
         <Navbar />
-        
+
         <main className="py-6 sm:py-12 pt-20 sm:pt-24 relative">
           <div className="container mx-auto px-3 sm:px-4">
             {!selectedCity ? (
@@ -804,7 +769,7 @@ const VenuePage = () => {
                     </div>
                   </div>
                 </motion.div>
-                
+
                 <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-12 sm:mb-16">
                   <StatsCard
                     icon={<Building className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
@@ -831,7 +796,7 @@ const VenuePage = () => {
                     gradient="bg-gradient-to-br from-emerald-400 to-teal-500"
                   />
                 </motion.div>
-                
+
                 <motion.div variants={itemVariants}>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
                     <div>
@@ -847,7 +812,7 @@ const VenuePage = () => {
                       <span className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-300">Popular Destinations</span>
                     </div>
                   </div>
-                  
+
                   {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {Array(6).fill(0).map((_, i) => (
@@ -869,7 +834,7 @@ const VenuePage = () => {
                       </div>
                       <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">Something went wrong</h3>
                       <p className="text-red-500 text-base sm:text-lg mb-6">{error}</p>
-                      <Button 
+                      <Button
                         onClick={fetchCities}
                         className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105"
                       >
@@ -933,7 +898,7 @@ const VenuePage = () => {
                     </Button>
                   </div>
                 </motion.div>
-                
+
                 <motion.div variants={itemVariants} className="mb-6 sm:mb-8 space-y-4">
                   <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
                     <div className="flex-1 max-w-full lg:max-w-md">
@@ -956,6 +921,16 @@ const VenuePage = () => {
                       <option value="">All Locations</option>
                       {availableFilters.locations?.map(location => (
                         <option key={location} value={location}>{location}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={filters.amenity}
+                      onChange={(e) => handleFilterChange('amenity', e.target.value)}
+                      className="px-3 sm:px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-emerald-400 shadow-sm hover:shadow-md transition-all duration-300 text-sm sm:text-base"
+                    >
+                      <option value="">All Amenities</option>
+                      {availableFilters.amenities?.map(amenity => (
+                        <option key={amenity} value={amenity}>{amenity}</option>
                       ))}
                     </select>
                     <select
@@ -988,14 +963,14 @@ const VenuePage = () => {
                     </div>
                   </div>
                 </motion.div>
-                
+
                 <motion.div variants={itemVariants}>
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-lg overflow-x-auto">
                       <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">All Venues</TabsTrigger>
                       <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Trending</TabsTrigger>
-                      <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Popular</TabsTrigger>
-                      <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Featured</TabsTrigger>
+                      <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Top Rated</TabsTrigger>
+                      <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Popular</TabsTrigger>
                     </TabsList>
                     <TabsContent value={activeTab} className="mt-4 sm:mt-6">
                       {loading ? (
@@ -1045,7 +1020,7 @@ const VenuePage = () => {
                               <Button
                                 onClick={() => {
                                   setSearchQuery('');
-                                  setFilters(prev => ({ ...prev, location: '' }));
+                                  setFilters(prev => ({ ...prev, location: '', amenity: '' }));
                                 }}
                                 className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105"
                               >
@@ -1101,7 +1076,7 @@ const VenuePage = () => {
             )}
           </div>
         </main>
-        
+
         {/* Enhanced Venue Details Modal */}
         <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl mx-3 sm:mx-auto">
@@ -1115,6 +1090,12 @@ const VenuePage = () => {
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-300" />
                   </div>
                   <span className="font-medium text-sm sm:text-base">{selectedVenue?.city}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-full">
+                  <Star className="w-3 h-3 text-green-600 dark:text-green-300 fill-current" />
+                  <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                    {selectedVenue?.avgRating.toFixed(1)}
+                  </span>
                 </div>
               </div>
             </DialogHeader>
@@ -1130,9 +1111,13 @@ const VenuePage = () => {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-mint-500/10" />
-                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row justify-between gap-2">
-                      <div className="bg-gradient-to-r from-emerald-400/90 via-teal-400/90 to-mint-500/90 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg shadow-emerald-500/25 text-sm">
-                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between">
+                      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
+                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.avgRating.toFixed(1)}</span>
+                      </div>
+                      <div className="bg-gradient-to-r from-emerald-400/90 via-teal-400/90 to-mint-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg shadow-emerald-500/25">
+                        <Calendar className="w-4 h-4" />
                         <span className="font-medium">{selectedVenue.totalEvents} Events</span>
                       </div>
                     </div>
@@ -1308,9 +1293,9 @@ const VenuePage = () => {
             )}
           </DialogContent>
         </Dialog>
-        
+
         <Footer />
-        
+
         {/* Enhanced Custom Animation Styles */}
         <style>{`
           @keyframes float {
@@ -1321,11 +1306,11 @@ const VenuePage = () => {
               transform: translateY(-8px);
             }
           }
-          
+
           .animate-float {
             animation: float 4s ease-in-out infinite;
           }
-          
+
           /* Line clamp utilities */
           .line-clamp-1 {
             display: -webkit-box;
@@ -1333,94 +1318,94 @@ const VenuePage = () => {
             -webkit-box-orient: vertical;
             overflow: hidden;
           }
-          
+
           .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
           }
-          
+
           .line-clamp-3 {
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
           }
-          
+
           /* Smooth transitions for theme changes */
           * {
             transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 200ms;
           }
-          
+
           /* Custom scrollbar matching updated style */
           ::-webkit-scrollbar {
             width: 6px;
           }
-          
+
           ::-webkit-scrollbar-track {
             background: rgba(156, 163, 175, 0.1);
             border-radius: 3px;
           }
-          
+
           ::-webkit-scrollbar-thumb {
             background: linear-gradient(45deg, #10d9a0, #06d6a0, #14b8a6);
             border-radius: 3px;
           }
-          
+
           ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(45deg, #0bb885, #059669, #0f766e);
           }
-          
+
           /* Enhanced hover effects */
           .group:hover .group-hover\\:rotate-12 {
             transform: rotate(12deg);
           }
-          
+
           /* Backdrop blur fallback */
           .backdrop-blur-sm {
             backdrop-filter: blur(4px);
           }
-          
+
           .backdrop-blur-xl {
             backdrop-filter: blur(24px);
           }
-          
+
           @supports not (backdrop-filter: blur(4px)) {
             .backdrop-blur-sm, .backdrop-blur-xl {
               background-color: rgba(255, 255, 255, 0.9);
             }
-            
+
             .dark .backdrop-blur-sm, .dark .backdrop-blur-xl {
               background-color: rgba(31, 41, 55, 0.9);
             }
           }
-          
+
           /* Mobile responsive adjustments */
           @media (max-width: 640px) {
             .container {
               padding-left: 0.75rem;
               padding-right: 0.75rem;
             }
-            
+
             /* Ensure touch targets are at least 44px */
             button, .cursor-pointer {
               min-height: 44px;
               min-width: 44px;
             }
-            
+
             /* Better spacing for mobile */
             .space-y-3 > * + * {
               margin-top: 0.5rem;
             }
-            
+
             .space-y-4 > * + * {
               margin-top: 0.75rem;
             }
           }
-          
+
           /* Enhanced gradient animations */
           @keyframes gradient-shift {
             0%, 100% {
@@ -1430,12 +1415,12 @@ const VenuePage = () => {
               background-position: 100% 50%;
             }
           }
-          
+
           .animate-gradient {
             background-size: 200% 200%;
             animation: gradient-shift 3s ease infinite;
           }
-          
+
           /* Loading animation improvements */
           @keyframes pulse-glow {
             0%, 100% {
@@ -1447,22 +1432,22 @@ const VenuePage = () => {
               transform: scale(1.05);
             }
           }
-          
+
           .animate-pulse-glow {
             animation: pulse-glow 2s ease-in-out infinite;
           }
-          
+
           /* Safe area adjustments for mobile devices */
           @supports (padding: max(0px)) {
             .safe-padding-top {
               padding-top: max(1rem, env(safe-area-inset-top));
             }
-            
+
             .safe-padding-bottom {
               padding-bottom: max(1rem, env(safe-area-inset-bottom));
             }
           }
-          
+
           /* Focus styles for accessibility */
           button:focus, input:focus, select:focus {
             outline: 2px solid #10d9a0;
