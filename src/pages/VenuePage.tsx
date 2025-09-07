@@ -37,7 +37,6 @@ interface Event {
   };
   likes_count: number;
 }
-
 interface VenueLocation {
   location: string;
   city: string;
@@ -46,7 +45,6 @@ interface VenueLocation {
   uniqueAmenities: string[];
   topEvent?: Event;
 }
-
 interface LocationFilters {
   city: string;
   location?: string;
@@ -133,7 +131,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
   onViewDetails: (venue: VenueLocation) => void;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-
   const getAmenityIcon = (amenity: string) => {
     const iconMap: Record<string, React.ReactNode> = {
       'wifi': <Wifi className="w-4 h-4" />,
@@ -146,15 +143,12 @@ const VenueCard = ({ venue, index, onViewDetails }: {
     };
     return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
-
   const getCategoryGradient = () => {
-    return 'from-emerald-400 via-teal-400 to-emerald-500';
+    return 'from-blue-500 to-green-500';
   };
-
   const getCategoryIcon = () => {
     return '🏢';
   };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -163,7 +157,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       day: 'numeric'
     });
   };
-
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
     const [hours, minutes] = timeString.split(':');
@@ -175,48 +168,37 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       hour12: true
     });
   };
-
   // Get the next upcoming event or most recent event for display
   const getDisplayEvent = () => {
     if (!venue.events || venue.events.length === 0) return null;
-
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-
     // Sort events by date
     const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
     // Find next upcoming event
     const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
-
     // Return upcoming event or the most recent event
     return upcomingEvent || sortedEvents[sortedEvents.length - 1];
   };
-
   // Get event statistics
   const getEventStats = () => {
     if (!venue.events || venue.events.length === 0) {
       return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
     }
-
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-
     const upcoming = venue.events.filter(event => new Date(event.date).getTime() >= currentDate.getTime()).length;
     const nextEvent = venue.events
       .filter(event => new Date(event.date).getTime() >= currentDate.getTime())
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-
     return {
       upcoming,
       total: venue.totalEvents || venue.events.length,
       nextEventDate: nextEvent ? nextEvent.date : null
     };
   };
-
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
-
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
@@ -239,10 +221,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
       >
         <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
       </motion.div>
-
       {/* Content Container */}
       <div className="relative z-10 p-0 h-full">
-
         {/* Image Section with Improved Overlays */}
         <div className="relative h-56 overflow-hidden rounded-t-3xl">
           {/* Background Image */}
@@ -254,9 +234,9 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               loading="lazy"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 flex items-center justify-center relative overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-teal-400/10 to-emerald-500/10"
+                className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
                 animate={{ opacity: [0.1, 0.2, 0.1] }}
                 transition={{ duration: 3, repeat: Infinity }}
               />
@@ -265,10 +245,8 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </span>
             </div>
           )}
-
           {/* Lighter Dark Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
           {/* Top Badges */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
             {/* Popular Badge */}
@@ -284,7 +262,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </motion.div>
             )}
           </div>
-
           {/* Bottom Info Bar */}
           <div className="absolute bottom-4 left-4 right-4">
             <motion.div
@@ -298,7 +275,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 <span>{getCategoryIcon()}</span>
                 <span className="text-sm font-medium">Venue</span>
               </div>
-
               {/* Events Count with Upcoming */}
               <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                 <Calendar className="w-4 h-4" />
@@ -309,18 +285,16 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             </motion.div>
           </div>
         </div>
-
         {/* Content Section */}
         <div className="p-6 space-y-4">
-
           {/* Title and Trending Indicator */}
           <div className="flex items-start justify-between gap-3">
             <motion.h3
               className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
               style={{
                 backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
-                '--tw-gradient-from': '#10b981',
-                '--tw-gradient-to': '#06d6a0',
+                '--tw-gradient-from': '#3b82f6',
+                '--tw-gradient-to': '#10b981',
                 '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
               } as React.CSSProperties}
               initial={{ opacity: 0, y: 10 }}
@@ -329,7 +303,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
             >
               {venue.location}
             </motion.h3>
-
             {eventStats.upcoming > 3 && (
               <motion.div
                 className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
@@ -342,7 +315,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </motion.div>
             )}
           </div>
-
           {/* Description */}
           <motion.p
             className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
@@ -352,12 +324,11 @@ const VenueCard = ({ venue, index, onViewDetails }: {
           >
             {venue.city} - {eventStats.total} events hosted at this location
             {eventStats.nextEventDate && (
-              <span className="block text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+              <span className="block text-green-600 dark:text-green-400 font-medium mt-1">
                 Next event: {formatDate(eventStats.nextEventDate)}
               </span>
             )}
           </motion.p>
-
           {/* Event Details */}
           <motion.div
             className="space-y-3"
@@ -372,7 +343,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </div>
               <span className="text-sm font-medium truncate">{venue.city}</span>
             </div>
-
             {/* Next Event Date */}
             {displayEvent && (
               <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
@@ -385,7 +355,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
                 </span>
               </div>
             )}
-
             {/* Events Count with Status */}
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
               <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -394,14 +363,13 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               <span className="text-sm font-medium">
                 {eventStats.total} Total Events
                 {eventStats.upcoming > 0 && (
-                  <span className="text-emerald-600 dark:text-emerald-400 ml-1">
+                  <span className="text-green-600 dark:text-green-400 ml-1">
                     ({eventStats.upcoming} upcoming)
                   </span>
                 )}
               </span>
             </div>
           </motion.div>
-
           {/* Amenities with Improved Visibility */}
           {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
             <motion.div
@@ -426,7 +394,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               )}
             </motion.div>
           )}
-
           {/* Event Category from Latest Event */}
           {displayEvent?.category && (
             <motion.div
@@ -439,7 +406,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               <span>Latest: {displayEvent.category}</span>
             </motion.div>
           )}
-
           {/* Action Section */}
           <motion.div
             className="flex items-center justify-between pt-2"
@@ -459,16 +425,15 @@ const VenueCard = ({ venue, index, onViewDetails }: {
               </div>
               <div className="space-y-1 mt-1">
                 {eventStats.upcoming > 0 && (
-                  <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                  <div className="text-sm font-medium text-green-600 dark:text-green-400">
                     {eventStats.upcoming} upcoming
                   </div>
                 )}
               </div>
             </div>
-
             {/* Explore Venue Button */}
             <motion.button
-              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
+              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
               whileTap={{ scale: 0.95 }}
               whileHover={{
                 boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
@@ -486,7 +451,6 @@ const VenueCard = ({ venue, index, onViewDetails }: {
           </motion.div>
         </div>
       </div>
-
       {/* Subtle Hover Glow Effect */}
       <motion.div
         className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10`}
@@ -532,7 +496,6 @@ const VenuePage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
-
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -544,7 +507,6 @@ const VenuePage = () => {
       }
     }
   };
-
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -556,12 +518,10 @@ const VenuePage = () => {
       }
     }
   };
-
   // Fetch cities on component mount
   useEffect(() => {
     fetchCities();
   }, []);
-
   // Set initial city from URL params
   useEffect(() => {
     const cityFromParams = searchParams.get('city');
@@ -570,14 +530,12 @@ const VenuePage = () => {
       setFilters(prev => ({ ...prev, city: cityFromParams }));
     }
   }, [cities, searchParams]);
-
   // Fetch events when city or filters change
   useEffect(() => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
   }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
-
   // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -602,7 +560,6 @@ const VenuePage = () => {
       }
     };
   }, [currentPage, hasMore, isLoadingMore, selectedCity]);
-
   const fetchCities = async () => {
     try {
       setLoading(true);
@@ -627,7 +584,6 @@ const VenuePage = () => {
       setLoading(false);
     }
   };
-
   const fetchCityEvents = async (page = 1, reset = false) => {
     if (!selectedCity) return;
     try {
@@ -697,7 +653,6 @@ const VenuePage = () => {
       setIsLoadingMore(false);
     }
   };
-
   const handleCitySelect = (city) => {
     setSelectedCity(city);
     setFilters(prev => ({ ...prev, city }));
@@ -706,24 +661,20 @@ const VenuePage = () => {
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setVenues([]);
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleViewDetails = (venue) => {
     setSelectedVenue(venue);
   };
-
   const handleGetDirections = (venue) => {
     const query = encodeURIComponent(`${venue.location}, ${venue.city}`);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     window.open(mapsUrl, '_blank');
   };
-
   const handleShare = (venue) => {
     const shareData = {
       title: venue.location,
@@ -736,7 +687,6 @@ const VenuePage = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   };
-
   const filteredVenues = useMemo(() => {
     return venues.filter(venue => {
       const matchesSearch = !searchQuery ||
@@ -745,7 +695,6 @@ const VenuePage = () => {
       return matchesSearch;
     });
   }, [venues, searchQuery]);
-
   const sortedVenues = useMemo(() => {
     const sorted = [...filteredVenues];
     switch (activeTab) {
@@ -759,7 +708,6 @@ const VenuePage = () => {
         return sorted;
     }
   }, [filteredVenues, activeTab]);
-
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
@@ -804,25 +752,25 @@ const VenuePage = () => {
                     icon={<Building />}
                     value={stats.totalVenues}
                     label="Total Venues"
-                    gradient="bg-gradient-to-br from-blue-500 to-blue-600"
+                    gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   />
                   <StatsCard
                     icon={<Calendar />}
                     value={stats.totalEvents}
                     label="Events Hosted"
-                    gradient="bg-gradient-to-br from-green-500 to-green-600"
+                    gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   />
                   <StatsCard
                     icon={<MapPin />}
                     value={stats.activeCities}
                     label="Active Cities"
-                    gradient="bg-gradient-to-br from-purple-500 to-purple-600"
+                    gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   />
                   <StatsCard
                     icon={<Sparkles />}
                     value={stats.featuredVenues}
                     label="Featured Venues"
-                    gradient="bg-gradient-to-br from-orange-500 to-orange-600"
+                    gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   />
                 </motion.div>
                 <motion.div variants={itemVariants}>
@@ -1132,7 +1080,7 @@ const VenuePage = () => {
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
                       <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25">
+                        <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25">
                           <Building className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Venue Details
@@ -1150,7 +1098,7 @@ const VenuePage = () => {
                     </div>
                     <div className="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
                       <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <div className="p-2 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25">
+                        <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg shadow-green-500/25">
                           <Award className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Available Amenities
@@ -1183,7 +1131,7 @@ const VenuePage = () => {
                     <div className="bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-purple-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-base sm:text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                          <div className="p-2 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25">
+                          <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg shadow-purple-500/25">
                             <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                           </div>
                           Events at this Venue
@@ -1229,7 +1177,7 @@ const VenuePage = () => {
                               </div>
                               <div className="flex items-center justify-between">
                                 {event.category && (
-                                  <span className="inline-block px-2 py-1 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 text-purple-700 dark:text-purple-300 text-xs rounded-full font-medium">
+                                  <span className="inline-block px-2 py-1 bg-gradient-to-r from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30 text-blue-700 dark:text-blue-300 text-xs rounded-full font-medium">
                                     {event.category}
                                   </span>
                                 )}
@@ -1269,14 +1217,14 @@ const VenuePage = () => {
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
                   <Button
                     onClick={() => handleGetDirections(selectedVenue)}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                   >
                     <Navigation className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Get Directions
                   </Button>
                   <Button
                     onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                   >
                     <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     View All Events
