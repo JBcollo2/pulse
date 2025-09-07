@@ -7,13 +7,89 @@ import {
   Heart, Share2, Filter, Grid, ChevronRight, Loader2, RefreshCw
 } from 'lucide-react';
 
-// Helper function to get city image from Unsplash (same as venue page)
-const getCityImage = (cityName, width = 800, height = 600) => {
-  const cleanCityName = cityName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '+');
-  return `https://source.unsplash.com/${width}x${height}/?${cleanCityName}+city`;
+// Real image fetching functions from venue page
+const fetchWikiImage = async (wikidataId) => {
+  try {
+    console.log(`[fetchWikiImage] Fetching image for Wikidata ID: ${wikidataId}`);
+    const response = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
+    const data = await response.json();
+    const entity = data.entities[wikidataId];
+    const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (imageClaim) {
+      const filename = encodeURIComponent(imageClaim.replace(/ /g, '_'));
+      const imageUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${filename}`;
+      console.log(`[fetchWikiImage] Found image: ${imageUrl}`);
+      return imageUrl;
+    }
+    console.log(`[fetchWikiImage] No image found in claims`);
+    return null;
+  } catch (error) {
+    console.error(`[fetchWikiImage] Error:`, error);
+    return null;
+  }
 };
 
-// Simple StatsCard Component (cleaned up)
+const searchCityImage = async (cityName, index = 0) => {
+  try {
+    console.log(`[searchCityImage] Starting search for: "${cityName}"`);
+    const formattedQuery = encodeURIComponent(cityName);
+
+    const url = `https://nominatim.openstreetmap.org/search?q=${formattedQuery}&format=json&addressdetails=1&limit=5&extratags=1&bounded=0`;
+    console.log(`[searchCityImage] Fetching from: ${url}`);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'EventApp/1.0'
+      }
+    });
+    console.log(`[searchCityImage] Response status: ${response.status}`);
+    if (!response.ok) throw new Error('Failed to fetch location data');
+    const data = await response.json();
+    console.log(`[searchCityImage] Response data:`, data);
+    
+    if (!data || data.length === 0) {
+      console.warn(`[searchCityImage] No results found`);
+      const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+      const colorIndex = index % colors.length;
+      return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+    }
+
+    let place = data[0];
+    const sortedResults = data.sort((a, b) => {
+      const aScore = (a.importance || 0) + (a.address ? Object.keys(a.address).length * 0.1 : 0);
+      const bScore = (b.importance || 0) + (b.address ? Object.keys(b.address).length * 0.1 : 0);
+      return bScore - aScore;
+    });
+
+    place = sortedResults[0];
+    console.log(`[searchCityImage] Selected place:`, place);
+
+    const wikidataId = place.extratags?.wikidata;
+    let photoUrl = null;
+    
+    if (wikidataId) {
+      const wikiImage = await fetchWikiImage(wikidataId);
+      if (wikiImage) {
+        photoUrl = wikiImage;
+      }
+    }
+    
+    if (!photoUrl) {
+      const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+      const colorIndex = index % colors.length;
+      photoUrl = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+    }
+    
+    console.log(`[searchCityImage] Final photo URL: ${photoUrl}`);
+    return photoUrl;
+  } catch (error) {
+    console.error('[searchCityImage] Error:', error);
+    const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+    const colorIndex = index % colors.length;
+    return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+  }
+};
+
+// Simple StatsCard Component
 const StatsCard = ({ icon, value, label, gradient }) => (
   <motion.div
     className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 group"
@@ -32,7 +108,7 @@ const StatsCard = ({ icon, value, label, gradient }) => (
   </motion.div>
 );
 
-// Updated CityCard Component (matching venue page style)
+// Updated CityCard Component with real images
 const CityCard = ({ city, onSelect, index }) => (
   <motion.div
     className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl transition-all duration-500 hover:transform hover:scale-105"
@@ -45,15 +121,16 @@ const CityCard = ({ city, onSelect, index }) => (
   >
     <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
       <img
-        src={getCityImage(city.city)}
+        src={city.imageUrl || `https://placehold.co/800x600/6366f1/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`}
         alt={city.city}
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         onError={(e) => {
-          (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop&crop=city`;
+          const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+          const colorIndex = index % colors.length;
+          (e.target as HTMLImageElement).src = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`;
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white">
         <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-1 sm:mb-2">{city.city}</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
@@ -69,7 +146,7 @@ const CityCard = ({ city, onSelect, index }) => (
       </div>
     </div>
     <div className="p-3 sm:p-4 lg:p-6">
-      <button className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base flex items-center justify-center gap-2">
+      <button className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 text-sm sm:text-base flex items-center justify-center gap-2">
         <span>Explore {city.city}</span>
         <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
       </button>
@@ -116,12 +193,11 @@ const LandingPage = () => {
     }
   };
 
-  // Fetch cities and calculate stats
+  // Fetch cities with real images
   useEffect(() => {
     const fetchCities = async () => {
       try {
         setLoading(true);
-        // Mock data for demonstration
         const mockCities = [
           { city: 'Nakuru', event_count: 12, venues: 6 },
           { city: 'Nairobi', event_count: 25, venues: 15 },
@@ -131,15 +207,37 @@ const LandingPage = () => {
           { city: 'Thika', event_count: 6, venues: 3 }
         ];
         
-        setCities(mockCities);
+        // Fetch real images for each city
+        const citiesWithImages = await Promise.all(
+          mockCities.map(async (city, index) => {
+            try {
+              // Add delay between requests to avoid rate limiting
+              if (index > 0) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+              }
+              const imageUrl = await searchCityImage(city.city, index);
+              return { ...city, imageUrl };
+            } catch (error) {
+              console.error(`Error fetching image for ${city.city}:`, error);
+              const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+              const colorIndex = index % colors.length;
+              return { 
+                ...city, 
+                imageUrl: `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`
+              };
+            }
+          })
+        );
+        
+        setCities(citiesWithImages);
 
         // Calculate stats
-        const totalEvents = mockCities.reduce((sum, city) => sum + city.event_count, 0);
-        const featuredVenues = mockCities.filter(city => city.event_count > 15).length;
+        const totalEvents = citiesWithImages.reduce((sum, city) => sum + city.event_count, 0);
+        const featuredVenues = citiesWithImages.filter(city => city.event_count > 15).length;
         setStats({
-          totalVenues: mockCities.length * 5,
+          totalVenues: citiesWithImages.length * 5,
           totalEvents,
-          activeCities: mockCities.length,
+          activeCities: citiesWithImages.length,
           featuredVenues,
         });
       } catch (err) {
@@ -182,7 +280,7 @@ const LandingPage = () => {
 
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
-      {/* Background Pattern (simplified) */}
+      {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       <div className="relative z-10">
