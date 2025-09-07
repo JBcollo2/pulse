@@ -14,49 +14,70 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// Interfaces
-interface Event {
-  id: number;
-  name: string;
-  description?: string;
-  date: string;
-  start_time: string;
-  end_time?: string;
-  city: string;
-  location: string;
-  amenities: string[];
-  image?: string;
-  category?: string;
-  featured: boolean;
-  status?: string;
-  organizer: {
-    id: number;
-    company_name: string;
-    company_logo?: string;
-    company_description?: string;
-  };
-  likes_count: number;
-}
-interface VenueLocation {
-  location: string;
-  city: string;
-  events: Event[];
-  totalEvents: number;
-  uniqueAmenities: string[];
-  topEvent?: Event;
-}
-interface LocationFilters {
-  city: string;
-  location?: string;
-  time_filter: 'upcoming' | 'today' | 'past' | 'all';
-  sort_by: 'date' | 'name';
-  sort_order: 'asc' | 'desc';
-}
+// Fetch real location image using Wikidata and OpenStreetMap
+const searchCityImage = async (cityName, index = 0) => {
+  try {
+    const formattedQuery = encodeURIComponent(cityName);
+    const url = `https://nominatim.openstreetmap.org/search?q=${formattedQuery}&format=json&addressdetails=1&limit=5&extratags=1&bounded=0`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'EventApp/1.0'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch location data');
+    const data = await response.json();
 
-// Helper function to get city image from Unsplash
-const getCityImage = (cityName: string, width: number = 800, height: number = 600) => {
-  const cleanCityName = cityName.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '+');
-  return `https://source.unsplash.com/${width}x${height}/?${cleanCityName}+city`;
+    if (!data || data.length === 0) {
+      const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+      const colorIndex = index % colors.length;
+      return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+    }
+    const sortedResults = data.sort((a, b) => {
+      const aScore = (a.importance || 0) + (a.address ? Object.keys(a.address).length * 0.1 : 0);
+      const bScore = (b.importance || 0) + (b.address ? Object.keys(b.address).length * 0.1 : 0);
+      return bScore - aScore;
+    });
+    const place = sortedResults[0];
+    const wikidataId = place.extratags?.wikidata;
+    let photoUrl = null;
+
+    if (wikidataId) {
+      const wikiImage = await fetchWikiImage(wikidataId);
+      if (wikiImage) {
+        photoUrl = wikiImage;
+      }
+    }
+
+    if (!photoUrl) {
+      const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+      const colorIndex = index % colors.length;
+      photoUrl = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+    }
+
+    return photoUrl;
+  } catch (error) {
+    console.error('Error fetching city image:', error);
+    const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+    const colorIndex = index % colors.length;
+    return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
+  }
+};
+
+const fetchWikiImage = async (wikidataId) => {
+  try {
+    const response = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
+    const data = await response.json();
+    const entity = data.entities[wikidataId];
+    const imageClaim = entity?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (imageClaim) {
+      const filename = encodeURIComponent(imageClaim.replace(/ /g, '_'));
+      return `https://commons.wikimedia.org/wiki/Special:FilePath/${filename}`;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching Wikidata image:', error);
+    return null;
+  }
 };
 
 // StatsCard Component with gradients
@@ -79,7 +100,7 @@ const StatsCard = ({ icon, value, label, gradient }) => (
   </motion.div>
 );
 
-// CityCard Component with gradients and responsive design
+// CityCard Component with real images and hover effects
 const CityCard = ({ city, onSelect, index }) => (
   <motion.div
     className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl transition-all duration-500 hover:transform hover:scale-105"
@@ -92,15 +113,16 @@ const CityCard = ({ city, onSelect, index }) => (
   >
     <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
       <img
-        src={getCityImage(city.city)}
+        src={city.imageUrl || `https://placehold.co/800x600/6366f1/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`}
         alt={city.city}
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
         onError={(e) => {
-          (e.target as HTMLImageElement).src = `https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop&crop=city`;
+          const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+          const colorIndex = index % colors.length;
+          (e.target as HTMLImageElement).src = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`;
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white">
         <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-1 sm:mb-2">{city.city}</h3>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
@@ -116,7 +138,7 @@ const CityCard = ({ city, onSelect, index }) => (
       </div>
     </div>
     <div className="p-3 sm:p-4 lg:p-6">
-      <Button className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base">
+      <Button className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-sm sm:text-base">
         <span>Explore {city.city}</span>
         <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
       </Button>
@@ -124,15 +146,11 @@ const CityCard = ({ city, onSelect, index }) => (
   </motion.div>
 );
 
-// Modern Venue Card Component with improved visibility and real API data
-const VenueCard = ({ venue, index, onViewDetails }: {
-  venue: VenueLocation;
-  index: number;
-  onViewDetails: (venue: VenueLocation) => void;
-}) => {
+// VenueCard Component with real images and hover effects
+const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const getAmenityIcon = (amenity: string) => {
-    const iconMap: Record<string, React.ReactNode> = {
+  const getAmenityIcon = (amenity) => {
+    const iconMap = {
       'wifi': <Wifi className="w-4 h-4" />,
       'parking': <Car className="w-4 h-4" />,
       'food': <Utensils className="w-4 h-4" />,
@@ -143,44 +161,27 @@ const VenueCard = ({ venue, index, onViewDetails }: {
     };
     return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
-  const getCategoryGradient = () => {
-    return 'from-blue-500 to-green-500';
-  };
-  const getCategoryIcon = () => {
-    return '🏢';
-  };
-  const formatDate = (dateString: string) => {
+  const getCategoryGradient = () => 'from-blue-500 to-green-500';
+  const getCategoryIcon = () => '🏢';
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString) => {
     if (!timeString) return '';
     const [hours, minutes] = timeString.split(':');
     const time = new Date();
     time.setHours(parseInt(hours), parseInt(minutes));
-    return time.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
-  // Get the next upcoming event or most recent event for display
   const getDisplayEvent = () => {
     if (!venue.events || venue.events.length === 0) return null;
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    // Sort events by date
     const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    // Find next upcoming event
     const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
-    // Return upcoming event or the most recent event
     return upcomingEvent || sortedEvents[sortedEvents.length - 1];
   };
-  // Get event statistics
   const getEventStats = () => {
     if (!venue.events || venue.events.length === 0) {
       return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
@@ -199,261 +200,224 @@ const VenueCard = ({ venue, index, onViewDetails }: {
   };
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
+
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{
-        y: -8,
-        scale: 1.02,
-        transition: { duration: 0.3, ease: "easeOut" }
-      }}
+      whileHover={{ y: -8, scale: 1.02 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(venue)}
     >
-      {/* Subtle Gradient Border Animation */}
-      <motion.div
-        className={`absolute inset-0 bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-30 rounded-3xl transition-opacity duration-500`}
-        style={{ padding: '1px' }}
-      >
-        <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
-      </motion.div>
-      {/* Content Container */}
-      <div className="relative z-10 p-0 h-full">
-        {/* Image Section with Improved Overlays */}
-        <div className="relative h-56 overflow-hidden rounded-t-3xl">
-          {/* Background Image */}
-          {displayEvent?.image ? (
-            <motion.img
-              src={displayEvent.image}
-              alt={venue.location}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
-                animate={{ opacity: [0.1, 0.2, 0.1] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              />
-              <span className="text-6xl font-bold text-white relative z-10 drop-shadow-2xl">
-                {venue.location.charAt(0)}
-              </span>
-            </div>
-          )}
-          {/* Lighter Dark Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          {/* Top Badges */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            {/* Popular Badge */}
-            {venue.totalEvents > 5 && (
-              <motion.div
-                className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient()} opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.9 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-              >
-                <Star className="w-3 h-3 fill-current" />
-                POPULAR
-              </motion.div>
-            )}
-          </div>
-          {/* Bottom Info Bar */}
-          <div className="absolute bottom-4 left-4 right-4">
+      <div className="relative h-56 overflow-hidden rounded-t-3xl">
+        {displayEvent?.image ? (
+          <motion.img
+            src={displayEvent.image}
+            alt={venue.location}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
             <motion.div
-              className="flex items-center justify-between"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
+              className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
+              animate={{ opacity: [0.1, 0.2, 0.1] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            <span className="text-6xl font-bold text-white relative z-10 drop-shadow-2xl">
+              {venue.location.charAt(0)}
+            </span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+          {venue.totalEvents > 5 && (
+            <motion.div
+              className="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-green-500 opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.9 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
             >
-              {/* Category Badge */}
-              <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                <span>{getCategoryIcon()}</span>
-                <span className="text-sm font-medium">Venue</span>
-              </div>
-              {/* Events Count with Upcoming */}
-              <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  {eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}
-                </span>
-              </div>
+              <Star className="w-3 h-3 fill-current" />
+              POPULAR
             </motion.div>
-          </div>
+          )}
         </div>
-        {/* Content Section */}
-        <div className="p-6 space-y-4">
-          {/* Title and Trending Indicator */}
-          <div className="flex items-start justify-between gap-3">
-            <motion.h3
-              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
-              style={{
-                backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
-                '--tw-gradient-from': '#3b82f6',
-                '--tw-gradient-to': '#10b981',
-                '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
-              } as React.CSSProperties}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {venue.location}
-            </motion.h3>
-            {eventStats.upcoming > 3 && (
-              <motion.div
-                className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
-              >
-                <TrendingUp className="w-3 h-3" />
-                ACTIVE
-              </motion.div>
-            )}
-          </div>
-          {/* Description */}
-          <motion.p
-            className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            {venue.city} - {eventStats.total} events hosted at this location
-            {eventStats.nextEventDate && (
-              <span className="block text-green-600 dark:text-green-400 font-medium mt-1">
-                Next event: {formatDate(eventStats.nextEventDate)}
-              </span>
-            )}
-          </motion.p>
-          {/* Event Details */}
+        <div className="absolute bottom-4 left-4 right-4">
           <motion.div
-            className="space-y-3"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            className="flex items-center justify-between"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
           >
-            {/* Location */}
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              </div>
-              <span className="text-sm font-medium truncate">{venue.city}</span>
+            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+              <span>{getCategoryIcon()}</span>
+              <span className="text-sm font-medium">Venue</span>
             </div>
-            {/* Next Event Date */}
-            {displayEvent && (
-              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                  <Clock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </div>
-                <span className="text-sm font-medium">
-                  {formatDate(displayEvent.date)}
-                  {displayEvent.start_time && ` at ${formatTime(displayEvent.start_time)}`}
-                </span>
-              </div>
-            )}
-            {/* Events Count with Status */}
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              </div>
+            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+              <Calendar className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {eventStats.total} Total Events
-                {eventStats.upcoming > 0 && (
-                  <span className="text-green-600 dark:text-green-400 ml-1">
-                    ({eventStats.upcoming} upcoming)
-                  </span>
-                )}
+                {eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}
               </span>
             </div>
           </motion.div>
-          {/* Amenities with Improved Visibility */}
-          {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
+        </div>
+      </div>
+      <div className="p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <motion.h3
+            className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+            style={{
+              backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+              '--tw-gradient-from': '#3b82f6',
+              '--tw-gradient-to': '#10b981',
+              '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
+            } as React.CSSProperties}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            {venue.location}
+          </motion.h3>
+          {eventStats.upcoming > 3 && (
             <motion.div
-              className="flex flex-wrap gap-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-90 text-white text-xs font-bold flex-shrink-0"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
             >
-              {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium`}
-                >
-                  {getAmenityIcon(amenity)}
-                  <span className="capitalize">{amenity}</span>
-                </div>
-              ))}
-              {venue.uniqueAmenities.length > 4 && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-                  +{venue.uniqueAmenities.length - 4} more
+              <TrendingUp className="w-3 h-3" />
+              ACTIVE
+            </motion.div>
+          )}
+        </div>
+        <motion.p
+          className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          {venue.city} - {eventStats.total} events hosted at this location
+          {eventStats.nextEventDate && (
+            <span className="block text-green-600 dark:text-green-400 font-medium mt-1">
+              Next event: {formatDate(eventStats.nextEventDate)}
+            </span>
+          )}
+        </motion.p>
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </div>
+            <span className="text-sm font-medium truncate">{venue.city}</span>
+          </div>
+          {displayEvent && (
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <Clock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </div>
+              <span className="text-sm font-medium">
+                {formatDate(displayEvent.date)}
+                {displayEvent.start_time && ` at ${formatTime(displayEvent.start_time)}`}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </div>
+            <span className="text-sm font-medium">
+              {eventStats.total} Total Events
+              {eventStats.upcoming > 0 && (
+                <span className="text-green-600 dark:text-green-400 ml-1">
+                  ({eventStats.upcoming} upcoming)
                 </span>
               )}
-            </motion.div>
-          )}
-          {/* Event Category from Latest Event */}
-          {displayEvent?.category && (
-            <motion.div
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
-            >
-              <Tag className="w-4 h-4" />
-              <span>Latest: {displayEvent.category}</span>
-            </motion.div>
-          )}
-          {/* Action Section */}
+            </span>
+          </div>
+        </motion.div>
+        {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
           <motion.div
-            className="flex items-center justify-between pt-2"
+            className="flex flex-wrap gap-2"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            {/* Event Statistics */}
-            <div className="flex flex-col">
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {eventStats.total}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  events
-                </span>
+            {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium"
+              >
+                {getAmenityIcon(amenity)}
+                <span className="capitalize">{amenity}</span>
               </div>
-              <div className="space-y-1 mt-1">
-                {eventStats.upcoming > 0 && (
-                  <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                    {eventStats.upcoming} upcoming
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Explore Venue Button */}
-            <motion.button
-              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
-              whileTap={{ scale: 0.95 }}
-              whileHover={{
-                boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
-                y: -1
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onViewDetails(venue);
-              }}
-            >
-              <Ticket className="w-4 h-4" />
-              <span>Explore Venue</span>
-            </motion.button>
+            ))}
+            {venue.uniqueAmenities.length > 4 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
+                +{venue.uniqueAmenities.length - 4} more
+              </span>
+            )}
           </motion.div>
-        </div>
+        )}
+        {displayEvent?.category && (
+          <motion.div
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Latest: {displayEvent.category}</span>
+          </motion.div>
+        )}
+        <motion.div
+          className="flex items-center justify-between pt-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                {eventStats.total}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                events
+              </span>
+            </div>
+            <div className="space-y-1 mt-1">
+              {eventStats.upcoming > 0 && (
+                <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                  {eventStats.upcoming} upcoming
+                </div>
+              )}
+            </div>
+          </div>
+          <motion.button
+            className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onViewDetails(venue);
+            }}
+          >
+            <Ticket className="w-4 h-4" />
+            <span>Explore Venue</span>
+          </motion.button>
+        </motion.div>
       </div>
-      {/* Subtle Hover Glow Effect */}
       <motion.div
-        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10`}
+        className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500 to-green-500 opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10"
         initial={{ scale: 0.8 }}
         animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
@@ -466,13 +430,13 @@ const VenueCard = ({ venue, index, onViewDetails }: {
 const VenuePage = () => {
   const [cities, setCities] = useState([]);
   const [selectedCity, setSelectedCity] = useState('');
-  const [venues, setVenues] = useState<VenueLocation[]>([]);
+  const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
-  const [selectedVenue, setSelectedVenue] = useState<VenueLocation | null>(null);
+  const [selectedVenue, setSelectedVenue] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -480,7 +444,7 @@ const VenuePage = () => {
     locations: [],
     time_filters: ['upcoming', 'today', 'past', 'all']
   });
-  const [filters, setFilters] = useState<LocationFilters>({
+  const [filters, setFilters] = useState({
     city: '',
     location: '',
     time_filter: 'upcoming',
@@ -496,7 +460,7 @@ const VenuePage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
-  // Animation variants
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -518,11 +482,11 @@ const VenuePage = () => {
       }
     }
   };
-  // Fetch cities on component mount
+
   useEffect(() => {
     fetchCities();
   }, []);
-  // Set initial city from URL params
+
   useEffect(() => {
     const cityFromParams = searchParams.get('city');
     if (cityFromParams && cities.length > 0) {
@@ -530,13 +494,13 @@ const VenuePage = () => {
       setFilters(prev => ({ ...prev, city: cityFromParams }));
     }
   }, [cities, searchParams]);
-  // Fetch events when city or filters change
+
   useEffect(() => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
   }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
-  // Infinite scroll observer
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -560,21 +524,46 @@ const VenuePage = () => {
       }
     };
   }, [currentPage, hasMore, isLoadingMore, selectedCity]);
+
   const fetchCities = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/cities`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch cities');
-      const data = await response.json();
-      setCities(data.cities || []);
-      const totalEvents = data.cities.reduce((sum, city) => sum + city.event_count, 0);
-      const featuredVenues = data.cities.filter(city => city.popular).length;
+      const mockCities = [
+        { city: 'Nakuru', event_count: 12, venues: 6 },
+        { city: 'Nairobi', event_count: 25, venues: 15 },
+        { city: 'Eldoret', event_count: 8, venues: 4 },
+        { city: 'Mombasa', event_count: 18, venues: 10 },
+        { city: 'Kisumu', event_count: 14, venues: 8 },
+        { city: 'Thika', event_count: 6, venues: 3 }
+      ];
+
+      const citiesWithImages = await Promise.all(
+        mockCities.map(async (city, index) => {
+          try {
+            if (index > 0) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            const imageUrl = await searchCityImage(city.city, index);
+            return { ...city, imageUrl };
+          } catch (error) {
+            console.error(`Error fetching image for ${city.city}:`, error);
+            const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+            const colorIndex = index % colors.length;
+            return {
+              ...city,
+              imageUrl: `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`
+            };
+          }
+        })
+      );
+
+      setCities(citiesWithImages);
+      const totalEvents = citiesWithImages.reduce((sum, city) => sum + city.event_count, 0);
+      const featuredVenues = citiesWithImages.filter(city => city.event_count > 15).length;
       setStats({
-        totalVenues: data.cities.length * 5,
+        totalVenues: citiesWithImages.length * 5,
         totalEvents,
-        activeCities: data.cities.length,
+        activeCities: citiesWithImages.length,
         featuredVenues,
       });
     } catch (err) {
@@ -584,6 +573,7 @@ const VenuePage = () => {
       setLoading(false);
     }
   };
+
   const fetchCityEvents = async (page = 1, reset = false) => {
     if (!selectedCity) return;
     try {
@@ -653,6 +643,7 @@ const VenuePage = () => {
       setIsLoadingMore(false);
     }
   };
+
   const handleCitySelect = (city) => {
     setSelectedCity(city);
     setFilters(prev => ({ ...prev, city }));
@@ -661,20 +652,24 @@ const VenuePage = () => {
     setCurrentPage(1);
     setHasMore(true);
   };
+
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setVenues([]);
     setCurrentPage(1);
     setHasMore(true);
   };
+
   const handleViewDetails = (venue) => {
     setSelectedVenue(venue);
   };
+
   const handleGetDirections = (venue) => {
     const query = encodeURIComponent(`${venue.location}, ${venue.city}`);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     window.open(mapsUrl, '_blank');
   };
+
   const handleShare = (venue) => {
     const shareData = {
       title: venue.location,
@@ -687,6 +682,7 @@ const VenuePage = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   };
+
   const filteredVenues = useMemo(() => {
     return venues.filter(venue => {
       const matchesSearch = !searchQuery ||
@@ -695,6 +691,7 @@ const VenuePage = () => {
       return matchesSearch;
     });
   }, [venues, searchQuery]);
+
   const sortedVenues = useMemo(() => {
     const sorted = [...filteredVenues];
     switch (activeTab) {
@@ -708,6 +705,7 @@ const VenuePage = () => {
         return sorted;
     }
   }, [filteredVenues, activeTab]);
+
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
