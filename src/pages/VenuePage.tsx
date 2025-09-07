@@ -45,97 +45,103 @@ interface VenueLocation {
   totalEvents: number;
   uniqueAmenities: string[];
   topEvent?: Event;
-  avgRating: number;
 }
 
 interface LocationFilters {
   city: string;
   location?: string;
-  amenity?: string;
   time_filter: 'upcoming' | 'today' | 'past' | 'all';
   sort_by: 'date' | 'name';
   sort_order: 'asc' | 'desc';
 }
 
-// StatsCard Component with gradients
+// Function to get city image from Unsplash
+const getCityImage = (cityName: string) => {
+  // Using Unsplash's free random image service with city search
+  return `https://source.unsplash.com/800x600/?${encodeURIComponent(cityName)},city,cityscape,urban`;
+};
+
+// StatsCard Component with updated gradients
 const StatsCard = ({ icon, value, label, gradient }) => (
   <motion.div 
-    className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 group"
-    whileHover={{ scale: 1.02 }}
+    className="relative overflow-hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl p-4 sm:p-6 shadow-lg border border-white/20 dark:border-gray-800/50 hover:shadow-xl transition-all duration-300 group"
+    whileHover={{ scale: 1.02, y: -2 }}
     whileTap={{ scale: 0.98 }}
   >
     {/* Background Pattern */}
     <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
     
     <div className="relative z-10 flex items-center gap-3">
-      <div className={`p-3 rounded-xl ${gradient} shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
+      <div className={`p-3 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white shadow-lg group-hover:rotate-12 transition-transform duration-500`}>
         {icon}
       </div>
       <div>
-        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">{value}</div>
+        <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">{value}</div>
         <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</div>
       </div>
     </div>
   </motion.div>
 );
 
-// CityCard Component with gradients
+// CityCard Component with updated gradients and responsive design
 const CityCard = ({ city, onSelect, index }) => (
   <motion.div
-    className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl transition-all duration-500 hover:transform hover:scale-105"
+    className="group bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-800/50 cursor-pointer hover:shadow-xl transition-all duration-500"
     onClick={() => onSelect(city.city)}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay: index * 0.1 }}
-    whileHover={{ scale: 1.05 }}
+    whileHover={{ scale: 1.02, y: -4 }}
     whileTap={{ scale: 0.98 }}
   >
-    <div className="relative h-48 overflow-hidden">
+    <div className="relative h-40 sm:h-48 overflow-hidden">
       <img
-        src={city.image || `https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&h=600&fit=crop&crop=city`}
+        src={getCityImage(city.city)}
         alt={city.city}
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        loading="lazy"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-green-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-teal-400/20 to-mint-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
-      <div className="absolute bottom-4 left-4 right-4 text-white">
-        <h3 className="text-xl font-bold mb-2">{city.city}</h3>
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-            <Building className="w-4 h-4" />
+      <div className="absolute bottom-3 left-3 right-3 text-white">
+        <h3 className="text-lg sm:text-xl font-bold mb-2">{city.city}</h3>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
+          <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+            <Building className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>{city.venues || city.event_count || 0} venues</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>{city.event_count} events</span>
           </div>
         </div>
       </div>
     </div>
-    <div className="p-6">
-      <Button className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105">
+    <div className="p-4 sm:p-6">
+      <Button className="w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base">
         <span>Explore {city.city}</span>
-        <ArrowRight className="w-4 h-4 ml-2" />
+        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
       </Button>
     </div>
   </motion.div>
 );
 
-// VenueCard Component with gradients
+// VenueCard Component with updated gradients and responsive design
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
+  
   const getAmenityIcon = (amenity: string) => {
     const iconMap = {
-      'wifi': <Wifi className="w-4 h-4" />,
-      'parking': <Car className="w-4 h-4" />,
-      'food': <Utensils className="w-4 h-4" />,
-      'music': <Music className="w-4 h-4" />,
-      'coffee': <Coffee className="w-4 h-4" />,
-      'security': <ShieldCheck className="w-4 h-4" />,
-      'activities': <Activity className="w-4 h-4" />,
+      'wifi': <Wifi className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'parking': <Car className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'food': <Utensils className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'music': <Music className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'coffee': <Coffee className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'security': <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4" />,
+      'activities': <Activity className="w-3 h-3 sm:w-4 sm:h-4" />,
     };
-    return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
+    return iconMap[amenity.toLowerCase()] || <Star className="w-3 h-3 sm:w-4 sm:h-4" />;
   };
 
   const getDisplayEvent = () => {
@@ -164,6 +170,7 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
 
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -175,94 +182,96 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
 
   return (
     <motion.div
-      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-500 relative"
+      className="group bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-800/50 cursor-pointer hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(venue)}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
       
-      <div className="relative h-56 overflow-hidden">
+      <div className="relative h-48 sm:h-56 overflow-hidden">
         {displayEvent?.image ? (
           <img
             src={displayEvent.image}
             alt={venue.location}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30 flex items-center justify-center text-4xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+          <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/30 dark:via-teal-900/30 dark:to-mint-900/30 flex items-center justify-center text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
             {venue.location.charAt(0)}
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-teal-400/10 to-mint-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
-        <div className="absolute bottom-4 left-4 right-4 text-white">
-          <div className="flex justify-between items-end">
-            <div className="px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-full text-sm font-medium border border-white/20">
+        <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 text-white">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
+            <div className="px-2 sm:px-3 py-1 sm:py-1.5 bg-black/50 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium border border-white/20">
               {venue.location}
             </div>
-            <div className="px-3 py-1.5 bg-gradient-to-r from-blue-500/80 to-green-500/80 backdrop-blur-sm rounded-full text-sm flex items-center gap-1 border border-white/20 shadow-lg shadow-blue-500/25">
-              <Calendar className="w-4 h-4" />
+            <div className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-emerald-400/80 via-teal-400/80 to-mint-500/80 backdrop-blur-sm rounded-full text-xs sm:text-sm flex items-center gap-1 border border-white/20 shadow-lg shadow-emerald-500/25">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}</span>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="relative p-6 space-y-4">
-        <h3 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent line-clamp-1">
+      <div className="relative p-4 sm:p-6 space-y-3 sm:space-y-4">
+        <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent line-clamp-1">
           {venue.location}
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
           {venue.city} - {eventStats.total} events hosted
           {eventStats.nextEventDate && (
-            <span className="block text-blue-600 dark:text-blue-300 font-medium mt-1">
+            <span className="block text-emerald-600 dark:text-emerald-300 font-medium mt-1">
               Next event: {formatDate(eventStats.nextEventDate)}
             </span>
           )}
         </p>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1 sm:gap-2">
           {venue.uniqueAmenities?.slice(0, 3).map((amenity, idx) => (
-            <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 text-gray-700 dark:text-gray-300 rounded-full text-xs border border-blue-200/50 dark:border-gray-600">
+            <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 text-gray-700 dark:text-gray-300 rounded-full text-xs border border-emerald-200/50 dark:border-gray-600">
               {getAmenityIcon(amenity)}
-              <span className="capitalize">{amenity}</span>
+              <span className="capitalize hidden sm:inline">{amenity}</span>
             </div>
           ))}
           {venue.uniqueAmenities?.length > 3 && (
             <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600">
-              +{venue.uniqueAmenities.length - 3} more
+              +{venue.uniqueAmenities.length - 3}
             </span>
           )}
         </div>
         
         <div className="flex items-center justify-between pt-2">
           <div>
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">{eventStats.total}</div>
+            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">{eventStats.total}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400">events</div>
             {eventStats.upcoming > 0 && (
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-300">
+              <div className="text-sm font-medium text-emerald-600 dark:text-emerald-300">
                 {eventStats.upcoming} upcoming
               </div>
             )}
           </div>
           <Button
-            className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105"
+            className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105 text-sm"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onViewDetails(venue);
             }}
           >
-            <Ticket className="w-4 h-4 mr-2" />
-            Explore
+            <Ticket className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Explore</span>
+            <span className="sm:hidden">Go</span>
           </Button>
         </div>
       </div>
@@ -286,13 +295,11 @@ const VenuePage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [availableFilters, setAvailableFilters] = useState({
     locations: [],
-    amenities: [],
     time_filters: ['upcoming', 'today', 'past', 'all']
   });
   const [filters, setFilters] = useState<LocationFilters>({
     city: '',
     location: '',
-    amenity: '',
     time_filter: 'upcoming',
     sort_by: 'date',
     sort_order: 'asc'
@@ -350,7 +357,7 @@ const VenuePage = () => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
-  }, [selectedCity, filters.location, filters.amenity, filters.time_filter, filters.sort_by, filters.sort_order]);
+  }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -414,7 +421,6 @@ const VenuePage = () => {
         page: page.toString(),
         per_page: '20',
         ...(filters.location && { location: filters.location }),
-        ...(filters.amenity && { amenity: filters.amenity }),
         time_filter: filters.time_filter,
         sort_by: filters.sort_by,
         sort_order: filters.sort_order
@@ -435,8 +441,7 @@ const VenuePage = () => {
             events: [],
             totalEvents: 0,
             uniqueAmenities: new Set(),
-            topEvent: null,
-            avgRating: 4.0 + Math.random() * 1.0
+            topEvent: null
           });
         }
         const venue = venueMap.get(key);
@@ -463,7 +468,6 @@ const VenuePage = () => {
       setHasMore(data.pagination.has_next);
       setAvailableFilters(data.available_filters || {
         locations: [],
-        amenities: [],
         time_filters: ['upcoming', 'today', 'past', 'all']
       });
     } catch (err) {
@@ -529,7 +533,7 @@ const VenuePage = () => {
       case 'trending':
         return sorted.sort((a, b) => b.totalEvents - a.totalEvents);
       case 'top-rated':
-        return sorted.sort((a, b) => b.avgRating - a.avgRating);
+        return sorted.sort((a, b) => b.totalEvents - a.totalEvents);
       case 'nearby':
         return sorted.sort(() => Math.random() - 0.5);
       default:
@@ -545,115 +549,115 @@ const VenuePage = () => {
       <div className="relative z-10">
         <Navbar />
         
-        <main className="py-12 pt-24 relative">
-          <div className="container mx-auto px-4">
+        <main className="py-6 sm:py-12 pt-20 sm:pt-24 relative">
+          <div className="container mx-auto px-3 sm:px-4">
             {!selectedCity ? (
               <motion.div
-                className="mb-12"
+                className="mb-8 sm:mb-12"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
               >
-                <motion.div variants={itemVariants} className="text-center mb-16">
-                  <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white mb-6 shadow-lg shadow-blue-500/25">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="text-sm font-medium">Discover Amazing Venues</span>
+                <motion.div variants={itemVariants} className="text-center mb-12 sm:mb-16">
+                  <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white mb-4 sm:mb-6 shadow-lg shadow-emerald-500/25">
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm font-medium">Discover Amazing Venues</span>
                   </div>
-                  <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                  <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
                     Find Perfect<br />Event Venues
                   </h1>
-                  <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8 leading-relaxed">
+                  <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
                     Explore thousands of unique venues across cities worldwide with state-of-the-art facilities and amenities.
                   </p>
-                  <div className="max-w-2xl mx-auto mb-12">
+                  <div className="max-w-2xl mx-auto mb-8 sm:mb-12 px-3 sm:px-0">
                     <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                       <input
                         type="text"
                         placeholder="Search for cities..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-6 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
+                        className="w-full pl-10 sm:pl-12 pr-4 sm:pr-6 py-3 sm:py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-lg hover:shadow-xl transition-all duration-300"
                       />
-                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-green-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-mint-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                     </div>
                   </div>
                 </motion.div>
                 
-                <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-12 sm:mb-16">
                   <StatsCard
-                    icon={<Building className="w-6 h-6 text-white" />}
+                    icon={<Building className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                     value={stats.totalVenues}
                     label="Total Venues"
-                    gradient="bg-gradient-to-br from-blue-500 to-blue-600"
+                    gradient="bg-gradient-to-br from-emerald-500 to-emerald-600"
                   />
                   <StatsCard
-                    icon={<Calendar className="w-6 h-6 text-white" />}
+                    icon={<Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                     value={stats.totalEvents}
                     label="Events Hosted"
-                    gradient="bg-gradient-to-br from-green-500 to-green-600"
+                    gradient="bg-gradient-to-br from-teal-500 to-teal-600"
                   />
                   <StatsCard
-                    icon={<MapPin className="w-6 h-6 text-white" />}
+                    icon={<MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                     value={stats.activeCities}
                     label="Active Cities"
-                    gradient="bg-gradient-to-br from-purple-500 to-purple-600"
+                    gradient="bg-gradient-to-br from-mint-500 to-mint-600"
                   />
                   <StatsCard
-                    icon={<Star className="w-6 h-6 text-white" />}
+                    icon={<Star className="w-5 h-5 sm:w-6 sm:h-6 text-white" />}
                     value={stats.featuredVenues}
                     label="Featured Venues"
-                    gradient="bg-gradient-to-br from-orange-500 to-orange-600"
+                    gradient="bg-gradient-to-br from-emerald-400 to-teal-500"
                   />
                 </motion.div>
                 
                 <motion.div variants={itemVariants}>
-                  <div className="flex items-center justify-between mb-8">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
                     <div>
-                      <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                      <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
                         Explore Cities
                       </h2>
-                      <p className="text-gray-600 dark:text-gray-300">
+                      <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
                         {cities.filter(city => city.city.toLowerCase().includes(searchQuery.toLowerCase())).length} cities available
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-200/50 dark:border-gray-600">
-                      <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                      <span className="text-sm font-medium text-blue-600 dark:text-blue-300">Popular Destinations</span>
+                    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-mint-500/10 border border-emerald-200/50 dark:border-gray-600">
+                      <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-300" />
+                      <span className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-300">Popular Destinations</span>
                     </div>
                   </div>
                   
                   {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {Array(6).fill(0).map((_, i) => (
-                        <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 animate-pulse">
-                          <div className="h-48 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
-                          <div className="p-6 space-y-3">
-                            <Skeleton className="h-6 w-3/4 bg-gray-300 dark:bg-gray-600 rounded" />
+                        <div key={i} className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-800/50 animate-pulse">
+                          <div className="h-40 sm:h-48 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
+                          <div className="p-4 sm:p-6 space-y-3">
+                            <Skeleton className="h-5 sm:h-6 w-3/4 bg-gray-300 dark:bg-gray-600 rounded" />
                             <Skeleton className="h-4 w-1/2 bg-gray-300 dark:bg-gray-600 rounded" />
-                            <Skeleton className="h-10 w-full bg-gray-300 dark:bg-gray-600 rounded-xl" />
+                            <Skeleton className="h-8 sm:h-10 w-full bg-gray-300 dark:bg-gray-600 rounded-xl" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : error ? (
-                    <div className="text-center py-20">
+                    <div className="text-center py-16 sm:py-20">
                       <div className="relative inline-block mb-6">
-                        <div className="text-6xl animate-bounce">⚠️</div>
-                        <div className="absolute -top-2 -right-2 w-4 h-4 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-ping"></div>
+                        <div className="text-4xl sm:text-6xl animate-bounce">⚠️</div>
+                        <div className="absolute -top-2 -right-2 w-3 h-3 sm:w-4 sm:h-4 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-ping"></div>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">Something went wrong</h3>
-                      <p className="text-red-500 text-lg mb-6">{error}</p>
+                      <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">Something went wrong</h3>
+                      <p className="text-red-500 text-base sm:text-lg mb-6">{error}</p>
                       <Button 
                         onClick={fetchCities}
-                        className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105"
+                        className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105"
                       >
                         <RefreshCw className="w-4 h-4 mr-2" />
                         Try Again
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {cities
                         .filter(city => city.city.toLowerCase().includes(searchQuery.toLowerCase()))
                         .map((city, index) => (
@@ -674,24 +678,24 @@ const VenuePage = () => {
                 animate="visible"
                 variants={containerVariants}
               >
-                <motion.div variants={itemVariants} className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
+                <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <Button
                       variant="outline"
                       onClick={() => {
                         setSelectedCity('');
                         setSearchParams({});
                       }}
-                      className="border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 transition-all duration-300"
+                      className="border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:via-teal-50 hover:to-mint-50 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20 transition-all duration-300 text-sm sm:text-base"
                     >
                       <ChevronLeft className="w-4 h-4 mr-2" />
                       Back to Cities
                     </Button>
                     <div>
-                      <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                      <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
                         {selectedCity}
                       </h2>
-                      <p className="text-gray-600 dark:text-gray-300">
+                      <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
                         {venues.length} venues found
                       </p>
                     </div>
@@ -701,7 +705,7 @@ const VenuePage = () => {
                       variant="outline"
                       onClick={() => fetchCityEvents(1, true)}
                       disabled={loading}
-                      className="border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 transition-all duration-300"
+                      className="border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-emerald-50 hover:via-teal-50 hover:to-mint-50 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20 transition-all duration-300 text-sm sm:text-base"
                     >
                       <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                       Refresh
@@ -709,9 +713,9 @@ const VenuePage = () => {
                   </div>
                 </motion.div>
                 
-                <motion.div variants={itemVariants} className="mb-8 space-y-4">
-                  <div className="flex flex-col lg:flex-row gap-4">
-                    <div className="flex-1 max-w-md">
+                <motion.div variants={itemVariants} className="mb-6 sm:mb-8 space-y-4">
+                  <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
+                    <div className="flex-1 max-w-full lg:max-w-md">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
@@ -719,14 +723,14 @@ const VenuePage = () => {
                           placeholder="Search venues..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:shadow-md transition-all duration-300"
+                          className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm hover:shadow-md transition-all duration-300 text-sm sm:text-base"
                         />
                       </div>
                     </div>
                     <select
                       value={filters.location}
                       onChange={(e) => handleFilterChange('location', e.target.value)}
-                      className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300"
+                      className="px-3 sm:px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-emerald-400 shadow-sm hover:shadow-md transition-all duration-300 text-sm sm:text-base"
                     >
                       <option value="">All Locations</option>
                       {availableFilters.locations?.map(location => (
@@ -734,19 +738,9 @@ const VenuePage = () => {
                       ))}
                     </select>
                     <select
-                      value={filters.amenity}
-                      onChange={(e) => handleFilterChange('amenity', e.target.value)}
-                      className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300"
-                    >
-                      <option value="">All Amenities</option>
-                      {availableFilters.amenities?.map(amenity => (
-                        <option key={amenity} value={amenity}>{amenity}</option>
-                      ))}
-                    </select>
-                    <select
                       value={filters.time_filter}
                       onChange={(e) => handleFilterChange('time_filter', e.target.value)}
-                      className="px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-blue-400 shadow-sm hover:shadow-md transition-all duration-300"
+                      className="px-3 sm:px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:border-emerald-400 shadow-sm hover:shadow-md transition-all duration-300 text-sm sm:text-base"
                     >
                       <option value="upcoming">Upcoming Events</option>
                       <option value="today">Today</option>
@@ -758,17 +752,17 @@ const VenuePage = () => {
                         variant={viewMode === 'grid' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setViewMode('grid')}
-                        className={viewMode === 'grid' ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20'}
+                        className={viewMode === 'grid' ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white shadow-lg shadow-emerald-500/25' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:via-teal-50 hover:to-mint-50 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20'}
                       >
-                        <Grid className="w-4 h-4" />
+                        <Grid className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant={viewMode === 'list' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setViewMode('list')}
-                        className={viewMode === 'list' ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20'}
+                        className={viewMode === 'list' ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 text-white shadow-lg shadow-emerald-500/25' : 'text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:via-teal-50 hover:to-mint-50 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20'}
                       >
-                        <List className="w-4 h-4" />
+                        <List className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </div>
@@ -776,30 +770,30 @@ const VenuePage = () => {
                 
                 <motion.div variants={itemVariants}>
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-lg">
-                      <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300">All Venues</TabsTrigger>
-                      <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300">Trending</TabsTrigger>
-                      <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300">Top Rated</TabsTrigger>
-                      <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300">Popular</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-lg overflow-x-auto">
+                      <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">All Venues</TabsTrigger>
+                      <TabsTrigger value="trending" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Trending</TabsTrigger>
+                      <TabsTrigger value="top-rated" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Popular</TabsTrigger>
+                      <TabsTrigger value="nearby" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-400 data-[state=active]:via-teal-400 data-[state=active]:to-mint-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Featured</TabsTrigger>
                     </TabsList>
-                    <TabsContent value={activeTab} className="mt-6">
+                    <TabsContent value={activeTab} className="mt-4 sm:mt-6">
                       {loading ? (
-                        <div className={`grid gap-6 ${
+                        <div className={`grid gap-4 sm:gap-6 ${
                           viewMode === 'grid'
-                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                             : 'grid-cols-1 max-w-4xl mx-auto'
                         }`}>
                           {Array(6).fill(0).map((_, index) => (
-                            <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 animate-pulse">
-                              <div className="h-56 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
-                              <div className="p-6 space-y-4">
-                                <Skeleton className="h-6 w-3/4 bg-gray-300 dark:bg-gray-600 rounded" />
+                            <div key={index} className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-800/50 animate-pulse">
+                              <div className="h-48 sm:h-56 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
+                              <div className="p-4 sm:p-6 space-y-4">
+                                <Skeleton className="h-5 sm:h-6 w-3/4 bg-gray-300 dark:bg-gray-600 rounded" />
                                 <Skeleton className="h-4 w-1/2 bg-gray-300 dark:bg-gray-600 rounded" />
                                 <div className="flex gap-2">
-                                  <Skeleton className="h-6 w-16 bg-gray-300 dark:bg-gray-600 rounded-full" />
-                                  <Skeleton className="h-6 w-16 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                                  <Skeleton className="h-5 sm:h-6 w-12 sm:w-16 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                                  <Skeleton className="h-5 sm:h-6 w-12 sm:w-16 bg-gray-300 dark:bg-gray-600 rounded-full" />
                                 </div>
-                                <Skeleton className="h-10 w-full bg-gray-300 dark:bg-gray-600 rounded-xl" />
+                                <Skeleton className="h-8 sm:h-10 w-full bg-gray-300 dark:bg-gray-600 rounded-xl" />
                               </div>
                             </div>
                           ))}
@@ -807,41 +801,41 @@ const VenuePage = () => {
                       ) : (
                         <>
                           {error && (
-                            <div className="text-center py-8 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl border border-red-200 dark:border-red-800 shadow-lg">
+                            <div className="text-center py-6 sm:py-8 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl border border-red-200 dark:border-red-800 shadow-lg">
                               <div className="relative inline-block mb-4">
-                                <div className="text-4xl animate-bounce">⚠️</div>
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-ping"></div>
+                                <div className="text-3xl sm:text-4xl animate-bounce">⚠️</div>
+                                <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-ping"></div>
                               </div>
-                              <p className="text-lg font-medium text-red-600 dark:text-red-400">{error}</p>
+                              <p className="text-base sm:text-lg font-medium text-red-600 dark:text-red-400">{error}</p>
                             </div>
                           )}
                           {!error && sortedVenues.length === 0 && (
-                            <div className="text-center py-20">
+                            <div className="text-center py-16 sm:py-20">
                               <div className="relative inline-block mb-6">
-                                <div className="text-8xl animate-bounce">🏢</div>
-                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-2 bg-gradient-to-r from-blue-500/20 to-green-500/20 rounded-full blur-sm"></div>
+                                <div className="text-6xl sm:text-8xl animate-bounce">🏢</div>
+                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 sm:w-16 h-2 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-mint-500/20 rounded-full blur-sm"></div>
                               </div>
-                              <h3 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                              <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
                                 No venues found
                               </h3>
-                              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 px-4">
                                 Try adjusting your search or filters to discover amazing venues
                               </p>
                               <Button
                                 onClick={() => {
                                   setSearchQuery('');
-                                  setFilters(prev => ({ ...prev, location: '', amenity: '' }));
+                                  setFilters(prev => ({ ...prev, location: '' }));
                                 }}
-                                className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105"
+                                className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105"
                               >
                                 <RefreshCw className="w-4 h-4 mr-2" />
                                 Clear Filters
                               </Button>
                             </div>
                           )}
-                          <div className={`grid gap-6 ${
+                          <div className={`grid gap-4 sm:gap-6 ${
                             viewMode === 'grid'
-                              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                              ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                               : 'grid-cols-1 max-w-4xl mx-auto'
                           }`}>
                             <AnimatePresence>
@@ -856,22 +850,22 @@ const VenuePage = () => {
                             </AnimatePresence>
                           </div>
                           {isLoadingMore && (
-                            <div className="flex justify-center items-center py-12">
-                              <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg">
+                            <div className="flex justify-center items-center py-8 sm:py-12">
+                              <div className="flex items-center gap-3 px-4 sm:px-6 py-2 sm:py-3 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 shadow-lg">
                                 <div className="relative">
-                                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                                  <div className="absolute inset-0 h-5 w-5 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-20 animate-pulse"></div>
+                                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-emerald-500" />
+                                  <div className="absolute inset-0 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-mint-500 opacity-20 animate-pulse"></div>
                                 </div>
-                                <span className="text-gray-600 dark:text-gray-300 font-medium">Loading more venues...</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">Loading more venues...</span>
                               </div>
                             </div>
                           )}
                           <div ref={loadMoreRef} className="h-10 w-full" />
                           {!hasMore && sortedVenues.length > 0 && (
-                            <div className="text-center py-12">
-                              <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-full border border-blue-200/50 dark:border-gray-600 shadow-lg">
-                                <Zap className="w-4 h-4 text-blue-600 dark:text-blue-300 mr-2" />
-                                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                            <div className="text-center py-8 sm:py-12">
+                              <div className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 rounded-full border border-emerald-200/50 dark:border-gray-600 shadow-lg">
+                                <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-300 mr-2" />
+                                <span className="text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">
                                   You've explored all venues in {selectedCity}!
                                 </span>
                               </div>
@@ -889,153 +883,146 @@ const VenuePage = () => {
         
         {/* Enhanced Venue Details Modal */}
         <Dialog open={!!selectedVenue} onOpenChange={() => setSelectedVenue(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-white/20 dark:border-gray-800/50 shadow-2xl mx-3 sm:mx-auto">
             <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+              <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
                 {selectedVenue?.location}
               </DialogTitle>
-              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30">
-                  <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                </div>
-                <span className="font-medium">{selectedVenue?.city}</span>
-                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 rounded-full">
-                  <Star className="w-3 h-3 text-green-600 dark:text-green-300 fill-current" />
-                  <span className="text-xs font-medium text-green-700 dark:text-green-300">
-                    {selectedVenue?.avgRating.toFixed(1)}
-                  </span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-300">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/30 dark:via-teal-900/30 dark:to-mint-900/30">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-300" />
+                  </div>
+                  <span className="font-medium text-sm sm:text-base">{selectedVenue?.city}</span>
                 </div>
               </div>
             </DialogHeader>
             {selectedVenue && (
-              <div className="space-y-6 pt-4">
+              <div className="space-y-4 sm:space-y-6 pt-4">
                 {selectedVenue.topEvent?.image && (
-                  <div className="relative h-64 rounded-xl overflow-hidden shadow-lg">
+                  <div className="relative h-48 sm:h-64 rounded-xl overflow-hidden shadow-lg">
                     <img
                       src={selectedVenue.topEvent.image}
                       alt={selectedVenue.location}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-green-500/10" />
-                    <div className="absolute bottom-4 left-4 right-4 flex justify-between">
-                      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg">
-                        <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.avgRating.toFixed(1)}</span>
-                      </div>
-                      <div className="bg-gradient-to-r from-blue-500/90 to-green-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg shadow-blue-500/25">
-                        <Calendar className="w-4 h-4" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-mint-500/10" />
+                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 flex flex-col sm:flex-row justify-between gap-2">
+                      <div className="bg-gradient-to-r from-emerald-400/90 via-teal-400/90 to-mint-500/90 backdrop-blur-sm text-white px-3 sm:px-4 py-2 rounded-full flex items-center gap-2 border border-white/20 shadow-lg shadow-emerald-500/25 text-sm">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="font-medium">{selectedVenue.totalEvents} Events</span>
                       </div>
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                      <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25">
-                          <Building className="w-4 h-4" />
+                    <div className="bg-gradient-to-br from-white/80 to-emerald-50/80 dark:from-gray-800/80 dark:to-emerald-900/20 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg">
+                      <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <div className="p-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25">
+                          <Building className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Venue Details
                       </h4>
                       <div className="space-y-3">
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300">Location:</span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.location}</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-sm">Location:</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{selectedVenue.location}</span>
                         </div>
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300">City:</span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">{selectedVenue.city}</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-sm">City:</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{selectedVenue.city}</span>
                         </div>
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300">Total Events:</span>
-                          <span className="font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">{selectedVenue.totalEvents}</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-sm">Total Events:</span>
+                          <span className="font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent text-sm">{selectedVenue.totalEvents}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/20 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                      <h4 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                        <div className="p-2 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/25">
-                          <Award className="w-4 h-4" />
+                    <div className="bg-gradient-to-br from-white/80 to-teal-50/80 dark:from-gray-800/80 dark:to-teal-900/20 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg">
+                      <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                        <div className="p-2 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/25">
+                          <Award className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Available Amenities
                       </h4>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {selectedVenue.uniqueAmenities.map((amenity, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center gap-2 p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
+                            className="flex items-center gap-2 p-2 sm:p-3 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105"
                           >
                             {(() => {
                               const iconMap = {
-                                'wifi': <Wifi className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-                                'parking': <Car className="w-4 h-4 text-green-600 dark:text-green-400" />,
-                                'food': <Utensils className="w-4 h-4 text-orange-600 dark:text-orange-400" />,
-                                'music': <Music className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
-                                'coffee': <Coffee className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
-                                'security': <ShieldCheck className="w-4 h-4 text-red-600 dark:text-red-400" />,
-                                'activities': <Activity className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />,
+                                'wifi': <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400" />,
+                                'parking': <Car className="w-3 h-3 sm:w-4 sm:h-4 text-teal-600 dark:text-teal-400" />,
+                                'food': <Utensils className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600 dark:text-orange-400" />,
+                                'music': <Music className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400" />,
+                                'coffee': <Coffee className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />,
+                                'security': <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />,
+                                'activities': <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600 dark:text-indigo-400" />,
                               };
-                              return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
+                              return iconMap[amenity.toLowerCase()] || <Star className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />;
                             })()}
-                            <span className="capitalize text-sm font-medium text-gray-700 dark:text-gray-300">{amenity}</span>
+                            <span className="capitalize text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{amenity}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-purple-900/20 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                    <div className="bg-gradient-to-br from-white/80 to-mint-50/80 dark:from-gray-800/80 dark:to-mint-900/20 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/20 dark:border-gray-700/50 shadow-lg">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                          <div className="p-2 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25">
-                            <Calendar className="w-4 h-4" />
+                        <h4 className="text-base sm:text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                          <div className="p-2 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 text-white shadow-lg shadow-mint-500/25">
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                           </div>
                           Events at this Venue
                         </h4>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
+                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 px-2 sm:px-3 py-1 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-full">
                           {selectedVenue.events.length > 5 ? `Showing 5 of ${selectedVenue.events.length}` : `${selectedVenue.events.length} events`}
                         </div>
                       </div>
                       {selectedVenue.events.length > 0 ? (
-                        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                        <div className="space-y-3 max-h-60 sm:max-h-80 overflow-y-auto pr-2">
                           {selectedVenue.events.slice(0, 10).map((event, index) => (
                             <div
                               key={event.id || index}
-                              className="p-4 bg-white dark:bg-gray-700 rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 transition-all duration-300 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md hover:scale-105"
+                              className="p-3 sm:p-4 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-lg hover:bg-gradient-to-r hover:from-emerald-50/80 hover:via-teal-50/80 hover:to-mint-50/80 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20 transition-all duration-300 border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md hover:scale-105"
                             >
                               <div className="flex items-start justify-between mb-2">
-                                <h5 className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 mr-2 line-clamp-2">
+                                <h5 className="font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100 flex-1 mr-2 line-clamp-2">
                                   {event.name}
                                 </h5>
                                 {event.status && (
                                   <span className={`px-2 py-1 text-xs rounded-full whitespace-nowrap font-medium ${
                                     event.status === 'active'
-                                      ? 'bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-300'
+                                      ? 'bg-gradient-to-r from-green-100/80 to-green-200/80 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-300'
                                       : event.status === 'completed'
-                                      ? 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-900/30 dark:to-gray-800/30 text-gray-700 dark:text-gray-300'
-                                      : 'bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900/30 dark:to-yellow-800/30 text-yellow-700 dark:text-yellow-300'
+                                      ? 'bg-gradient-to-r from-gray-100/80 to-gray-200/80 dark:from-gray-900/30 dark:to-gray-800/30 text-gray-700 dark:text-gray-300'
+                                      : 'bg-gradient-to-r from-yellow-100/80 to-yellow-200/80 dark:from-yellow-900/30 dark:to-yellow-800/30 text-yellow-700 dark:text-yellow-300'
                                   }`}>
                                     {event.status}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 gap-4 mb-2">
-                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-md">
-                                  <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                              <div className="flex items-center text-xs text-gray-600 dark:text-gray-300 gap-3 sm:gap-4 mb-2">
+                                <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50/80 dark:bg-emerald-900/30 backdrop-blur-sm rounded-md">
+                                  <Calendar className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                   <span>{new Date(event.date).toLocaleDateString()}</span>
                                 </div>
                                 {event.start_time && (
-                                  <div className="flex items-center gap-1 px-2 py-1 bg-green-50 dark:bg-green-900/30 rounded-md">
-                                    <Clock className="w-3 h-3 text-green-600 dark:text-green-400" />
+                                  <div className="flex items-center gap-1 px-2 py-1 bg-teal-50/80 dark:bg-teal-900/30 backdrop-blur-sm rounded-md">
+                                    <Clock className="w-3 h-3 text-teal-600 dark:text-teal-400" />
                                     <span>{event.start_time}</span>
                                   </div>
                                 )}
                               </div>
                               <div className="flex items-center justify-between">
                                 {event.category && (
-                                  <span className="inline-block px-2 py-1 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 text-purple-700 dark:text-purple-300 text-xs rounded-full font-medium">
+                                  <span className="inline-block px-2 py-1 bg-gradient-to-r from-mint-100/80 to-mint-200/80 dark:from-mint-900/30 dark:to-mint-800/30 text-mint-700 dark:text-mint-300 text-xs rounded-full font-medium backdrop-blur-sm">
                                     {event.category}
                                   </span>
                                 )}
@@ -1052,47 +1039,47 @@ const VenuePage = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                                className="text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 hover:border-blue-400 dark:hover:border-green-400 transition-all duration-300"
+                                className="text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gradient-to-r hover:from-emerald-50 hover:via-teal-50 hover:to-mint-50 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20 hover:border-emerald-400 dark:hover:border-teal-400 transition-all duration-300 text-xs sm:text-sm"
                               >
                                 View all {selectedVenue.events.length} events
-                                <ArrowRight className="w-4 h-4 ml-2" />
+                                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
                               </Button>
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <div className="text-center py-6 sm:py-8 text-gray-500 dark:text-gray-400">
                           <div className="relative inline-block mb-3">
-                            <Calendar className="w-12 h-12 mx-auto opacity-50" />
-                            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-500/20 to-green-500/20 rounded-full blur-sm"></div>
+                            <Calendar className="w-8 h-8 sm:w-12 sm:h-12 mx-auto opacity-50" />
+                            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-6 sm:w-8 h-1 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-mint-500/20 rounded-full blur-sm"></div>
                           </div>
-                          <p>No events scheduled at this venue</p>
+                          <p className="text-sm">No events scheduled at this venue</p>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
                   <Button
                     onClick={() => handleGetDirections(selectedVenue)}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105"
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                   >
-                    <Navigation className="w-4 h-4 mr-2" />
+                    <Navigation className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Get Directions
                   </Button>
                   <Button
                     onClick={() => navigate(`/events?city=${encodeURIComponent(selectedVenue.city)}&location=${encodeURIComponent(selectedVenue.location)}`)}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105"
+                    className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                   >
-                    <Calendar className="w-4 h-4 mr-2" />
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     View All Events
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleShare(selectedVenue)}
-                    className="flex-1 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 hover:border-blue-400 dark:hover:border-green-400 bg-white dark:bg-gray-800 font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-105"
+                    className="flex-1 border-2 border-gray-300/50 dark:border-gray-600/50 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-50/80 hover:via-teal-50/80 hover:to-mint-50/80 dark:hover:from-emerald-900/20 dark:hover:via-teal-900/20 dark:hover:to-mint-900/20 hover:border-emerald-400/50 dark:hover:border-teal-400/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm font-semibold py-2 sm:py-3 rounded-xl transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
+                    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Share Venue
                   </Button>
                 </div>
@@ -1147,23 +1134,23 @@ const VenuePage = () => {
             transition-duration: 200ms;
           }
           
-          /* Custom scrollbar matching index style */
+          /* Custom scrollbar matching updated style */
           ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
           }
           
           ::-webkit-scrollbar-track {
             background: rgba(156, 163, 175, 0.1);
-            border-radius: 4px;
+            border-radius: 3px;
           }
           
           ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #3b82f6, #10b981);
-            border-radius: 4px;
+            background: linear-gradient(45deg, #10d9a0, #06d6a0, #14b8a6);
+            border-radius: 3px;
           }
           
           ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #2563eb, #059669);
+            background: linear-gradient(45deg, #0bb885, #059669, #0f766e);
           }
           
           /* Enhanced hover effects */
@@ -1176,21 +1163,40 @@ const VenuePage = () => {
             backdrop-filter: blur(4px);
           }
           
+          .backdrop-blur-xl {
+            backdrop-filter: blur(24px);
+          }
+          
           @supports not (backdrop-filter: blur(4px)) {
-            .backdrop-blur-sm {
-              background-color: rgba(255, 255, 255, 0.8);
+            .backdrop-blur-sm, .backdrop-blur-xl {
+              background-color: rgba(255, 255, 255, 0.9);
             }
             
-            .dark .backdrop-blur-sm {
-              background-color: rgba(31, 41, 55, 0.8);
+            .dark .backdrop-blur-sm, .dark .backdrop-blur-xl {
+              background-color: rgba(31, 41, 55, 0.9);
             }
           }
           
           /* Mobile responsive adjustments */
           @media (max-width: 640px) {
             .container {
-              padding-left: 1rem;
-              padding-right: 1rem;
+              padding-left: 0.75rem;
+              padding-right: 0.75rem;
+            }
+            
+            /* Ensure touch targets are at least 44px */
+            button, .cursor-pointer {
+              min-height: 44px;
+              min-width: 44px;
+            }
+            
+            /* Better spacing for mobile */
+            .space-y-3 > * + * {
+              margin-top: 0.5rem;
+            }
+            
+            .space-y-4 > * + * {
+              margin-top: 0.75rem;
             }
           }
           
@@ -1223,6 +1229,23 @@ const VenuePage = () => {
           
           .animate-pulse-glow {
             animation: pulse-glow 2s ease-in-out infinite;
+          }
+          
+          /* Safe area adjustments for mobile devices */
+          @supports (padding: max(0px)) {
+            .safe-padding-top {
+              padding-top: max(1rem, env(safe-area-inset-top));
+            }
+            
+            .safe-padding-bottom {
+              padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
+          }
+          
+          /* Focus styles for accessibility */
+          button:focus, input:focus, select:focus {
+            outline: 2px solid #10d9a0;
+            outline-offset: 2px;
           }
         `}</style>
       </div>
