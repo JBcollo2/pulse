@@ -127,50 +127,36 @@ const CityCard = ({ city, onSelect, index }) => (
   </motion.div>
 );
 
-// VenueCard Component with updated gradients and responsive design
-const VenueCard = ({ venue, index, onViewDetails }) => {
+
+// Modern Venue Card Component with improved visibility and real API data
+const VenueCard = ({ venue, index, onViewDetails }: {
+  venue: VenueLocation;
+  index: number;
+  onViewDetails: (venue: VenueLocation) => void;
+}) => {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const getAmenityIcon = (amenity: string) => {
-    const iconMap = {
-      'wifi': <Wifi className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'parking': <Car className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'food': <Utensils className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'music': <Music className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'coffee': <Coffee className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'security': <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4" />,
-      'activities': <Activity className="w-3 h-3 sm:w-4 sm:h-4" />,
+    const iconMap: Record<string, React.ReactNode> = {
+      'wifi': <Wifi className="w-4 h-4" />,
+      'parking': <Car className="w-4 h-4" />,
+      'food': <Utensils className="w-4 h-4" />,
+      'music': <Music className="w-4 h-4" />,
+      'coffee': <Coffee className="w-4 h-4" />,
+      'security': <ShieldCheck className="w-4 h-4" />,
+      'activities': <Activity className="w-4 h-4" />,
     };
-    return iconMap[amenity.toLowerCase()] || <Star className="w-3 h-3 sm:w-4 sm:h-4" />;
+    return iconMap[amenity.toLowerCase()] || <Star className="w-4 h-4" />;
   };
 
-  const getDisplayEvent = () => {
-    if (!venue.events || venue.events.length === 0) return null;
-    const currentDate = new Date();
-    const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
-    return upcomingEvent || sortedEvents[sortedEvents.length - 1];
+  const getCategoryGradient = () => {
+    return 'from-emerald-400 via-teal-400 to-emerald-500';
   };
 
-  const getEventStats = () => {
-    if (!venue.events || venue.events.length === 0) {
-      return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
-    }
-    const currentDate = new Date();
-    const upcoming = venue.events.filter(event => new Date(event.date).getTime() >= currentDate.getTime()).length;
-    const nextEvent = venue.events
-      .filter(event => new Date(event.date).getTime() >= currentDate.getTime())
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-    return {
-      upcoming,
-      total: venue.totalEvents || venue.events.length,
-      nextEventDate: nextEvent ? nextEvent.date : null
-    };
+  const getCategoryIcon = () => {
+    return '🏢';
   };
 
-  const displayEvent = getDisplayEvent();
-  const eventStats = getEventStats();
-  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -180,101 +166,336 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     });
   };
 
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const time = new Date();
+    time.setHours(parseInt(hours), parseInt(minutes));
+    return time.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Get the next upcoming event or most recent event for display
+  const getDisplayEvent = () => {
+    if (!venue.events || venue.events.length === 0) return null;
+
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Sort events by date
+    const sortedEvents = [...venue.events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Find next upcoming event
+    const upcomingEvent = sortedEvents.find(event => new Date(event.date).getTime() >= currentDate.getTime());
+
+    // Return upcoming event or the most recent event
+    return upcomingEvent || sortedEvents[sortedEvents.length - 1];
+  };
+
+  // Get event statistics
+  const getEventStats = () => {
+    if (!venue.events || venue.events.length === 0) {
+      return { upcoming: 0, total: venue.totalEvents || 0, nextEventDate: null };
+    }
+
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const upcoming = venue.events.filter(event => new Date(event.date).getTime() >= currentDate.getTime()).length;
+    const nextEvent = venue.events
+      .filter(event => new Date(event.date).getTime() >= currentDate.getTime())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+    return {
+      upcoming,
+      total: venue.totalEvents || venue.events.length,
+      nextEventDate: nextEvent ? nextEvent.date : null
+    };
+  };
+
+  const displayEvent = getDisplayEvent();
+  const eventStats = getEventStats();
+
   return (
     <motion.div
-      className="group bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg border border-white/20 dark:border-gray-800/50 cursor-pointer hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 relative"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      whileHover={{
+        y: -8,
+        scale: 1.02,
+        transition: { duration: 0.3, ease: "easeOut" }
+      }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(venue)}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
     >
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-      
-      <div className="relative h-48 sm:h-56 overflow-hidden">
-        {displayEvent?.image ? (
-          <img
-            src={displayEvent.image}
-            alt={venue.location}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-emerald-100 via-teal-100 to-mint-100 dark:from-emerald-900/30 dark:via-teal-900/30 dark:to-mint-900/30 flex items-center justify-center text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">
-            {venue.location.charAt(0)}
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-teal-400/10 to-mint-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        
-        <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4 text-white">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
-            <div className="px-2 sm:px-3 py-1 sm:py-1.5 bg-black/50 backdrop-blur-sm rounded-full text-xs sm:text-sm font-medium border border-white/20">
-              {venue.location}
+      {/* Subtle Gradient Border Animation */}
+      <motion.div
+        className={`absolute inset-0 bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-30 rounded-3xl transition-opacity duration-500`}
+        style={{ padding: '1px' }}
+      >
+        <div className="w-full h-full bg-white dark:bg-gray-900 rounded-3xl" />
+      </motion.div>
+
+      {/* Content Container */}
+      <div className="relative z-10 p-0 h-full">
+
+        {/* Image Section with Improved Overlays */}
+        <div className="relative h-56 overflow-hidden rounded-t-3xl">
+          {/* Background Image */}
+          {displayEvent?.image ? (
+            <motion.img
+              src={displayEvent.image}
+              alt={venue.location}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 flex items-center justify-center relative overflow-hidden">
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-emerald-400/10 via-teal-400/10 to-emerald-500/10"
+                animate={{ opacity: [0.1, 0.2, 0.1] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <span className="text-6xl font-bold text-white relative z-10 drop-shadow-2xl">
+                {venue.location.charAt(0)}
+              </span>
             </div>
-            <div className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-emerald-400/80 via-teal-400/80 to-mint-500/80 backdrop-blur-sm rounded-full text-xs sm:text-sm flex items-center gap-1 border border-white/20 shadow-lg shadow-emerald-500/25">
-              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="relative p-4 sm:p-6 space-y-3 sm:space-y-4">
-        <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent line-clamp-1">
-          {venue.location}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-          {venue.city} - {eventStats.total} events hosted
-          {eventStats.nextEventDate && (
-            <span className="block text-emerald-600 dark:text-emerald-300 font-medium mt-1">
-              Next event: {formatDate(eventStats.nextEventDate)}
-            </span>
           )}
-        </p>
-        
-        <div className="flex flex-wrap gap-1 sm:gap-2">
-          {venue.uniqueAmenities?.slice(0, 3).map((amenity, idx) => (
-            <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-emerald-50 via-teal-50 to-mint-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-mint-900/20 text-gray-700 dark:text-gray-300 rounded-full text-xs border border-emerald-200/50 dark:border-gray-600">
-              {getAmenityIcon(amenity)}
-              <span className="capitalize hidden sm:inline">{amenity}</span>
-            </div>
-          ))}
-          {venue.uniqueAmenities?.length > 3 && (
-            <span className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600">
-              +{venue.uniqueAmenities.length - 3}
-            </span>
-          )}
-        </div>
-        
-        <div className="flex items-center justify-between pt-2">
-          <div>
-            <div className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 bg-clip-text text-transparent">{eventStats.total}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">events</div>
-            {eventStats.upcoming > 0 && (
-              <div className="text-sm font-medium text-emerald-600 dark:text-emerald-300">
-                {eventStats.upcoming} upcoming
-              </div>
+
+          {/* Lighter Dark Overlay for Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+          {/* Top Badges */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+            {/* Popular Badge */}
+            {venue.totalEvents > 5 && (
+              <motion.div
+                className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getCategoryGradient()} opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 0.9 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+              >
+                <Star className="w-3 h-3 fill-current" />
+                POPULAR
+              </motion.div>
             )}
           </div>
-          <Button
-            className="bg-gradient-to-r from-emerald-400 via-teal-400 to-mint-500 hover:from-emerald-500 hover:via-teal-500 hover:to-mint-600 text-white font-semibold px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-105 text-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onViewDetails(venue);
-            }}
+
+          {/* Bottom Info Bar */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <motion.div
+              className="flex items-center justify-between"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              {/* Category Badge */}
+              <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span>{getCategoryIcon()}</span>
+                <span className="text-sm font-medium">Venue</span>
+              </div>
+
+              {/* Events Count with Upcoming */}
+              <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {eventStats.upcoming > 0 ? `${eventStats.upcoming} upcoming` : `${eventStats.total} events`}
+                </span>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="p-6 space-y-4">
+
+          {/* Title and Trending Indicator */}
+          <div className="flex items-start justify-between gap-3">
+            <motion.h3
+              className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+              style={{
+                backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+                '--tw-gradient-from': '#10b981',
+                '--tw-gradient-to': '#06d6a0',
+                '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)'
+              } as React.CSSProperties}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {venue.location}
+            </motion.h3>
+
+            {eventStats.upcoming > 3 && (
+              <motion.div
+                className={`flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${getCategoryGradient()} opacity-90 text-white text-xs font-bold flex-shrink-0`}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
+              >
+                <TrendingUp className="w-3 h-3" />
+                ACTIVE
+              </motion.div>
+            )}
+          </div>
+
+          {/* Description */}
+          <motion.p
+            className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
           >
-            <Ticket className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Explore</span>
-            <span className="sm:hidden">Go</span>
-          </Button>
+            {venue.city} - {eventStats.total} events hosted at this location
+            {eventStats.nextEventDate && (
+              <span className="block text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                Next event: {formatDate(eventStats.nextEventDate)}
+              </span>
+            )}
+          </motion.p>
+
+          {/* Event Details */}
+          <motion.div
+            className="space-y-3"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            {/* Location */}
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <MapPin className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </div>
+              <span className="text-sm font-medium truncate">{venue.city}</span>
+            </div>
+
+            {/* Next Event Date */}
+            {displayEvent && (
+              <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                  <Clock className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                </div>
+                <span className="text-sm font-medium">
+                  {formatDate(displayEvent.date)}
+                  {displayEvent.start_time && ` at ${formatTime(displayEvent.start_time)}`}
+                </span>
+              </div>
+            )}
+
+            {/* Events Count with Status */}
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              </div>
+              <span className="text-sm font-medium">
+                {eventStats.total} Total Events
+                {eventStats.upcoming > 0 && (
+                  <span className="text-emerald-600 dark:text-emerald-400 ml-1">
+                    ({eventStats.upcoming} upcoming)
+                  </span>
+                )}
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Amenities with Improved Visibility */}
+          {venue.uniqueAmenities && venue.uniqueAmenities.length > 0 && (
+            <motion.div
+              className="flex flex-wrap gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium`}
+                >
+                  {getAmenityIcon(amenity)}
+                  <span className="capitalize">{amenity}</span>
+                </div>
+              ))}
+              {venue.uniqueAmenities.length > 4 && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
+                  +{venue.uniqueAmenities.length - 4} more
+                </span>
+              )}
+            </motion.div>
+          )}
+
+          {/* Event Category from Latest Event */}
+          {displayEvent?.category && (
+            <motion.div
+              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+            >
+              <Tag className="w-4 h-4" />
+              <span>Latest: {displayEvent.category}</span>
+            </motion.div>
+          )}
+
+          {/* Action Section */}
+          <motion.div
+            className="flex items-center justify-between pt-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            {/* Event Statistics */}
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {eventStats.total}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  events
+                </span>
+              </div>
+              <div className="space-y-1 mt-1">
+                {eventStats.upcoming > 0 && (
+                  <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                    {eventStats.upcoming} upcoming
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Explore Venue Button */}
+            <motion.button
+              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-500 hover:to-emerald-500 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
+              whileTap={{ scale: 0.95 }}
+              whileHover={{
+                boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`,
+                y: -1
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onViewDetails(venue);
+              }}
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Explore Venue</span>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
+
+      {/* Subtle Hover Glow Effect */}
+      <motion.div
+        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10`}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: isHovered ? 1.1 : 0.8 }}
+        transition={{ duration: 0.5 }}
+      />
     </motion.div>
   );
 };
