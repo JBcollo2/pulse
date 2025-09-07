@@ -7,6 +7,40 @@ import {
   Heart, Share2, Filter, Grid, ChevronRight, Loader2, RefreshCw
 } from 'lucide-react';
 
+// API configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
+// API service functions
+const apiService = {
+  async getCities() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/cities`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching cities:', error);
+      throw error;
+    }
+  },
+
+  async getCityEvents(city) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/events/city/${encodeURIComponent(city)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error fetching events for ${city}:`, error);
+      throw error;
+    }
+  }
+};
+
 // Real image fetching functions from venue page
 const fetchWikiImage = async (wikidataId) => {
   try {
@@ -90,7 +124,7 @@ const searchCityImage = async (cityName, index = 0) => {
 };
 
 // Simple StatsCard Component
-const StatsCard = ({ icon, value, label, gradient }) => (
+const StatsCard = ({ icon, value, label, gradient, loading = false }) => (
   <motion.div
     className="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300 group"
     whileHover={{ scale: 1.02 }}
@@ -98,61 +132,116 @@ const StatsCard = ({ icon, value, label, gradient }) => (
   >
     <div className="relative z-10 flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
       <div className={`p-2 sm:p-3 rounded-xl ${gradient} shadow-lg group-hover:rotate-12 transition-transform duration-500 shrink-0`}>
-        {React.cloneElement(icon, { className: 'w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white' })}
+        {loading ? (
+          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white animate-spin" />
+        ) : (
+          React.cloneElement(icon, { className: 'w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white' })
+        )}
       </div>
       <div className="text-center sm:text-left">
-        <div className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">{value}</div>
+        <div className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+          {loading ? (
+            <div className="h-6 sm:h-7 lg:h-8 w-12 sm:w-16 bg-gray-300 dark:bg-gray-600 animate-pulse rounded"></div>
+          ) : (
+            value
+          )}
+        </div>
         <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</div>
       </div>
     </div>
   </motion.div>
 );
 
-// Updated CityCard Component with real images
-const CityCard = ({ city, onSelect, index }) => (
-  <motion.div
-    className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl transition-all duration-500 hover:transform hover:scale-105"
-    onClick={() => onSelect(city.city)}
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3, delay: index * 0.1 }}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.98 }}
-  >
-    <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
-      <img
-        src={city.imageUrl || `https://placehold.co/800x600/6366f1/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`}
-        alt={city.city}
-        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-        onError={(e) => {
-          const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
-          const colorIndex = index % colors.length;
-          (e.target as HTMLImageElement).src = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`;
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white">
-        <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-1 sm:mb-2">{city.city}</h3>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
-          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-            <Building className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span>{city.venues || city.event_count || 0} venues</span>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span>{city.event_count} events</span>
+// Updated CityCard Component with real images and venue count
+const CityCard = ({ city, onSelect, index }) => {
+  const [venueCount, setVenueCount] = useState(null);
+  const [loadingVenues, setLoadingVenues] = useState(false);
+
+  // Fetch unique venues count for this city
+  useEffect(() => {
+    const fetchVenueCount = async () => {
+      try {
+        setLoadingVenues(true);
+        const data = await apiService.getCityEvents(city.city);
+        // Count unique venues from events
+        const uniqueVenues = new Set(data.events?.map(event => event.location).filter(Boolean));
+        setVenueCount(uniqueVenues.size);
+      } catch (error) {
+        console.error(`Error fetching venue count for ${city.city}:`, error);
+        setVenueCount(0);
+      } finally {
+        setLoadingVenues(false);
+      }
+    };
+
+    fetchVenueCount();
+  }, [city.city]);
+
+  return (
+    <motion.div
+      className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl transition-all duration-500 hover:transform hover:scale-105"
+      onClick={() => onSelect(city.city)}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.1 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <div className="relative h-32 sm:h-40 lg:h-48 overflow-hidden">
+        <img
+          src={city.imageUrl || `https://placehold.co/800x600/6366f1/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`}
+          alt={city.city}
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          onError={(e) => {
+            const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+            const colorIndex = index % colors.length;
+            (e.target as HTMLImageElement).src = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`;
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 text-white">
+          <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-1 sm:mb-2">{city.city}</h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
+            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+              <Building className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>
+                {loadingVenues ? (
+                  <Loader2 className="w-3 h-3 animate-spin inline" />
+                ) : (
+                  `${venueCount || 0} venues`
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>{city.event_count || 0} events</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div className="p-3 sm:p-4 lg:p-6">
-      <button className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 text-sm sm:text-base flex items-center justify-center gap-2">
-        <span>Explore {city.city}</span>
-        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
-      </button>
-    </div>
-  </motion.div>
-);
+      <div className="p-3 sm:p-4 lg:p-6">
+        <div className="mb-3">
+          {city.top_amenities && city.top_amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              {city.top_amenities.slice(0, 3).map((amenity, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-1 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 text-blue-600 dark:text-blue-300 text-xs rounded-full border border-blue-200/50 dark:border-blue-700/50"
+                >
+                  {amenity}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <button className="w-full bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 text-sm sm:text-base flex items-center justify-center gap-2">
+          <span>Explore {city.city}</span>
+          <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
 
 // Main Landing Page Component
 const LandingPage = () => {
@@ -167,6 +256,7 @@ const LandingPage = () => {
     activeCities: 0,
     featuredVenues: 0,
   });
+  const [statsLoading, setStatsLoading] = useState(true);
   const [showAllCities, setShowAllCities] = useState(false);
 
   // Animation variants
@@ -193,23 +283,106 @@ const LandingPage = () => {
     }
   };
 
-  // Fetch cities with real images
+  // Calculate comprehensive stats from all cities
+  type City = {
+    city: string;
+    event_count?: number;
+    [key: string]: any;
+  };
+
+  type Event = {
+    location?: string;
+    [key: string]: any;
+  };
+
+  const calculateStats = async (citiesData: City[]) => {
+    try {
+      setStatsLoading(true);
+      let totalVenues = 0;
+      let totalEvents = 0;
+      let featuredVenues = 0;
+
+      // Get detailed data for each city to calculate accurate venue counts
+      const cityPromises = citiesData.map(async (city: City) => {
+        try {
+          const cityData = await apiService.getCityEvents(city.city);
+          const uniqueVenues = new Set(
+            (cityData.events as Event[] | undefined)?.map((event: Event) => event.location).filter(Boolean)
+          );
+          const venueCount = uniqueVenues.size;
+          const eventCount = (cityData.events as Event[] | undefined)?.length || 0;
+          
+          // Count featured venues (venues with >3 events or featured events)
+          const venueEventCounts: { [location: string]: number } = {};
+          (cityData.events as Event[] | undefined)?.forEach((event: Event) => {
+            if (event.location) {
+              venueEventCounts[event.location] = (venueEventCounts[event.location] || 0) + 1;
+            }
+          });
+          
+          const cityFeaturedVenues = Object.values(venueEventCounts).filter(count => Number(count) > 3).length;
+          
+          return {
+            venues: venueCount,
+            events: eventCount,
+            featuredVenues: cityFeaturedVenues
+          };
+        } catch (error) {
+          console.error(`Error calculating stats for ${city.city}:`, error);
+          return { venues: 0, events: city.event_count || 0, featuredVenues: 0 };
+        }
+      });
+
+      const results = await Promise.all(cityPromises);
+      
+      results.forEach(result => {
+        totalVenues += result.venues;
+        totalEvents += result.events;
+        featuredVenues += result.featuredVenues;
+      });
+
+      setStats({
+        totalVenues,
+        totalEvents,
+        activeCities: citiesData.length,
+        featuredVenues,
+      });
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+      // Fallback to basic stats from cities data
+      const totalEvents = citiesData.reduce((sum: number, city: City) => sum + (city.event_count || 0), 0);
+      setStats({
+        totalVenues: citiesData.length * 3, // Rough estimate
+        totalEvents,
+        activeCities: citiesData.length,
+        featuredVenues: Math.ceil(citiesData.length * 0.3),
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // Fetch cities with real images and calculate stats
   useEffect(() => {
     const fetchCities = async () => {
       try {
         setLoading(true);
-        const mockCities = [
-          { city: 'Nakuru', event_count: 12, venues: 6 },
-          { city: 'Nairobi', event_count: 25, venues: 15 },
-          { city: 'Eldoret', event_count: 8, venues: 4 },
-          { city: 'Mombasa', event_count: 18, venues: 10 },
-          { city: 'Kisumu', event_count: 14, venues: 8 },
-          { city: 'Thika', event_count: 6, venues: 3 }
-        ];
+        setError(null);
+
+        // Fetch cities from API
+        const response = await apiService.getCities();
+        const citiesData = response.cities || [];
+        
+        if (citiesData.length === 0) {
+          throw new Error('No cities found');
+        }
+
+        // Calculate stats first (can run in parallel with image fetching)
+        calculateStats(citiesData);
         
         // Fetch real images for each city
         const citiesWithImages = await Promise.all(
-          mockCities.map(async (city, index) => {
+          citiesData.map(async (city, index) => {
             try {
               // Add delay between requests to avoid rate limiting
               if (index > 0) {
@@ -230,21 +403,22 @@ const LandingPage = () => {
         );
         
         setCities(citiesWithImages);
-
-        // Calculate stats
-        const totalEvents = citiesWithImages.reduce((sum, city) => sum + city.event_count, 0);
-        const featuredVenues = citiesWithImages.filter(city => city.event_count > 15).length;
-        setStats({
-          totalVenues: citiesWithImages.length * 5,
-          totalEvents,
-          activeCities: citiesWithImages.length,
-          featuredVenues,
-        });
       } catch (err) {
-        setError('Failed to load cities');
+        const errorMessage = err.message || 'Failed to load cities';
+        setError(errorMessage);
         console.error('Error fetching cities:', err);
+        
+        // Set empty state
+        setCities([]);
+        setStats({
+          totalVenues: 0,
+          totalEvents: 0,
+          activeCities: 0,
+          featuredVenues: 0,
+        });
       } finally {
         setLoading(false);
+        setStatsLoading(false);
       }
     };
 
@@ -262,6 +436,7 @@ const LandingPage = () => {
   const handleCitySelect = (cityName) => {
     console.log(`Navigate to venues for ${cityName}`);
     // In real app: navigate(`/venues?city=${encodeURIComponent(cityName)}`);
+    // Or: window.location.href = `/venues?city=${encodeURIComponent(cityName)}`;
   };
 
   const handleSearch = (e) => {
@@ -274,6 +449,10 @@ const LandingPage = () => {
         handleCitySelect(exactMatch.city);
       }
     }
+  };
+
+  const handleRetry = () => {
+    window.location.reload();
   };
 
   const displayedCities = showAllCities ? filteredCities : filteredCities.slice(0, 6);
@@ -307,7 +486,7 @@ const LandingPage = () => {
 
                 {/* Search Section */}
                 <div className="max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
-                  <div className="relative">
+                  <form onSubmit={handleSearch} className="relative">
                     <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                     <input
                       type="text"
@@ -317,7 +496,7 @@ const LandingPage = () => {
                       className="w-full pl-10 sm:pl-12 pr-4 sm:pr-6 py-3 sm:py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
                     />
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-green-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                  </div>
+                  </form>
                 </div>
               </motion.div>
 
@@ -328,24 +507,28 @@ const LandingPage = () => {
                   value={stats.totalVenues}
                   label="Total Venues"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
+                  loading={statsLoading}
                 />
                 <StatsCard
                   icon={<Calendar />}
                   value={stats.totalEvents}
                   label="Events Hosted"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
+                  loading={statsLoading}
                 />
                 <StatsCard
                   icon={<MapPin />}
                   value={stats.activeCities}
                   label="Active Cities"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
+                  loading={statsLoading}
                 />
                 <StatsCard
                   icon={<Sparkles />}
                   value={stats.featuredVenues}
                   label="Featured Venues"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
+                  loading={statsLoading}
                 />
               </motion.div>
 
@@ -357,7 +540,14 @@ const LandingPage = () => {
                       Explore Cities
                     </h2>
                     <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                      {filteredCities.length} cities available
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading cities...
+                        </span>
+                      ) : (
+                        `${filteredCities.length} cities available`
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-200/50 dark:border-gray-600">
@@ -373,7 +563,10 @@ const LandingPage = () => {
                         <div className="h-32 sm:h-40 lg:h-48 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
                         <div className="p-3 sm:p-4 lg:p-6 space-y-3">
                           <div className="h-4 sm:h-6 w-3/4 bg-gray-300 dark:bg-gray-600 rounded" />
-                          <div className="h-3 sm:h-4 w-1/2 bg-gray-300 dark:bg-gray-600 rounded" />
+                          <div className="flex gap-2">
+                            <div className="h-6 w-20 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                            <div className="h-6 w-24 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                          </div>
                           <div className="h-8 sm:h-10 w-full bg-gray-300 dark:bg-gray-600 rounded-xl" />
                         </div>
                       </div>
@@ -388,7 +581,7 @@ const LandingPage = () => {
                     <h3 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">Something went wrong</h3>
                     <p className="text-red-500 text-base sm:text-lg mb-4 sm:mb-6">{error}</p>
                     <button
-                      onClick={() => window.location.reload()}
+                      onClick={handleRetry}
                       className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
                     >
                       <RefreshCw className="w-4 h-4" />
@@ -453,6 +646,32 @@ const LandingPage = () => {
             </motion.div>
           </div>
         </main>
+
+        {/* Footer Section */}
+        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8 sm:py-12">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
+                  <Building className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                  VenueHub
+                </span>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Connecting you with the perfect venues for your events
+              </p>
+              <div className="flex justify-center items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                <span>© 2024 VenueHub. All rights reserved.</span>
+                <div className="flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-red-500" />
+                  <span>Made with love</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
 
         {/* Custom Styles */}
         <style>{`
