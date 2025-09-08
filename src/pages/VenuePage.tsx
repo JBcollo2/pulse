@@ -14,6 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+// API configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 // Fetch real location image using Wikidata and OpenStreetMap
 const searchCityImage = async (cityName, index = 0) => {
   try {
@@ -26,7 +29,6 @@ const searchCityImage = async (cityName, index = 0) => {
     });
     if (!response.ok) throw new Error('Failed to fetch location data');
     const data = await response.json();
-
     if (!data || data.length === 0) {
       const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
       const colorIndex = index % colors.length;
@@ -40,20 +42,17 @@ const searchCityImage = async (cityName, index = 0) => {
     const place = sortedResults[0];
     const wikidataId = place.extratags?.wikidata;
     let photoUrl = null;
-
     if (wikidataId) {
       const wikiImage = await fetchWikiImage(wikidataId);
       if (wikiImage) {
         photoUrl = wikiImage;
       }
     }
-
     if (!photoUrl) {
       const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
       const colorIndex = index % colors.length;
       photoUrl = `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
     }
-
     return photoUrl;
   } catch (error) {
     console.error('Error fetching city image:', error);
@@ -200,7 +199,6 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
   };
   const displayEvent = getDisplayEvent();
   const eventStats = getEventStats();
-
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
@@ -460,7 +458,6 @@ const VenuePage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const loadMoreRef = useRef(null);
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -480,6 +477,130 @@ const VenuePage = () => {
         duration: 0.4,
         ease: "easeOut"
       }
+    }
+  };
+
+  // Fetch cities and stats
+  const fetchCities = async () => {
+    try {
+      setLoading(true);
+      const [citiesResponse, statsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/cities`).then(res => res.json()),
+        fetch(`${API_BASE_URL}/api/stats`).then(res => res.json())
+      ]);
+
+      const citiesData = citiesResponse.cities || [];
+      const citiesWithImages = await Promise.all(
+        citiesData.map(async (city, index) => {
+          try {
+            if (index > 0) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            const imageUrl = await searchCityImage(city.city, index);
+            return { ...city, imageUrl };
+          } catch (error) {
+            console.error(`Error fetching image for ${city.city}:`, error);
+            const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
+            const colorIndex = index % colors.length;
+            return {
+              ...city,
+              imageUrl: `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`
+            };
+          }
+        })
+      );
+
+      setCities(citiesWithImages);
+      setStats({
+        totalVenues: statsResponse.total_venues || 0,
+        totalEvents: statsResponse.total_events || 0,
+        activeCities: statsResponse.active_cities || 0,
+        featuredVenues: statsResponse.featured_venues || 0,
+      });
+    } catch (err) {
+      setError('Failed to load cities and stats');
+      console.error('Error fetching cities and stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch city events and update venue count
+  const fetchCityEvents = async (page = 1, reset = false) => {
+    if (!selectedCity) return;
+    try {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        per_page: '20',
+        ...(filters.location && { location: filters.location }),
+        time_filter: filters.time_filter,
+        sort_by: filters.sort_by,
+        sort_order: filters.sort_order
+      });
+
+      const response = await fetch(
+        `${API_BASE_URL}/events/city/${encodeURIComponent(selectedCity)}?${params}`,
+        { credentials: 'include' }
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const data = await response.json();
+
+      const venueMap = new Map();
+      data.events.forEach(event => {
+        const key = event.location;
+        if (!venueMap.has(key)) {
+          venueMap.set(key, {
+            location: event.location,
+            city: event.city,
+            events: [],
+            totalEvents: 0,
+            uniqueAmenities: new Set(),
+            topEvent: null
+          });
+        }
+        const venue = venueMap.get(key);
+        venue.events.push(event);
+        venue.totalEvents++;
+        if (event.amenities) {
+          event.amenities.forEach(amenity => venue.uniqueAmenities.add(amenity));
+        }
+        if (!venue.topEvent || event.featured) {
+          venue.topEvent = event;
+        }
+      });
+
+      const processedVenues = Array.from(venueMap.values()).map(venue => ({
+        ...venue,
+        uniqueAmenities: Array.from(venue.uniqueAmenities)
+      }));
+
+      if (reset || page === 1) {
+        setVenues(processedVenues);
+        setCurrentPage(1);
+      } else {
+        setVenues(prev => [...prev, ...processedVenues]);
+      }
+
+      setCurrentPage(page);
+      setHasMore(data.pagination.has_next);
+      setAvailableFilters(data.available_filters || {
+        locations: [],
+        time_filters: ['upcoming', 'today', 'past', 'all']
+      });
+
+    } catch (err) {
+      setError('Failed to load venues');
+      console.error('Error fetching city events:', err);
+    } finally {
+      setLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
@@ -524,125 +645,6 @@ const VenuePage = () => {
       }
     };
   }, [currentPage, hasMore, isLoadingMore, selectedCity]);
-
-  const fetchCities = async () => {
-    try {
-      setLoading(true);
-      const mockCities = [
-        { city: 'Nakuru', event_count: 12, venues: 6 },
-        { city: 'Nairobi', event_count: 25, venues: 15 },
-        { city: 'Eldoret', event_count: 8, venues: 4 },
-        { city: 'Mombasa', event_count: 18, venues: 10 },
-        { city: 'Kisumu', event_count: 14, venues: 8 },
-        { city: 'Thika', event_count: 6, venues: 3 }
-      ];
-
-      const citiesWithImages = await Promise.all(
-        mockCities.map(async (city, index) => {
-          try {
-            if (index > 0) {
-              await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            const imageUrl = await searchCityImage(city.city, index);
-            return { ...city, imageUrl };
-          } catch (error) {
-            console.error(`Error fetching image for ${city.city}:`, error);
-            const colors = ['6366f1', 'ef4444', '10b981', 'f59e0b', '8b5cf6', 'ec4899'];
-            const colorIndex = index % colors.length;
-            return {
-              ...city,
-              imageUrl: `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(city.city.substring(0, 20))}&font=Open+Sans`
-            };
-          }
-        })
-      );
-
-      setCities(citiesWithImages);
-      const totalEvents = citiesWithImages.reduce((sum, city) => sum + city.event_count, 0);
-      const featuredVenues = citiesWithImages.filter(city => city.event_count > 15).length;
-      setStats({
-        totalVenues: citiesWithImages.length * 5,
-        totalEvents,
-        activeCities: citiesWithImages.length,
-        featuredVenues,
-      });
-    } catch (err) {
-      setError('Failed to load cities');
-      console.error('Error fetching cities:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCityEvents = async (page = 1, reset = false) => {
-    if (!selectedCity) return;
-    try {
-      if (page === 1) {
-        setLoading(true);
-      } else {
-        setIsLoadingMore(true);
-      }
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: '20',
-        ...(filters.location && { location: filters.location }),
-        time_filter: filters.time_filter,
-        sort_by: filters.sort_by,
-        sort_order: filters.sort_order
-      });
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/events/city/${encodeURIComponent(selectedCity)}?${params}`,
-        { credentials: 'include' }
-      );
-      if (!response.ok) throw new Error('Failed to fetch events');
-      const data = await response.json();
-      const venueMap = new Map();
-      data.events.forEach(event => {
-        const key = event.location;
-        if (!venueMap.has(key)) {
-          venueMap.set(key, {
-            location: event.location,
-            city: event.city,
-            events: [],
-            totalEvents: 0,
-            uniqueAmenities: new Set(),
-            topEvent: null
-          });
-        }
-        const venue = venueMap.get(key);
-        venue.events.push(event);
-        venue.totalEvents++;
-        if (event.amenities) {
-          event.amenities.forEach(amenity => venue.uniqueAmenities.add(amenity));
-        }
-        if (!venue.topEvent || event.featured) {
-          venue.topEvent = event;
-        }
-      });
-      const processedVenues = Array.from(venueMap.values()).map(venue => ({
-        ...venue,
-        uniqueAmenities: Array.from(venue.uniqueAmenities)
-      }));
-      if (reset || page === 1) {
-        setVenues(processedVenues);
-        setCurrentPage(1);
-      } else {
-        setVenues(prev => [...prev, ...processedVenues]);
-      }
-      setCurrentPage(page);
-      setHasMore(data.pagination.has_next);
-      setAvailableFilters(data.available_filters || {
-        locations: [],
-        time_filters: ['upcoming', 'today', 'past', 'all']
-      });
-    } catch (err) {
-      setError('Failed to load venues');
-      console.error('Error fetching city events:', err);
-    } finally {
-      setLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
 
   const handleCitySelect = (city) => {
     setSelectedCity(city);
