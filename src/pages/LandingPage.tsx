@@ -10,24 +10,8 @@ import {
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
-// API service functions
+// Simple API service functions
 const apiService = {
-  async getStats() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/stats`, {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      throw error;
-    }
-  },
-
   async getCities() {
     try {
       const response = await fetch(`${API_BASE_URL}/cities`);
@@ -299,11 +283,26 @@ const LandingPage = () => {
     }
   };
 
-  // Fetch stats from backend API
+  // Simple stats fetching function
   const fetchStats = async () => {
     try {
       setStatsLoading(true);
-      const data = await apiService.getStats();
+      console.log('Fetching stats from:', `${API_BASE_URL}/api/stats`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/stats`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Stats response:', data);
       
       setStats({
         totalVenues: data.total_venues || 0,
@@ -332,10 +331,10 @@ const LandingPage = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch cities and stats in parallel
+        // Fetch cities and stats directly
         const [citiesResponse] = await Promise.all([
-          apiService.getCities(),
-          fetchStats() // Don't await this since it updates state internally
+          fetch(`${API_BASE_URL}/cities`).then(res => res.json()),
+          fetchStats() // This will update stats state internally
         ]);
 
         const citiesData = citiesResponse.cities || [];
@@ -380,7 +379,7 @@ const LandingPage = () => {
     };
 
     fetchCities();
-  }, []);
+  }, []); // Remove dependencies since we're calling fetchStats directly
 
   // Filter cities based on search
   useEffect(() => {
@@ -461,33 +460,54 @@ const LandingPage = () => {
               <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12 lg:mb-16">
                 <StatsCard
                   icon={<Building />}
-                  value={stats.totalVenues}
+                  value={statsLoading ? "..." : stats.totalVenues}
                   label="Total Venues"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   loading={statsLoading}
                 />
                 <StatsCard
                   icon={<Calendar />}
-                  value={stats.totalEvents}
+                  value={statsLoading ? "..." : stats.totalEvents}
                   label="Events Hosted"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   loading={statsLoading}
                 />
                 <StatsCard
                   icon={<MapPin />}
-                  value={stats.activeCities}
+                  value={statsLoading ? "..." : stats.activeCities}
                   label="Active Cities"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   loading={statsLoading}
                 />
                 <StatsCard
                   icon={<Sparkles />}
-                  value={stats.featuredVenues}
+                  value={statsLoading ? "..." : stats.featuredVenues}
                   label="Featured Venues"
                   gradient="bg-gradient-to-br from-blue-500 to-green-500"
                   loading={statsLoading}
                 />
               </motion.div>
+
+              {statsLoading && (
+                <div className="text-center mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading platform statistics...
+                  </p>
+                </div>
+              )}
+
+              {!statsLoading && stats.totalVenues === 0 && stats.totalEvents === 0 && (
+                <div className="text-center mb-4">
+                  <button
+                    onClick={fetchStats}
+                    className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-2 mx-auto"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Retry loading stats
+                  </button>
+                </div>
+              )}
 
               {/* Cities Section */}
               <motion.div variants={itemVariants}>
