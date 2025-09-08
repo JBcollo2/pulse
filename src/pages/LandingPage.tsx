@@ -12,6 +12,22 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 // API service functions
 const apiService = {
+  async getStats() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/stats`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      throw error;
+    }
+  },
+
   async getCities() {
     try {
       const response = await fetch(`${API_BASE_URL}/cities`);
@@ -41,7 +57,7 @@ const apiService = {
   }
 };
 
-// Real image fetching functions from venue page
+// Real image fetching functions from venue page (unchanged)
 const fetchWikiImage = async (wikidataId) => {
   try {
     console.log(`[fetchWikiImage] Fetching image for Wikidata ID: ${wikidataId}`);
@@ -283,102 +299,50 @@ const LandingPage = () => {
     }
   };
 
-  // Calculate comprehensive stats from all cities
-  type City = {
-    city: string;
-    event_count?: number;
-    [key: string]: any;
-  };
-
-  type Event = {
-    location?: string;
-    [key: string]: any;
-  };
-
-  const calculateStats = async (citiesData: City[]) => {
+  // Fetch stats from backend API
+  const fetchStats = async () => {
     try {
       setStatsLoading(true);
-      let totalVenues = 0;
-      let totalEvents = 0;
-      let featuredVenues = 0;
-
-      // Get detailed data for each city to calculate accurate venue counts
-      const cityPromises = citiesData.map(async (city: City) => {
-        try {
-          const cityData = await apiService.getCityEvents(city.city);
-          const uniqueVenues = new Set(
-            (cityData.events as Event[] | undefined)?.map((event: Event) => event.location).filter(Boolean)
-          );
-          const venueCount = uniqueVenues.size;
-          const eventCount = (cityData.events as Event[] | undefined)?.length || 0;
-          
-          // Count featured venues (venues with >3 events or featured events)
-          const venueEventCounts: { [location: string]: number } = {};
-          (cityData.events as Event[] | undefined)?.forEach((event: Event) => {
-            if (event.location) {
-              venueEventCounts[event.location] = (venueEventCounts[event.location] || 0) + 1;
-            }
-          });
-          
-          const cityFeaturedVenues = Object.values(venueEventCounts).filter(count => Number(count) > 3).length;
-          
-          return {
-            venues: venueCount,
-            events: eventCount,
-            featuredVenues: cityFeaturedVenues
-          };
-        } catch (error) {
-          console.error(`Error calculating stats for ${city.city}:`, error);
-          return { venues: 0, events: city.event_count || 0, featuredVenues: 0 };
-        }
-      });
-
-      const results = await Promise.all(cityPromises);
+      const data = await apiService.getStats();
       
-      results.forEach(result => {
-        totalVenues += result.venues;
-        totalEvents += result.events;
-        featuredVenues += result.featuredVenues;
-      });
-
       setStats({
-        totalVenues,
-        totalEvents,
-        activeCities: citiesData.length,
-        featuredVenues,
+        totalVenues: data.total_venues || 0,
+        totalEvents: data.total_events || 0,
+        activeCities: data.active_cities || 0,
+        featuredVenues: data.featured_venues || 0,
       });
     } catch (error) {
-      console.error('Error calculating stats:', error);
-      // Fallback to basic stats from cities data
-      const totalEvents = citiesData.reduce((sum: number, city: City) => sum + (city.event_count || 0), 0);
+      console.error('Error fetching stats:', error);
+      // Set fallback stats
       setStats({
-        totalVenues: citiesData.length * 3, // Rough estimate
-        totalEvents,
-        activeCities: citiesData.length,
-        featuredVenues: Math.ceil(citiesData.length * 0.3),
+        totalVenues: 0,
+        totalEvents: 0,
+        activeCities: 0,
+        featuredVenues: 0,
       });
     } finally {
       setStatsLoading(false);
     }
   };
 
-  // Fetch cities with real images and calculate stats
+  // Fetch cities with real images
   useEffect(() => {
     const fetchCities = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Fetch cities from API
-        const response = await apiService.getCities();
-        const citiesData = response.cities || [];
+        // Fetch cities and stats in parallel
+        const [citiesResponse] = await Promise.all([
+          apiService.getCities(),
+          fetchStats() // Don't await this since it updates state internally
+        ]);
+
+        const citiesData = citiesResponse.cities || [];
         
         if (citiesData.length === 0) {
           throw new Error('No cities found');
         }
-
-        // Calculate stats first (can run in parallel with image fetching)
-        calculateStats(citiesData);
         
         // Fetch real images for each city
         const citiesWithImages = await Promise.all(
@@ -410,15 +374,8 @@ const LandingPage = () => {
         
         // Set empty state
         setCities([]);
-        setStats({
-          totalVenues: 0,
-          totalEvents: 0,
-          activeCities: 0,
-          featuredVenues: 0,
-        });
       } finally {
         setLoading(false);
-        setStatsLoading(false);
       }
     };
 
