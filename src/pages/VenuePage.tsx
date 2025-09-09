@@ -16,10 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getAmenityIcon, getAmenityIconWithColor } from '../utils/amenityIcons';
 // Alternative import (try this if the above doesn't work):
 // import { getAmenityIcon, getAmenityIconWithColor } from '@/utils/amenityIcons';
-
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
-
 // Fetch real location image using Wikidata and OpenStreetMap
 const searchCityImage = async (cityName, index = 0) => {
   try {
@@ -64,7 +62,6 @@ const searchCityImage = async (cityName, index = 0) => {
     return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
   }
 };
-
 const fetchWikiImage = async (wikidataId) => {
   try {
     const response = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
@@ -81,7 +78,6 @@ const fetchWikiImage = async (wikidataId) => {
     return null;
   }
 };
-
 // StatsCard Component with gradients
 const StatsCard = ({ icon, value, label, gradient }) => (
   <motion.div
@@ -101,7 +97,6 @@ const StatsCard = ({ icon, value, label, gradient }) => (
     </div>
   </motion.div>
 );
-
 // CityCard Component with real images and hover effects
 const CityCard = ({ city, onSelect, index }) => (
   <motion.div
@@ -147,7 +142,6 @@ const CityCard = ({ city, onSelect, index }) => (
     </div>
   </motion.div>
 );
-
 // VenueCard Component with real images and hover effects
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -340,21 +334,21 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => {
-              // Debug logging
-              console.log('Processing amenity:', amenity, 'Type:', typeof amenity);
-
-              // Get the icon
-              const icon = getAmenityIcon(amenity, "w-4 h-4");
-              console.log('Generated icon:', icon);
-
+            {venue.uniqueAmenities.slice(0, 4).map((amenityGroup, idx) => {
+              // Split and show individual amenities
+              const individualAmenities = amenityGroup.split(',').map(a => a.trim());
+              const firstAmenity = individualAmenities[0];
               return (
                 <div
                   key={idx}
                   className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium"
+                  title={amenityGroup}
                 >
-                  {icon}
-                  <span className="capitalize">{amenity.replace(/_/g, ' ')}</span>
+                  {getAmenityIcon(firstAmenity.toLowerCase(), "w-4 h-4")}
+                  <span className="capitalize">{firstAmenity}</span>
+                  {individualAmenities.length > 1 && (
+                    <span className="text-gray-400">+{individualAmenities.length - 1}</span>
+                  )}
                 </div>
               );
             })}
@@ -423,7 +417,6 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     </motion.div>
   );
 };
-
 // Main VenuePage Component
 const VenuePage = () => {
   const [cities, setCities] = useState([]);
@@ -479,7 +472,6 @@ const VenuePage = () => {
       }
     }
   };
-
   // Fetch cities and stats
   const fetchCities = async () => {
     try {
@@ -522,7 +514,6 @@ const VenuePage = () => {
       setLoading(false);
     }
   };
-
   // Fetch city events and update venue count
   const fetchCityEvents = async (page = 1, reset = false) => {
     if (!selectedCity) return;
@@ -593,11 +584,9 @@ const VenuePage = () => {
       setIsLoadingMore(false);
     }
   };
-
   useEffect(() => {
     fetchCities();
   }, []);
-
   useEffect(() => {
     const cityFromParams = searchParams.get('city');
     if (cityFromParams && cities.length > 0) {
@@ -605,13 +594,11 @@ const VenuePage = () => {
       setFilters(prev => ({ ...prev, city: cityFromParams }));
     }
   }, [cities, searchParams]);
-
   useEffect(() => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
   }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -635,7 +622,6 @@ const VenuePage = () => {
       }
     };
   }, [currentPage, hasMore, isLoadingMore, selectedCity]);
-
   const handleCitySelect = (city) => {
     setSelectedCity(city);
     setFilters(prev => ({ ...prev, city }));
@@ -644,24 +630,20 @@ const VenuePage = () => {
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setVenues([]);
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleViewDetails = (venue) => {
     setSelectedVenue(venue);
   };
-
   const handleGetDirections = (venue) => {
     const query = encodeURIComponent(`${venue.location}, ${venue.city}`);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     window.open(mapsUrl, '_blank');
   };
-
   const handleShare = (venue) => {
     const shareData = {
       title: venue.location,
@@ -674,7 +656,6 @@ const VenuePage = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   };
-
   const filteredVenues = useMemo(() => {
     return venues.filter(venue => {
       const matchesSearch = !searchQuery ||
@@ -683,7 +664,6 @@ const VenuePage = () => {
       return matchesSearch;
     });
   }, [venues, searchQuery]);
-
   const sortedVenues = useMemo(() => {
     const sorted = [...filteredVenues];
     switch (activeTab) {
@@ -697,7 +677,6 @@ const VenuePage = () => {
         return sorted;
     }
   }, [filteredVenues, activeTab]);
-
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
@@ -1362,5 +1341,4 @@ const VenuePage = () => {
     </div>
   );
 };
-
 export default VenuePage;
