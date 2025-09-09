@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getAmenityIcon, getAmenityIconWithColor } from '../utils/amenityIcons';
-
+// Alternative import (try this if the above doesn't work):
+// import { getAmenityIcon, getAmenityIconWithColor } from '@/utils/amenityIcons';
 
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
@@ -339,15 +340,24 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium"
-              >
-                {getAmenityIcon(amenity)}
-                <span className="capitalize">{amenity.replace(/_/g, ' ')}</span>
-              </div>
-            ))}
+            {venue.uniqueAmenities.slice(0, 4).map((amenity, idx) => {
+              // Debug logging
+              console.log('Processing amenity:', amenity, 'Type:', typeof amenity);
+
+              // Get the icon
+              const icon = getAmenityIcon(amenity, "w-4 h-4");
+              console.log('Generated icon:', icon);
+
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium"
+                >
+                  {icon}
+                  <span className="capitalize">{amenity.replace(/_/g, ' ')}</span>
+                </div>
+              );
+            })}
             {venue.uniqueAmenities.length > 4 && (
               <span className="text-xs text-gray-500 dark:text-gray-400 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
                 +{venue.uniqueAmenities.length - 4} more
