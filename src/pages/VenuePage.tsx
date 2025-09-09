@@ -13,10 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
 // API configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
-
 // Fetch real location image using Wikidata and OpenStreetMap
 const searchCityImage = async (cityName, index = 0) => {
   try {
@@ -61,7 +59,6 @@ const searchCityImage = async (cityName, index = 0) => {
     return `https://placehold.co/800x600/${colors[colorIndex]}/ffffff?text=${encodeURIComponent(cityName.substring(0, 20))}&font=Open+Sans`;
   }
 };
-
 const fetchWikiImage = async (wikidataId) => {
   try {
     const response = await fetch(`https://www.wikidata.org/wiki/Special:EntityData/${wikidataId}.json`);
@@ -78,7 +75,6 @@ const fetchWikiImage = async (wikidataId) => {
     return null;
   }
 };
-
 // StatsCard Component with gradients
 const StatsCard = ({ icon, value, label, gradient }) => (
   <motion.div
@@ -98,7 +94,6 @@ const StatsCard = ({ icon, value, label, gradient }) => (
     </div>
   </motion.div>
 );
-
 // CityCard Component with real images and hover effects
 const CityCard = ({ city, onSelect, index }) => (
   <motion.div
@@ -144,7 +139,6 @@ const CityCard = ({ city, onSelect, index }) => (
     </div>
   </motion.div>
 );
-
 // VenueCard Component with real images and hover effects
 const VenueCard = ({ venue, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -423,7 +417,6 @@ const VenueCard = ({ venue, index, onViewDetails }) => {
     </motion.div>
   );
 };
-
 // Main VenuePage Component
 const VenuePage = () => {
   const [cities, setCities] = useState([]);
@@ -479,7 +472,6 @@ const VenuePage = () => {
       }
     }
   };
-
   // Fetch cities and stats
   const fetchCities = async () => {
     try {
@@ -488,7 +480,6 @@ const VenuePage = () => {
         fetch(`${API_BASE_URL}/cities`).then(res => res.json()),
         fetch(`${API_BASE_URL}/api/stats`).then(res => res.json())
       ]);
-
       const citiesData = citiesResponse.cities || [];
       const citiesWithImages = await Promise.all(
         citiesData.map(async (city, index) => {
@@ -509,7 +500,6 @@ const VenuePage = () => {
           }
         })
       );
-
       setCities(citiesWithImages);
       setStats({
         totalVenues: statsResponse.total_venues || 0,
@@ -524,7 +514,6 @@ const VenuePage = () => {
       setLoading(false);
     }
   };
-
   // Fetch city events and update venue count
   const fetchCityEvents = async (page = 1, reset = false) => {
     if (!selectedCity) return;
@@ -534,7 +523,6 @@ const VenuePage = () => {
       } else {
         setIsLoadingMore(true);
       }
-
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '20',
@@ -543,15 +531,12 @@ const VenuePage = () => {
         sort_by: filters.sort_by,
         sort_order: filters.sort_order
       });
-
       const response = await fetch(
         `${API_BASE_URL}/events/city/${encodeURIComponent(selectedCity)}?${params}`,
         { credentials: 'include' }
       );
-
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
-
       const venueMap = new Map();
       data.events.forEach(event => {
         const key = event.location;
@@ -575,26 +560,22 @@ const VenuePage = () => {
           venue.topEvent = event;
         }
       });
-
       const processedVenues = Array.from(venueMap.values()).map(venue => ({
         ...venue,
         uniqueAmenities: Array.from(venue.uniqueAmenities)
       }));
-
       if (reset || page === 1) {
         setVenues(processedVenues);
         setCurrentPage(1);
       } else {
         setVenues(prev => [...prev, ...processedVenues]);
       }
-
       setCurrentPage(page);
       setHasMore(data.pagination.has_next);
       setAvailableFilters(data.available_filters || {
         locations: [],
         time_filters: ['upcoming', 'today', 'past', 'all']
       });
-
     } catch (err) {
       setError('Failed to load venues');
       console.error('Error fetching city events:', err);
@@ -603,11 +584,9 @@ const VenuePage = () => {
       setIsLoadingMore(false);
     }
   };
-
   useEffect(() => {
     fetchCities();
   }, []);
-
   useEffect(() => {
     const cityFromParams = searchParams.get('city');
     if (cityFromParams && cities.length > 0) {
@@ -615,13 +594,11 @@ const VenuePage = () => {
       setFilters(prev => ({ ...prev, city: cityFromParams }));
     }
   }, [cities, searchParams]);
-
   useEffect(() => {
     if (selectedCity) {
       fetchCityEvents(1, true);
     }
   }, [selectedCity, filters.location, filters.time_filter, filters.sort_by, filters.sort_order]);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -645,7 +622,6 @@ const VenuePage = () => {
       }
     };
   }, [currentPage, hasMore, isLoadingMore, selectedCity]);
-
   const handleCitySelect = (city) => {
     setSelectedCity(city);
     setFilters(prev => ({ ...prev, city }));
@@ -654,24 +630,20 @@ const VenuePage = () => {
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setVenues([]);
     setCurrentPage(1);
     setHasMore(true);
   };
-
   const handleViewDetails = (venue) => {
     setSelectedVenue(venue);
   };
-
   const handleGetDirections = (venue) => {
     const query = encodeURIComponent(`${venue.location}, ${venue.city}`);
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
     window.open(mapsUrl, '_blank');
   };
-
   const handleShare = (venue) => {
     const shareData = {
       title: venue.location,
@@ -684,7 +656,6 @@ const VenuePage = () => {
       navigator.clipboard.writeText(window.location.href);
     }
   };
-
   const filteredVenues = useMemo(() => {
     return venues.filter(venue => {
       const matchesSearch = !searchQuery ||
@@ -693,7 +664,6 @@ const VenuePage = () => {
       return matchesSearch;
     });
   }, [venues, searchQuery]);
-
   const sortedVenues = useMemo(() => {
     const sorted = [...filteredVenues];
     switch (activeTab) {
@@ -707,7 +677,6 @@ const VenuePage = () => {
         return sorted;
     }
   }, [filteredVenues, activeTab]);
-
   return (
     <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden transition-all duration-300">
       <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
@@ -1118,6 +1087,21 @@ const VenuePage = () => {
                                 'coffee': <Coffee className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />,
                                 'security': <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />,
                                 'activities': <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600 dark:text-indigo-400" />,
+                                'restroom': <Building className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />,
+                                'elevator': <ArrowUpDown className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />,
+                                'air_conditioning': <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-cyan-600 dark:text-cyan-400" />,
+                                'heating': <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-red-600 dark:text-red-400" />,
+                                'wheelchair_accessible': <Users className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 dark:text-green-400" />,
+                                'outdoor_seating': <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 dark:text-green-400" />,
+                                'bar': <Coffee className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />,
+                                'stage': <Music className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400" />,
+                                'dance_floor': <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-pink-600 dark:text-pink-400" />,
+                                'photography': <Camera className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-600 dark:text-indigo-400" />,
+                                'sound_system': <Music className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600 dark:text-purple-400" />,
+                                'lighting': <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-600 dark:text-yellow-400" />,
+                                'catering': <Utensils className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600 dark:text-orange-400" />,
+                                'valet': <Car className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" />,
+                                'coat_check': <Building className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />,
                               };
                               return iconMap[amenity.toLowerCase()] || <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />;
                             })()}
@@ -1389,5 +1373,4 @@ const VenuePage = () => {
     </div>
   );
 };
-
 export default VenuePage;
