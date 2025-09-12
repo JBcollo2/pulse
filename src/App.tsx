@@ -8,7 +8,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import Index from "./pages/Index";
 import Events from "./pages/Events";
 import VenuePage from "./pages/VenuePage";
-import Artists from "./pages/Artists";
+import PartnershipsPage from "./pages/PartnershipsPage";
 import About from "./pages/About";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -157,7 +157,7 @@ const AppRouter: React.FC = () => {
       <Route path="/" element={<Index />} />
       <Route path="/events" element={<Events />} />
       <Route path="/venues" element={<VenuePage />} />
-      <Route path="/artists" element={<Artists />} />
+      <Route path="/PartnershipsPage" element={<PartnershipsPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/payment-status" element={<PaymentStatus />} />
       <Route path="/" element={<DashboardProtectedRoute />}>
