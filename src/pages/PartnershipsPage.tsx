@@ -43,35 +43,21 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, value, label, gradient = 'b
   </motion.div>
 );
 
-// ---------- PartnershipCard -----------
+// ---------- PartnershipCard (Updated to match VenueCard styling) -----------
 type Collaboration = any;
 type PartnershipCardProps = {
   collaboration: Collaboration;
   index: number;
   onViewDetails: (c: Collaboration) => void;
-  onShare?: (c: Collaboration) => void;
 };
 
-const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index, onViewDetails, onShare }) => {
+const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index, onViewDetails }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     const d = new Date(dateString);
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (String(status || '').toLowerCase()) {
-      case 'active':
-        return 'from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 text-green-700 dark:text-green-300';
-      case 'pending':
-        return 'from-yellow-100 to-yellow-200 dark:from-yellow-900/30 dark:to-yellow-800/30 text-yellow-700 dark:text-yellow-300';
-      case 'completed':
-        return 'from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 text-blue-700 dark:text-blue-300';
-      default:
-        return 'from-gray-100 to-gray-200 dark:from-gray-900/30 dark:to-gray-800/30 text-gray-700 dark:text-gray-300';
-    }
   };
 
   const getPartnerTypeIcon = (type?: string) => {
@@ -92,50 +78,49 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.45, delay: index * 0.06 }}
-      whileHover={{ y: -6, scale: 1.02 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(collaboration)}
     >
+      {/* Header / Image */}
       <div className="relative h-56 overflow-hidden rounded-t-3xl">
-        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
-            animate={{ opacity: [0.08, 0.18, 0.08] }}
-            transition={{ duration: 3, repeat: Infinity }}
+        {collaboration.partner?.logo_url ? (
+          <motion.img
+            src={collaboration.partner.logo_url}
+            alt={collaboration.partner?.company_name || 'Partner'}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
           />
-          <div className="flex items-center gap-4 text-white relative z-10">
-            <div className="text-4xl font-bold drop-shadow-2xl">
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
+              animate={{ opacity: [0.1, 0.2, 0.1] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            <span className="text-6xl font-bold text-white relative z-10 drop-shadow-2xl">
               {collaboration.partner?.company_name?.charAt(0) || 'P'}
-            </div>
-            <Handshake className="w-8 h-8 text-white drop-shadow-lg" />
-            <div className="text-4xl font-bold drop-shadow-2xl">
-              {collaboration.event_name?.charAt(0) || 'E'}
-            </div>
+            </span>
           </div>
-        </div>
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-          <motion.div
-            className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getStatusColor(collaboration.status)} opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1`}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.92 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
-          >
-            <Star className="w-3 h-3" />
-            {String(collaboration.status || 'ACTIVE').toUpperCase()}
-          </motion.div>
-
-          {collaboration.partner?.partner_type && (
-            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-              {getPartnerTypeIcon(collaboration.partner.partner_type)}
-              <span className="text-sm font-medium capitalize">{collaboration.partner.partner_type}</span>
-            </div>
+          {collaboration.status && (
+            <motion.div
+              className="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-green-500 opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.9 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            >
+              <Star className="w-3 h-3 fill-current" />
+              {String(collaboration.status).toUpperCase()}
+            </motion.div>
           )}
         </div>
 
@@ -147,53 +132,67 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-              <Building className="w-4 h-4" />
+              <Handshake className="w-4 h-4" />
               <span className="text-sm font-medium">Partnership</span>
             </div>
-            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{formatDate(collaboration.start_date) || 'Ongoing'}</span>
-            </div>
+            {collaboration.start_date && (
+              <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm font-medium">{formatDate(collaboration.start_date)}</span>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
 
+      {/* Body */}
       <div className="p-6 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <motion.h3
-            className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
-            style={{ backgroundImage: isHovered ? 'linear-gradient(to right, #3b82f6, #10b981)' : undefined }}
+            className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+            style={{
+              backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+              '--tw-gradient-from': '#3b82f6',
+              '--tw-gradient-to': '#10b981',
+              '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)',
+            } as React.CSSProperties}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
+            transition={{ delay: 0.1 }}
           >
             {collaboration.partner?.company_name || 'Partnership'}
           </motion.h3>
 
-          <motion.div
-            className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-90 text-white text-xs font-bold flex-shrink-0"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.25, type: 'spring', stiffness: 300 }}
-          >
-            <Handshake className="w-3 h-3" />
-            COLLAB
-          </motion.div>
+          {collaboration.partner?.partner_type && (
+            <motion.div
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-90 text-white text-xs font-bold flex-shrink-0"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 300 }}
+            >
+              {getPartnerTypeIcon(collaboration.partner.partner_type)}
+              <span className="capitalize">{collaboration.partner.partner_type}</span>
+            </motion.div>
+          )}
         </div>
 
-        <motion.p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 leading-relaxed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}>
+        <motion.p
+          className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           Partnership with {collaboration.event_name}
           {collaboration.organizer_name ? ` organized by ${collaboration.organizer_name}` : ''}
         </motion.p>
 
-        <motion.div className="space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <Building className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-            </div>
-            <span className="text-sm font-medium truncate">{collaboration.event_name}</span>
-          </div>
-
+        {/* Details */}
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           {collaboration.partner?.contact_email && (
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
               <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -210,69 +209,59 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             <span className="text-sm font-medium">
               Active Collaboration
               {collaboration.organizer_name && (
-                <span className="text-green-600 dark:text-green-400 ml-1"> with {collaboration.organizer_name}</span>
+                <span className="text-green-600 dark:text-green-400 ml-1">with {collaboration.organizer_name}</span>
               )}
             </span>
           </div>
         </motion.div>
 
-        <motion.div className="flex items-center justify-between pt-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}>
+        {/* Footer */}
+        <motion.div
+          className="flex items-center justify-between pt-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">{collaboration.partner?.partner_type || 'Partner'}</span>
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                {collaboration.partner?.partner_type || 'Partner'}
+              </span>
             </div>
-            <div className="space-y-1 mt-1">
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">{collaboration.status || 'Active'}</div>
-            </div>
+            {collaboration.status && (
+              <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mt-1">
+                {collaboration.status}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <motion.button
-              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 text-sm"
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ boxShadow: '0 15px 30px -8px rgba(59, 130, 246, 0.18)' }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onViewDetails(collaboration);
-              }}
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>View Details</span>
-            </motion.button>
-
-            <button
-              title="Share"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (navigator.share) {
-                  navigator.share({
-                    title: `Partnership: ${collaboration.partner?.company_name}`,
-                    text: `Check out this partnership with ${collaboration.event_name}!`,
-                    url: window.location.href,
-                  }).catch(() => { /* ignore */ });
-                } else {
-                  navigator.clipboard?.writeText(window.location.href).catch(() => { /* ignore */ });
-                }
-              }}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-            >
-              <Share2 className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-            </button>
-          </div>
+          <motion.button
+            className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-sm"
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onViewDetails(collaboration);
+            }}
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span>View Details</span>
+          </motion.button>
         </motion.div>
       </div>
 
+      {/* Hover glow */}
       <motion.div
         className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500 to-green-500 opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10"
-        initial={{ scale: 0.9 }}
-        animate={{ scale: isHovered ? 1.05 : 0.9 }}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
       />
     </motion.div>
   );
 };
+
 
 // ---------------- Main PartnershipsPage ----------------
 const PartnershipsPage: React.FC = () => {
@@ -579,8 +568,7 @@ const PartnershipsPage: React.FC = () => {
                                 collaboration={collaboration}
                                 index={index}
                                 onViewDetails={handleViewDetails}
-                                onShare={handleShare}
-                              />
+                            />
                             ))}
                           </AnimatePresence>
                         </div>

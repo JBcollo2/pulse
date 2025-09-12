@@ -341,7 +341,7 @@ const Navbar: React.FC = () => {
               <Search className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-3" />
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No pages found</p>
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                Try searching for "events", "venues", "artists", or "home"
+                Try searching for "events", "venues", "partnerships", or "home"
               </p>
               <button
                 onClick={clearSearch}
