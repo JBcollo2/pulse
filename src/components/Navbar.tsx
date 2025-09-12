@@ -112,13 +112,14 @@ const Navbar: React.FC = () => {
     };
   }, [shouldHideNavbar, showNavbarOnPage]);
 
-  const navigationItems = [
-    { path: '/', label: 'Home', icon: Home, description: 'Welcome & overview', category: 'Main', color: 'text-blue-500' },
-    { path: '/events', label: 'Events', icon: Calendar, description: 'Discover events', category: 'Discover', color: 'text-purple-500' },
-    { path: '/venues', label: 'Venues', icon: MapPin, description: 'Find venues', category: 'Discover', color: 'text-green-500' },
-    { path: '/artists', label: 'Artists', icon: Users, description: 'Browse artists', category: 'Discover', color: 'text-orange-500' },
-    { path: '/about', label: 'About', icon: Info, description: 'Learn about us', category: 'Info', color: 'text-indigo-500' },
-  ];
+ const navigationItems = [
+  { path: '/', label: 'Home', icon: Home, description: 'Welcome & overview', category: 'Main', color: 'text-blue-500' },
+  { path: '/events', label: 'Events', icon: Calendar, description: 'Discover events', category: 'Discover', color: 'text-purple-500' },
+  { path: '/venues', label: 'Venues', icon: MapPin, description: 'Find venues', category: 'Discover', color: 'text-green-500' },
+  { path: '/partnerships', label: 'Partnerships', icon: Users, description: 'Explore partnerships & collaborations', category: 'Discover', color: 'text-orange-500' },
+  { path: '/about', label: 'About', icon: Info, description: 'Learn about us', category: 'Info', color: 'text-indigo-500' },
+];
+
 
   // Filter navigation items based on search query
   const filteredNavigationItems = useMemo(() => {

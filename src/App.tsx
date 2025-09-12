@@ -157,7 +157,7 @@ const AppRouter: React.FC = () => {
       <Route path="/" element={<Index />} />
       <Route path="/events" element={<Events />} />
       <Route path="/venues" element={<VenuePage />} />
-      <Route path="/PartnershipsPage" element={<PartnershipsPage />} />
+      <Route path="/partnerships" element={<PartnershipsPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/payment-status" element={<PaymentStatus />} />
       <Route path="/" element={<DashboardProtectedRoute />}>
