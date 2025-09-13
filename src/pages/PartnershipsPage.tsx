@@ -33,7 +33,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, value, label, gradient = 'b
     <div className="absolute inset-0 opacity-5 dark:opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }} />
     <div className="relative z-10 flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
       <div className={`p-2 sm:p-3 rounded-xl ${gradient} shadow-lg group-hover:rotate-12 transition-transform duration-500 shrink-0`}>
-        {React.cloneElement(icon, { className: 'w-5 h-5 text-white' })}
+        {React.cloneElement(icon, { className: 'w-4 h-4 sm:w-5 sm:h-5 text-white' })}
       </div>
       <div className="text-center sm:text-left">
         <div className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">{value}</div>
@@ -42,23 +42,31 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, value, label, gradient = 'b
     </div>
   </motion.div>
 );
-
-// ---------- PartnershipCard -----------
+// ---------- PartnershipCard ----------- 
 type Collaboration = any;
 type PartnershipCardProps = {
   collaboration: Collaboration;
   index: number;
   onViewDetails: (c: Collaboration) => void;
+  onViewEvent: (c: Collaboration) => void;
   onShare?: (c: Collaboration) => void;
 };
 
-const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index, onViewDetails, onShare }) => {
+const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index, onViewDetails, onViewEvent, onShare }) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
     const d = new Date(dateString);
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const time = new Date();
+    time.setHours(parseInt(hours), parseInt(minutes));
+    return time.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   const getStatusColor = (status?: string) => {
@@ -89,37 +97,61 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
     }
   };
 
+  const getCategoryGradient = () => 'from-blue-500 to-green-500';
+  const getCategoryIcon = () => '🤝';
+
+  const getCompanyImage = () => {
+    if (collaboration.partner?.company_image) {
+      return collaboration.partner.company_image;
+    }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(collaboration.partner?.company_name || 'Company')}&size=400&background=3b82f6&color=ffffff&font-size=0.5`;
+  };
+
   return (
     <motion.div
       className="group relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/30 dark:border-gray-800/60 cursor-pointer"
-      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.45, delay: index * 0.06 }}
-      whileHover={{ y: -6, scale: 1.02 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(collaboration)}
     >
-      <div className="relative h-56 overflow-hidden rounded-t-3xl">
-        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10"
-            animate={{ opacity: [0.08, 0.18, 0.08] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          />
-          <div className="flex items-center gap-4 text-white relative z-10">
-            <div className="text-4xl font-bold drop-shadow-2xl">
-              {collaboration.partner?.company_name?.charAt(0) || 'P'}
-            </div>
-            <Handshake className="w-8 h-8 text-white drop-shadow-lg" />
-            <div className="text-4xl font-bold drop-shadow-2xl">
-              {collaboration.event_name?.charAt(0) || 'E'}
-            </div>
-          </div>
-        </div>
+      {/* Image Section */}
+      <div className="relative h-48 sm:h-56 overflow-hidden rounded-t-3xl">
+        <motion.img
+          src={getCompanyImage()}
+          alt={collaboration.partner?.company_name || 'Company'}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              const fallback = document.createElement('div');
+              fallback.className = 'w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden';
+              fallback.innerHTML = `
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10 animate-pulse"></div>
+                <div class="flex items-center gap-4 text-white relative z-10">
+                  <div class="text-4xl font-bold drop-shadow-2xl">${(collaboration.partner?.company_name || 'P').charAt(0)}</div>
+                  <svg class="w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L13.09 8.26L19 7L14.91 12.47L21 14L14.91 15.53L19 21L13.09 19.74L12 22L10.91 19.74L5 21L9.09 15.53L3 14L9.09 12.47L5 7L10.91 8.26L12 2Z"/>
+                  </svg>
+                  <div class="text-4xl font-bold drop-shadow-2xl">${(collaboration.event_name || 'E').charAt(0)}</div>
+                </div>
+              `;
+              parent.appendChild(fallback);
+            }
+          }}
+        />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        {/* overlays */}
+        <div className={`absolute inset-0 bg-gradient-to-t ${getCategoryGradient()} opacity-20 group-hover:opacity-30 transition-opacity duration-500`} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
+        {/* badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <motion.div
             className={`px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r ${getStatusColor(collaboration.status)} opacity-90 shadow-lg backdrop-blur-sm flex items-center gap-1`}
@@ -127,18 +159,24 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             animate={{ scale: 1, opacity: 0.92 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
           >
-            <Star className="w-3 h-3" />
+            <Star className="w-3 h-3 fill-current" />
             {String(collaboration.status || 'ACTIVE').toUpperCase()}
           </motion.div>
 
           {collaboration.partner?.partner_type && (
-            <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-              {getPartnerTypeIcon(collaboration.partner.partner_type)}
-              <span className="text-sm font-medium capitalize">{collaboration.partner.partner_type}</span>
-            </div>
+            <motion.div
+              className="px-3 py-1 rounded-full text-xs font-semibold text-white bg-black/40 backdrop-blur-md border border-white/20 flex items-center gap-1"
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span>{getCategoryIcon()}</span>
+              {collaboration.partner.partner_type}
+            </motion.div>
           )}
         </div>
 
+        {/* bottom bar */}
         <div className="absolute bottom-4 left-4 right-4">
           <motion.div
             className="flex items-center justify-between"
@@ -158,14 +196,21 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
         </div>
       </div>
 
-      <div className="p-6 space-y-4">
+      {/* content section */}
+      <div className="p-4 sm:p-6 space-y-4">
+        {/* Title */}
         <div className="flex items-start justify-between gap-3">
           <motion.h3
-            className="text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
-            style={{ backgroundImage: isHovered ? 'linear-gradient(to right, #3b82f6, #10b981)' : undefined }}
+            className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white leading-tight group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-500 line-clamp-2"
+            style={{
+              backgroundImage: isHovered ? `linear-gradient(to right, var(--tw-gradient-stops))` : 'none',
+              '--tw-gradient-from': '#3b82f6',
+              '--tw-gradient-to': '#10b981',
+              '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)',
+            } as React.CSSProperties}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
+            transition={{ delay: 0.1 }}
           >
             {collaboration.partner?.company_name || 'Partnership'}
           </motion.h3>
@@ -174,105 +219,152 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-90 text-white text-xs font-bold flex-shrink-0"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.25, type: 'spring', stiffness: 300 }}
+            transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
           >
             <Handshake className="w-3 h-3" />
-            COLLAB
+            PARTNER
           </motion.div>
         </div>
 
-        <motion.p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 leading-relaxed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}>
+        {/* description */}
+        <motion.p
+          className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           Partnership with {collaboration.event_name}
           {collaboration.organizer_name ? ` organized by ${collaboration.organizer_name}` : ''}
+          {collaboration.contribution && (
+            <span className="block text-green-600 dark:text-green-400 font-medium mt-1 text-xs">
+              Contribution: {collaboration.contribution}
+            </span>
+          )}
         </motion.p>
 
-        <motion.div className="space-y-3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+        {/* details */}
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <Building className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+              <Calendar className="w-4 h-4 text-current" />
             </div>
             <span className="text-sm font-medium truncate">{collaboration.event_name}</span>
           </div>
 
           {collaboration.partner?.contact_email && (
             <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-                <Mail className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+                <Mail className="w-4 h-4 text-current" />
               </div>
               <span className="text-sm font-medium truncate">{collaboration.partner.contact_email}</span>
             </div>
           )}
 
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <UserCheck className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+          {collaboration.organizer_name && (
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} bg-opacity-10`}>
+                <Users className="w-4 h-4 text-current" />
+              </div>
+              <span className="text-sm font-medium truncate">by {collaboration.organizer_name}</span>
             </div>
-            <span className="text-sm font-medium">
-              Active Collaboration
-              {collaboration.organizer_name && (
-                <span className="text-green-600 dark:text-green-400 ml-1"> with {collaboration.organizer_name}</span>
-              )}
-            </span>
-          </div>
+          )}
         </motion.div>
 
-        <motion.div className="flex items-center justify-between pt-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}>
+        {collaboration.partner?.website && (
+          <motion.div
+            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <Globe className="w-4 h-4" />
+            <a
+              href={collaboration.partner.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 dark:text-blue-400 hover:underline truncate"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Visit Website
+            </a>
+          </motion.div>
+        )}
+
+        {/* action buttons */}
+        <motion.div
+          className="flex items-center justify-between pt-2"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">{collaboration.partner?.partner_type || 'Partner'}</span>
+              <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                {collaboration.partner?.partner_type || 'Partner'}
+              </span>
             </div>
             <div className="space-y-1 mt-1">
-              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">{collaboration.status || 'Active'}</div>
+              <div
+                className={`text-xs sm:text-sm font-medium px-2 py-1 rounded-full w-fit ${
+                  String(collaboration.status || '').toLowerCase() === 'active'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {collaboration.status || 'Active'}
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <motion.button
-              className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 text-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm"
               whileTap={{ scale: 0.95 }}
-              whileHover={{ boxShadow: '0 15px 30px -8px rgba(59, 130, 246, 0.18)' }}
+              whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onViewEvent(collaboration);
+              }}
+            >
+              <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>View Event</span>
+            </motion.button>
+
+            <motion.button
+              className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm"
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onViewDetails(collaboration);
               }}
             >
-              <ExternalLink className="w-4 h-4" />
-              <span>View Details</span>
+              <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Details</span>
+              <span className="sm:hidden">Info</span>
             </motion.button>
-
-            <button
-              title="Share"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (navigator.share) {
-                  navigator.share({
-                    title: `Partnership: ${collaboration.partner?.company_name}`,
-                    text: `Check out this partnership with ${collaboration.event_name}!`,
-                    url: window.location.href,
-                  }).catch(() => { /* ignore */ });
-                } else {
-                  navigator.clipboard?.writeText(window.location.href).catch(() => { /* ignore */ });
-                }
-              }}
-              className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-            >
-              <Share2 className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-            </button>
           </div>
         </motion.div>
       </div>
 
+      {/* hover glow */}
       <motion.div
-        className="absolute inset-0 rounded-3xl bg-gradient-to-r from-blue-500 to-green-500 opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10"
-        initial={{ scale: 0.9 }}
-        animate={{ scale: isHovered ? 1.05 : 0.9 }}
+        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500 -z-10`}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
       />
     </motion.div>
   );
 };
+
 
 // ---------------- Main PartnershipsPage ----------------
 const PartnershipsPage: React.FC = () => {
@@ -405,6 +497,11 @@ const PartnershipsPage: React.FC = () => {
     setSelectedCollaboration(c);
   };
 
+  const handleViewEvent = (c: Collaboration) => {
+    // Navigate to the specific event using Link-style navigation (like EventCard)
+    navigate(`/event/${c.event_id}`);
+  };
+
   const handleShare = (c: Collaboration) => {
     const shareData = {
       title: `Partnership: ${c.partner?.company_name}`,
@@ -453,8 +550,8 @@ const PartnershipsPage: React.FC = () => {
       <div className="relative z-10">
         <Navbar />
 
-        <main className="py-6 sm:py-8 lg:py-12 pt-20 sm:pt-24 relative">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <main className="py-6 sm:py-8 lg:py-12 pt-16 sm:pt-20 lg:pt-24 relative">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
             <motion.div className="mb-8 sm:mb-12" initial="hidden" animate="visible" variants={containerVariants}>
               <motion.div variants={itemVariants} className="text-center mb-8 sm:mb-12 lg:mb-16">
                 <div className="inline-flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white mb-4 sm:mb-6 shadow-lg shadow-blue-500/25">
@@ -462,15 +559,15 @@ const PartnershipsPage: React.FC = () => {
                   <span className="text-xs sm:text-sm font-medium">Event Partnerships & Collaborations</span>
                 </div>
 
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent leading-tight">
                   Strategic<br />Partnerships
                 </h1>
 
-                <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
+                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
                   Discover successful partnerships and collaborations that make events extraordinary. Connect with sponsors, vendors, and media partners.
                 </p>
 
-                <div className="max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
+                <div className="max-w-xl sm:max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
                   <div className="relative">
                     <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                     <input
@@ -478,7 +575,7 @@ const PartnershipsPage: React.FC = () => {
                       placeholder="Search partnerships, events, or companies..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 sm:pl-12 pr-4 sm:pr-6 py-3 sm:py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-full pl-10 sm:pl-12 pr-4 sm:pr-6 py-3 sm:py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm sm:text-base lg:text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl transition-all duration-300"
                     />
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-green-500/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                   </div>
@@ -495,21 +592,23 @@ const PartnershipsPage: React.FC = () => {
               <motion.div variants={itemVariants}>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
                   <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
                       Active Partnerships
                     </h2>
-                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">{sortedCollaborations.length} partnerships found</p>
+                    <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-300">{sortedCollaborations.length} partnerships found</p>
                   </div>
 
                   <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => fetchCollaborations(1, true)}
                       disabled={loading}
                       className="border-gray-200 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 transition-all duration-300"
                     >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                       <span className="hidden sm:inline">Refresh</span>
+                      <span className="sm:hidden">↻</span>
                     </Button>
                   </div>
                 </div>
@@ -518,18 +617,18 @@ const PartnershipsPage: React.FC = () => {
                   <TabsList className="grid w-full grid-cols-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 shadow-lg">
                     <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">All</TabsTrigger>
                     <TabsTrigger value="active" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Active</TabsTrigger>
-                    <TabsTrigger value="official_partner" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Official Partner</TabsTrigger>
+                    <TabsTrigger value="official_partner" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Official</TabsTrigger>
                     <TabsTrigger value="collaborator" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Collaborator</TabsTrigger>
-                    <TabsTrigger value="media_partner" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Media Partner</TabsTrigger>
+                    <TabsTrigger value="media_partner" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-green-500 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 rounded-lg transition-all duration-300 text-xs sm:text-sm">Media</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value={activeTab} className="mt-4 sm:mt-6">
                     {loading ? (
-                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                         {Array.from({ length: 6 }).map((_, i) => (
                           <div key={i} className="bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 animate-pulse">
                             <div className="h-40 sm:h-48 lg:h-56 w-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-600 dark:to-gray-700" />
-                            <div className="p-3 sm:p-4 lg:p-6 space-y-4">
+                            <div className="p-4 sm:p-6 space-y-4">
                               <Skeleton className="h-4 sm:h-6 w-3/4 rounded" />
                               <Skeleton className="h-3 sm:h-4 w-1/2 rounded" />
                               <div className="flex gap-2">
@@ -546,21 +645,21 @@ const PartnershipsPage: React.FC = () => {
                         {error && (
                           <div className="text-center py-6 sm:py-8 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-2xl border border-red-200 dark:border-red-800 shadow-lg mx-4">
                             <div className="relative inline-block mb-4">
-                              <div className="text-3xl sm:text-4xl animate-bounce">⚠️</div>
+                              <div className="text-2xl sm:text-3xl animate-bounce">⚠️</div>
                               <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-ping" />
                             </div>
-                            <p className="text-base sm:text-lg font-medium text-red-600 dark:text-red-400">{error}</p>
+                            <p className="text-sm sm:text-base lg:text-lg font-medium text-red-600 dark:text-red-400">{error}</p>
                           </div>
                         )}
 
                         {!error && sortedCollaborations.length === 0 && (
-                          <div className="text-center py-12 sm:py-20">
+                          <div className="text-center py-12 sm:py-16 lg:py-20">
                             <div className="relative inline-block mb-4 sm:mb-6">
-                              <div className="text-6xl sm:text-8xl animate-bounce">🤝</div>
-                              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-12 sm:w-16 h-2 bg-gradient-to-r from-blue-500/20 to-green-500/20 rounded-full blur-sm" />
+                              <div className="text-4xl sm:text-6xl lg:text-8xl animate-bounce">🤝</div>
+                              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 sm:w-12 lg:w-16 h-2 bg-gradient-to-r from-blue-500/20 to-green-500/20 rounded-full blur-sm" />
                             </div>
-                            <h3 className="text-2xl sm:text-3xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">No partnerships found</h3>
-                            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 px-4">Try adjusting your search or explore different partnership categories</p>
+                            <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">No partnerships found</h3>
+                            <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 px-4 max-w-md mx-auto">Try adjusting your search or explore different partnership categories</p>
                             <Button
                               onClick={() => { setSearchQuery(''); setActiveTab('all'); }}
                               className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
@@ -571,7 +670,7 @@ const PartnershipsPage: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                           <AnimatePresence>
                             {sortedCollaborations.map((collaboration, index) => (
                               <PartnershipCard
@@ -579,6 +678,7 @@ const PartnershipsPage: React.FC = () => {
                                 collaboration={collaboration}
                                 index={index}
                                 onViewDetails={handleViewDetails}
+                                onViewEvent={handleViewEvent}
                                 onShare={handleShare}
                               />
                             ))}
@@ -592,7 +692,7 @@ const PartnershipsPage: React.FC = () => {
                                 <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin text-blue-500" />
                                 <div className="absolute inset-0 h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gradient-to-r from-blue-500 to-green-500 opacity-20 animate-pulse" />
                               </div>
-                              <span className="text-gray-600 dark:text-gray-300 font-medium text-sm sm:text-base">Loading more partnerships...</span>
+                              <span className="text-gray-600 dark:text-gray-300 font-medium text-xs sm:text-sm">Loading more partnerships...</span>
                             </div>
                           </div>
                         )}
@@ -603,7 +703,7 @@ const PartnershipsPage: React.FC = () => {
                           <div className="text-center py-8 sm:py-12">
                             <div className="inline-flex items-center px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-full border border-blue-200/50 dark:border-gray-600 shadow-lg">
                               <Handshake className="w-4 h-4 text-blue-600 dark:text-blue-300 mr-2" />
-                              <span className="text-gray-700 dark:text-gray-300 font-medium text-sm sm:text-base">You've explored all available partnerships!</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs sm:text-sm">You've explored all available partnerships!</span>
                             </div>
                           </div>
                         )}
@@ -620,7 +720,7 @@ const PartnershipsPage: React.FC = () => {
         <Dialog open={!!selectedCollaboration} onOpenChange={(open) => { if (!open) setSelectedCollaboration(null); }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl mx-4">
             <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-              <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+              <DialogTitle className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
                 {selectedCollaboration?.partner?.company_name || 'Partnership Details'}
               </DialogTitle>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 text-gray-600 dark:text-gray-300">
@@ -628,14 +728,14 @@ const PartnershipsPage: React.FC = () => {
                   <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30">
                     <Handshake className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-300" />
                   </div>
-                  <span className="font-medium text-sm sm:text-base">{selectedCollaboration?.event_name}</span>
+                  <span className="font-medium text-xs sm:text-sm lg:text-base">{selectedCollaboration?.event_name}</span>
                 </div>
                 {selectedCollaboration?.organizer_name && (
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 dark:from-green-900/30 dark:to-blue-900/30">
                       <Building className="w-3 h-3 sm:w-4 sm:h-4 text-green-600 dark:text-green-300" />
                     </div>
-                    <span className="font-medium text-sm sm:text-base">by {selectedCollaboration.organizer_name}</span>
+                    <span className="font-medium text-xs sm:text-sm lg:text-base">by {selectedCollaboration.organizer_name}</span>
                   </div>
                 )}
               </div>
@@ -647,29 +747,42 @@ const PartnershipsPage: React.FC = () => {
                   {/* Partner Details */}
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                      <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                      <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
                         <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg shadow-blue-500/25">
                           <Building className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Partner Information
                       </h4>
                       <div className="space-y-3">
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300 text-sm">Company:</span>
-                          <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{selectedCollaboration.partner?.company_name || 'N/A'}</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Company:</span>
+                          <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm">{selectedCollaboration.partner?.company_name || 'N/A'}</span>
                         </div>
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300 text-sm">Type:</span>
-                          <span className="font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent text-sm capitalize">{selectedCollaboration.partner?.partner_type || 'Partner'}</span>
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Type:</span>
+                          <span className="font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent text-xs sm:text-sm capitalize">{selectedCollaboration.partner?.partner_type || 'Partner'}</span>
                         </div>
                         {selectedCollaboration.partner?.contact_email && (
-                          <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                            <span className="text-gray-600 dark:text-gray-300 text-sm">Contact:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100 text-sm">{selectedCollaboration.partner.contact_email}</span>
+                          <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Contact:</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm truncate max-w-[150px]">{selectedCollaboration.partner.contact_email}</span>
                           </div>
                         )}
-                        <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                          <span className="text-gray-600 dark:text-gray-300 text-sm">Status:</span>
+                        {selectedCollaboration.partner?.website && (
+                          <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Website:</span>
+                            <a 
+                              href={selectedCollaboration.partner.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-blue-600 dark:text-blue-400 hover:underline text-xs sm:text-sm"
+                            >
+                              Visit Site
+                            </a>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                          <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Status:</span>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${selectedCollaboration.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
                             {selectedCollaboration.status || 'Active'}
                           </span>
@@ -681,7 +794,7 @@ const PartnershipsPage: React.FC = () => {
                   {/* Event Details */}
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
-                      <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                      <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
                         <div className="p-2 rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white shadow-lg shadow-green-500/25">
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
@@ -689,23 +802,23 @@ const PartnershipsPage: React.FC = () => {
                       </h4>
                       <div className="space-y-3">
                         <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-                          <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-1">{selectedCollaboration.event_name}</h5>
+                          <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-1 text-xs sm:text-sm lg:text-base">{selectedCollaboration.event_name}</h5>
                           {selectedCollaboration.organizer_name && (
-                            <p className="text-sm text-gray-600 dark:text-gray-300">Organized by {selectedCollaboration.organizer_name}</p>
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Organized by {selectedCollaboration.organizer_name}</p>
                           )}
                         </div>
 
                         {selectedCollaboration.collaboration_type && (
-                          <div className="flex justify-between items-center p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                            <span className="text-gray-600 dark:text-gray-300 text-sm">Collaboration Type:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100 text-sm capitalize">{selectedCollaboration.collaboration_type}</span>
+                          <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Collaboration Type:</span>
+                            <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm capitalize">{selectedCollaboration.collaboration_type}</span>
                           </div>
                         )}
 
                         {selectedCollaboration.contribution && (
                           <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-2 text-sm">Contribution:</h6>
-                            <p className="text-sm text-gray-600 dark:text-gray-300">{selectedCollaboration.contribution}</p>
+                            <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-2 text-xs sm:text-sm">Contribution:</h6>
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{selectedCollaboration.contribution}</p>
                           </div>
                         )}
                       </div>
@@ -718,7 +831,7 @@ const PartnershipsPage: React.FC = () => {
                   {selectedCollaboration.partner?.contact_email && (
                     <Button
                       onClick={() => window.open(`mailto:${selectedCollaboration.partner.contact_email}`, '_blank')}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-sm sm:text-base"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm lg:text-base"
                     >
                       <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                       Contact Partner
@@ -726,8 +839,11 @@ const PartnershipsPage: React.FC = () => {
                   )}
 
                   <Button
-                    onClick={() => navigate(`/events?event_ids=${selectedCollaboration.event_id}`)}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-sm sm:text-base"
+                    onClick={() => {
+                      setSelectedCollaboration(null);
+                      handleViewEvent(selectedCollaboration);
+                    }}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm lg:text-base"
                   >
                     <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     View Event
@@ -736,7 +852,7 @@ const PartnershipsPage: React.FC = () => {
                   <Button
                     variant="outline"
                     onClick={() => handleShare(selectedCollaboration)}
-                    className="flex-1 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 bg-white dark:bg-gray-800 font-semibold py-2 sm:py-3 rounded-xl transition-all duration-300 hover:scale-105 text-sm sm:text-base"
+                    className="flex-1 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 dark:hover:from-blue-900/20 dark:hover:to-green-900/20 bg-white dark:bg-gray-800 font-semibold py-2 sm:py-3 rounded-xl transition-all duration-300 hover:scale-105 text-xs sm:text-sm lg:text-base"
                   >
                     <Share2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     Share Partnership
