@@ -269,7 +269,7 @@ const OrganizerPartnership: React.FC = () => {
   const fetchEvents = useCallback(async () => {
     setIsLoadingEvents(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/events`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
         credentials: 'include'
       });
 
