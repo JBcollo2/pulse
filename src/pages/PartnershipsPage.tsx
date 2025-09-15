@@ -7,7 +7,7 @@ import {
   MapPin, Search, Calendar, Filter, Grid, List, TrendingUp, Eye,
   Phone, Clock, Users, Heart, Share2, Bookmark, ChevronRight, ChevronLeft, Loader2,
   Award, Building, ArrowUpDown, RefreshCw, Menu, X, Ticket, Tag, ArrowRight,
-  Zap, Sparkles, Star, Handshake, UserCheck, Globe, Mail, ExternalLink
+  Zap, Sparkles, Star, Handshake, UserCheck, Globe, Mail, ExternalLink, Plus
 } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -63,6 +63,13 @@ type Collaboration = {
   collaboration_type?: string;
   description?: string;
   start_date?: string;
+  events?: Array<{
+    id?: string;
+    event_name?: string;
+    organizer_name?: string;
+    start_date?: string;
+    end_date?: string;
+  }>;
 };
 
 type PartnershipCardProps = {
@@ -112,14 +119,25 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
   };
 
   const getCategoryGradient = () => 'from-blue-500 to-green-500';
-  const getCategoryIcon = () => '🤝';
+
+  // Create company logo placeholder with C*P format
+  const getCompanyLogoPlaceholder = () => {
+    const companyName = collaboration.partner?.company_name || 'Company';
+    const firstLetter = companyName.charAt(0).toUpperCase();
+    const lastLetter = companyName.charAt(companyName.length - 1).toUpperCase();
+    return `${firstLetter}*P`; // Always use P as the last letter for "Partner"
+  };
 
   const getCompanyImage = () => {
     if (collaboration.partner?.logo_url && !imageError) {
       return collaboration.partner.logo_url;
     }
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(collaboration.partner?.company_name || 'Company')}&size=400&background=3b82f6&color=ffffff&font-size=0.5`;
+    return null; // Return null to trigger the fallback UI
   };
+
+  // Count total events this partner is involved in
+  const totalEvents = collaboration.events?.length || 1;
+  const hasMultipleEvents = totalEvents > 1;
 
   return (
     <motion.div
@@ -132,38 +150,47 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onViewDetails(collaboration)}
     >
-      {/* Image Section */}
+      {/* Image/Logo Section */}
       <div className="relative h-48 sm:h-56 overflow-hidden rounded-t-3xl">
-        <motion.img
-          src={getCompanyImage()}
-          alt={collaboration.partner?.company_name || 'Company'}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          loading="lazy"
-          onError={(e) => {
-            setImageError(true);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              const fallback = document.createElement('div');
-              fallback.className = 'w-full h-full bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center relative overflow-hidden';
-              fallback.innerHTML = `
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10 animate-pulse"></div>
-                <div class="flex items-center gap-4 text-white relative z-10">
-                  <div class="text-4xl font-bold drop-shadow-2xl">${(collaboration.partner?.company_name || 'P').charAt(0)}</div>
-                  <svg class="w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L13.09 8.26L19 7L14.91 12.47L21 14L14.91 15.53L19 21L13.09 19.74L12 22L10.91 19.74L5 21L9.09 15.53L3 14L9.09 12.47L5 7L10.91 8.26L12 2Z"/>
-                  </svg>
-                  <div class="text-4xl font-bold drop-shadow-2xl">${(collaboration.event_name || 'E').charAt(0)}</div>
-                </div>
-              `;
-              parent.appendChild(fallback);
-            }
-          }}
-        />
+        {getCompanyImage() && !imageError ? (
+          <motion.img
+            src={getCompanyImage()!}
+            alt={collaboration.partner?.company_name || 'Company'}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            loading="lazy"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          // Enhanced logo placeholder with C*P format
+          <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-500 to-green-500 flex items-center justify-center relative overflow-hidden">
+            {/* Animated background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-green-500/10 animate-pulse"></div>
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 50%)',
+              animation: 'float 6s ease-in-out infinite'
+            }}></div>
+            
+            {/* Logo placeholder with company initials */}
+            <div className="flex items-center justify-center gap-2 text-white relative z-10">
+              <div className="text-4xl sm:text-5xl font-black drop-shadow-2xl tracking-wider">
+                {getCompanyLogoPlaceholder()}
+              </div>
+            </div>
+            
+            {/* Company name overlay */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="bg-black/60 backdrop-blur-md rounded-lg px-3 py-2 border border-white/20">
+                <p className="text-white font-bold text-sm truncate">{collaboration.partner?.company_name || 'Partner Company'}</p>
+                <p className="text-white/80 text-xs">{collaboration.partner?.partner_type || 'Partner'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* overlays with better contrast */}
         <div className={`absolute inset-0 bg-gradient-to-t ${getCategoryGradient()} opacity-20 group-hover:opacity-30 transition-opacity duration-500`} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        
         {/* badges with better visibility */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
           <motion.div
@@ -182,11 +209,27 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <span>{getCategoryIcon()}</span>
+              {getPartnerTypeIcon(collaboration.partner.partner_type)}
               {collaboration.partner.partner_type}
             </motion.div>
           )}
         </div>
+
+        {/* Multiple events indicator */}
+        {hasMultipleEvents && (
+          <div className="absolute top-4 right-4">
+            <motion.div
+              className="px-2 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 shadow-lg backdrop-blur-md border border-white/30 flex items-center gap-1"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+            >
+              <Plus className="w-3 h-3" />
+              {totalEvents}
+            </motion.div>
+          </div>
+        )}
+        
         {/* bottom bar with improved visibility */}
         <div className="absolute bottom-4 left-4 right-4">
           <motion.div
@@ -206,6 +249,7 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
           </motion.div>
         </div>
       </div>
+
       {/* content section with enhanced hover effects */}
       <div className="p-4 sm:p-6 space-y-4">
         {/* Title */}
@@ -234,21 +278,27 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             PARTNER
           </motion.div>
         </div>
-        {/* Enhanced description with better contrast */}
-        <motion.p
-          className="text-gray-700 dark:text-gray-200 text-sm line-clamp-3 leading-relaxed"
+
+        {/* Enhanced description with multiple events support */}
+        <motion.div
+          className="space-y-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          Partnership with {collaboration.event_name}
-          {collaboration.organizer_name ? ` organized by ${collaboration.organizer_name}` : ''}
-          {collaboration.description && (
-            <span className="block text-blue-600 dark:text-blue-400 font-medium mt-1 text-xs">
-              {collaboration.description}
-            </span>
+          <p className="text-gray-700 dark:text-gray-200 text-sm line-clamp-2 leading-relaxed">
+            {collaboration.description || `Partnership with ${collaboration.event_name}${collaboration.organizer_name ? ` organized by ${collaboration.organizer_name}` : ''}`}
+          </p>
+          
+          {/* Multiple events indicator */}
+          {hasMultipleEvents && (
+            <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+              <Calendar className="w-3 h-3" />
+              <span>Active in {totalEvents} events</span>
+            </div>
           )}
-        </motion.p>
+        </motion.div>
+
         {/* details with better hover visibility */}
         <motion.div
           className="space-y-3"
@@ -260,8 +310,11 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} ${isHovered ? 'bg-opacity-20' : 'bg-opacity-10'} transition-all duration-300`}>
               <Calendar className="w-4 h-4 text-current" />
             </div>
-            <span className="text-sm font-medium truncate">{collaboration.event_name}</span>
+            <span className="text-sm font-medium truncate">
+              {hasMultipleEvents ? `${totalEvents} Events` : collaboration.event_name}
+            </span>
           </div>
+
           {collaboration.partner?.contact_email && (
             <div className={`flex items-center gap-3 transition-all duration-300 ${isHovered ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}>
               <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} ${isHovered ? 'bg-opacity-20' : 'bg-opacity-10'} transition-all duration-300`}>
@@ -270,7 +323,8 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
               <span className="text-sm font-medium truncate">{collaboration.partner.contact_email}</span>
             </div>
           )}
-          {collaboration.organizer_name && (
+
+          {collaboration.organizer_name && !hasMultipleEvents && (
             <div className={`flex items-center gap-3 transition-all duration-300 ${isHovered ? 'text-gray-800 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}>
               <div className={`p-2 rounded-lg bg-gradient-to-r ${getCategoryGradient()} ${isHovered ? 'bg-opacity-20' : 'bg-opacity-10'} transition-all duration-300`}>
                 <Users className="w-4 h-4 text-current" />
@@ -279,6 +333,7 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             </div>
           )}
         </motion.div>
+
         {collaboration.partner?.website_url && (
           <motion.div
             className={`flex items-center gap-2 text-sm transition-all duration-300 ${isHovered ? 'text-gray-700 dark:text-gray-200' : 'text-gray-600 dark:text-gray-300'}`}
@@ -298,6 +353,7 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
             </a>
           </motion.div>
         )}
+
         {/* action buttons with enhanced visibility */}
         <motion.div
           className="flex items-center justify-between pt-3 border-t border-gray-200/50 dark:border-gray-700/50"
@@ -335,7 +391,7 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
               }}
             >
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>View Event</span>
+              <span>{hasMultipleEvents ? 'View Events' : 'View Event'}</span>
             </motion.button>
             <motion.button
               className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm"
@@ -354,6 +410,7 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
           </div>
         </motion.div>
       </div>
+
       {/* Enhanced hover glow effect */}
       <motion.div
         className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-[0.15] blur-xl transition-all duration-500 -z-10`}
@@ -361,6 +418,15 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
         animate={{ scale: isHovered ? 1.1 : 0.8 }}
         transition={{ duration: 0.5 }}
       />
+
+      {/* CSS for floating animation */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          33% { transform: translateY(-10px) rotate(1deg); }
+          66% { transform: translateY(5px) rotate(-1deg); }
+        }
+      `}</style>
     </motion.div>
   );
 };
@@ -423,18 +489,46 @@ const PartnershipsPage: React.FC = () => {
         throw new Error(text || 'Failed to fetch collaborations');
       }
       const data = await response.json();
-      // Normalize: events -> collaborations
-      const processed: Collaboration[] = [];
+      
+      // Enhanced processing to group collaborations by partner
+      const partnerMap = new Map<string, Collaboration>();
+      
       (data.events || []).forEach((event: any) => {
         (event.collaborations || []).forEach((collab: any) => {
-          processed.push({
-            ...collab,
-            event_name: event.event_name,
-            organizer_name: event.organizer_name,
-            event_id: event.event_id,
-          });
+          const partnerId = collab.partner?.id || collab.partner?.company_name || 'unknown';
+          
+          if (partnerMap.has(partnerId)) {
+            // Add this event to existing partner collaboration
+            const existing = partnerMap.get(partnerId)!;
+            existing.events = existing.events || [];
+            existing.events.push({
+              id: event.event_id,
+              event_name: event.event_name,
+              organizer_name: event.organizer_name,
+              start_date: event.start_date,
+              end_date: event.end_date,
+            });
+          } else {
+            // Create new partner collaboration
+            partnerMap.set(partnerId, {
+              ...collab,
+              event_name: event.event_name,
+              organizer_name: event.organizer_name,
+              event_id: event.event_id,
+              events: [{
+                id: event.event_id,
+                event_name: event.event_name,
+                organizer_name: event.organizer_name,
+                start_date: event.start_date,
+                end_date: event.end_date,
+              }]
+            });
+          }
         });
       });
+
+      const processed = Array.from(partnerMap.values());
+
       if (reset || page === 1) {
         setCollaborations(processed);
         setCurrentPage(1);
@@ -443,10 +537,10 @@ const PartnershipsPage: React.FC = () => {
       }
       setHasMore(Boolean(data.has_next));
       setStats({
-        totalPartnerships: data.total_collaborations || processed.length,
+        totalPartnerships: processed.length,
         activeCollaborations: processed.filter(c => String(c.status || 'active').toLowerCase() === 'active').length,
         totalEvents: (data.events || []).length,
-        totalPartners: new Set(processed.map(c => c.partner?.id).filter(Boolean)).size,
+        totalPartners: processed.length,
       });
       setCurrentPage(page);
     } catch (err) {
@@ -488,7 +582,11 @@ const PartnershipsPage: React.FC = () => {
   };
 
   const handleViewEvent = (c: Collaboration) => {
-    navigate(`/event/${c.event_id}`);
+    // If multiple events, navigate to first event or show selection
+    const eventId = c.events?.[0]?.id || c.event_id;
+    if (eventId) {
+      navigate(`/event/${eventId}`);
+    }
   };
 
   const handleShare = (c: Collaboration) => {
@@ -511,7 +609,11 @@ const PartnershipsPage: React.FC = () => {
       return (
         String(collab.partner?.company_name || '').toLowerCase().includes(q) ||
         String(collab.event_name || '').toLowerCase().includes(q) ||
-        String(collab.organizer_name || '').toLowerCase().includes(q)
+        String(collab.organizer_name || '').toLowerCase().includes(q) ||
+        (collab.events || []).some(event => 
+          String(event.event_name || '').toLowerCase().includes(q) ||
+          String(event.organizer_name || '').toLowerCase().includes(q)
+        )
       );
     });
   }, [collaborations, searchQuery]);
@@ -709,7 +811,8 @@ const PartnershipsPage: React.FC = () => {
             </motion.div>
           </div>
         </main>
-        {/* Partnership Details Dialog */}
+        
+        {/* Enhanced Partnership Details Dialog */}
         <Dialog open={!!selectedCollaboration} onOpenChange={(open) => { if (!open) setSelectedCollaboration(null); }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl mx-4">
             <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
@@ -721,7 +824,12 @@ const PartnershipsPage: React.FC = () => {
                   <div className="p-2 rounded-lg bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/30 dark:to-green-900/30">
                     <Handshake className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-300" />
                   </div>
-                  <span className="font-medium text-xs sm:text-sm lg:text-base">{selectedCollaboration?.event_name}</span>
+                  <span className="font-medium text-xs sm:text-sm lg:text-base">
+                    {selectedCollaboration?.events && selectedCollaboration.events.length > 1 
+                      ? `${selectedCollaboration.events.length} Events`
+                      : selectedCollaboration?.event_name
+                    }
+                  </span>
                 </div>
                 {selectedCollaboration?.organizer_name && (
                   <div className="flex items-center gap-2">
@@ -745,10 +853,11 @@ const PartnershipsPage: React.FC = () => {
                         </div>
                         Partner Information
                       </h4>
-                      {/* Company Logo */}
-                      {selectedCollaboration.partner?.logo_url && (
-                        <div className="mb-4 flex justify-center">
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 shadow-md">
+                      
+                      {/* Enhanced Company Logo Display */}
+                      <div className="mb-4 flex justify-center">
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-600 shadow-md bg-gradient-to-br from-blue-500 to-green-500 flex items-center justify-center">
+                          {selectedCollaboration.partner?.logo_url ? (
                             <img
                               src={selectedCollaboration.partner.logo_url}
                               alt={selectedCollaboration.partner.company_name}
@@ -756,11 +865,26 @@ const PartnershipsPage: React.FC = () => {
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  const companyName = selectedCollaboration.partner?.company_name || 'Company';
+                                  const firstLetter = companyName.charAt(0).toUpperCase();
+                                  parent.innerHTML = `<div class="text-white font-black text-2xl sm:text-3xl tracking-wider">${firstLetter}*P</div>`;
+                                }
                               }}
                             />
-                          </div>
+                          ) : (
+                            <div className="text-white font-black text-2xl sm:text-3xl tracking-wider">
+                              {(() => {
+                                const companyName = selectedCollaboration.partner?.company_name || 'Company';
+                                const firstLetter = companyName.charAt(0).toUpperCase();
+                                return `${firstLetter}*P`;
+                              })()}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
+                      
                       <div className="space-y-3">
                         <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
                           <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Company:</span>
@@ -805,7 +929,8 @@ const PartnershipsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Event Details */}
+
+                  {/* Enhanced Event Details with Multiple Events Support */}
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900/20 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
                       <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
@@ -813,31 +938,84 @@ const PartnershipsPage: React.FC = () => {
                           <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
                         Event Information
+                        {selectedCollaboration.events && selectedCollaboration.events.length > 1 && (
+                          <span className="ml-2 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-medium rounded-full">
+                            {selectedCollaboration.events.length} Events
+                          </span>
+                        )}
                       </h4>
-                      <div className="space-y-3">
-                        <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
-                          <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-1 text-xs sm:text-sm lg:text-base">{selectedCollaboration.event_name}</h5>
-                          {selectedCollaboration.organizer_name && (
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Organized by {selectedCollaboration.organizer_name}</p>
+                      
+                      {/* Multiple Events List or Single Event */}
+                      {selectedCollaboration.events && selectedCollaboration.events.length > 1 ? (
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {selectedCollaboration.events.map((event, index) => (
+                            <div key={event.id || index} className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-1 text-xs sm:text-sm lg:text-base">{event.event_name}</h5>
+                                  {event.organizer_name && (
+                                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Organized by {event.organizer_name}</p>
+                                  )}
+                                  {event.start_date && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                      {new Date(event.start_date).toLocaleDateString('en-US', { 
+                                        weekday: 'short', 
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                      })}
+                                      {event.end_date && event.end_date !== event.start_date && (
+                                        <span> - {new Date(event.end_date).toLocaleDateString('en-US', { 
+                                          weekday: 'short', 
+                                          month: 'short', 
+                                          day: 'numeric'
+                                        })}</span>
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (event.id) navigate(`/event/${event.id}`);
+                                  }}
+                                  className="ml-2 text-xs"
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  View
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
+                            <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-1 text-xs sm:text-sm lg:text-base">{selectedCollaboration.event_name}</h5>
+                            {selectedCollaboration.organizer_name && (
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Organized by {selectedCollaboration.organizer_name}</p>
+                            )}
+                          </div>
+                          {selectedCollaboration.collaboration_type && (
+                            <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                              <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Collaboration Type:</span>
+                              <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm capitalize">{selectedCollaboration.collaboration_type}</span>
+                            </div>
+                          )}
+                          {selectedCollaboration.description && (
+                            <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                              <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-2 text-xs sm:text-sm">Partnership Description:</h6>
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{selectedCollaboration.description}</p>
+                            </div>
                           )}
                         </div>
-                        {selectedCollaboration.collaboration_type && (
-                          <div className="flex justify-between items-center p-2 sm:p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
-                            <span className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">Collaboration Type:</span>
-                            <span className="font-medium text-gray-900 dark:text-gray-100 text-xs sm:text-sm capitalize">{selectedCollaboration.collaboration_type}</span>
-                          </div>
-                        )}
-                        {selectedCollaboration.description && (
-                          <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                            <h6 className="font-medium text-gray-900 dark:text-gray-100 mb-2 text-xs sm:text-sm">Partnership Description:</h6>
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">{selectedCollaboration.description}</p>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
-                {/* Action Buttons */}
+                
+                {/* Enhanced Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
                   {selectedCollaboration.partner?.contact_email && (
                     <Button
@@ -866,7 +1044,7 @@ const PartnershipsPage: React.FC = () => {
                     className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold py-2 sm:py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 text-xs sm:text-sm lg:text-base"
                   >
                     <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                    View Event
+                    {selectedCollaboration.events && selectedCollaboration.events.length > 1 ? 'View Events' : 'View Event'}
                   </Button>
                   <Button
                     variant="outline"
