@@ -143,7 +143,7 @@ const OrganizerPartnership: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  
+
   // Pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -153,15 +153,12 @@ const OrganizerPartnership: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [includeInactive, setIncludeInactive] = useState(false);
   const [activeTab, setActiveTab] = useState('partners');
-
   // Collaboration pagination
   const [collabCurrentPage, setCollabCurrentPage] = useState(1);
   const [collabTotalPages, setCollabTotalPages] = useState(1);
-
   // Partner details pagination
   const [partnerDetailsPage, setPartnerDetailsPage] = useState(1);
   const [partnerDetailsTotalPages, setPartnerDetailsTotalPages] = useState(1);
-
   // Loading states
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
   const [isLoadingCollaborations, setIsLoadingCollaborations] = useState(false);
@@ -171,14 +168,12 @@ const OrganizerPartnership: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
   // Dialog states
   const [isPartnerDialogOpen, setIsPartnerDialogOpen] = useState(false);
   const [isCollaborationDialogOpen, setIsCollaborationDialogOpen] = useState(false);
   const [isPartnerDetailsDialogOpen, setIsPartnerDetailsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'partner' | 'collaboration', id: number } | null>(null);
-
   // Form states
   const [partnerForm, setPartnerForm] = useState({
     company_name: '',
@@ -188,7 +183,6 @@ const OrganizerPartnership: React.FC = () => {
     contact_email: '',
     contact_person: ''
   });
-
   const [collaborationForm, setCollaborationForm] = useState({
     partner_id: '',
     event_id: '',
@@ -197,7 +191,6 @@ const OrganizerPartnership: React.FC = () => {
     display_order: 0,
     show_on_event_page: true
   });
-
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editingCollaboration, setEditingCollaboration] = useState<Collaboration | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -245,21 +238,17 @@ const OrganizerPartnership: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       handleError("Invalid file type. Please select PNG, JPG, JPEG, GIF, or WEBP files only.");
       return;
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       handleError("File too large. Please select a file smaller than 5MB.");
       return;
     }
 
     setSelectedFile(file);
-
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setFilePreview(e.target?.result as string);
@@ -279,7 +268,7 @@ const OrganizerPartnership: React.FC = () => {
         sort_order: sortOrder,
         include_inactive: includeInactive.toString(),
       });
-      
+
       if (searchQuery) {
         params.append('search', searchQuery);
       }
@@ -296,7 +285,6 @@ const OrganizerPartnership: React.FC = () => {
       setPartners(data.partners);
       setTotalPages(data.pagination.pages);
       setTotalItems(data.pagination.total);
-      
     } catch (err) {
       handleError("Failed to fetch partners", err);
     } finally {
@@ -323,7 +311,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: PartnerDetailsResponse = await response.json();
       setSelectedPartner(data.partner);
       setPartnerDetailsTotalPages(data.pagination.pages);
-      
     } catch (err) {
       handleError("Failed to fetch partner details", err);
     } finally {
@@ -333,7 +320,7 @@ const OrganizerPartnership: React.FC = () => {
 
   const fetchCollaborations = useCallback(async (eventId?: number, page = 1) => {
     if (!eventId && !selectedEvent) return;
-    
+
     setIsLoadingCollaborations(true);
     setError(null);
     try {
@@ -354,7 +341,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: CollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
-      
     } catch (err) {
       handleError("Failed to fetch collaborations", err);
     } finally {
@@ -365,7 +351,12 @@ const OrganizerPartnership: React.FC = () => {
   const fetchEvents = useCallback(async () => {
     setIsLoadingEvents(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
+      const params = new URLSearchParams({
+        dashboard: 'true',
+        per_page: '100'
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
         credentials: 'include'
       });
 
@@ -375,7 +366,6 @@ const OrganizerPartnership: React.FC = () => {
 
       const data = await response.json();
       setEvents(data.events || []);
-      
     } catch (err) {
       handleError("Failed to fetch events", err);
     } finally {
@@ -392,8 +382,7 @@ const OrganizerPartnership: React.FC = () => {
       if (partnerForm.website_url) formData.append('website_url', partnerForm.website_url);
       if (partnerForm.contact_email) formData.append('contact_email', partnerForm.contact_email);
       if (partnerForm.contact_person) formData.append('contact_person', partnerForm.contact_person);
-      
-      // Add file if selected
+
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
@@ -401,7 +390,7 @@ const OrganizerPartnership: React.FC = () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
-        body: formData // Using FormData for file upload
+        body: formData
       });
 
       if (!response.ok) {
@@ -419,7 +408,6 @@ const OrganizerPartnership: React.FC = () => {
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
-      
     } catch (err) {
       handleError("Failed to create partner", err);
     } finally {
@@ -429,15 +417,13 @@ const OrganizerPartnership: React.FC = () => {
 
   const updatePartner = useCallback(async () => {
     if (!editingPartner) return;
-    
+
     setIsUpdating(true);
     try {
-      // For updates, we use JSON unless there's a file upload
       let body: any;
       let headers: any = {};
 
       if (selectedFile) {
-        // If there's a new file, use FormData
         body = new FormData();
         body.append('company_name', partnerForm.company_name);
         if (partnerForm.company_description) body.append('company_description', partnerForm.company_description);
@@ -446,7 +432,6 @@ const OrganizerPartnership: React.FC = () => {
         if (partnerForm.contact_person) body.append('contact_person', partnerForm.contact_person);
         body.append('file', selectedFile);
       } else {
-        // Otherwise use JSON
         headers['Content-Type'] = 'application/json';
         body = JSON.stringify(partnerForm);
       }
@@ -473,12 +458,10 @@ const OrganizerPartnership: React.FC = () => {
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
-      
-      // Update selected partner details if viewing
+
       if (selectedPartner && selectedPartner.id === editingPartner.id) {
         fetchPartnerDetails(editingPartner.id, partnerDetailsPage);
       }
-      
     } catch (err) {
       handleError("Failed to update partner", err);
     } finally {
@@ -519,7 +502,6 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
     } catch (err) {
       handleError("Failed to create collaboration", err);
     } finally {
@@ -529,7 +511,7 @@ const OrganizerPartnership: React.FC = () => {
 
   const updateCollaboration = useCallback(async () => {
     if (!editingCollaboration || !selectedEvent) return;
-    
+
     setIsUpdating(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}/collaborations/${editingCollaboration.id}`, {
@@ -559,7 +541,6 @@ const OrganizerPartnership: React.FC = () => {
       resetCollaborationForm();
       setIsCollaborationDialogOpen(false);
       fetchCollaborations(selectedEvent.id, collabCurrentPage);
-      
     } catch (err) {
       handleError("Failed to update collaboration", err);
     } finally {
@@ -569,7 +550,7 @@ const OrganizerPartnership: React.FC = () => {
 
   const deleteItem = useCallback(async () => {
     if (!itemToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       let url = '';
@@ -600,10 +581,9 @@ const OrganizerPartnership: React.FC = () => {
 
       setIsDeleteDialogOpen(false);
       setItemToDelete(null);
-      
+
       if (itemToDelete.type === 'partner') {
         fetchPartners();
-        // Close partner details dialog if viewing deleted partner
         if (selectedPartner && selectedPartner.id === itemToDelete.id) {
           setIsPartnerDetailsDialogOpen(false);
           setSelectedPartner(null);
@@ -611,7 +591,6 @@ const OrganizerPartnership: React.FC = () => {
       } else if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
     } catch (err) {
       handleError(`Failed to delete ${itemToDelete.type}`, err);
     } finally {
@@ -642,6 +621,8 @@ const OrganizerPartnership: React.FC = () => {
       contact_email: partner.contact_email || '',
       contact_person: partner.contact_person || ''
     });
+    setSelectedFile(null);
+    setFilePreview(null);
     setIsPartnerDialogOpen(true);
   }, []);
 
@@ -685,9 +666,23 @@ const OrganizerPartnership: React.FC = () => {
     setIsPartnerDetailsDialogOpen(true);
   }, [fetchPartnerDetails]);
 
+  const handlePartnerDialogClose = useCallback((open: boolean) => {
+    setIsPartnerDialogOpen(open);
+    if (!open) {
+      resetPartnerForm();
+    }
+  }, [resetPartnerForm]);
+
+  const handleCollaborationDialogClose = useCallback((open: boolean) => {
+    setIsCollaborationDialogOpen(open);
+    if (!open) {
+      resetCollaborationForm();
+    }
+  }, [resetCollaborationForm]);
+
   // --- Memoized Values ---
   const filteredPartners = useMemo(() => {
-    return partners.filter(partner => 
+    return partners.filter(partner =>
       includeInactive || partner.is_active
     );
   }, [partners, includeInactive]);
@@ -738,15 +733,15 @@ const OrganizerPartnership: React.FC = () => {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1">
-            <TabsTrigger 
-              value="partners" 
+            <TabsTrigger
+              value="partners"
               className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium"
             >
               <Building2 className="h-4 w-4 mr-2" />
               Partners ({partners.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="collaborations" 
+            <TabsTrigger
+              value="collaborations"
               className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium"
             >
               <Handshake className="h-4 w-4 mr-2" />
@@ -768,9 +763,9 @@ const OrganizerPartnership: React.FC = () => {
                       Manage your partner companies and their details
                     </CardDescription>
                   </div>
-                  <Dialog open={isPartnerDialogOpen} onOpenChange={setIsPartnerDialogOpen}>
+                  <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                     <DialogTrigger asChild>
-                      <Button 
+                      <Button
                         onClick={resetPartnerForm}
                         className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
                       >
@@ -800,7 +795,7 @@ const OrganizerPartnership: React.FC = () => {
                             placeholder="Enter company name"
                           />
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800">
                             Description
@@ -848,17 +843,33 @@ const OrganizerPartnership: React.FC = () => {
                             </div>
 
                             {/* Preview */}
-                            {(filePreview || (editingPartner?.logo_url && !selectedFile)) && (
+                            {filePreview && (
                               <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 border rounded-lg overflow-hidden dark:border-gray-600">
                                   <img
-                                    src={filePreview || editingPartner?.logo_url}
-                                    alt="Logo preview"
+                                    src={filePreview}
+                                    alt="New logo preview"
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                  {selectedFile ? 'New logo selected' : 'Current logo'}
+                                  New logo selected
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Current logo preview for editing (only show if no new file selected) */}
+                            {editingPartner?.logo_url && !filePreview && (
+                              <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 border rounded-lg overflow-hidden dark:border-gray-600">
+                                  <img
+                                    src={editingPartner.logo_url}
+                                    alt="Current logo"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div className="text-sm text-gray-500 dark:text-gray-400">
+                                  Current logo
                                 </div>
                               </div>
                             )}
@@ -868,7 +879,7 @@ const OrganizerPartnership: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="contact_person" className="dark:text-gray-200 text-gray-800">
@@ -896,7 +907,7 @@ const OrganizerPartnership: React.FC = () => {
                             />
                           </div>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <Label htmlFor="website_url" className="dark:text-gray-200 text-gray-800">
                             Website URL
@@ -996,9 +1007,9 @@ const OrganizerPartnership: React.FC = () => {
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
                       {searchQuery ? 'No partners found matching your search' : 'No partners found'}
                     </p>
-                    <Dialog open={isPartnerDialogOpen} onOpenChange={setIsPartnerDialogOpen}>
+                    <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                       <DialogTrigger asChild>
-                        <Button 
+                        <Button
                           onClick={resetPartnerForm}
                           className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white"
                         >
@@ -1018,8 +1029,8 @@ const OrganizerPartnership: React.FC = () => {
                     {/* Partners Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {filteredPartners.map((partner) => (
-                        <Card 
-                          key={partner.id} 
+                        <Card
+                          key={partner.id}
                           className={cn(
                             "shadow-md hover:shadow-lg transition-all duration-300",
                             "dark:bg-gray-700 dark:border-gray-600 bg-white border-gray-200",
@@ -1031,8 +1042,8 @@ const OrganizerPartnership: React.FC = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   {partner.logo_url ? (
-                                    <img 
-                                      src={partner.logo_url} 
+                                    <img
+                                      src={partner.logo_url}
                                       alt={`${partner.company_name} logo`}
                                       className="w-8 h-8 rounded object-cover"
                                       onError={(e) => {
@@ -1061,7 +1072,7 @@ const OrganizerPartnership: React.FC = () => {
                               </div>
                             </div>
                           </CardHeader>
-                          
+
                           <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div className="p-2 rounded-lg dark:bg-gray-600 bg-gray-100">
@@ -1099,7 +1110,7 @@ const OrganizerPartnership: React.FC = () => {
                             {partner.website_url && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Globe className="h-4 w-4 text-gray-500" />
-                                <a 
+                                <a
                                   href={partner.website_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -1184,11 +1195,11 @@ const OrganizerPartnership: React.FC = () => {
                         >
                           Previous
                         </Button>
-                        
+
                         <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                           Page {currentPage} of {totalPages}
                         </span>
-                        
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -1220,10 +1231,10 @@ const OrganizerPartnership: React.FC = () => {
                       Manage partnerships for specific events
                     </CardDescription>
                   </div>
-                  
+
                   <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-                    <Select 
-                      value={selectedEvent?.id.toString() || ''} 
+                    <Select
+                      value={selectedEvent?.id.toString() || ''}
                       onValueChange={(value) => {
                         const event = events.find(e => e.id.toString() === value);
                         setSelectedEvent(event || null);
@@ -1250,9 +1261,9 @@ const OrganizerPartnership: React.FC = () => {
                     </Select>
 
                     {selectedEvent && (
-                      <Dialog open={isCollaborationDialogOpen} onOpenChange={setIsCollaborationDialogOpen}>
+                      <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                         <DialogTrigger asChild>
-                          <Button 
+                          <Button
                             onClick={() => {
                               resetCollaborationForm();
                               setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
@@ -1269,18 +1280,17 @@ const OrganizerPartnership: React.FC = () => {
                               {editingCollaboration ? 'Edit Collaboration' : 'Add Event Collaboration'}
                             </DialogTitle>
                             <DialogDescription className="dark:text-gray-400 text-gray-600">
-                              {editingCollaboration 
+                              {editingCollaboration
                                 ? `Update collaboration for ${selectedEvent.name}`
-                                : `Add a partner collaboration to ${selectedEvent.name}`
-                              }
+                                : `Add a partner collaboration to ${selectedEvent.name}`}
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             {!editingCollaboration && (
                               <div className="space-y-2">
                                 <Label className="dark:text-gray-200 text-gray-800">Partner *</Label>
-                                <Select 
-                                  value={collaborationForm.partner_id} 
+                                <Select
+                                  value={collaborationForm.partner_id}
                                   onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, partner_id: value }))}
                                 >
                                   <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
@@ -1291,8 +1301,8 @@ const OrganizerPartnership: React.FC = () => {
                                       <SelectItem key={partner.id} value={partner.id.toString()}>
                                         <div className="flex items-center gap-2">
                                           {partner.logo_url ? (
-                                            <img 
-                                              src={partner.logo_url} 
+                                            <img
+                                              src={partner.logo_url}
                                               alt={`${partner.company_name} logo`}
                                               className="w-4 h-4 rounded object-cover"
                                             />
@@ -1310,8 +1320,8 @@ const OrganizerPartnership: React.FC = () => {
 
                             <div className="space-y-2">
                               <Label className="dark:text-gray-200 text-gray-800">Collaboration Type *</Label>
-                              <Select 
-                                value={collaborationForm.collaboration_type} 
+                              <Select
+                                value={collaborationForm.collaboration_type}
                                 onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, collaboration_type: value }))}
                               >
                                 <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
@@ -1420,9 +1430,9 @@ const OrganizerPartnership: React.FC = () => {
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
                       No collaborations found for {selectedEvent.name}
                     </p>
-                    <Dialog open={isCollaborationDialogOpen} onOpenChange={setIsCollaborationDialogOpen}>
+                    <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                       <DialogTrigger asChild>
-                        <Button 
+                        <Button
                           onClick={() => {
                             resetCollaborationForm();
                             setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
@@ -1473,9 +1483,9 @@ const OrganizerPartnership: React.FC = () => {
                       {collaborations.map((collaboration) => {
                         const partner = partners.find(p => p.id === collaboration.partner_id);
                         const collabType = COLLABORATION_TYPES.find(t => t.value === collaboration.collaboration_type);
-                        
+
                         return (
-                          <Card 
+                          <Card
                             key={collaboration.id}
                             className="dark:bg-gray-700 dark:border-gray-600 bg-white border-gray-200 hover:shadow-lg transition-all duration-300"
                           >
@@ -1485,8 +1495,8 @@ const OrganizerPartnership: React.FC = () => {
                                   {/* Partner Logo/Icon */}
                                   <div className="flex-shrink-0">
                                     {partner?.logo_url ? (
-                                      <img 
-                                        src={partner.logo_url} 
+                                      <img
+                                        src={partner.logo_url}
                                         alt={`${partner.company_name} logo`}
                                         className="w-12 h-12 rounded-lg object-cover"
                                         onError={(e) => {
@@ -1562,7 +1572,7 @@ const OrganizerPartnership: React.FC = () => {
                                           </div>
                                         )}
                                         {partner.website_url && (
-                                          <a 
+                                          <a
                                             href={partner.website_url}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -1618,11 +1628,11 @@ const OrganizerPartnership: React.FC = () => {
                         >
                           Previous
                         </Button>
-                        
+
                         <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                           Page {collabCurrentPage} of {collabTotalPages}
                         </span>
-                        
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -1647,8 +1657,8 @@ const OrganizerPartnership: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3 dark:text-gray-200 text-gray-800">
                 {selectedPartner?.logo_url ? (
-                  <img 
-                    src={selectedPartner.logo_url} 
+                  <img
+                    src={selectedPartner.logo_url}
                     alt={`${selectedPartner.company_name} logo`}
                     className="w-8 h-8 rounded object-cover"
                   />
@@ -1692,7 +1702,7 @@ const OrganizerPartnership: React.FC = () => {
                       {selectedPartner.website_url && (
                         <div className="flex items-center gap-2 text-sm">
                           <Globe className="h-4 w-4 text-gray-500" />
-                          <a 
+                          <a
                             href={selectedPartner.website_url}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -1725,7 +1735,7 @@ const OrganizerPartnership: React.FC = () => {
                           <p className="text-xs text-gray-500 dark:text-gray-400">Active</p>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Partnership Since</p>
                         <p className="text-sm dark:text-gray-300 text-gray-700">
@@ -1798,7 +1808,7 @@ const OrganizerPartnership: React.FC = () => {
                               </div>
                               <div className="text-right">
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {collaboration.event_date 
+                                  {collaboration.event_date
                                     ? new Date(collaboration.event_date).toLocaleDateString()
                                     : new Date(collaboration.created_at).toLocaleDateString()
                                   }
@@ -1811,8 +1821,8 @@ const OrganizerPartnership: React.FC = () => {
                                   )}
                                   <span className={cn(
                                     "text-xs",
-                                    collaboration.is_active 
-                                      ? "text-green-500 dark:text-green-400" 
+                                    collaboration.is_active
+                                      ? "text-green-500 dark:text-green-400"
                                       : "text-red-500 dark:text-red-400"
                                   )}>
                                     {collaboration.is_active ? 'Active' : 'Inactive'}
@@ -1838,11 +1848,11 @@ const OrganizerPartnership: React.FC = () => {
                             >
                               Previous
                             </Button>
-                            
+
                             <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                               Page {partnerDetailsPage} of {partnerDetailsTotalPages}
                             </span>
-                            
+
                             <Button
                               variant="outline"
                               size="sm"
@@ -1902,10 +1912,9 @@ const OrganizerPartnership: React.FC = () => {
                 Confirm Deletion
               </DialogTitle>
               <DialogDescription className="dark:text-gray-400 text-gray-600">
-                {itemToDelete?.type === 'partner' 
+                {itemToDelete?.type === 'partner'
                   ? 'Are you sure you want to delete this partner? This action cannot be undone and will remove all associated collaborations.'
-                  : 'Are you sure you want to delete this collaboration? This action cannot be undone.'
-                }
+                  : 'Are you sure you want to delete this collaboration? This action cannot be undone.'}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
