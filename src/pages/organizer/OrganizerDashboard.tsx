@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { CalendarDays, DollarSign, CheckCircle, LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu } from 'lucide-react';
+import { CalendarDays, DollarSign, CheckCircle, LayoutDashboard, BarChart2, FileText, Activity, ChevronRight, Settings, Menu, Handshake } from 'lucide-react';
 import OrganizerNavigation from './OrganizerNavigation';
 import OrganizerReports from './OrganizerReports';
 import OrganizerStats from './OrganizerStats';
+import OrganizerPartnership from './OrganizerPartnership';
 import StatsCard from '../../components/StatsCard';
 import { cn } from "@/lib/utils";
 import { EventDialog } from '@/components/EventDialog';
@@ -37,7 +38,7 @@ interface OverallSummary {
   revenue_monthly_trend?: { month: string; revenue: number }[];
 }
 
-type ViewType = 'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport';
+type ViewType = 'overview' | 'myEvents' | 'overallStats' | 'reports' | 'settings' | 'viewReport' | 'partnerships';
 
 const OrganizerDashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
@@ -170,7 +171,7 @@ const OrganizerDashboard: React.FC = () => {
   }, [handleFetchError, toast]);
 
   const handleViewChange = useCallback((view: string) => {
-    if (['overview', 'myEvents', 'overallStats', 'reports', 'settings', 'viewReport'].includes(view)) {
+    if (['overview', 'myEvents', 'overallStats', 'reports', 'settings', 'viewReport', 'partnerships'].includes(view)) {
       setCurrentView(view as ViewType);
       setError(undefined);
       setSuccessMessage(undefined);
@@ -239,6 +240,13 @@ const OrganizerDashboard: React.FC = () => {
           icon: <BarChart2 className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-green-500 to-green-700"
         };
+      case 'partnerships':
+        return {
+          title: "Partnerships",
+          description: "Manage your partners and event collaborations.",
+          icon: <Handshake className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-teal-500 to-teal-700"
+        };
       case 'reports':
         return {
           title: "Reports",
@@ -273,37 +281,35 @@ const OrganizerDashboard: React.FC = () => {
 
   const headerContent = getHeaderContent();
 
-
-const stats = [
-  { 
-    title: "Total Events", 
-    value: organizerEvents.length.toString(), 
-    icon: LayoutDashboard, 
-    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
-  },
-  { 
-    title: "Upcoming Events", 
-    value: upcomingEvents.length.toString(), 
-    icon: CalendarDays, 
-    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
-  },
-  { 
-    title: "Past Events", 
-    value: pastEvents.length.toString(), 
-    icon: CheckCircle, 
-    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
-  },
-  { 
-    title: "Total Revenue", 
-    value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
-    icon: () => <span className="text-xl font-bold">Ksh</span>, 
-    color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
-  }
-];
-
+  const stats = [
+    { 
+      title: "Total Events", 
+      value: organizerEvents.length.toString(), 
+      icon: LayoutDashboard, 
+      color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
+    },
+    { 
+      title: "Upcoming Events", 
+      value: upcomingEvents.length.toString(), 
+      icon: CalendarDays, 
+      color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
+    },
+    { 
+      title: "Past Events", 
+      value: pastEvents.length.toString(), 
+      icon: CheckCircle, 
+      color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
+    },
+    { 
+      title: "Total Revenue", 
+      value: overallSummary?.total_revenue_across_all_events || 'Ksh', 
+      icon: () => <span className="text-xl font-bold">Ksh</span>, 
+      color: "bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700" 
+    }
+  ];
 
   return (
-    <div className=" relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
+    <div className="relative min-h-screen bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-5 dark:opacity-10"
         style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}
       ></div>
@@ -356,7 +362,7 @@ const stats = [
             </div>
           </div>
 
-          <div className=" p-2 md:p-4 pt-0 md:pt-0">
+          <div className="p-2 md:p-4 pt-0 md:pt-0">
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 dark:bg-red-900 dark:border-red-700 dark:text-red-200" role="alert">
                 <strong className="font-bold">Error!</strong>
@@ -371,7 +377,7 @@ const stats = [
             )}
 
             {currentView === 'overview' && (
-              <div className="   space-y-8 animate-fade-in-up">
+              <div className="space-y-8 animate-fade-in-up">
                 <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-gray-800 dark:text-gray-100">
                   Organizer Dashboard Overview
                 </h1>
@@ -395,6 +401,12 @@ const stats = [
                       className="px-4 py-2 bg-blue-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-blue-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600"
                     >
                       View Overall Stats
+                    </button>
+                    <button
+                      onClick={() => handleViewChange('partnerships')}
+                      className="px-4 py-2 bg-teal-200 text-gray-800 rounded-lg hover:scale-105 hover:bg-teal-300 shadow-md text-sm font-medium transition-all duration-300 dark:bg-teal-700 dark:text-white dark:hover:bg-teal-600"
+                    >
+                      Manage Partnerships
                     </button>
                     <button
                       onClick={() => handleViewChange('reports')}
@@ -494,6 +506,12 @@ const stats = [
                   isLoading={isLoading}
                   error={error}
                 />
+              </div>
+            )}
+
+            {currentView === 'partnerships' && (
+              <div className="animate-fade-in-up">
+                <OrganizerPartnership />
               </div>
             )}
 

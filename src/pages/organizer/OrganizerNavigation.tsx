@@ -18,6 +18,7 @@ import {
   Bell,
   LogOut,
   ChevronLeft,
+  Handshake,
 } from "lucide-react";
 
 type ViewType = string;
@@ -83,6 +84,14 @@ const OrganizerNavigation: React.FC<OrganizerNavigationProps> = ({
       icon: CalendarDays,
       color: "text-purple-500",
       description: "Manage your events",
+      badge: null,
+    },
+    {
+      id: "partnerships",
+      label: "Partnerships",
+      icon: Handshake,
+      color: "text-emerald-500",
+      description: "Manage partners & collaborations",
       badge: null,
     },
     {
