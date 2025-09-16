@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import {
   Partner, RecentCollaboration, Collaboration, Event, PartnersResponse,
   PartnerDetailsResponse, CollaborationsResponse, COLLABORATION_TYPES,
-  SORT_OPTIONS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE
+  SORT_OPTIONS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE,EventsResponse
 } from "@/lib/types";
 
 const OrganizerPartnership: React.FC = () => {
@@ -219,23 +219,43 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [selectedEvent, handleError]);
 
-  const fetchEvents = useCallback(async () => {
+    const fetchEvents = useCallback(async () => {
     setIsLoadingEvents(true);
     try {
       const params = new URLSearchParams({
         dashboard: 'true',
         per_page: '100',
-        time_filter: 'all' // Get all events (past, present, future) for collaboration management
+        time_filter: 'all', // Get all events (past, present, future) for collaboration management
       });
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
       });
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        if (response.status === 401) {
+          throw new Error('Authentication required. Please log in.');
+        } else if (response.status === 403) {
+          throw new Error('You do not have permission to access events.');
+        } else {
+          throw new Error(`HTTP ${response.status}: Failed to fetch events`);
+        }
       }
-      const data = await response.json();
-      setEvents(data.events || []);
+
+      const data: EventsResponse = await response.json();
+      
+      // Handle both possible response formats
+      const eventsList = data.events || [];
+      
+      console.log('Fetched events:', eventsList); // Debug log to check what's being returned
+      
+      setEvents(eventsList);
     } catch (err) {
+      console.error('Error fetching events:', err); // Debug log
       handleError("Failed to fetch events", err);
     } finally {
       setIsLoadingEvents(false);

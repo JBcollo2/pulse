@@ -54,6 +54,26 @@ export interface Event {
   date?: string;
   location?: string;
   status?: string;
+  organizer_id?: number; // Added this field for proper filtering
+  description?: string;
+  start_time?: string;
+  end_time?: string;
+  capacity?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EventsResponse {
+  events: Event[];
+  pagination?: {
+    total: number;
+    pages: number;
+    current_page: number;
+    per_page: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
 }
 
 export interface PartnersResponse {
