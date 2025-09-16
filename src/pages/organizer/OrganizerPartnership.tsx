@@ -16,126 +16,12 @@ import {
   TrendingUp, Activity, Package, Upload, X, Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Partner, RecentCollaboration, Collaboration, Event, PartnersResponse,
+  PartnerDetailsResponse, CollaborationsResponse, COLLABORATION_TYPES,
+  SORT_OPTIONS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE
+} from "@/lib/types";
 
-// --- Interfaces ---
-interface Partner {
-  id: number;
-  organizer_id: number;
-  company_name: string;
-  company_description?: string;
-  logo_url?: string;
-  website_url?: string;
-  contact_email?: string;
-  contact_person?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  total_collaborations?: number;
-  recent_collaborations?: RecentCollaboration[];
-  collaboration_stats?: {
-    total_collaborations: number;
-    active_collaborations: number;
-    collaboration_types: string[];
-  };
-  collaborations?: Collaboration[];
-}
-
-interface RecentCollaboration {
-  event_id: number;
-  event_name: string;
-  collaboration_type: string;
-  created_at: string;
-}
-
-interface Collaboration {
-  id: number;
-  event_id: number;
-  partner_id: number;
-  collaboration_type: string;
-  description?: string;
-  display_order: number;
-  show_on_event_page: boolean;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  event_name?: string;
-  event_date?: string;
-  partner_name?: string;
-}
-
-interface Event {
-  id: number;
-  name: string;
-  date?: string;
-  location?: string;
-  status?: string;
-}
-
-interface PartnersResponse {
-  partners: Partner[];
-  pagination: {
-    total: number;
-    pages: number;
-    current_page: number;
-    per_page: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-  organizer_id: number;
-  filters: {
-    include_inactive: boolean;
-    sort_by: string;
-    sort_order: string;
-    search?: string;
-  };
-}
-
-interface PartnerDetailsResponse {
-  partner: Partner;
-  pagination: {
-    total: number;
-    pages: number;
-    current_page: number;
-    per_page: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
-
-interface CollaborationsResponse {
-  event_id: number;
-  event_name: string;
-  collaborations: Collaboration[];
-  pagination: {
-    total: number;
-    pages: number;
-    current_page: number;
-    per_page: number;
-    has_next: boolean;
-    has_prev: boolean;
-  };
-}
-
-// --- Constants ---
-const COLLABORATION_TYPES = [
-  { value: 'PARTNER', label: 'Partner', icon: Handshake, color: 'text-blue-500' },
-  { value: 'OFFICIAL_PARTNER', label: 'Official Partner', icon: Star, color: 'text-yellow-500' },
-  { value: 'COLLABORATOR', label: 'Collaborator', icon: Users, color: 'text-green-500' },
-  { value: 'SUPPORTER', label: 'Supporter', icon: TrendingUp, color: 'text-purple-500' },
-  { value: 'MEDIA_PARTNER', label: 'Media Partner', icon: Activity, color: 'text-orange-500' },
-];
-
-const SORT_OPTIONS = [
-  { value: 'company_name', label: 'Company Name' },
-  { value: 'created_at', label: 'Date Created' },
-  { value: 'total_collaborations', label: 'Total Collaborations' },
-  { value: 'active_status', label: 'Active Status' },
-];
-
-const ALLOWED_FILE_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-// --- Main Component ---
 const OrganizerPartnership: React.FC = () => {
   // --- State Variables ---
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -143,7 +29,6 @@ const OrganizerPartnership: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-
   // Pagination and filtering
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -237,17 +122,14 @@ const OrganizerPartnership: React.FC = () => {
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       handleError("Invalid file type. Please select PNG, JPG, JPEG, GIF, or WEBP files only.");
       return;
     }
-
     if (file.size > MAX_FILE_SIZE) {
       handleError("File too large. Please select a file smaller than 5MB.");
       return;
     }
-
     setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -268,19 +150,15 @@ const OrganizerPartnership: React.FC = () => {
         sort_order: sortOrder,
         include_inactive: includeInactive.toString(),
       });
-
       if (searchQuery) {
         params.append('search', searchQuery);
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
       const data: PartnersResponse = await response.json();
       setPartners(data.partners);
       setTotalPages(data.pagination.pages);
@@ -299,15 +177,12 @@ const OrganizerPartnership: React.FC = () => {
         page: page.toString(),
         per_page: '10',
       });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
       const data: PartnerDetailsResponse = await response.json();
       setSelectedPartner(data.partner);
       setPartnerDetailsTotalPages(data.pagination.pages);
@@ -320,7 +195,6 @@ const OrganizerPartnership: React.FC = () => {
 
   const fetchCollaborations = useCallback(async (eventId?: number, page = 1) => {
     if (!eventId && !selectedEvent) return;
-
     setIsLoadingCollaborations(true);
     setError(null);
     try {
@@ -329,15 +203,12 @@ const OrganizerPartnership: React.FC = () => {
         page: page.toString(),
         per_page: '10',
       });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${targetEventId}?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
       const data: CollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
@@ -353,17 +224,15 @@ const OrganizerPartnership: React.FC = () => {
     try {
       const params = new URLSearchParams({
         dashboard: 'true',
-        per_page: '100'
+        per_page: '100',
+        time_filter: 'all' // Get all events (past, present, future) for collaboration management
       });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
         credentials: 'include'
       });
-
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
       const data = await response.json();
       setEvents(data.events || []);
     } catch (err) {
@@ -372,7 +241,6 @@ const OrganizerPartnership: React.FC = () => {
       setIsLoadingEvents(false);
     }
   }, [handleError]);
-
   const createPartner = useCallback(async () => {
     setIsCreating(true);
     try {
@@ -382,29 +250,24 @@ const OrganizerPartnership: React.FC = () => {
       if (partnerForm.website_url) formData.append('website_url', partnerForm.website_url);
       if (partnerForm.contact_email) formData.append('contact_email', partnerForm.contact_email);
       if (partnerForm.contact_person) formData.append('contact_person', partnerForm.contact_person);
-
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
@@ -417,12 +280,10 @@ const OrganizerPartnership: React.FC = () => {
 
   const updatePartner = useCallback(async () => {
     if (!editingPartner) return;
-
     setIsUpdating(true);
     try {
       let body: any;
       let headers: any = {};
-
       if (selectedFile) {
         body = new FormData();
         body.append('company_name', partnerForm.company_name);
@@ -435,30 +296,25 @@ const OrganizerPartnership: React.FC = () => {
         headers['Content-Type'] = 'application/json';
         body = JSON.stringify(partnerForm);
       }
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}`, {
         method: 'PUT',
         headers,
         credentials: 'include',
         body
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
-
       if (selectedPartner && selectedPartner.id === editingPartner.id) {
         fetchPartnerDetails(editingPartner.id, partnerDetailsPage);
       }
@@ -484,19 +340,16 @@ const OrganizerPartnership: React.FC = () => {
           show_on_event_page: collaborationForm.show_on_event_page
         })
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-
       resetCollaborationForm();
       setIsCollaborationDialogOpen(false);
       if (selectedEvent) {
@@ -511,7 +364,6 @@ const OrganizerPartnership: React.FC = () => {
 
   const updateCollaboration = useCallback(async () => {
     if (!editingCollaboration || !selectedEvent) return;
-
     setIsUpdating(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}/collaborations/${editingCollaboration.id}`, {
@@ -525,19 +377,16 @@ const OrganizerPartnership: React.FC = () => {
           show_on_event_page: collaborationForm.show_on_event_page
         })
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-
       resetCollaborationForm();
       setIsCollaborationDialogOpen(false);
       fetchCollaborations(selectedEvent.id, collabCurrentPage);
@@ -550,7 +399,6 @@ const OrganizerPartnership: React.FC = () => {
 
   const deleteItem = useCallback(async () => {
     if (!itemToDelete) return;
-
     setIsDeleting(true);
     try {
       let url = '';
@@ -561,27 +409,22 @@ const OrganizerPartnership: React.FC = () => {
         if (!collaboration) throw new Error('Collaboration not found');
         url = `${import.meta.env.VITE_API_URL}/api/partners/events/${collaboration.event_id}/collaborations/${itemToDelete.id}`;
       }
-
       const response = await fetch(url, {
         method: 'DELETE',
         credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-
       setIsDeleteDialogOpen(false);
       setItemToDelete(null);
-
       if (itemToDelete.type === 'partner') {
         fetchPartners();
         if (selectedPartner && selectedPartner.id === itemToDelete.id) {
@@ -721,7 +564,6 @@ const OrganizerPartnership: React.FC = () => {
             </Button>
           </div>
         </div>
-
         {/* Error Display */}
         {error && (
           <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg flex items-center gap-2">
@@ -729,7 +571,6 @@ const OrganizerPartnership: React.FC = () => {
             <p>{error}</p>
           </div>
         )}
-
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1">
@@ -748,7 +589,6 @@ const OrganizerPartnership: React.FC = () => {
               Collaborations
             </TabsTrigger>
           </TabsList>
-
           {/* Partners Tab */}
           <TabsContent value="partners" className="mt-6">
             <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
@@ -795,7 +635,6 @@ const OrganizerPartnership: React.FC = () => {
                             placeholder="Enter company name"
                           />
                         </div>
-
                         <div className="space-y-2">
                           <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800">
                             Description
@@ -809,7 +648,6 @@ const OrganizerPartnership: React.FC = () => {
                             rows={3}
                           />
                         </div>
-
                         {/* Logo Upload Section */}
                         <div className="space-y-2">
                           <Label className="dark:text-gray-200 text-gray-800">
@@ -841,7 +679,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </Button>
                               )}
                             </div>
-
                             {/* Preview */}
                             {filePreview && (
                               <div className="flex items-center gap-4">
@@ -857,7 +694,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </div>
                               </div>
                             )}
-
                             {/* Current logo preview for editing (only show if no new file selected) */}
                             {editingPartner?.logo_url && !filePreview && (
                               <div className="flex items-center gap-4">
@@ -873,13 +709,11 @@ const OrganizerPartnership: React.FC = () => {
                                 </div>
                               </div>
                             )}
-
                             <div className="text-xs text-gray-500 dark:text-gray-400">
                               Supported formats: PNG, JPG, JPEG, GIF, WEBP (Max 5MB)
                             </div>
                           </div>
                         </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="contact_person" className="dark:text-gray-200 text-gray-800">
@@ -907,7 +741,6 @@ const OrganizerPartnership: React.FC = () => {
                             />
                           </div>
                         </div>
-
                         <div className="space-y-2">
                           <Label htmlFor="website_url" className="dark:text-gray-200 text-gray-800">
                             Website URL
@@ -946,7 +779,6 @@ const OrganizerPartnership: React.FC = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-
                 {/* Filters and Search */}
                 <div className="flex flex-col md:flex-row gap-4 pt-4">
                   <div className="flex-1 relative">
@@ -981,7 +813,6 @@ const OrganizerPartnership: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-
                 <div className="flex items-center space-x-2 pt-2">
                   <Checkbox
                     id="includeInactive"
@@ -994,7 +825,6 @@ const OrganizerPartnership: React.FC = () => {
                   </Label>
                 </div>
               </CardHeader>
-
               <CardContent>
                 {isLoadingPartners ? (
                   <div className="flex items-center justify-center h-48">
@@ -1025,7 +855,6 @@ const OrganizerPartnership: React.FC = () => {
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       Showing {paginationInfo.showing} of {paginationInfo.total} partners
                     </div>
-
                     {/* Partners Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {filteredPartners.map((partner) => (
@@ -1072,7 +901,6 @@ const OrganizerPartnership: React.FC = () => {
                               </div>
                             </div>
                           </CardHeader>
-
                           <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-sm">
                               <div className="p-2 rounded-lg dark:bg-gray-600 bg-gray-100">
@@ -1088,7 +916,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-
                             {partner.contact_person && (
                               <div className="flex items-center gap-2 text-sm">
                                 <User className="h-4 w-4 text-gray-500" />
@@ -1097,7 +924,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </span>
                               </div>
                             )}
-
                             {partner.contact_email && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Mail className="h-4 w-4 text-gray-500" />
@@ -1106,7 +932,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </span>
                               </div>
                             )}
-
                             {partner.website_url && (
                               <div className="flex items-center gap-2 text-sm">
                                 <Globe className="h-4 w-4 text-gray-500" />
@@ -1122,7 +947,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </a>
                               </div>
                             )}
-
                             {/* Recent Collaborations */}
                             {partner.recent_collaborations && partner.recent_collaborations.length > 0 && (
                               <div className="pt-2 border-t dark:border-gray-600 border-gray-200">
@@ -1138,7 +962,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </div>
                               </div>
                             )}
-
                             {/* Action Buttons */}
                             <div className="flex gap-2 pt-2">
                               <Button
@@ -1182,7 +1005,6 @@ const OrganizerPartnership: React.FC = () => {
                         </Card>
                       ))}
                     </div>
-
                     {/* Pagination */}
                     {totalPages > 1 && (
                       <div className="flex justify-center items-center gap-2 pt-6">
@@ -1195,11 +1017,9 @@ const OrganizerPartnership: React.FC = () => {
                         >
                           Previous
                         </Button>
-
                         <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                           Page {currentPage} of {totalPages}
                         </span>
-
                         <Button
                           variant="outline"
                           size="sm"
@@ -1216,7 +1036,6 @@ const OrganizerPartnership: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-
           {/* Collaborations Tab */}
           <TabsContent value="collaborations" className="mt-6">
             <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
@@ -1231,7 +1050,6 @@ const OrganizerPartnership: React.FC = () => {
                       Manage partnerships for specific events
                     </CardDescription>
                   </div>
-
                   <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                     <Select
                       value={selectedEvent?.id.toString() || ''}
@@ -1259,7 +1077,6 @@ const OrganizerPartnership: React.FC = () => {
                         ))}
                       </SelectContent>
                     </Select>
-
                     {selectedEvent && (
                       <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                         <DialogTrigger asChild>
@@ -1317,7 +1134,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </Select>
                               </div>
                             )}
-
                             <div className="space-y-2">
                               <Label className="dark:text-gray-200 text-gray-800">Collaboration Type *</Label>
                               <Select
@@ -1339,7 +1155,6 @@ const OrganizerPartnership: React.FC = () => {
                                 </SelectContent>
                               </Select>
                             </div>
-
                             <div className="space-y-2">
                               <Label className="dark:text-gray-200 text-gray-800">Description</Label>
                               <Textarea
@@ -1350,7 +1165,6 @@ const OrganizerPartnership: React.FC = () => {
                                 rows={3}
                               />
                             </div>
-
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
                                 <Label className="dark:text-gray-200 text-gray-800">Display Order</Label>
@@ -1405,7 +1219,6 @@ const OrganizerPartnership: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-
               <CardContent>
                 {!selectedEvent ? (
                   <div className="text-center py-12">
@@ -1477,13 +1290,11 @@ const OrganizerPartnership: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
                     {/* Collaborations List */}
                     <div className="grid gap-4">
                       {collaborations.map((collaboration) => {
                         const partner = partners.find(p => p.id === collaboration.partner_id);
                         const collabType = COLLABORATION_TYPES.find(t => t.value === collaboration.collaboration_type);
-
                         return (
                           <Card
                             key={collaboration.id}
@@ -1509,7 +1320,6 @@ const OrganizerPartnership: React.FC = () => {
                                       </div>
                                     )}
                                   </div>
-
                                   {/* Collaboration Details */}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-3 mb-2">
@@ -1525,13 +1335,11 @@ const OrganizerPartnership: React.FC = () => {
                                         </div>
                                       )}
                                     </div>
-
                                     {collaboration.description && (
                                       <p className="text-sm dark:text-gray-400 text-gray-600 mb-3 line-clamp-2">
                                         {collaboration.description}
                                       </p>
                                     )}
-
                                     <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                       <div className="flex items-center gap-1">
                                         <Package className="h-4 w-4" />
@@ -1555,7 +1363,6 @@ const OrganizerPartnership: React.FC = () => {
                                         {new Date(collaboration.created_at).toLocaleDateString()}
                                       </div>
                                     </div>
-
                                     {/* Partner Quick Info */}
                                     {partner && (
                                       <div className="flex items-center gap-4 mt-3 pt-3 border-t dark:border-gray-600 border-gray-200">
@@ -1587,7 +1394,6 @@ const OrganizerPartnership: React.FC = () => {
                                     )}
                                   </div>
                                 </div>
-
                                 {/* Action Buttons */}
                                 <div className="flex gap-2 ml-4">
                                   <Button
@@ -1615,7 +1421,6 @@ const OrganizerPartnership: React.FC = () => {
                         );
                       })}
                     </div>
-
                     {/* Collaboration Pagination */}
                     {collabTotalPages > 1 && (
                       <div className="flex justify-center items-center gap-2 pt-6">
@@ -1628,11 +1433,9 @@ const OrganizerPartnership: React.FC = () => {
                         >
                           Previous
                         </Button>
-
                         <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                           Page {collabCurrentPage} of {collabTotalPages}
                         </span>
-
                         <Button
                           variant="outline"
                           size="sm"
@@ -1650,7 +1453,6 @@ const OrganizerPartnership: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
-
         {/* Partner Details Dialog */}
         <Dialog open={isPartnerDetailsDialogOpen} onOpenChange={setIsPartnerDetailsDialogOpen}>
           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
@@ -1671,7 +1473,6 @@ const OrganizerPartnership: React.FC = () => {
                 Complete partner information and collaboration history
               </DialogDescription>
             </DialogHeader>
-
             {selectedPartner && (
               <div className="space-y-6">
                 {/* Partner Overview */}
@@ -1715,7 +1516,6 @@ const OrganizerPartnership: React.FC = () => {
                       )}
                     </CardContent>
                   </Card>
-
                   <Card className="dark:bg-gray-700 dark:border-gray-600">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm dark:text-gray-200 text-gray-800">Statistics</CardTitle>
@@ -1735,14 +1535,12 @@ const OrganizerPartnership: React.FC = () => {
                           <p className="text-xs text-gray-500 dark:text-gray-400">Active</p>
                         </div>
                       </div>
-
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Partnership Since</p>
                         <p className="text-sm dark:text-gray-300 text-gray-700">
                           {new Date(selectedPartner.created_at).toLocaleDateString()}
                         </p>
                       </div>
-
                       <div className="space-y-2">
                         <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</p>
                         <div className="flex items-center gap-2">
@@ -1752,7 +1550,6 @@ const OrganizerPartnership: React.FC = () => {
                           </span>
                         </div>
                       </div>
-
                       {selectedPartner.collaboration_stats?.collaboration_types && selectedPartner.collaboration_stats.collaboration_types.length > 0 && (
                         <div className="space-y-2">
                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Collaboration Types</p>
@@ -1774,7 +1571,6 @@ const OrganizerPartnership: React.FC = () => {
                     </CardContent>
                   </Card>
                 </div>
-
                 {/* Collaboration History */}
                 <Card className="dark:bg-gray-700 dark:border-gray-600">
                   <CardHeader>
@@ -1832,7 +1628,6 @@ const OrganizerPartnership: React.FC = () => {
                             </div>
                           );
                         })}
-
                         {/* Partner Details Pagination */}
                         {partnerDetailsTotalPages > 1 && (
                           <div className="flex justify-center items-center gap-2 pt-4">
@@ -1848,11 +1643,9 @@ const OrganizerPartnership: React.FC = () => {
                             >
                               Previous
                             </Button>
-
                             <span className="text-sm text-gray-500 dark:text-gray-400 px-4">
                               Page {partnerDetailsPage} of {partnerDetailsTotalPages}
                             </span>
-
                             <Button
                               variant="outline"
                               size="sm"
@@ -1878,7 +1671,6 @@ const OrganizerPartnership: React.FC = () => {
                 </Card>
               </div>
             )}
-
             <DialogFooter>
               <Button
                 variant="outline"
@@ -1902,7 +1694,6 @@ const OrganizerPartnership: React.FC = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[400px] dark:bg-gray-800 dark:border-gray-700">
