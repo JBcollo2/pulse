@@ -111,7 +111,7 @@ const OrganizerPartnership: React.FC = () => {
     setCollaborationForm({
       partner_id: '',
       event_id: '',
-      collaboration_type: 'PARTNER',
+      collaboration_type: 'Partner',
       description: '',
       display_order: 0,
       show_on_event_page: true

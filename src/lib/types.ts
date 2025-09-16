@@ -122,12 +122,13 @@ export interface CollaborationsResponse {
 }
 
 // --- Constants ---
+// FIXED: Changed values to match backend enum values exactly
 export const COLLABORATION_TYPES = [
-  { value: 'PARTNER', label: 'Partner', icon: Handshake, color: 'text-blue-500' },
-  { value: 'OFFICIAL_PARTNER', label: 'Official Partner', icon: Star, color: 'text-yellow-500' },
-  { value: 'COLLABORATOR', label: 'Collaborator', icon: Users, color: 'text-green-500' },
-  { value: 'SUPPORTER', label: 'Supporter', icon: TrendingUp, color: 'text-purple-500' },
-  { value: 'MEDIA_PARTNER', label: 'Media Partner', icon: Activity, color: 'text-orange-500' },
+  { value: 'Partner', label: 'Partner', icon: Handshake, color: 'text-blue-500' },
+  { value: 'Official Partner', label: 'Official Partner', icon: Star, color: 'text-yellow-500' },
+  { value: 'Collaborator', label: 'Collaborator', icon: Users, color: 'text-green-500' },
+  { value: 'Supporter', label: 'Supporter', icon: TrendingUp, color: 'text-purple-500' },
+  { value: 'Media Partner', label: 'Media Partner', icon: Activity, color: 'text-orange-500' },
 ];
 
 export const SORT_OPTIONS = [
