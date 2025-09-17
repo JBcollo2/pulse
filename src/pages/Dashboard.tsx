@@ -1156,7 +1156,7 @@ const Dashboard = () => {
             <button
               id="mobile-menu-btn"
               onClick={toggleMobileMenu}
-              className="fixed top-20 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 md:hidden"
+              className="fixed top-20 right-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
