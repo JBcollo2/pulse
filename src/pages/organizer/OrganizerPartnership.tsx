@@ -818,20 +818,20 @@ const OrganizerPartnership: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-1 sm:space-x-2 pt-2">
-                  <Checkbox
-                    id="includeInactive"
-                    checked={includeInactive}
-                    onCheckedChange={checked => setIncludeInactive(checked === true)}
-                    className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4"
-                  />
-                  <Label
-                    htmlFor="includeInactive"
-                    className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 leading-tight sm:leading-normal flex items-center cursor-pointer select-none"
-                  >
-                    Include inactive partners
-                  </Label>
-                </div>
+                <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="includeInactive"
+                  checked={includeInactive}
+                  onCheckedChange={checked => setIncludeInactive(checked === true)}
+                  className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-[#10b981] data-[state=checked]:border-[#10b981]"
+                />
+                <Label
+                  htmlFor="includeInactive"
+                  className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none"
+                >
+                  Include inactive partners
+                </Label>
+              </div>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
                 {isLoadingPartners ? (
@@ -1056,27 +1056,20 @@ const OrganizerPartnership: React.FC = () => {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                     <Select
-                      value={selectedEvent?.id.toString() || ''}
+                      value={selectedEvent ? selectedEvent.id.toString() : ""}
                       onValueChange={(value) => {
                         const event = events.find(e => e.id.toString() === value);
                         setSelectedEvent(event || null);
                         setCollabCurrentPage(1);
                       }}
                     >
-                      <SelectTrigger className="w-full sm:w-[250px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
-                        <SelectValue placeholder="Select an event" />
+                      <SelectTrigger className="w-full sm:w-[220px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                        <SelectValue placeholder="Select event" />
                       </SelectTrigger>
                       <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                        {events.map((event) => (
+                        {events.map(event => (
                           <SelectItem key={event.id} value={event.id.toString()} className="text-xs sm:text-sm">
-                            <div className="flex flex-col">
-                              <span>{event.name}</span>
-                              {event.date && (
-                                <span className="text-xs text-gray-500">
-                                  {new Date(event.date).toLocaleDateString()}
-                                </span>
-                              )}
-                            </div>
+                            {event.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
