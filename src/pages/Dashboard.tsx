@@ -1156,7 +1156,7 @@ const Dashboard = () => {
             <button
               id="mobile-menu-btn"
               onClick={toggleMobileMenu}
-              className="fixed bottom-6 right-4 z-50 p-3 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white rounded-full shadow-xl border-2 border-white/20 backdrop-blur-sm md:hidden transition-all duration-200 hover:scale-110"
+              className="fixed top-20 right-4 z-50 p-3 bg-white dark:bg-gray-100 hover:bg-gray-50 dark:hover:bg-gray-200 text-gray-800 dark:text-gray-900 rounded-full shadow-2xl border-2 border-blue-500/30 md:hidden transition-all duration-200 hover:scale-110 hover:shadow-blue-500/25"
             >
               <Menu className="h-5 w-5" />
             </button>
