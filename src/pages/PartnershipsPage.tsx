@@ -44,6 +44,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ icon, value, label, iconColor = '
   </motion.div>
 );
 
+
 // ---------- PartnershipCard ----------
 type Collaboration = {
   id?: string;
@@ -354,22 +355,22 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
           </motion.div>
         )}
 
-        {/* action buttons with enhanced visibility */}
+        {/* Updated action buttons section with better alignment */}
         <motion.div
-          className="flex items-center justify-between pt-3 border-t border-gray-200/50 dark:border-gray-700/50"
+          className="flex items-center justify-between pt-4 border-t border-gray-200/50 dark:border-gray-700/50"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
-              <span className={`text-xl sm:text-2xl font-bold transition-all duration-300 ${isHovered ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
+          <div className="flex flex-col justify-center min-h-[60px]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-lg sm:text-xl font-bold transition-all duration-300 ${isHovered ? 'text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-200'}`}>
                 {collaboration.collaboration_type || collaboration.partner?.partner_type || 'Partner'}
               </span>
             </div>
-            <div className="space-y-1 mt-1">
+            <div className="flex items-center">
               <div
-                className={`text-xs sm:text-sm font-medium px-3 py-1.5 rounded-full w-fit border transition-all duration-300 ${
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-300 ${
                   String(collaboration.status || '').toLowerCase() === 'active'
                     ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700'
                     : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
@@ -379,9 +380,10 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-2 ml-4">
             <motion.button
-              className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm min-w-[90px] sm:min-w-[110px]"
               whileTap={{ scale: 0.95 }}
               whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
               onClick={(e) => {
@@ -393,8 +395,9 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>{hasMultipleEvents ? 'View Events' : 'View Event'}</span>
             </motion.button>
+            
             <motion.button
-              className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-3 sm:px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 active:scale-95 text-xs sm:text-sm min-w-[70px] sm:min-w-[90px]"
               whileTap={{ scale: 0.95 }}
               whileHover={{ boxShadow: `0 15px 30px -8px rgba(59, 130, 246, 0.3)`, y: -1 }}
               onClick={(e) => {
@@ -411,11 +414,11 @@ const PartnershipCard: React.FC<PartnershipCardProps> = ({ collaboration, index,
         </motion.div>
       </div>
 
-      {/* Enhanced hover glow effect */}
+      {/* Reduced hover glow effect - changed from opacity-[0.15] to opacity-[0.08] for mid-glow */}
       <motion.div
-        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-[0.15] blur-xl transition-all duration-500 -z-10`}
+        className={`absolute inset-0 rounded-3xl bg-gradient-to-r ${getCategoryGradient()} opacity-0 group-hover:opacity-[0.08] blur-xl transition-all duration-500 -z-10`}
         initial={{ scale: 0.8 }}
-        animate={{ scale: isHovered ? 1.1 : 0.8 }}
+        animate={{ scale: isHovered ? 1.05 : 0.8 }}
         transition={{ duration: 0.5 }}
       />
 

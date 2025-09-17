@@ -221,7 +221,6 @@ const OrganizerPartnership: React.FC = () => {
         per_page: '100',
         time_filter: 'all',
       });
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?${params.toString()}`, {
         credentials: 'include',
         headers: {
@@ -579,20 +578,20 @@ const OrganizerPartnership: React.FC = () => {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1 gap-1">
             <TabsTrigger
               value="partners"
-              className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium text-xs sm:text-sm"
+              className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 flex items-center justify-center min-h-[32px] sm:min-h-[40px]"
             >
-              <Building2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              Partners ({partners.length})
+              <Building2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Partners ({partners.length})</span>
             </TabsTrigger>
             <TabsTrigger
               value="collaborations"
-              className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium text-xs sm:text-sm"
+              className="dark:data-[state=active]:bg-[#10b981] dark:data-[state=active]:text-white data-[state=active]:bg-[#10b981] data-[state=active]:text-white dark:text-gray-200 text-gray-800 rounded-md transition-all duration-300 font-medium text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 flex items-center justify-center min-h-[32px] sm:min-h-[40px]"
             >
-              <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              Collaborations
+              <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="truncate">Collaborations</span>
             </TabsTrigger>
           </TabsList>
 
@@ -826,7 +825,10 @@ const OrganizerPartnership: React.FC = () => {
                     onCheckedChange={checked => setIncludeInactive(checked === true)}
                     className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4"
                   />
-                  <Label htmlFor="includeInactive" className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">
+                  <Label
+                    htmlFor="includeInactive"
+                    className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 leading-tight sm:leading-normal flex items-center cursor-pointer select-none"
+                  >
                     Include inactive partners
                   </Label>
                 </div>
