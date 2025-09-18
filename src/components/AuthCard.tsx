@@ -54,7 +54,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Simplified success handler without automatic redirects - OPTIMIZED
+  // Simplified success handler without automatic redirects
   const handleSuccessfulAuth = useCallback(async (userData) => {
     try {
       // Normalize user data to ensure consistency
@@ -175,7 +175,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignInData(prev => ({ ...prev, [field]: value }));
   };
 
-  // OPTIMIZED SIGN IN HANDLER - Faster performance
   const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -225,7 +224,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setSignUpData(prev => ({ ...prev, [field]: value }));
   };
 
-  // OPTIMIZED SIGN UP HANDLER
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -358,7 +356,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     }
   };
 
-  // OPTIMIZED GOOGLE LOGIN HANDLER
   const handleGoogleLogin = () => {
     try {
       const currentUrl = window.location.href;
@@ -384,7 +381,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     }
   };
 
-  // OPTIMIZED Google OAuth callback handler
+  // Google OAuth callback handler
   useEffect(() => {
     const handleGoogleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -420,19 +417,16 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
   // Render logic for different auth views
   const renderAuthView = () => {
-    const gradientStyle = "bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600";
-    const gradientText = "bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent";
-
     switch (currentView) {
       case 'signin':
         return (
-          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <CardHeader className="text-center pb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-green-500/10 border border-blue-200/30 dark:border-blue-700/30 mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 mb-4">
                 <Sparkles className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Welcome Back</span>
               </div>
-              <CardTitle className={`text-2xl font-bold ${gradientText} mb-2`}>Sign In</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Sign In</CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
                 Enter your credentials to access your account
               </CardDescription>
@@ -449,7 +443,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signInData.email}
                       onChange={handleSignInChange}
                       required
-                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 rounded-xl"
+                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       placeholder="Enter your email"
                     />
                   </div>
@@ -464,13 +458,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signInData.password}
                       onChange={handleSignInChange}
                       required
-                      className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500/20 rounded-xl"
+                      className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400"
                       placeholder="Enter your password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -478,21 +472,21 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                 </div>
 
                 {error && (
-                  <Alert variant="destructive" className="border-red-200 dark:border-red-800">
+                  <Alert variant="destructive">
                     <Shield className="w-4 h-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
                 {successMessage && (
-                  <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                  <Alert className="border-green-200 bg-green-50">
                     <Zap className="w-4 h-4 text-green-600" />
-                    <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                    <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
                   </Alert>
                 )}
 
                 <Button
                   type="submit"
-                  className={`w-full h-12 ${gradientStyle} text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -517,7 +511,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-300"
+                  className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
                 >
@@ -552,13 +546,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       case 'signup':
         return (
-          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <CardHeader className="text-center pb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-200/30 dark:border-green-700/30 mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 mb-4">
                 <User className="w-4 h-4 text-green-500" />
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">Join Us</span>
               </div>
-              <CardTitle className={`text-2xl font-bold ${gradientText} mb-2`}>Create Account</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create Account</CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
                 Enter your details to create your account
               </CardDescription>
@@ -574,7 +568,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signUpData.full_name}
                       onChange={handleSignUpChange}
                       required
-                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 focus:ring-green-500/20 rounded-xl"
+                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
                       placeholder="Enter your full name"
                     />
                   </div>
@@ -589,7 +583,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signUpData.email}
                       onChange={handleSignUpChange}
                       required
-                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 focus:ring-green-500/20 rounded-xl"
+                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
                       placeholder="Enter your email"
                     />
                   </div>
@@ -603,7 +597,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signUpData.phone_number}
                       onChange={handleSignUpChange}
                       required
-                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 focus:ring-green-500/20 rounded-xl"
+                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
                       placeholder="e.g., 0712345678"
                     />
                   </div>
@@ -619,13 +613,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={signUpData.password}
                       onChange={handleSignUpChange}
                       required
-                      className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 focus:ring-green-500/20 rounded-xl"
+                      className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400"
                       placeholder="Create a strong password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -634,21 +628,21 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                 </div>
 
                 {error && (
-                  <Alert variant="destructive" className="border-red-200 dark:border-red-800">
+                  <Alert variant="destructive">
                     <Shield className="w-4 h-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
                 {successMessage && (
-                  <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                  <Alert className="border-green-200 bg-green-50">
                     <Zap className="w-4 h-4 text-green-600" />
-                    <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                    <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
                   </Alert>
                 )}
 
                 <Button
                   type="submit"
-                  className={`w-full h-12 ${gradientStyle} text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+                  className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -673,7 +667,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-300"
+                  className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={handleGoogleLogin}
                   disabled={isLoading}
                 >
@@ -700,13 +694,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       case 'forgot-password':
         return (
-          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <CardHeader className="text-center pb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 dark:border-orange-700/30 mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 mb-4">
                 <Shield className="w-4 h-4 text-orange-500" />
                 <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Password Reset</span>
               </div>
-              <CardTitle className={`text-2xl font-bold ${gradientText} mb-2`}>Forgot Password</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Forgot Password</CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
                 Enter your email address to receive a password reset link
               </CardDescription>
@@ -723,28 +717,28 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                       value={forgotPasswordEmail}
                       onChange={(e) => setForgotPasswordEmail(e.target.value)}
                       required
-                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-400 focus:ring-orange-500/20 rounded-xl"
+                      className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-400"
                       placeholder="Enter your email address"
                     />
                   </div>
                 </div>
 
                 {error && (
-                  <Alert variant="destructive" className="border-red-200 dark:border-red-800">
+                  <Alert variant="destructive">
                     <Shield className="w-4 h-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
                 {successMessage && (
-                  <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                  <Alert className="border-green-200 bg-green-50">
                     <Zap className="w-4 h-4 text-green-600" />
-                    <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                    <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
                   </Alert>
                 )}
 
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -776,28 +770,28 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
 
       case 'reset-password':
         return (
-          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
             <CardHeader className="text-center pb-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-200/30 dark:border-purple-700/30 mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 mb-4">
                 <Lock className="w-4 h-4 text-purple-500" />
                 <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Reset Password</span>
               </div>
-              <CardTitle className={`text-2xl font-bold ${gradientText} mb-2`}>Reset Password</CardTitle>
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Reset Password</CardTitle>
               <CardDescription className="text-gray-600 dark:text-gray-400">
                 Enter your new password below
               </CardDescription>
             </CardHeader>
             <CardContent>
               {error && (
-                <Alert variant="destructive" className="border-red-200 dark:border-red-800 mb-4">
+                <Alert variant="destructive" className="mb-4">
                   <Shield className="w-4 h-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
               {successMessage && (
-                <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 mb-4">
+                <Alert className="border-green-200 bg-green-50 mb-4">
                   <Zap className="w-4 h-4 text-green-600" />
-                  <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                  <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
                 </Alert>
               )}
 
@@ -829,13 +823,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-purple-500/20 rounded-xl"
+                        className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400"
                         placeholder="Enter your new password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -855,13 +849,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                         minLength={8}
-                        className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-purple-500/20 rounded-xl"
+                        className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400"
                         placeholder="Confirm your new password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                       >
                         {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
@@ -878,7 +872,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-white font-semibold"
                     disabled={
                       isLoading ||
                       !newPassword ||
@@ -922,147 +916,15 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
-          <VisuallyHidden>
-            <DialogTitle>Authentication</DialogTitle>
-            <DialogDescription>Sign in or create an account</DialogDescription>
-          </VisuallyHidden>
-          {renderAuthView()}
-        </DialogContent>
-      </Dialog>
-
-      {/* Enhanced Custom Styles */}
-      <style>{`
-        /* Gradient animations */
-        @keyframes gradient-shift {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
-        .bg-gradient-to-r {
-          background-size: 200% 200%;
-          animation: gradient-shift 3s ease infinite;
-        }
-
-        /* Enhanced focus styles */
-        .focus\\:ring-blue-500\\/20:focus {
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
-        .focus\\:ring-green-500\\/20:focus {
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-        }
-
-        .focus\\:ring-orange-500\\/20:focus {
-          box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
-        }
-
-        .focus\\:ring-purple-500\\/20:focus {
-          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
-        }
-
-        /* Button hover effects */
-        .hover\\:scale-105:hover {
-          transform: scale(1.05);
-        }
-
-        /* Smooth transitions */
-        * {
-          transition: all 0.2s ease;
-        }
-
-        /* Loading spinner */
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-
-        /* Enhanced shadows */
-        .shadow-blue-500\\/30 {
-          box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
-        }
-
-        .shadow-green-500\\/30 {
-          box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
-        }
-
-        .shadow-orange-500\\/30 {
-          box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.3);
-        }
-
-        .shadow-purple-500\\/30 {
-          box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.3);
-        }
-
-        .hover\\:shadow-xl:hover {
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        .hover\\:shadow-green-500\\/40:hover {
-          box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.4);
-        }
-
-        .hover\\:shadow-blue-500\\/40:hover {
-          box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
-        }
-
-        .hover\\:shadow-red-500\\/40:hover {
-          box-shadow: 0 20px 25px -5px rgba(239, 68, 68, 0.4);
-        }
-
-        .hover\\:shadow-pink-500\\/40:hover {
-          box-shadow: 0 20px 25px -5px rgba(236, 72, 153, 0.4);
-        }
-
-        /* Input focus states */
-        .focus\\:border-blue-500:focus {
-          border-color: rgb(59, 130, 246);
-        }
-
-        .focus\\:border-green-500:focus {
-          border-color: rgb(16, 185, 129);
-        }
-
-        .focus\\:border-orange-500:focus {
-          border-color: rgb(249, 115, 22);
-        }
-
-        .focus\\:border-purple-500:focus {
-          border-color: rgb(168, 85, 247);
-        }
-
-        /* Dark mode adjustments */
-        .dark .focus\\:border-blue-400:focus {
-          border-color: rgb(96, 165, 250);
-        }
-
-        .dark .focus\\:border-green-400:focus {
-          border-color: rgb(52, 211, 153);
-        }
-
-        .dark .focus\\:border-orange-400:focus {
-          border-color: rgb(251, 146, 60);
-        }
-
-        .dark .focus\\:border-purple-400:focus {
-          border-color: rgb(196, 181, 253);
-        }
-      `}</style>
-    </>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
+        <VisuallyHidden>
+          <DialogTitle>Authentication</DialogTitle>
+          <DialogDescription>Sign in or create an account</DialogDescription>
+        </VisuallyHidden>
+        {renderAuthView()}
+      </DialogContent>
+    </Dialog>
   );
 };
 
