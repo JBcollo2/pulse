@@ -7,11 +7,11 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, Shield, Zap } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, Shield, Zap, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { VisuallyHidden } from './ui/Visually-hidden';
 
-const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
+const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminRegistration = false }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,6 +28,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [tokenValidated, setTokenValidated] = useState(false);
+  const [adminExists, setAdminExists] = useState(false);
 
   // Password visibility state
   const [showPassword, setShowPassword] = useState(false);
@@ -47,12 +48,44 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     password: ''
   });
 
+  // Admin Registration state
+  const [adminData, setAdminData] = useState({
+    full_name: '',
+    email: '',
+    phone_number: '',
+    password: ''
+  });
+
   // Forgot Password state
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
 
   // Reset Password state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Check if admin exists
+  const checkAdminExists = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/auth/check-admin`,
+        {
+          withCredentials: true,
+          timeout: 5000
+        }
+      );
+      setAdminExists(response.data.admin_exists || false);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setAdminExists(true); // Default to true if we can't check
+    }
+  }, []);
+
+  // Check admin status on component mount if showing admin registration
+  useEffect(() => {
+    if (showAdminRegistration) {
+      checkAdminExists();
+    }
+  }, [showAdminRegistration, checkAdminExists]);
 
   // Simplified success handler without automatic redirects
   const handleSuccessfulAuth = useCallback(async (userData) => {
@@ -112,6 +145,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
     setTokenValidated(false);
     setSignInData({ email: '', password: '' });
     setSignUpData({ full_name: '', email: '', phone_number: '', password: '' });
+    setAdminData({ full_name: '', email: '', phone_number: '', password: '' });
     setForgotPasswordEmail('');
     setNewPassword('');
     setConfirmPassword('');
@@ -258,6 +292,54 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
           errorMessage = 'Connection timeout. Please try again.';
         } else if (error.response?.data?.msg) {
           errorMessage = error.response.data.msg;
+        }
+      }
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Admin Registration handlers
+  const handleAdminChange = (e) => {
+    const { id, value } = e.target;
+    const field = id.replace('admin-', '');
+    setAdminData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAdminRegistration = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/register-first-admin`,
+        adminData,
+        {
+          withCredentials: true,
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      setSuccessMessage('First admin registered successfully! You can now sign in.');
+      setAdminExists(true);
+      setSignInData(prev => ({ ...prev, email: adminData.email, password: '' }));
+      setTimeout(() => {
+        toggleForm('signin');
+      }, 2000);
+    } catch (error) {
+      let errorMessage = 'Admin registration failed. Please check your information and try again.';
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Connection timeout. Please try again.';
+        } else if (error.response?.data?.msg) {
+          errorMessage = error.response.data.msg;
+        } else if (error.response?.status === 403) {
+          errorMessage = 'Admin already exists. First admin registration is no longer available.';
+          setAdminExists(true);
         }
       }
       setError(errorMessage);
@@ -418,6 +500,146 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   // Render logic for different auth views
   const renderAuthView = () => {
     switch (currentView) {
+      case 'admin-registration':
+        return (
+          <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <CardHeader className="text-center pb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 mb-4">
+                <Crown className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Admin Setup</span>
+              </div>
+              <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Register First Admin</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
+                Create the first administrator account for your system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {adminExists ? (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <AlertDescription className="text-amber-700">
+                    An admin already exists. First admin registration is no longer available.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <form onSubmit={handleAdminRegistration} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-full_name" className="text-gray-700 dark:text-gray-300 font-medium">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="admin-full_name"
+                        value={adminData.full_name}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400"
+                        placeholder="Enter admin full name"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-email" className="text-gray-700 dark:text-gray-300 font-medium">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="admin-email"
+                        type="email"
+                        value={adminData.email}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400"
+                        placeholder="Enter admin email"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-phone_number" className="text-gray-700 dark:text-gray-300 font-medium">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="admin-phone_number"
+                        value={adminData.phone_number}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-11 h-12 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400"
+                        placeholder="e.g., 0712345678"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Must be a valid Safaricom number (e.g., 0712345678)</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-password" className="text-gray-700 dark:text-gray-300 font-medium">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        id="admin-password"
+                        type={showPassword ? "text" : "password"}
+                        value={adminData.password}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-11 pr-11 h-12 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400"
+                        placeholder="Create a secure password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Password must be at least 8 characters long and include both letters and numbers</p>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <Shield className="w-4 h-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  {successMessage && (
+                    <Alert className="border-green-200 bg-green-50">
+                      <Zap className="w-4 h-4 text-green-600" />
+                      <AlertDescription className="text-green-700">{successMessage}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Creating Admin...
+                      </div>
+                    ) : (
+                      <>
+                        <Crown className="mr-2 h-4 w-4" />
+                        Create Admin Account
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-3 pt-6">
+              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signin')}
+                  disabled={isLoading}
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </CardFooter>
+          </Card>
+        );
+
       case 'signin':
         return (
           <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -540,6 +762,19 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
                   Sign up
                 </button>
               </div>
+              {showAdminRegistration && !adminExists && (
+                <div className="text-center text-sm text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                  Need to create an admin?{' '}
+                  <button
+                    type="button"
+                    onClick={() => toggleForm('admin-registration')}
+                    disabled={isLoading}
+                    className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-semibold hover:underline"
+                  >
+                    Register First Admin
+                  </button>
+                </div>
+              )}
             </CardFooter>
           </Card>
         );
