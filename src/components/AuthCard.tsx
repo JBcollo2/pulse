@@ -1121,22 +1121,15 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
   };
 
   return (
-    <div className="relative min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-hidden transition-all duration-300">
-      {/* Background Pattern - matching Index.tsx */}
-      <div className="absolute inset-0 z-0 opacity-10 dark:opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23000000\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")' }}></div>
-
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
-          <VisuallyHidden>
-            <DialogTitle>Authentication</DialogTitle>
-            <DialogDescription>Sign in or create an account</DialogDescription>
-          </VisuallyHidden>
-          <div className="relative z-10">
-            {renderAuthView()}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
+        <VisuallyHidden>
+          <DialogTitle>Authentication</DialogTitle>
+          <DialogDescription>Sign in or create an account</DialogDescription>
+        </VisuallyHidden>
+        {renderAuthView()}
+      </DialogContent>
+    </Dialog>
   );
 };
 
