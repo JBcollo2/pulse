@@ -8,19 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Calendar, 
-  MapPin, 
-  User, 
-  CreditCard, 
-  Share2, 
-  Phone, 
-  Clock, 
-  Ticket, 
-  AlertCircle, 
-  X, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Calendar,
+  MapPin,
+  User,
+  CreditCard,
+  Share2,
+  Phone,
+  Clock,
+  Ticket,
+  AlertCircle,
+  X,
+  CheckCircle,
+  XCircle,
   Shield,
   Copy,
   Facebook,
@@ -49,6 +49,7 @@ interface Event {
   start_time: string;
   end_time: string | null;
   location: string;
+  city?: string;
   image: string | null;
   category?: string;
   organizer: {
@@ -78,11 +79,11 @@ const EventDetails = () => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  
+
   // Share functionality state
   const [showShareModal, setShowShareModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  
+
   const [buyerDetails, setBuyerDetails] = useState({
     name: '',
     email: '',
@@ -103,7 +104,7 @@ const EventDetails = () => {
   // Web Share API (native mobile sharing)
   const handleNativeShare = async () => {
     if (!event) return;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -113,11 +114,9 @@ const EventDetails = () => {
         });
       } catch (err) {
         console.log('Error sharing:', err);
-        // Fallback to custom share modal
         setShowShareModal(true);
       }
     } else {
-      // Fallback for browsers that don't support Web Share API
       setShowShareModal(true);
     }
   };
@@ -134,7 +133,6 @@ const EventDetails = () => {
       });
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = getEventUrl();
       document.body.appendChild(textArea);
@@ -463,10 +461,9 @@ const EventDetails = () => {
   // Share Modal Component
   const ShareModal = () => {
     if (!showShareModal) return null;
-
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div 
+        <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={() => setShowShareModal(false)}
         />
@@ -480,8 +477,6 @@ const EventDetails = () => {
               <X className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Copy Link Section */}
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <div className="flex items-center space-x-3">
               <input
@@ -508,8 +503,6 @@ const EventDetails = () => {
               </button>
             </div>
           </div>
-
-          {/* Social Share Options */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={shareOnFacebook}
@@ -518,7 +511,6 @@ const EventDetails = () => {
               <Facebook className="h-5 w-5" />
               <span>Facebook</span>
             </button>
-            
             <button
               onClick={shareOnTwitter}
               className="flex items-center justify-center space-x-2 p-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
@@ -526,7 +518,6 @@ const EventDetails = () => {
               <Twitter className="h-5 w-5" />
               <span>Twitter</span>
             </button>
-            
             <button
               onClick={shareOnWhatsApp}
               className="flex items-center justify-center space-x-2 p-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
@@ -534,7 +525,6 @@ const EventDetails = () => {
               <MessageCircle className="h-5 w-5" />
               <span>WhatsApp</span>
             </button>
-            
             <button
               onClick={shareViaEmail}
               className="flex items-center justify-center space-x-2 p-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
@@ -543,7 +533,6 @@ const EventDetails = () => {
               <span>Email</span>
             </button>
           </div>
-
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Share this event with your friends and family
@@ -554,6 +543,7 @@ const EventDetails = () => {
     );
   };
 
+  // Advanced Payment Dialog Component
   const AdvancedPaymentDialog = () => {
     if (!showPaymentDialog) return null;
     const paymentMethods = [
@@ -578,7 +568,6 @@ const EventDetails = () => {
         processingTime: "2-3 minutes"
       }
     ];
-
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
@@ -594,7 +583,6 @@ const EventDetails = () => {
             <p className="text-green-100 text-base md:text-lg">
               Choose your preferred payment method to complete your purchase
             </p>
-
             <div className="absolute -top-4 -right-4 w-16 md:w-24 h-16 md:h-24 bg-white/10 rounded-full blur-xl" />
             <div className="absolute -bottom-2 -left-2 w-12 md:w-16 h-12 md:h-16 bg-white/10 rounded-full blur-lg" />
           </div>
@@ -608,7 +596,6 @@ const EventDetails = () => {
                 const Icon = method.icon;
                 const isSelected = selectedPaymentMethod === method.id;
                 const isCurrentlyProcessing = isProcessingPayment && isSelected;
-
                 return (
                   <div
                     key={method.id}
@@ -728,237 +715,244 @@ const EventDetails = () => {
   }
 
   return (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-    <Navbar />
-    <main className="py-12 pt-24">
-      <div className="container mx-auto px-4">
-        {verifyingPayment ? (
-          <div className="mb-6 text-center p-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-            <p>Verifying your payment...</p>
-          </div>
-        ) : renderPaymentStatusAlert()}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="rounded-lg overflow-hidden mb-8">
-              <img
-                src={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
-                alt={event.name}
-                className="w-full max-h-96 object-cover"
-              />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <Navbar />
+      <main className="py-12 pt-24">
+        <div className="container mx-auto px-4">
+          {verifyingPayment ? (
+            <div className="mb-6 text-center p-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+              <p>Verifying your payment...</p>
             </div>
-            <div className="mb-8">
-              {event.category && (
-                <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-[#10b981] text-white">{event.category}</Badge>
-              )}
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
-              <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
-                <div className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2" />
-                  <span>{formatDate(event.date)}</span>
+          ) : renderPaymentStatusAlert()}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="rounded-lg overflow-hidden mb-8">
+                <img
+                  src={event.image || 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}
+                  alt={event.name}
+                  className="w-full max-h-96 object-cover"
+                />
+              </div>
+              <div className="mb-8">
+                {event.category && (
+                  <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-[#10b981] text-white">{event.category}</Badge>
+                )}
+                <h1 className="text-3xl md:text-4xl font-bold mb-4">{event.name}</h1>
+                <div className="flex flex-wrap gap-6 mb-6 text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
+                    <span>{formatDate(event.date)}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="h-5 w-5 mr-2" />
+                    <span>{event.location}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 mr-2" />
+                    <span>By {event.organizer.company_name}</span>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  <span>By {event.organizer.company_name}</span>
+                <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold mb-4">About This Event</h2>
+                    <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold mb-4">Location</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
+                    <EventMap
+                      city={event.city}
+                      location={event.location}
+                      latitude={event.latitude}
+                      longitude={event.longitude}
+                      className="rounded-xl shadow-lg"
+                      height="400px"
+                    />
+                  </div>
                 </div>
               </div>
-              <Separator className="my-6 bg-gray-200 dark:bg-gray-700" />
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-bold mb-4">About This Event</h2>
-                  <p className="text-gray-600 dark:text-gray-300 whitespace-pre-line">{event.description}</p>
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold mb-4">Location</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">{event.location}</p>
-                  <EventMap location={event.location} />
-                </div>
-              </div>
             </div>
-          </div>
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
-              {isCheckingOut ? (
-                <div>
-                  <h2 className="text-xl font-bold mb-6">Complete Your Purchase</h2>
-                  <form onSubmit={handleProceedToPayment}>
-                    <div className="space-y-4 mb-6">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium mb-1">
-                          Full Name
-                        </label>
-                        <Input
-                          id="name"
-                          type="text"
-                          value={buyerDetails.name}
-                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, name: e.target.value }))}
-                          required
-                          className="bg-gray-50 dark:bg-gray-800"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium mb-1">
-                          Email
-                        </label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={buyerDetails.email}
-                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, email: e.target.value }))}
-                          required
-                          className="bg-gray-50 dark:bg-gray-800"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium mb-1">
-                          Phone Number (for M-Pesa)
-                        </label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={buyerDetails.phone_number}
-                          onChange={(e) => setBuyerDetails(prev => ({ ...prev, phone_number: e.target.value }))}
-                          required
-                          className="bg-gray-50 dark:bg-gray-800"
-                        />
-                      </div>
-                    </div>
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-                      <div className="flex justify-between font-bold text-lg">
-                        <span>Total</span>
-                        <span>{formatCurrency(total)}</span>
-                      </div>
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-                      disabled={buyButtonDisabled}
-                    >
-                      {buyButtonDisabled ? (
-                        <>Processing...</>
-                      ) : (
-                        <>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Proceed to Payment
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full mt-2 border-gray-300 dark:border-gray-700"
-                      onClick={() => setIsCheckingOut(false)}
-                    >
-                      Back
-                    </Button>
-                  </form>
-                </div>
-              ) : (
-                <div>
-                  <h2 className="text-xl font-bold mb-2">Tickets</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
-                  {ticketTypes.length > 0 ? (
-                    <>
+            <div className="lg:col-span-1">
+              <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-6 rounded-lg shadow-md sticky top-24 border border-gray-200 dark:border-gray-700">
+                {isCheckingOut ? (
+                  <div>
+                    <h2 className="text-xl font-bold mb-6">Complete Your Purchase</h2>
+                    <form onSubmit={handleProceedToPayment}>
                       <div className="space-y-4 mb-6">
                         <div>
-                          <label htmlFor="ticketType" className="block text-sm font-medium mb-1">
-                            Ticket Type
+                          <label htmlFor="name" className="block text-sm font-medium mb-1">
+                            Full Name
                           </label>
-                          <Select value={ticketType} onValueChange={setTicketType}>
-                            <SelectTrigger id="ticketType" className="bg-gray-50 dark:bg-gray-800">
-                              <SelectValue placeholder="Select ticket type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ticketTypes.map((type) => (
-                                <SelectItem key={type.id} value={type.id.toString()}>
-                                  <span className="font-medium">{type.type_name}</span> - {formatCurrency(type.price)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            id="name"
+                            type="text"
+                            value={buyerDetails.name}
+                            onChange={(e) => setBuyerDetails(prev => ({ ...prev, name: e.target.value }))}
+                            required
+                            className="bg-gray-50 dark:bg-gray-800"
+                          />
                         </div>
                         <div>
-                          <label htmlFor="quantity" className="block text-sm font-medium mb-1">
-                            Quantity
+                          <label htmlFor="email" className="block text-sm font-medium mb-1">
+                            Email
                           </label>
-                          <Select
-                            value={ticketCount.toString()}
-                            onValueChange={(value) => setTicketCount(parseInt(value))}
-                          >
-                            <SelectTrigger id="quantity" className="bg-gray-50 dark:bg-gray-800">
-                              <SelectValue placeholder="Select quantity" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                                <SelectItem key={num} value={num.toString()}>
-                                  {num}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={buyerDetails.email}
+                            onChange={(e) => setBuyerDetails(prev => ({ ...prev, email: e.target.value }))}
+                            required
+                            className="bg-gray-50 dark:bg-gray-800"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="phone" className="block text-sm font-medium mb-1">
+                            Phone Number (for M-Pesa)
+                          </label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={buyerDetails.phone_number}
+                            onChange={(e) => setBuyerDetails(prev => ({ ...prev, phone_number: e.target.value }))}
+                            required
+                            className="bg-gray-50 dark:bg-gray-800"
+                          />
                         </div>
                       </div>
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
-                        <div className="flex justify-between mb-2">
-                          <span>
-                            {ticketTypes.find(t => t.id.toString() === ticketType)?.type_name} × {ticketCount}
-                          </span>
-                          <span>{formatCurrency(selectedTicketPrice * ticketCount)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg mt-4">
+                        <div className="flex justify-between font-bold text-lg">
                           <span>Total</span>
                           <span>{formatCurrency(total)}</span>
                         </div>
                       </div>
                       <Button
+                        type="submit"
                         className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
-                        onClick={() => setIsCheckingOut(true)}
+                        disabled={buyButtonDisabled}
                       >
-                        Get Tickets
+                        {buyButtonDisabled ? (
+                          <>Processing...</>
+                        ) : (
+                          <>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Proceed to Payment
+                          </>
+                        )}
                       </Button>
-                    </>
-                  ) : (
-                    <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600">
-                      <p className="font-bold">No tickets available</p>
-                      <p>There are currently no tickets available for this event.</p>
                       <Button
+                        type="button"
                         variant="outline"
-                        className="mt-4 w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-200 dark:hover:bg-yellow-900/50"
-                        onClick={() => {
-                          window.location.reload();
-                        }}
+                        className="w-full mt-2 border-gray-300 dark:border-gray-700"
+                        onClick={() => setIsCheckingOut(false)}
                       >
-                        Refresh
+                        Back
+                      </Button>
+                    </form>
+                  </div>
+                ) : (
+                  <div>
+                    <h2 className="text-xl font-bold mb-2">Tickets</h2>
+                    <p className="text-gray-600 dark:text-gray-300 mb-6">Secure your spot now</p>
+                    {ticketTypes.length > 0 ? (
+                      <>
+                        <div className="space-y-4 mb-6">
+                          <div>
+                            <label htmlFor="ticketType" className="block text-sm font-medium mb-1">
+                              Ticket Type
+                            </label>
+                            <Select value={ticketType} onValueChange={setTicketType}>
+                              <SelectTrigger id="ticketType" className="bg-gray-50 dark:bg-gray-800">
+                                <SelectValue placeholder="Select ticket type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ticketTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id.toString()}>
+                                    <span className="font-medium">{type.type_name}</span> - {formatCurrency(type.price)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label htmlFor="quantity" className="block text-sm font-medium mb-1">
+                              Quantity
+                            </label>
+                            <Select
+                              value={ticketCount.toString()}
+                              onValueChange={(value) => setTicketCount(parseInt(value))}
+                            >
+                              <SelectTrigger id="quantity" className="bg-gray-50 dark:bg-gray-800">
+                                <SelectValue placeholder="Select quantity" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                  <SelectItem key={num} value={num.toString()}>
+                                    {num}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mb-6">
+                          <div className="flex justify-between mb-2">
+                            <span>
+                              {ticketTypes.find(t => t.id.toString() === ticketType)?.type_name} × {ticketCount}
+                            </span>
+                            <span>{formatCurrency(selectedTicketPrice * ticketCount)}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-lg mt-4">
+                            <span>Total</span>
+                            <span>{formatCurrency(total)}</span>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white"
+                          onClick={() => setIsCheckingOut(true)}
+                        >
+                          Get Tickets
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 my-4 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-600">
+                        <p className="font-bold">No tickets available</p>
+                        <p>There are currently no tickets available for this event.</p>
+                        <Button
+                          variant="outline"
+                          className="mt-4 w-full border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:border-yellow-600 dark:text-yellow-200 dark:hover:bg-yellow-900/50"
+                          onClick={() => {
+                            window.location.reload();
+                          }}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
+                    )}
+                    <div className="mt-6 flex gap-4 justify-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
+                        onClick={handleNativeShare}
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share
                       </Button>
                     </div>
-                  )}
-                  <div className="mt-6 flex gap-4 justify-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
-                      onClick={handleNativeShare}
-                    >
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share
-                    </Button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-    <ShareModal />
-    <AdvancedPaymentDialog />
-    <Footer />
-  </div>
-);
+      </main>
+      <ShareModal />
+      <AdvancedPaymentDialog />
+      <Footer />
+    </div>
+  );
 };
 
 export default EventDetails;
