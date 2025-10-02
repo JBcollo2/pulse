@@ -7,15 +7,15 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Alert, AlertDescription } from './ui/alert';
-import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, Shield, Zap, Crown } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Sparkles, Shield, Zap, Crown, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { VisuallyHidden } from './ui/Visually-hidden';
 
-const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminRegistration = false }) => {
+const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginUser, user, isAuthenticated } = useAuth();
+  const { loginUser } = useAuth();
 
   // Get token from URL if present
   const resetTokenFromUrl = searchParams.get('token') ||
@@ -28,7 +28,8 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [tokenValidated, setTokenValidated] = useState(false);
-  const [adminExists, setAdminExists] = useState(false);
+  const [adminExists, setAdminExists] = useState(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
 
   // Password visibility state
   const [showPassword, setShowPassword] = useState(false);
@@ -63,8 +64,9 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Check if admin exists
+  // Check if admin exists - this determines if we show admin registration option
   const checkAdminExists = useCallback(async () => {
+    setCheckingAdmin(true);
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/auth/check-admin`,
@@ -73,21 +75,27 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
           timeout: 5000
         }
       );
-      setAdminExists(response.data.admin_exists || false);
+      const exists = response.data.admin_exists || false;
+      setAdminExists(exists);
+      
+      // If no admin exists and we're not already on admin registration, prompt user
+      if (!exists && currentView === 'signin') {
+        setCurrentView('admin-registration');
+      }
     } catch (error) {
       console.error('Error checking admin status:', error);
+      // On error, assume admin exists to be safe
       setAdminExists(true);
+    } finally {
+      setCheckingAdmin(false);
     }
-  }, []);
+  }, [currentView]);
 
-  // Check admin status on component mount if showing admin registration
+  // Check admin status on component mount
   useEffect(() => {
-    if (showAdminRegistration) {
-      checkAdminExists();
-    }
-  }, [showAdminRegistration, checkAdminExists]);
+    checkAdminExists();
+  }, [checkAdminExists]);
 
-  // Simplified success handler without automatic redirects
   const handleSuccessfulAuth = useCallback(async (userData) => {
     try {
       const normalizedUser = {
@@ -97,13 +105,20 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         role: userData.role,
         full_name: userData.full_name,
         phone_number: userData.phone_number,
+        ai_enabled: userData.ai_enabled !== undefined ? userData.ai_enabled : true,
+        ai_language_preference: userData.ai_language_preference || 'en',
+        ai_notification_preference: userData.ai_notification_preference !== undefined ? userData.ai_notification_preference : true,
         ...userData
       };
+      
       loginUser(normalizedUser);
+      
       const displayName = normalizedUser.full_name || normalizedUser.name || normalizedUser.email;
+      
       if (onClose) {
         onClose();
       }
+      
       if (toast) {
         toast({
           title: "Login Successful",
@@ -111,6 +126,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
           variant: "default"
         });
       }
+      
       const authEvent = new CustomEvent('auth-state-changed', {
         detail: {
           user: normalizedUser,
@@ -119,6 +135,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         }
       });
       window.dispatchEvent(authEvent);
+      
       setTimeout(() => {
         localStorage.setItem('auth-login', Date.now().toString());
         setTimeout(() => localStorage.removeItem('auth-login'), 100);
@@ -129,7 +146,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
     }
   }, [onClose, toast, loginUser]);
 
-  // Helper to reset all form-specific states when changing views
   const resetFormStates = useCallback(() => {
     setError('');
     setSuccessMessage('');
@@ -159,10 +175,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/auth/reset-password/${tokenToValidate}`,
-        {
-          withCredentials: true,
-          timeout: 8000
-        }
+        { withCredentials: true, timeout: 8000 }
       );
       if (response.status === 200) {
         setSuccessMessage(response.data.msg || 'Token is valid. You can now reset your password.');
@@ -175,26 +188,20 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
       }
       setError(errorMessage);
       setTokenValidated(false);
-      setTimeout(() => {
-        toggleForm('forgot-password');
-      }, 3000);
+      setTimeout(() => toggleForm('forgot-password'), 3000);
     } finally {
       setIsLoading(false);
     }
   }, [toggleForm]);
 
-  // Auto-detect reset password flow on component mount or URL change
   useEffect(() => {
     if (resetTokenFromUrl) {
       setCurrentView('reset-password');
       setToken(resetTokenFromUrl);
       validateResetToken(resetTokenFromUrl);
-    } else {
-      setCurrentView(initialView);
     }
-  }, [resetTokenFromUrl, validateResetToken, initialView]);
+  }, [resetTokenFromUrl, validateResetToken]);
 
-  // Sign In handlers
   const handleSignInChange = (e) => {
     const { id, value } = e.target;
     const field = id.replace('signin-', '');
@@ -213,9 +220,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         {
           withCredentials: true,
           timeout: 8000,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' }
         }
       );
       let userData = response.data?.user || response.data;
@@ -237,13 +242,11 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         }
       }
       setError(errorMessage);
-      console.error('Sign in error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Sign Up handlers
   const handleSignUpChange = (e) => {
     const { id, value } = e.target;
     const field = id.replace('signup-', '');
@@ -262,21 +265,27 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         {
           withCredentials: true,
           timeout: 10000,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' }
         }
       );
-      if (response.data.user && response.data.user.role) {
-        setSuccessMessage('Account created successfully! You are now logged in.');
-        await handleSuccessfulAuth(response.data.user);
-      } else {
-        setSuccessMessage('Account created successfully! Please sign in to continue.');
-        setSignInData(prev => ({ ...prev, email: signUpData.email, password: '' }));
-        setTimeout(() => {
+      
+      setSuccessMessage('Account created successfully! Signing you in...');
+      
+      // Auto sign in after registration
+      setTimeout(async () => {
+        try {
+          const loginResponse = await axios.post(
+            `${import.meta.env.VITE_API_URL}/auth/login`,
+            { email: signUpData.email, password: signUpData.password },
+            { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
+          );
+          
+          await handleSuccessfulAuth(loginResponse.data?.user || loginResponse.data);
+        } catch (loginError) {
+          setSignInData({ email: signUpData.email, password: '' });
           toggleForm('signin');
-        }, 2000);
-      }
+        }
+      }, 1500);
     } catch (error) {
       let errorMessage = 'Registration failed. Please check your information and try again.';
       if (axios.isAxiosError(error)) {
@@ -287,12 +296,10 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         }
       }
       setError(errorMessage);
-    } finally {
       setIsLoading(false);
     }
   };
 
-  // Admin Registration handlers
   const handleAdminChange = (e) => {
     const { id, value } = e.target;
     const field = id.replace('admin-', '');
@@ -311,17 +318,28 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         {
           withCredentials: true,
           timeout: 10000,
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' }
         }
       );
-      setSuccessMessage('First admin registered successfully! You can now sign in.');
+      
+      setSuccessMessage('First admin registered successfully! Signing you in...');
       setAdminExists(true);
-      setSignInData(prev => ({ ...prev, email: adminData.email, password: '' }));
-      setTimeout(() => {
-        toggleForm('signin');
-      }, 2000);
+      
+      // Auto sign in after admin registration
+      setTimeout(async () => {
+        try {
+          const loginResponse = await axios.post(
+            `${import.meta.env.VITE_API_URL}/auth/login`,
+            { email: adminData.email, password: adminData.password },
+            { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
+          );
+          
+          await handleSuccessfulAuth(loginResponse.data?.user || loginResponse.data);
+        } catch (loginError) {
+          setSignInData({ email: adminData.email, password: '' });
+          toggleForm('signin');
+        }
+      }, 1500);
     } catch (error) {
       let errorMessage = 'Admin registration failed. Please check your information and try again.';
       if (axios.isAxiosError(error)) {
@@ -332,15 +350,14 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
         } else if (error.response?.status === 403) {
           errorMessage = 'Admin already exists. First admin registration is no longer available.';
           setAdminExists(true);
+          setTimeout(() => toggleForm('signin'), 2000);
         }
       }
       setError(errorMessage);
-    } finally {
       setIsLoading(false);
     }
   };
 
-  // Forgot Password handler
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -350,13 +367,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
       await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
         { email: forgotPasswordEmail },
-        {
-          withCredentials: true,
-          timeout: 10000,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
+        { withCredentials: true, timeout: 10000, headers: { 'Content-Type': 'application/json' } }
       );
       setSuccessMessage('Password reset link sent to your email!');
     } catch (error) {
@@ -370,12 +381,12 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
     }
   };
 
-  // Reset Password handler
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
     setSuccessMessage('');
+    
     if (newPassword !== confirmPassword) {
       setError('Passwords do not match.');
       setIsLoading(false);
@@ -386,33 +397,24 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
       setIsLoading(false);
       return;
     }
-    const hasLetter = /[a-zA-Z]/.test(newPassword);
-    const hasNumber = /\d/.test(newPassword);
-    if (!hasLetter || !hasNumber) {
+    if (!(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))) {
       setError('Password must contain both letters and numbers.');
       setIsLoading(false);
       return;
     }
+    
     try {
       await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`,
         { password: newPassword },
-        {
-          withCredentials: true,
-          timeout: 10000,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
+        { withCredentials: true, timeout: 10000, headers: { 'Content-Type': 'application/json' } }
       );
       setSuccessMessage('Password reset successful! You can now sign in.');
       if (navigate) {
         const basePath = location.pathname.split('/reset-password')[0] || '/';
         navigate(basePath, { replace: true });
       }
-      setTimeout(() => {
-        toggleForm('signin');
-      }, 2000);
+      setTimeout(() => toggleForm('signin'), 2000);
     } catch (error) {
       let errorMessage = 'Failed to reset password. Please try again.';
       if (axios.isAxiosError(error) && error.response?.data?.msg) {
@@ -444,18 +446,13 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
       setIsLoading(false);
       const errorMsg = "Failed to initiate Google login. Please try again.";
       if (toast) {
-        toast({
-          title: "Error",
-          description: errorMsg,
-          variant: "destructive"
-        });
+        toast({ title: "Error", description: errorMsg, variant: "destructive" });
       } else {
         setError(errorMsg);
       }
     }
   };
 
-  // Google OAuth callback handler
   useEffect(() => {
     const handleGoogleCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -466,10 +463,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
           await new Promise(resolve => setTimeout(resolve, 300));
           const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/auth/profile`,
-            {
-              withCredentials: true,
-              timeout: 8000
-            }
+            { withCredentials: true, timeout: 8000 }
           );
           if (response.data?.role) {
             await handleSuccessfulAuth(response.data);
@@ -478,7 +472,6 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
           }
         } catch (error) {
           setError('Google login was successful, but we could not load your profile. Please try signing in again.');
-          console.error('Google callback error:', error);
         } finally {
           setIsLoading(false);
           const cleanUrl = window.location.pathname;
@@ -489,632 +482,662 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
     handleGoogleCallback();
   }, [handleSuccessfulAuth]);
 
-  // Render logic for different auth views
+  // Show loading state while checking admin status
+  if (checkingAdmin) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
+          <VisuallyHidden>
+            <DialogTitle>Authentication</DialogTitle>
+            <DialogDescription>Checking system status</DialogDescription>
+          </VisuallyHidden>
+          <Card className="bg-white dark:bg-gray-800">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Checking system status...</p>
+            </CardContent>
+          </Card>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const renderAuthView = () => {
     switch (currentView) {
       case 'admin-registration':
         return (
-          <div className="relative max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-500">
-              <CardHeader className="text-center pb-6">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-4 shadow-lg shadow-amber-500/25">
-                  <Crown className="w-4 h-4" />
-                  <span className="text-sm font-medium">Admin Setup</span>
-                </div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-2">Register First Admin</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  Create the first administrator account for your system
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {adminExists ? (
-                  <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
-                    <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <AlertDescription className="text-amber-700 dark:text-amber-300">
-                      An admin already exists. First admin registration is no longer available.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <form onSubmit={handleAdminRegistration} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-full_name" className="text-gray-700 dark:text-gray-300 font-medium">Full Name</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="admin-full_name"
-                          value={adminData.full_name}
-                          onChange={handleAdminChange}
-                          required
-                          className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 transition-colors duration-300"
-                          placeholder="Enter admin full name"
-                        />
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-3 shadow-lg mx-auto">
+                <Crown className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">System Setup</span>
+              </div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-1.5">
+                Register First Admin
+              </CardTitle>
+              <CardDescription className="text-sm text-gray-600 dark:text-gray-400">
+                Create the first administrator account
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {adminExists ? (
+                <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+                  <Crown className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
+                    Admin already exists. Please sign in instead.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <form onSubmit={handleAdminRegistration} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="admin-full_name" className="text-sm">Full Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="admin-full_name"
+                        value={adminData.full_name}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-9 h-9 text-sm"
+                        placeholder="Enter full name"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="admin-email" className="text-sm">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="admin-email"
+                        type="email"
+                        value={adminData.email}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-9 h-9 text-sm"
+                        placeholder="Enter email"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="admin-phone_number" className="text-sm">Phone Number</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="admin-phone_number"
+                        value={adminData.phone_number}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-9 h-9 text-sm"
+                        placeholder="0712345678"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="admin-password" className="text-sm">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="admin-password"
+                        type={showPassword ? "text" : "password"}
+                        value={adminData.password}
+                        onChange={handleAdminChange}
+                        required
+                        className="pl-9 pr-9 h-9 text-sm"
+                        placeholder="Create password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-blue-700 dark:text-blue-300">
+                        <p className="font-medium mb-1">AI Features Enabled</p>
+                        <p className="text-blue-600 dark:text-blue-400">Your account will have AI-powered recommendations and notifications enabled by default.</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-email" className="text-gray-700 dark:text-gray-300 font-medium">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="admin-email"
-                          type="email"
-                          value={adminData.email}
-                          onChange={handleAdminChange}
-                          required
-                          className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 transition-colors duration-300"
-                          placeholder="Enter admin email"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-phone_number" className="text-gray-700 dark:text-gray-300 font-medium">Phone Number</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="admin-phone_number"
-                          value={adminData.phone_number}
-                          onChange={handleAdminChange}
-                          required
-                          className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 transition-colors duration-300"
-                          placeholder="e.g., 0712345678"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="admin-password" className="text-gray-700 dark:text-gray-300 font-medium">Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="admin-password"
-                          type={showPassword ? "text" : "password"}
-                          value={adminData.password}
-                          onChange={handleAdminChange}
-                          required
-                          className="pl-11 pr-11 h-11 border-gray-300 dark:border-gray-600 focus:border-amber-500 dark:focus:border-amber-400 transition-colors duration-300"
-                          placeholder="Create a secure password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                    </div>
-                    {error && (
-                      <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20">
-                        <Shield className="w-4 h-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                    {successMessage && (
-                      <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-                        <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                        <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
-                      </Alert>
-                    )}
-                    <Button
-                      type="submit"
-                      className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-300 hover:scale-105"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Creating Admin...
-                        </div>
-                      ) : (
-                        <>
-                          <Crown className="mr-2 h-4 w-4" />
-                          Create Admin Account
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-3 pt-6">
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => toggleForm('signin')}
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive" className="py-2">
+                      <Shield className="w-4 h-4" />
+                      <AlertDescription className="text-sm">{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  {successMessage && (
+                    <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20 py-2">
+                      <Zap className="w-4 h-4 text-green-600" />
+                      <AlertDescription className="text-sm text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button
+                    type="submit"
+                    className="w-full h-9 text-sm bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
                     disabled={isLoading}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors duration-300"
                   >
-                    Sign in
-                  </button>
-                </div>
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Creating...
+                      </div>
+                    ) : (
+                      <>
+                        <Crown className="mr-1.5 h-3.5 w-3.5" />
+                        Create Admin Account
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+            {adminExists && (
+              <CardFooter className="flex justify-center pt-3 pb-4">
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signin')}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Go to Sign In
+                </button>
               </CardFooter>
-            </Card>
-          </div>
+            )}
+          </Card>
         );
+
       case 'signin':
         return (
-          <div className="relative max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-500">
-              <CardHeader className="text-center pb-6">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white mb-4 shadow-lg shadow-blue-500/25">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-sm font-medium">Welcome Back</span>
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-500 to-green-500 text-white mb-3 shadow-lg mx-auto">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Welcome Back</span>
+              </div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent mb-1.5">Sign In</CardTitle>
+              <CardDescription className="text-sm">Enter your credentials</CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <form onSubmit={handleSignIn} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="signin-email" className="text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      value={signInData.email}
+                      onChange={handleSignInChange}
+                      required
+                      className="pl-9 h-9 text-sm"
+                      placeholder="Enter email"
+                    />
+                  </div>
                 </div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent mb-2">Sign In</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  Enter your credentials to access your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-gray-700 dark:text-gray-300 font-medium">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        value={signInData.email}
-                        onChange={handleSignInChange}
-                        required
-                        className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-300"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-gray-700 dark:text-gray-300 font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signin-password"
-                        type={showPassword ? "text" : "password"}
-                        value={signInData.password}
-                        onChange={handleSignInChange}
-                        required
-                        className="pl-11 pr-11 h-11 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 transition-colors duration-300"
-                        placeholder="Enter your password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  {error && (
-                    <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20">
-                      <Shield className="w-4 h-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  {successMessage && (
-                    <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-                      <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all duration-300 hover:scale-105"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Signing In...
-                      </div>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </Button>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">or continue with</span>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
-                    onClick={handleGoogleLogin}
-                    disabled={isLoading}
-                  >
-                    <Mail className="mr-2 h-5 w-5 text-blue-500" />
-                    Sign in with Google
-                  </Button>
-                </form>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-3 pt-6">
-                <Button
-                  variant="link"
-                  onClick={() => toggleForm('forgot-password')}
-                  disabled={isLoading}
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-300"
-                >
-                  Forgot your password?
-                </Button>
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Don't have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => toggleForm('signup')}
-                    disabled={isLoading}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors duration-300"
-                  >
-                    Sign up
-                  </button>
-                </div>
-                {showAdminRegistration && !adminExists && (
-                  <div className="text-center text-sm text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
-                    Need to create an admin?{' '}
+                <div className="space-y-1.5">
+                  <Label htmlFor="signin-password" className="text-sm">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signin-password"
+                      type={showPassword ? "text" : "password"}
+                      value={signInData.password}
+                      onChange={handleSignInChange}
+                      required
+                      className="pl-9 pr-9 h-9 text-sm"
+                      placeholder="Enter password"
+                    />
                     <button
                       type="button"
-                      onClick={() => toggleForm('admin-registration')}
-                      disabled={isLoading}
-                      className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-semibold hover:underline transition-colors duration-300"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
                     >
-                      Register First Admin
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                )}
-              </CardFooter>
-            </Card>
-          </div>
-        );
-      case 'signup':
-        return (
-          <div className="relative max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-500">
-              <CardHeader className="text-center pb-6">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-green-500 to-blue-500 text-white mb-4 shadow-lg shadow-green-500/25">
-                  <User className="w-4 h-4" />
-                  <span className="text-sm font-medium">Join Us</span>
                 </div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent mb-2">Create Account</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  Enter your details to create your account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-full_name" className="text-gray-700 dark:text-gray-300 font-medium">Full Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signup-full_name"
-                        value={signUpData.full_name}
-                        onChange={handleSignUpChange}
-                        required
-                        className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 transition-colors duration-300"
-                        placeholder="Enter your full name"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-gray-700 dark:text-gray-300 font-medium">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        value={signUpData.email}
-                        onChange={handleSignUpChange}
-                        required
-                        className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 transition-colors duration-300"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-phone_number" className="text-gray-700 dark:text-gray-300 font-medium">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signup-phone_number"
-                        value={signUpData.phone_number}
-                        onChange={handleSignUpChange}
-                        required
-                        className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 transition-colors duration-300"
-                        placeholder="e.g., 0712345678"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-gray-700 dark:text-gray-300 font-medium">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="signup-password"
-                        type={showPassword ? "text" : "password"}
-                        value={signUpData.password}
-                        onChange={handleSignUpChange}
-                        required
-                        className="pl-11 pr-11 h-11 border-gray-300 dark:border-gray-600 focus:border-green-500 dark:focus:border-green-400 transition-colors duration-300"
-                        placeholder="Create a strong password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                  {error && (
-                    <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20">
-                      <Shield className="w-4 h-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  {successMessage && (
-                    <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-                      <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Creating Account...
-                      </div>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </Button>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">or continue with</span>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-11 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300"
-                    onClick={handleGoogleLogin}
-                    disabled={isLoading}
-                  >
-                    <Mail className="mr-2 h-5 w-5 text-blue-500" />
-                    Sign up with Google
-                  </Button>
-                </form>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-3 pt-6">
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => toggleForm('signin')}
-                    disabled={isLoading}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors duration-300"
-                  >
-                    Sign in
-                  </button>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-        );
-      case 'forgot-password':
-        return (
-          <div className="relative max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-500">
-              <CardHeader className="text-center pb-6">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white mb-4 shadow-lg shadow-orange-500/25">
-                  <Shield className="w-4 h-4" />
-                  <span className="text-sm font-medium">Password Reset</span>
-                </div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-2">Forgot Password</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  Enter your email address to receive a password reset link
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="forgot-email" className="text-gray-700 dark:text-gray-300 font-medium">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <Input
-                        id="forgot-email"
-                        type="email"
-                        value={forgotPasswordEmail}
-                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                        required
-                        className="pl-11 h-11 border-gray-300 dark:border-gray-600 focus:border-orange-500 dark:focus:border-orange-400 transition-colors duration-300"
-                        placeholder="Enter your email address"
-                      />
-                    </div>
-                  </div>
-                  {error && (
-                    <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-900/20">
-                      <Shield className="w-4 h-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  {successMessage && (
-                    <Alert className="border-green-200 bg-green-50 dark:bg-green-900/20">
-                      <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button
-                    type="submit"
-                    className="w-full h-11 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all duration-300 hover:scale-105"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Sending Reset Link...
-                      </div>
-                    ) : (
-                      'Send Reset Link'
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-3 pt-6">
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Remembered your password?{' '}
-                  <button
-                    type="button"
-                    onClick={() => toggleForm('signin')}
-                    disabled={isLoading}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors duration-300"
-                  >
-                    Sign in
-                  </button>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-        );
-      case 'reset-password':
-        return (
-          <div className="relative max-w-md mx-auto">
-            <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-500">
-              <CardHeader className="text-center pb-6">
-                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white mb-4 shadow-lg shadow-purple-500/25">
-                  <Lock className="w-4 h-4" />
-                  <span className="text-sm font-medium">Reset Password</span>
-                </div>
-                <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">Reset Password</CardTitle>
-                <CardDescription className="text-gray-600 dark:text-gray-400">
-                  Enter your new password below
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
                 {error && (
-                  <Alert variant="destructive" className="mb-4 border-red-200 bg-red-50 dark:bg-red-900/20">
+                  <Alert variant="destructive" className="py-2">
                     <Shield className="w-4 h-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription className="text-sm">{error}</AlertDescription>
                   </Alert>
                 )}
                 {successMessage && (
-                  <Alert className="mb-4 border-green-200 bg-green-50 dark:bg-green-900/20">
-                    <Zap className="w-4 h-4 text-green-600 dark:text-green-400" />
-                    <AlertDescription className="text-green-700 dark:text-green-300">{successMessage}</AlertDescription>
+                  <Alert className="border-green-200 bg-green-50 py-2">
+                    <Zap className="w-4 h-4 text-green-600" />
+                    <AlertDescription className="text-sm text-green-700">{successMessage}</AlertDescription>
                   </Alert>
                 )}
-                {isLoading && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-3">
-                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-center text-gray-600 dark:text-gray-400">Validating reset link...</p>
+                <Button
+                  type="submit"
+                  className="w-full h-9 text-sm bg-gradient-to-r from-blue-500 to-green-500"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Signing In...
                     </div>
+                  ) : (
+                    'Sign In'
+                  )}
+                </Button>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
                   </div>
-                )}
-                {!isLoading && tokenValidated && !error && (
-                  <form onSubmit={handleResetPassword} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password" className="text-gray-700 dark:text-gray-300 font-medium">New Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="new-password"
-                          type={showPassword ? "text" : "password"}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          required
-                          minLength={8}
-                          className="pl-11 pr-11 h-11 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400 transition-colors duration-300"
-                          placeholder="Enter your new password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                        >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password" className="text-gray-700 dark:text-gray-300 font-medium">Confirm New Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          id="confirm-password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          required
-                          minLength={8}
-                          className="pl-11 pr-11 h-11 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400 transition-colors duration-300"
-                          placeholder="Confirm your new password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      {newPassword && confirmPassword && newPassword !== confirmPassword && (
-                        <p className="text-xs text-red-500 dark:text-red-400">Passwords do not match</p>
-                      )}
-                      {newPassword && confirmPassword && newPassword === confirmPassword && (
-                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                          <Zap className="w-3 h-3" />
-                          Passwords match
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full h-11 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-pink-500/40 transition-all duration-300 hover:scale-105"
-                      disabled={
-                        isLoading ||
-                        !newPassword ||
-                        !confirmPassword ||
-                        newPassword !== confirmPassword ||
-                        newPassword.length < 8 ||
-                        !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))
-                      }
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Resetting Password...
-                        </div>
-                      ) : (
-                        'Reset Password'
-                      )}
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-3 pt-6">
-                <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                  Remembered your password?{' '}
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">or continue with</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-9 text-sm"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <Mail className="mr-1.5 h-4 w-4 text-blue-500" />
+                  Sign in with Google
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex flex-col space-y-2 pt-3 pb-4 px-4">
+              <Button
+                variant="link"
+                onClick={() => toggleForm('forgot-password')}
+                disabled={isLoading}
+                className="text-xs text-blue-600 h-auto p-0"
+              >
+                Forgot your password?
+              </Button>
+              <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signup')}
+                  disabled={isLoading}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Sign up
+                </button>
+              </div>
+              {!adminExists && (
+                <div className="text-center text-xs text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                  Need to set up the system?{' '}
                   <button
                     type="button"
-                    onClick={() => toggleForm('signin')}
+                    onClick={() => toggleForm('admin-registration')}
                     disabled={isLoading}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors duration-300"
+                    className="text-amber-600 font-medium hover:underline"
                   >
-                    Sign in
+                    Register First Admin
                   </button>
                 </div>
-              </CardFooter>
-            </Card>
-          </div>
+              )}
+            </CardFooter>
+          </Card>
         );
+
+      case 'signup':
+        return (
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-green-500 to-blue-500 text-white mb-3 shadow-lg mx-auto">
+                <User className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Join Us</span>
+              </div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent mb-1.5">Create Account</CardTitle>
+              <CardDescription className="text-sm">Enter your details to get started</CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <form onSubmit={handleSignUp} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-full_name" className="text-sm">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-full_name"
+                      value={signUpData.full_name}
+                      onChange={handleSignUpChange}
+                      required
+                      className="pl-9 h-9 text-sm"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-email" className="text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={signUpData.email}
+                      onChange={handleSignUpChange}
+                      required
+                      className="pl-9 h-9 text-sm"
+                      placeholder="Enter email"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-phone_number" className="text-sm">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-phone_number"
+                      value={signUpData.phone_number}
+                      onChange={handleSignUpChange}
+                      required
+                      className="pl-9 h-9 text-sm"
+                      placeholder="0712345678"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-password" className="text-sm">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="signup-password"
+                      type={showPassword ? "text" : "password"}
+                      value={signUpData.password}
+                      onChange={handleSignUpChange}
+                      required
+                      className="pl-9 pr-9 h-9 text-sm"
+                      placeholder="Create password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2.5">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-700 dark:text-blue-300">
+                      <p className="font-medium">AI Features Included</p>
+                      <p className="text-blue-600 dark:text-blue-400 mt-0.5">Get personalized event recommendations powered by AI</p>
+                    </div>
+                  </div>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="py-2">
+                    <Shield className="w-4 h-4" />
+                    <AlertDescription className="text-sm">{error}</AlertDescription>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <Alert className="border-green-200 bg-green-50 py-2">
+                    <Zap className="w-4 h-4 text-green-600" />
+                    <AlertDescription className="text-sm text-green-700">{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <Button
+                  type="submit"
+                  className="w-full h-9 text-sm bg-gradient-to-r from-green-500 to-blue-500"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Creating...
+                    </div>
+                  ) : (
+                    'Create Account'
+                  )}
+                </Button>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs">
+                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">or continue with</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-9 text-sm"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <Mail className="mr-1.5 h-4 w-4 text-blue-500" />
+                  Sign up with Google
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex justify-center pt-3 pb-4">
+              <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signin')}
+                  disabled={isLoading}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </CardFooter>
+          </Card>
+        );
+
+      case 'forgot-password':
+        return (
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white mb-3 shadow-lg mx-auto">
+                <Shield className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Password Reset</span>
+              </div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent mb-1.5">Forgot Password</CardTitle>
+              <CardDescription className="text-sm">We'll send you a reset link</CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="forgot-email" className="text-sm">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      value={forgotPasswordEmail}
+                      onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                      required
+                      className="pl-9 h-9 text-sm"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </div>
+                {error && (
+                  <Alert variant="destructive" className="py-2">
+                    <Shield className="w-4 h-4" />
+                    <AlertDescription className="text-sm">{error}</AlertDescription>
+                  </Alert>
+                )}
+                {successMessage && (
+                  <Alert className="border-green-200 bg-green-50 py-2">
+                    <Zap className="w-4 h-4 text-green-600" />
+                    <AlertDescription className="text-sm text-green-700">{successMessage}</AlertDescription>
+                  </Alert>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full h-9 text-sm bg-gradient-to-r from-orange-500 to-red-500"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Sending...
+                    </div>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+            <CardFooter className="flex justify-center pt-3 pb-4">
+              <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+                Remembered your password?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signin')}
+                  disabled={isLoading}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </CardFooter>
+          </Card>
+        );
+
+      case 'reset-password':
+        return (
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl">
+            <CardHeader className="text-center pb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white mb-3 shadow-lg mx-auto">
+                <Lock className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Reset Password</span>
+              </div>
+              <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent mb-1.5">Reset Password</CardTitle>
+              <CardDescription className="text-sm">Enter your new password</CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              {error && (
+                <Alert variant="destructive" className="mb-3 py-2">
+                  <Shield className="w-4 h-4" />
+                  <AlertDescription className="text-sm">{error}</AlertDescription>
+                </Alert>
+              )}
+              {successMessage && (
+                <Alert className="mb-3 border-green-200 bg-green-50 py-2">
+                  <Zap className="w-4 h-4 text-green-600" />
+                  <AlertDescription className="text-sm text-green-700">{successMessage}</AlertDescription>
+                </Alert>
+              )}
+              {isLoading && (
+                <div className="flex items-center justify-center py-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-gray-600">Validating...</p>
+                  </div>
+                </div>
+              )}
+              {!isLoading && tokenValidated && !error && (
+                <form onSubmit={handleResetPassword} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="new-password" className="text-sm">New Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="pl-9 pr-9 h-9 text-sm"
+                        placeholder="Enter new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="confirm-password" className="text-sm">Confirm Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={8}
+                        className="pl-9 pr-9 h-9 text-sm"
+                        placeholder="Confirm new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                      <p className="text-xs text-red-500">Passwords do not match</p>
+                    )}
+                    {newPassword && confirmPassword && newPassword === confirmPassword && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Passwords match
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-9 text-sm bg-gradient-to-r from-purple-500 to-pink-500"
+                    disabled={
+                      isLoading ||
+                      !newPassword ||
+                      !confirmPassword ||
+                      newPassword !== confirmPassword ||
+                      newPassword.length < 8 ||
+                      !(/[a-zA-Z]/.test(newPassword) && /\d/.test(newPassword))
+                    }
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Resetting...
+                      </div>
+                    ) : (
+                      'Reset Password'
+                    )}
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-center pt-3 pb-4">
+              <div className="text-center text-xs text-gray-600 dark:text-gray-400">
+                Remembered your password?{' '}
+                <button
+                  type="button"
+                  onClick={() => toggleForm('signin')}
+                  disabled={isLoading}
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Sign in
+                </button>
+              </div>
+            </CardFooter>
+          </Card>
+        );
+
       default:
         return null;
     }
@@ -1122,7 +1145,7 @@ const AuthCard = ({ isOpen, onClose, initialView = 'signin', toast, showAdminReg
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none">
+      <DialogContent className="max-w-md p-0 bg-transparent border-0 shadow-none overflow-y-auto max-h-[90vh]">
         <VisuallyHidden>
           <DialogTitle>Authentication</DialogTitle>
           <DialogDescription>Sign in or create an account</DialogDescription>
