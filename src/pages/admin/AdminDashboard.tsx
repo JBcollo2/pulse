@@ -22,6 +22,20 @@ interface Category {
   name: string;
   description?: string;
   created_at: string;
+  ai_description_enhanced?: boolean;
+  ai_suggested_keywords?: string[];
+  latest_insight?: {
+    insights_text: string;
+    stats: any;
+    ai_powered: boolean;
+  };
+}
+
+interface AIState {
+  suggestions: Record<string, any>;
+  enhancedDescriptions: Record<number, string>;
+  suggestedKeywords: Record<number, string[]>;
+  deleteImpacts: Record<number, any>;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -33,6 +47,15 @@ const AdminDashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // AI-specific state management
+  const [aiState, setAiState] = useState<AIState>({
+    suggestions: {},
+    enhancedDescriptions: {},
+    suggestedKeywords: {},
+    deleteImpacts: {}
+  });
+  
   const { toast } = useToast();
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -91,7 +114,7 @@ const AdminDashboard: React.FC = () => {
       case 'manageCategories':
         return {
           title: "Manage Categories",
-          description: "Create and manage event categories for better organization.",
+          description: "Create and manage event categories with AI assistance.",
           icon: <Tags className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-pink-500 to-pink-700"
         };
@@ -129,13 +152,13 @@ const AdminDashboard: React.FC = () => {
     });
   }, [toast]);
 
-  // Categories API functions
+  // Fetch categories with optional insights
   const fetchCategories = useCallback(async () => {
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories?include_insights=true`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -163,10 +186,12 @@ const AdminDashboard: React.FC = () => {
     }
   }, [toast, handleFetchError]);
 
-  const handleCreateCategory = async (categoryData: { name: string; description?: string }) => {
+  // Create category with action handling and AI state management
+  const handleCreateCategory = async (categoryData: any) => {
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
+    
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
         method: 'POST',
@@ -180,19 +205,86 @@ const AdminDashboard: React.FC = () => {
       
       if (!response.ok) {
         await handleFetchError(response);
-        return;
+        return null;
       }
       
       const result = await response.json();
-      setSuccessMessage('Category created successfully.');
-      toast({
-        title: "Success",
-        description: 'Category created successfully.',
-        variant: "default",
-      });
       
-      // Refresh categories list
-      await fetchCategories();
+      // Handle different action responses with AI state updates
+      if (result.action === 'suggestion_generated') {
+        // Store AI suggestion in state
+        setAiState(prev => ({
+          ...prev,
+          suggestions: {
+            ...prev.suggestions,
+            current: result.suggestion
+          }
+        }));
+        
+        setSuccessMessage('AI suggestion generated successfully.');
+        toast({
+          title: "AI Suggestion Ready",
+          description: 'Review the AI-generated suggestion and decide to use or modify it.',
+          variant: "default",
+        });
+        
+        return {
+          success: true,
+          action: 'suggestion_generated',
+          data: result.suggestion,
+          nextActions: result.next_actions
+        };
+        
+      } else if (result.action === 'category_created') {
+        // Clear AI suggestions after successful creation
+        setAiState(prev => ({
+          ...prev,
+          suggestions: {}
+        }));
+        
+        setSuccessMessage(result.message || 'Category created successfully.');
+        toast({
+          title: "Success",
+          description: result.message || 'Category created successfully.',
+          variant: "default",
+        });
+        
+        await fetchCategories();
+        
+        return {
+          success: true,
+          action: 'category_created',
+          data: result.category
+        };
+        
+      } else if (result.action === 'similar_categories_found') {
+        // Store similar categories for user review
+        setAiState(prev => ({
+          ...prev,
+          suggestions: {
+            ...prev.suggestions,
+            similarCategories: result.similar_categories
+          }
+        }));
+        
+        setError(result.warning);
+        toast({
+          title: "Similar Categories Found",
+          description: result.warning,
+          variant: "destructive",
+        });
+        
+        return {
+          success: false,
+          action: 'similar_categories_found',
+          data: result.similar_categories,
+          warning: result.warning,
+          nextActions: result.next_actions
+        };
+      }
+      
+      return { success: true, data: result };
+      
     } catch (err) {
       console.error('Create category error:', err);
       setError('An unexpected error occurred while creating category.');
@@ -201,10 +293,249 @@ const AdminDashboard: React.FC = () => {
         description: 'An unexpected error occurred while creating category.',
         variant: "destructive",
       });
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Update category with action handling and AI state management
+  const handleUpdateCategory = async (categoryId: number, updateData: any) => {
+    setIsLoading(true);
+    setError(undefined);
+    setSuccessMessage('');
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        await handleFetchError(response);
+        return null;
+      }
+      
+      const result = await response.json();
+      
+      // Handle different action responses with AI state updates
+      if (result.action === 'description_enhanced') {
+        // Store enhanced description in state
+        setAiState(prev => ({
+          ...prev,
+          enhancedDescriptions: {
+            ...prev.enhancedDescriptions,
+            [categoryId]: result.enhanced_description
+          }
+        }));
+        
+        setSuccessMessage('Description enhanced successfully.');
+        toast({
+          title: "AI Enhancement Ready",
+          description: 'Review the AI-enhanced description and decide to save or regenerate.',
+          variant: "default",
+        });
+        
+        return {
+          success: true,
+          action: 'description_enhanced',
+          categoryId,
+          data: {
+            current: result.current_description,
+            enhanced: result.enhanced_description
+          },
+          nextActions: result.next_actions
+        };
+        
+      } else if (result.action === 'keywords_generated') {
+        // Store suggested keywords in state
+        setAiState(prev => ({
+          ...prev,
+          suggestedKeywords: {
+            ...prev.suggestedKeywords,
+            [categoryId]: result.suggested_keywords
+          }
+        }));
+        
+        setSuccessMessage('Keywords generated successfully.');
+        toast({
+          title: "AI Keywords Ready",
+          description: 'Review the AI-generated keywords and decide to save or regenerate.',
+          variant: "default",
+        });
+        
+        return {
+          success: true,
+          action: 'keywords_generated',
+          categoryId,
+          data: {
+            current: result.current_keywords,
+            suggested: result.suggested_keywords
+          },
+          nextActions: result.next_actions
+        };
+        
+      } else if (result.action === 'category_updated' || result.action === 'description_saved' || result.action === 'keywords_saved') {
+        // Clear AI state for this category after successful save
+        setAiState(prev => ({
+          ...prev,
+          enhancedDescriptions: {
+            ...prev.enhancedDescriptions,
+            [categoryId]: undefined
+          },
+          suggestedKeywords: {
+            ...prev.suggestedKeywords,
+            [categoryId]: undefined
+          }
+        }));
+        
+        setSuccessMessage(result.message || 'Category updated successfully.');
+        toast({
+          title: "Success",
+          description: result.message || 'Category updated successfully.',
+          variant: "default",
+        });
+        
+        await fetchCategories();
+        
+        return {
+          success: true,
+          action: result.action,
+          categoryId,
+          data: result.category
+        };
+        
+      } else if (result.action === 'validation_complete') {
+        return {
+          success: true,
+          action: 'validation_complete',
+          categoryId,
+          data: result.validation,
+          nextActions: result.next_actions
+        };
+      }
+      
+      return { success: true, data: result };
+      
+    } catch (err) {
+      console.error('Update category error:', err);
+      setError('An unexpected error occurred while updating category.');
+      toast({
+        title: "Error",
+        description: 'An unexpected error occurred while updating category.',
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Delete category with action handling and AI state management
+  // FIXED: Changed return type to Promise<void> to match CategoryManagement expectations
+  const handleDeleteCategory = async (categoryId: number, action: string = 'check_impact'): Promise<void> => {
+    setIsLoading(true);
+    setError(undefined);
+    setSuccessMessage('');
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/categories/${categoryId}?action=${action}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        await handleFetchError(response);
+        return;
+      }
+      
+      const result = await response.json();
+      
+      // Handle different action responses with AI state updates
+      if (result.action === 'impact_analyzed') {
+        // Store delete impact in state
+        setAiState(prev => ({
+          ...prev,
+          deleteImpacts: {
+            ...prev.deleteImpacts,
+            [categoryId]: result.impact
+          }
+        }));
+        
+        toast({
+          title: "Impact Analysis Complete",
+          description: `This will affect ${result.impact?.affected_events || 0} event(s).`,
+          variant: result.impact?.has_events ? "destructive" : "default",
+        });
+        
+      } else if (result.action === 'category_deleted') {
+        // Clear AI state for deleted category
+        setAiState(prev => ({
+          ...prev,
+          deleteImpacts: {
+            ...prev.deleteImpacts,
+            [categoryId]: undefined
+          },
+          enhancedDescriptions: {
+            ...prev.enhancedDescriptions,
+            [categoryId]: undefined
+          },
+          suggestedKeywords: {
+            ...prev.suggestedKeywords,
+            [categoryId]: undefined
+          }
+        }));
+        
+        setSuccessMessage(result.message || 'Category deleted successfully.');
+        toast({
+          title: "Success",
+          description: result.message || 'Category deleted successfully.',
+          variant: "default",
+        });
+        
+        await fetchCategories();
+      }
+      
+    } catch (err) {
+      console.error('Delete category error:', err);
+      setError('An unexpected error occurred while deleting category.');
+      toast({
+        title: "Error",
+        description: 'An unexpected error occurred while deleting category.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper function to get AI state for a specific category
+  const getAIStateForCategory = useCallback((categoryId: number) => {
+    return {
+      enhancedDescription: aiState.enhancedDescriptions[categoryId],
+      suggestedKeywords: aiState.suggestedKeywords[categoryId],
+      deleteImpact: aiState.deleteImpacts[categoryId]
+    };
+  }, [aiState]);
+
+  // Helper function to get current AI suggestion
+  const getCurrentAISuggestion = useCallback(() => {
+    return aiState.suggestions.current;
+  }, [aiState]);
+
+  // Helper function to get similar categories
+  const getSimilarCategories = useCallback(() => {
+    return aiState.suggestions.similarCategories;
+  }, [aiState]);
 
   const handleRegister = async (data: any) => {
     setIsLoading(true);
@@ -241,7 +572,6 @@ const AdminDashboard: React.FC = () => {
         });
       } else if (currentView === 'registerOrganizer') {
         endpoint = '/auth/admin/register-organizer';
-        // For organizer, we use FormData to handle potential file uploads
         const formData = new FormData();
         formData.append('user_id', data.user_id);
         formData.append('company_name', data.company_name?.trim() || '');
@@ -253,7 +583,6 @@ const AdminDashboard: React.FC = () => {
         if (data.company_logo) formData.append('company_logo', data.company_logo);
         
         requestBody = formData;
-        // Don't set Content-Type for FormData, let browser set it with boundary
       }
 
       console.log('Sending request to:', `${import.meta.env.VITE_API_URL}${endpoint}`);
@@ -447,9 +776,18 @@ const AdminDashboard: React.FC = () => {
       setAllUsers([]);
       debouncedSearch.cancel();
     }
-    // Clear messages when switching views
     setError(undefined);
     setSuccessMessage('');
+    
+    // Clear AI state when switching views
+    if (view !== 'manageCategories') {
+      setAiState({
+        suggestions: {},
+        enhancedDescriptions: {},
+        suggestedKeywords: {},
+        deleteImpacts: {}
+      });
+    }
   };
 
   useEffect(() => {
@@ -462,7 +800,6 @@ const AdminDashboard: React.FC = () => {
         handleSearchUsers(searchTerm);
       }
     } else if (currentView === 'manageCategories') {
-      // Fetch categories when switching to manage categories view
       fetchCategories();
     }
     return () => {
@@ -520,9 +857,15 @@ const AdminDashboard: React.FC = () => {
               <CategoryManagement
                 categories={categories}
                 onCreateCategory={handleCreateCategory}
+                onUpdateCategory={handleUpdateCategory}
+                onDeleteCategory={handleDeleteCategory}
                 isLoading={isLoading}
                 error={error}
                 successMessage={successMessage}
+                aiState={aiState}
+                getAIStateForCategory={getAIStateForCategory}
+                getCurrentAISuggestion={getCurrentAISuggestion}
+                getSimilarCategories={getSimilarCategories}
               />
             )}
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (
