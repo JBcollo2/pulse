@@ -84,7 +84,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   const [similarCategoriesWarning, setSimilarCategoriesWarning] = useState<any>(null);
   const [inputForSuggestion, setInputForSuggestion] = useState('');
 
-  // Auto-fill form when AI suggestion is received
   useEffect(() => {
     if (aiSuggestion && aiSuggestion.name) {
       setFormData({
@@ -94,7 +93,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     }
   }, [aiSuggestion]);
 
-  // Auto-fill edit form when edit AI suggestion is received
   useEffect(() => {
     if (editAiSuggestion && editAiSuggestion.name) {
       setEditFormData(prev => ({
@@ -123,18 +121,15 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   const handleGetAISuggestion = async () => {
     const inputText = inputForSuggestion.trim() || formData.description.trim() || formData.name.trim();
     if (!inputText) return;
-    
+
     setIsGeneratingSuggestion(true);
     setSimilarCategoriesWarning(null);
-    
+
     try {
       const response = await onCreateCategory({
         action: 'suggest',
         description: inputText
       });
-
-      console.log('AI Suggestion Response:', response);
-
       if (response?.action === 'suggestion_generated' && response.data) {
         setAiSuggestion({
           name: response.data.name || '',
@@ -158,7 +153,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         });
       }
     } catch (err) {
-      console.error('Error getting AI suggestion:', err);
     } finally {
       setIsGeneratingSuggestion(false);
     }
@@ -172,9 +166,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         action: 'enhance_description',
         description: editFormData.description || editFormData.name
       });
-
-      console.log('Edit AI Suggestion Response:', response);
-
       if (response?.action === 'description_enhanced' && response.data) {
         setEditAiSuggestion({
           name: editFormData.name,
@@ -191,7 +182,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         });
       }
     } catch (err) {
-      console.error('Error getting edit AI suggestion:', err);
     } finally {
       setIsGeneratingEditSuggestion(false);
     }
@@ -209,23 +199,18 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const handleSaveWithAI = async () => {
     if (!formData.name.trim()) return;
-    
+
     setSimilarCategoriesWarning(null);
-    
+
     const categoryData: any = {
       action: 'create',
       name: formData.name.trim(),
       description: formData.description.trim() || undefined
     };
-
     if (aiSuggestion?.keywords && aiSuggestion.keywords.length > 0) {
       categoryData.keywords = aiSuggestion.keywords;
     }
-
     const result = await onCreateCategory(categoryData);
-
-    console.log('Create Category Result:', result);
-
     if (result?.action === 'similar_categories_found') {
       setSimilarCategoriesWarning({
         similar: result.data,
@@ -233,7 +218,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       });
       return;
     }
-
     if (result?.action === 'category_created' || result?.success) {
       setFormData({ name: '', description: '' });
       setShowCreateForm(false);
@@ -245,20 +229,17 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const handleConfirmDespiteSimilar = async () => {
     if (!formData.name.trim()) return;
-    
+
     const categoryData: any = {
       action: 'create',
       name: formData.name.trim(),
       description: formData.description.trim() || undefined,
       confirm_despite_similar: true
     };
-
     if (aiSuggestion?.keywords && aiSuggestion.keywords.length > 0) {
       categoryData.keywords = aiSuggestion.keywords;
     }
-
     const result = await onCreateCategory(categoryData);
-
     if (result?.action === 'category_created' || result?.success) {
       setFormData({ name: '', description: '' });
       setShowCreateForm(false);
@@ -275,82 +256,67 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const handleEnhanceDescription = async (categoryId: number) => {
     if (!onUpdateCategory) return;
-
     try {
       const response = await onUpdateCategory(categoryId, { action: 'enhance_description' });
-
       if (response?.data?.enhanced || response?.enhanced_description) {
         setEnhancedDescription(response.data?.enhanced || response.enhanced_description);
       }
     } catch (err) {
-      console.error('Error enhancing description:', err);
     }
   };
 
   const handleUpdateKeywords = async (categoryId: number) => {
     if (!onUpdateCategory) return;
-
     try {
       const response = await onUpdateCategory(categoryId, { action: 'generate_keywords' });
-
       if (response?.data?.suggested || response?.suggested_keywords) {
         setSuggestedKeywords(response.data?.suggested || response.suggested_keywords);
       }
     } catch (err) {
-      console.error('Error updating keywords:', err);
     }
   };
 
   const handleSaveEdit = async (categoryId: number) => {
     if (!onUpdateCategory) return;
-
     try {
       const updateData: any = {
         action: 'update',
         name: editFormData.name,
         description: editFormData.description
       };
-
       if (editAiSuggestion?.keywords && editAiSuggestion.keywords.length > 0) {
         updateData.keywords = editAiSuggestion.keywords;
       }
-
       await onUpdateCategory(categoryId, updateData);
-
       setEditingCategory(null);
       setEditFormData({ name: '', description: '' });
       setEditAiSuggestion(null);
     } catch (err) {
-      console.error('Error updating category:', err);
     }
   };
 
   const handleCheckDeleteImpact = async (categoryId: number) => {
     if (!onDeleteCategory) return;
-
     setDeletingCategory(categoryId);
     try {
       await onDeleteCategory(categoryId, 'check_impact');
-      
+
       setDeleteImpact({
         warning: 'This action cannot be undone.',
         impact: { affected_events: 0 }
       });
     } catch (err) {
-      console.error('Error checking delete impact:', err);
       setDeletingCategory(null);
     }
   };
 
   const handleConfirmDelete = async (categoryId: number) => {
     if (!onDeleteCategory) return;
-
     try {
       await onDeleteCategory(categoryId, 'confirm_delete');
       setDeletingCategory(null);
       setDeleteImpact(null);
     } catch (err) {
-      console.error('Error deleting category:', err);
     }
   };
 
@@ -382,7 +348,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
       {successMessage && (
         <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
           <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -391,7 +356,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </AlertDescription>
         </Alert>
       )}
-
       {/* Similar Categories Warning */}
       {similarCategoriesWarning && (
         <Alert variant="destructive" className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
@@ -431,7 +395,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </AlertDescription>
         </Alert>
       )}
-
       {/* Quick Guide Panel */}
       {showGuide && (
         <Card className="shadow-lg border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
@@ -464,7 +427,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
                 <div className="flex items-start gap-2">
                   <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
@@ -474,7 +437,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
                 <div className="flex items-start gap-2">
                   <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
@@ -484,7 +447,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
                 <div className="flex items-start gap-2">
                   <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</div>
@@ -498,7 +461,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </CardContent>
         </Card>
       )}
-
       {!showGuide && (
         <Button
           onClick={() => setShowGuide(true)}
@@ -510,7 +472,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           Show Guide
         </Button>
       )}
-
       {/* Create Category Section */}
       <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
@@ -533,7 +494,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             )}
           </div>
         </CardHeader>
-
         {showCreateForm && (
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -578,7 +538,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </div>
                 </div>
               )}
-
               {/* AI Suggestion Applied Banner */}
               {aiSuggestion && (
                 <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-700">
@@ -639,7 +598,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   </Button>
                 </div>
               )}
-
               {/* Form Fields */}
               <div className="grid gap-4">
                 <div className="space-y-2">
@@ -659,7 +617,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     className="border-gray-300 dark:border-gray-600 focus:border-pink-500 focus:ring-pink-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     Description (Optional)
@@ -677,7 +634,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   />
                 </div>
               </div>
-
               <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   type="submit"
@@ -716,7 +672,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </CardContent>
         )}
       </Card>
-
       {/* Categories List */}
       <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
@@ -730,7 +685,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             </span>
           </CardTitle>
         </CardHeader>
-
         <CardContent>
           {isLoading && categories.length === 0 ? (
             <div className="min-h-[400px] flex items-center justify-center">
@@ -800,7 +754,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           </Button>
                         </div>
                       )}
-
                       <Input
                         value={editFormData.name}
                         name="name"
@@ -816,7 +769,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         rows={2}
                         className="text-xs resize-none"
                       />
-
                       {!editAiSuggestion && (
                         <Button
                           size="sm"
@@ -838,7 +790,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           )}
                         </Button>
                       )}
-
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -879,7 +830,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           </h3>
                         </div>
                       </div>
-
                       {category.description && (
                         <p className="text-sm text-gray-800 dark:text-gray-200 mb-3 line-clamp-2 leading-relaxed font-medium">
                           {category.description}
@@ -896,7 +846,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           </div>
                         </div>
                       )}
-
                       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
@@ -960,7 +909,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           )}
         </CardContent>
       </Card>
-
       {/* Delete Confirmation Modal */}
       {deletingCategory && deleteImpact && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -975,7 +923,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
               <div className="text-sm text-gray-800 dark:text-gray-200 font-medium">
                 {deleteImpact.warning || 'Are you sure you want to delete this category?'}
               </div>
-
               {deleteImpact.impact && deleteImpact.impact.affected_events > 0 && (
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
