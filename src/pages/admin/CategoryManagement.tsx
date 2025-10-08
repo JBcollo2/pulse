@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info, X } from 'lucide-react';
+import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info, X, HelpCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -66,6 +66,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     description: ''
   });
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   const [aiSuggestion, setAiSuggestion] = useState<any>(null);
   const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
@@ -431,6 +432,85 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         </Alert>
       )}
 
+      {/* Quick Guide Panel */}
+      {showGuide && (
+        <Card className="shadow-lg border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold text-blue-900 dark:text-blue-100">
+                <div className="p-2 rounded-lg bg-blue-500 text-white">
+                  <HelpCircle className="w-5 h-5" />
+                </div>
+                Quick Guide: Category Management
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowGuide(false)}
+                className="text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Create Categories</h4>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Use AI to generate category names, descriptions, and keywords automatically. Just describe what you want!</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Edit & Enhance</h4>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Click Edit on any category to modify it. Use the AI enhance button to improve descriptions with one click.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Organize Events</h4>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Categories help you organize and filter your events. Assign categories when creating or editing events.</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Delete Safely</h4>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Before deleting, the system checks how many events use that category to prevent accidental data loss.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!showGuide && (
+        <Button
+          onClick={() => setShowGuide(true)}
+          variant="outline"
+          size="sm"
+          className="border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+        >
+          <HelpCircle className="w-4 h-4 mr-2" />
+          Show Guide
+        </Button>
+      )}
+
       {/* Create Category Section */}
       <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
@@ -459,12 +539,12 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* AI Suggestion Section */}
               {!aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
                   <div className="flex items-start gap-3 mb-3">
-                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                    <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Get AI Assistance</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
                         Describe what kind of category you want to create, and AI will suggest a complete category with name, description, and keywords.
                       </p>
                       <div className="space-y-2">
@@ -473,13 +553,13 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           onChange={(e) => setInputForSuggestion(e.target.value)}
                           placeholder="E.g., 'I want a category for tech conferences and workshops' or 'Categories for music festivals'"
                           rows={2}
-                          className="text-sm bg-white dark:bg-gray-800"
+                          className="text-sm bg-white dark:bg-gray-800 border-emerald-200 dark:border-emerald-700 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                         <Button
                           type="button"
                           onClick={handleGetAISuggestion}
                           disabled={isGeneratingSuggestion || isLoading || !inputForSuggestion.trim()}
-                          className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           {isGeneratingSuggestion ? (
                             <>
@@ -507,15 +587,15 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Suggestion Applied</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           The form has been auto-filled with AI suggestions. You can edit the fields or regenerate new suggestions.
                         </p>
                         {aiSuggestion.keywords && aiSuggestion.keywords.length > 0 && (
                           <div className="mt-3">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suggested Keywords:</span>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Suggested Keywords:</span>
                             <div className="flex flex-wrap gap-2 mt-2">
                               {aiSuggestion.keywords.map((keyword: string, idx: number) => (
-                                <span key={idx} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
+                                <span key={idx} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded text-xs font-medium">
                                   {keyword}
                                 </span>
                               ))}
@@ -532,7 +612,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         setAiSuggestion(null);
                         setFormData({ name: '', description: '' });
                       }}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 hover:bg-green-100 dark:hover:bg-green-900/30"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -563,9 +643,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
               {/* Form Fields */}
               <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     Category Name *
-                    {aiSuggestion && <Sparkles className="w-3 h-3 text-purple-500" />}
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-emerald-500" />}
                   </Label>
                   <Input
                     id="name"
@@ -581,9 +661,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <Label htmlFor="description" className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     Description (Optional)
-                    {aiSuggestion && <Sparkles className="w-3 h-3 text-purple-500" />}
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-emerald-500" />}
                   </Label>
                   <Textarea
                     id="description"
@@ -692,9 +772,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   {editingCategory === category.id ? (
                     <div className="space-y-3">
                       {editAiSuggestion && (
-                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700 mb-3">
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700 mb-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
                               AI Enhanced - Auto-filled
                             </span>
@@ -704,7 +784,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             onClick={() => handleReSuggestEdit(category.id)}
                             disabled={isGeneratingEditSuggestion || isLoading}
                             variant="outline"
-                            className="mt-2 w-full text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
+                            className="mt-2 w-full text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                           >
                             {isGeneratingEditSuggestion ? (
                               <>
@@ -743,7 +823,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           onClick={() => handleGetEditAISuggestion(category.id)}
                           disabled={isGeneratingEditSuggestion || isLoading}
                           variant="outline"
-                          className="w-full text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
+                          className="w-full text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                         >
                           {isGeneratingEditSuggestion ? (
                             <>
@@ -764,7 +844,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           size="sm"
                           onClick={() => handleSaveEdit(category.id)}
                           disabled={isLoading}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Save
@@ -778,7 +858,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             setEditAiSuggestion(null);
                           }}
                           disabled={isLoading}
-                          className="flex-1"
+                          className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           Cancel
                         </Button>
@@ -794,14 +874,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
                             {category.name}
                             {category.ai_description_enhanced && (
-                              <Sparkles className="w-3 h-3 text-purple-500 inline-block ml-1" />
+                              <Sparkles className="w-3 h-3 text-emerald-500 inline-block ml-1" />
                             )}
                           </h3>
                         </div>
                       </div>
 
                       {category.description && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+                        <p className="text-sm text-gray-800 dark:text-gray-200 mb-3 line-clamp-2 leading-relaxed font-medium">
                           {category.description}
                         </p>
                       )}
@@ -809,7 +889,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         <div className="mb-3">
                           <div className="flex flex-wrap gap-1">
                             {category.ai_suggested_keywords.slice(0, 3).map((keyword, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">
+                              <span key={idx} className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded text-xs font-medium">
                                 {keyword}
                               </span>
                             ))}
@@ -832,7 +912,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           variant="outline"
                           onClick={() => startEdit(category)}
                           disabled={isLoading}
-                          className="flex-1 text-xs"
+                          className="flex-1 text-xs border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                         >
                           Edit
                         </Button>
@@ -842,10 +922,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             variant="outline"
                             onClick={() => handleEnhanceDescription(category.id)}
                             disabled={isLoading}
-                            className="flex-1 text-xs border-purple-300 text-purple-700 hover:bg-purple-50"
+                            className="flex-1 text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                             title="Enhance with AI"
                           >
-                            <Sparkles className="w-3 h-3" />
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            AI
                           </Button>
                         )}
                         {onDeleteCategory && (
@@ -854,19 +935,19 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             variant="outline"
                             onClick={() => handleCheckDeleteImpact(category.id)}
                             disabled={isLoading}
-                            className="flex-1 text-xs border-red-300 text-red-700 hover:bg-red-50"
+                            className="flex-1 text-xs border-red-300 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                           >
                             Delete
                           </Button>
                         )}
                       </div>
                       {category.latest_insight && (
-                        <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                        <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs border border-blue-200 dark:border-blue-700">
                           <div className="flex items-center gap-1 mb-1">
                             <Lightbulb className="w-3 h-3 text-blue-600" />
                             <span className="font-medium text-blue-700 dark:text-blue-300">AI Insight</span>
                           </div>
-                          <p className="text-gray-700 dark:text-gray-300 line-clamp-2">
+                          <p className="text-gray-800 dark:text-gray-200 line-clamp-2 leading-relaxed">
                             {category.latest_insight.insights_text}
                           </p>
                         </div>
@@ -883,31 +964,31 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       {/* Delete Confirmation Modal */}
       {deletingCategory && deleteImpact && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-600">
+          <Card className="max-w-md w-full shadow-2xl">
+            <CardHeader className="border-b border-gray-200 dark:border-gray-700">
+              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <AlertCircle className="w-5 h-5" />
                 Confirm Deletion
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm text-gray-700 dark:text-gray-300">
+            <CardContent className="space-y-4 pt-4">
+              <div className="text-sm text-gray-800 dark:text-gray-200 font-medium">
                 {deleteImpact.warning || 'Are you sure you want to delete this category?'}
               </div>
 
               {deleteImpact.impact && deleteImpact.impact.affected_events > 0 && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
                     <Info className="w-4 h-4 inline mr-1" />
                     This will affect <strong>{deleteImpact.impact.affected_events}</strong> event(s)
                   </p>
                 </div>
               )}
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <Button
                   onClick={() => handleConfirmDelete(deletingCategory)}
                   disabled={isLoading}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   {isLoading ? (
                     <>
@@ -925,7 +1006,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     setDeleteImpact(null);
                   }}
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </Button>
