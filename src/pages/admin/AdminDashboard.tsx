@@ -31,13 +31,6 @@ interface Category {
   };
 }
 
-interface AIState {
-  suggestions: Record<string, any>;
-  enhancedDescriptions: Record<number, string>;
-  suggestedKeywords: Record<number, string[]>;
-  deleteImpacts: Record<number, any>;
-}
-
 const AdminDashboard: React.FC = () => {
   const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories'>('reports');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,14 +40,6 @@ const AdminDashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // AI-specific state management
-  const [aiState, setAiState] = useState<AIState>({
-    suggestions: {},
-    enhancedDescriptions: {},
-    suggestedKeywords: {},
-    deleteImpacts: {}
-  });
   
   const { toast } = useToast();
 
@@ -171,7 +156,8 @@ const AdminDashboard: React.FC = () => {
         return;
       }
       const data = await response.json();
-      setCategories(data.categories || []);
+      console.log('Fetched categories:', data);
+      setCategories(data.categories || data || []);
     } catch (err) {
       console.error('Fetch categories error:', err);
       setError('An unexpected error occurred while fetching categories.');
@@ -186,8 +172,9 @@ const AdminDashboard: React.FC = () => {
     }
   }, [toast, handleFetchError]);
 
-  // Create category with action handling and AI state management
+  // Create category with proper response handling
   const handleCreateCategory = async (categoryData: any) => {
+    console.log('handleCreateCategory called with:', categoryData);
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
@@ -203,104 +190,99 @@ const AdminDashboard: React.FC = () => {
         body: JSON.stringify(categoryData)
       });
       
+      console.log('Create category response status:', response.status);
+      
       if (!response.ok) {
         await handleFetchError(response);
-        return null;
+        return { success: false };
       }
       
       const result = await response.json();
+      console.log('Create category response:', result);
       
-      // Handle different action responses with AI state updates
-      if (result.action === 'suggestion_generated') {
-        // Store AI suggestion in state
-        setAiState(prev => ({
-          ...prev,
-          suggestions: {
-            ...prev.suggestions,
-            current: result.suggestion
-          }
-        }));
-        
-        setSuccessMessage('AI suggestion generated successfully.');
-        toast({
-          title: "AI Suggestion Ready",
-          description: 'Review the AI-generated suggestion and decide to use or modify it.',
-          variant: "default",
-        });
-        
-        return {
-          success: true,
-          action: 'suggestion_generated',
-          data: result.suggestion,
-          nextActions: result.next_actions
-        };
-        
-      } else if (result.action === 'category_created') {
-        // Clear AI suggestions after successful creation
-        setAiState(prev => ({
-          ...prev,
-          suggestions: {}
-        }));
-        
-        setSuccessMessage(result.message || 'Category created successfully.');
-        toast({
-          title: "Success",
-          description: result.message || 'Category created successfully.',
-          variant: "default",
-        });
-        
-        await fetchCategories();
-        
-        return {
-          success: true,
-          action: 'category_created',
-          data: result.category
-        };
-        
-      } else if (result.action === 'similar_categories_found') {
-        // Store similar categories for user review
-        setAiState(prev => ({
-          ...prev,
-          suggestions: {
-            ...prev.suggestions,
-            similarCategories: result.similar_categories
-          }
-        }));
-        
-        setError(result.warning);
-        toast({
-          title: "Similar Categories Found",
-          description: result.warning,
-          variant: "destructive",
-        });
-        
-        return {
-          success: false,
-          action: 'similar_categories_found',
-          data: result.similar_categories,
-          warning: result.warning,
-          nextActions: result.next_actions
-        };
+      // Handle AI suggestion generation
+      if (categoryData.action === 'suggest') {
+        if (result.suggestion || result.data) {
+          const suggestionData = result.suggestion || result.data;
+          toast({
+            title: "AI Suggestion Generated",
+            description: 'Form has been auto-filled with AI suggestions.',
+            variant: "default",
+          });
+          
+          return {
+            success: true,
+            action: 'suggestion_generated',
+            data: {
+              name: suggestionData.name || '',
+              description: suggestionData.description || '',
+              keywords: suggestionData.keywords || []
+            }
+          };
+        }
       }
       
+      // Handle category creation with similar categories check
+      if (categoryData.action === 'create') {
+        // Check if similar categories were found
+        if (result.similar_categories && result.similar_categories.length > 0 && !categoryData.confirm_despite_similar) {
+          setError(result.warning || 'Similar categories found. Please review before creating.');
+          toast({
+            title: "Similar Categories Found",
+            description: result.warning || 'Similar categories exist. You can create anyway or modify your category.',
+            variant: "destructive",
+          });
+          
+          return {
+            success: false,
+            action: 'similar_categories_found',
+            data: result.similar_categories,
+            warning: result.warning
+          };
+        }
+        
+        // Category successfully created
+        if (result.category || result.success || result.msg) {
+          const successMsg = result.msg || result.message || 'Category created successfully.';
+          setSuccessMessage(successMsg);
+          toast({
+            title: "Success",
+            description: successMsg,
+            variant: "default",
+          });
+          
+          // Refresh categories list
+          await fetchCategories();
+          
+          return {
+            success: true,
+            action: 'category_created',
+            data: result.category
+          };
+        }
+      }
+      
+      // Default success response
       return { success: true, data: result };
       
     } catch (err) {
       console.error('Create category error:', err);
-      setError('An unexpected error occurred while creating category.');
+      const errorMsg = 'An unexpected error occurred while creating category.';
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: 'An unexpected error occurred while creating category.',
+        description: errorMsg,
         variant: "destructive",
       });
-      return null;
+      return { success: false };
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Update category with action handling and AI state management
+  // Update category with proper response handling
   const handleUpdateCategory = async (categoryId: number, updateData: any) => {
+    console.log('handleUpdateCategory called with:', categoryId, updateData);
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
@@ -316,107 +298,72 @@ const AdminDashboard: React.FC = () => {
         body: JSON.stringify(updateData)
       });
       
+      console.log('Update category response status:', response.status);
+      
       if (!response.ok) {
         await handleFetchError(response);
         return null;
       }
       
       const result = await response.json();
+      console.log('Update category response:', result);
       
-      // Handle different action responses with AI state updates
-      if (result.action === 'description_enhanced') {
-        // Store enhanced description in state
-        setAiState(prev => ({
-          ...prev,
-          enhancedDescriptions: {
-            ...prev.enhancedDescriptions,
-            [categoryId]: result.enhanced_description
-          }
-        }));
-        
-        setSuccessMessage('Description enhanced successfully.');
-        toast({
-          title: "AI Enhancement Ready",
-          description: 'Review the AI-enhanced description and decide to save or regenerate.',
-          variant: "default",
-        });
-        
-        return {
-          success: true,
-          action: 'description_enhanced',
-          categoryId,
-          data: {
-            current: result.current_description,
-            enhanced: result.enhanced_description
-          },
-          nextActions: result.next_actions
-        };
-        
-      } else if (result.action === 'keywords_generated') {
-        // Store suggested keywords in state
-        setAiState(prev => ({
-          ...prev,
-          suggestedKeywords: {
-            ...prev.suggestedKeywords,
-            [categoryId]: result.suggested_keywords
-          }
-        }));
-        
-        setSuccessMessage('Keywords generated successfully.');
-        toast({
-          title: "AI Keywords Ready",
-          description: 'Review the AI-generated keywords and decide to save or regenerate.',
-          variant: "default",
-        });
-        
-        return {
-          success: true,
-          action: 'keywords_generated',
-          categoryId,
-          data: {
-            current: result.current_keywords,
-            suggested: result.suggested_keywords
-          },
-          nextActions: result.next_actions
-        };
-        
-      } else if (result.action === 'category_updated' || result.action === 'description_saved' || result.action === 'keywords_saved') {
-        // Clear AI state for this category after successful save
-        setAiState(prev => ({
-          ...prev,
-          enhancedDescriptions: {
-            ...prev.enhancedDescriptions,
-            [categoryId]: undefined
-          },
-          suggestedKeywords: {
-            ...prev.suggestedKeywords,
-            [categoryId]: undefined
-          }
-        }));
-        
-        setSuccessMessage(result.message || 'Category updated successfully.');
+      // Handle AI description enhancement
+      if (updateData.action === 'enhance_description') {
+        if (result.enhanced_description || result.data?.enhanced) {
+          toast({
+            title: "AI Enhancement Generated",
+            description: 'Description has been enhanced with AI.',
+            variant: "default",
+          });
+          
+          return {
+            success: true,
+            action: 'description_enhanced',
+            data: {
+              enhanced: result.enhanced_description || result.data?.enhanced,
+              enhanced_description: result.enhanced_description || result.data?.enhanced
+            }
+          };
+        }
+      }
+      
+      // Handle AI keyword generation
+      if (updateData.action === 'generate_keywords') {
+        if (result.suggested_keywords || result.data?.suggested) {
+          toast({
+            title: "AI Keywords Generated",
+            description: 'Keywords have been generated with AI.',
+            variant: "default",
+          });
+          
+          return {
+            success: true,
+            action: 'keywords_generated',
+            data: {
+              suggested: result.suggested_keywords || result.data?.suggested
+            }
+          };
+        }
+      }
+      
+      // Handle regular category update
+      if (updateData.action === 'update' || !updateData.action) {
+        const successMsg = result.msg || result.message || 'Category updated successfully.';
+        setSuccessMessage(successMsg);
         toast({
           title: "Success",
-          description: result.message || 'Category updated successfully.',
+          description: successMsg,
           variant: "default",
         });
         
+        // Refresh categories list
         await fetchCategories();
         
         return {
           success: true,
-          action: result.action,
-          categoryId,
+          action: 'category_updated',
           data: result.category
-        };
-        
-      } else if (result.action === 'validation_complete') {
-        return {
-          success: true,
-          action: 'validation_complete',
-          categoryId,
-          data: result.validation,
-          nextActions: result.next_actions
         };
       }
       
@@ -424,10 +371,11 @@ const AdminDashboard: React.FC = () => {
       
     } catch (err) {
       console.error('Update category error:', err);
-      setError('An unexpected error occurred while updating category.');
+      const errorMsg = 'An unexpected error occurred while updating category.';
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: 'An unexpected error occurred while updating category.',
+        description: errorMsg,
         variant: "destructive",
       });
       return null;
@@ -436,9 +384,9 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Delete category with action handling and AI state management
-  // FIXED: Changed return type to Promise<void> to match CategoryManagement expectations
+  // Delete category with proper response handling
   const handleDeleteCategory = async (categoryId: number, action: string = 'check_impact'): Promise<void> => {
+    console.log('handleDeleteCategory called with:', categoryId, action);
     setIsLoading(true);
     setError(undefined);
     setSuccessMessage('');
@@ -453,89 +401,54 @@ const AdminDashboard: React.FC = () => {
         credentials: 'include'
       });
       
+      console.log('Delete category response status:', response.status);
+      
       if (!response.ok) {
         await handleFetchError(response);
         return;
       }
       
       const result = await response.json();
+      console.log('Delete category response:', result);
       
-      // Handle different action responses with AI state updates
-      if (result.action === 'impact_analyzed') {
-        // Store delete impact in state
-        setAiState(prev => ({
-          ...prev,
-          deleteImpacts: {
-            ...prev.deleteImpacts,
-            [categoryId]: result.impact
-          }
-        }));
-        
+      // Handle impact check
+      if (action === 'check_impact') {
+        const affectedEvents = result.affected_events || result.impact?.affected_events || 0;
         toast({
           title: "Impact Analysis Complete",
-          description: `This will affect ${result.impact?.affected_events || 0} event(s).`,
-          variant: result.impact?.has_events ? "destructive" : "default",
+          description: `This will affect ${affectedEvents} event(s). Confirm to proceed.`,
+          variant: affectedEvents > 0 ? "destructive" : "default",
         });
-        
-      } else if (result.action === 'category_deleted') {
-        // Clear AI state for deleted category
-        setAiState(prev => ({
-          ...prev,
-          deleteImpacts: {
-            ...prev.deleteImpacts,
-            [categoryId]: undefined
-          },
-          enhancedDescriptions: {
-            ...prev.enhancedDescriptions,
-            [categoryId]: undefined
-          },
-          suggestedKeywords: {
-            ...prev.suggestedKeywords,
-            [categoryId]: undefined
-          }
-        }));
-        
-        setSuccessMessage(result.message || 'Category deleted successfully.');
+        return;
+      }
+      
+      // Handle actual deletion
+      if (action === 'confirm_delete') {
+        const successMsg = result.msg || result.message || 'Category deleted successfully.';
+        setSuccessMessage(successMsg);
         toast({
           title: "Success",
-          description: result.message || 'Category deleted successfully.',
+          description: successMsg,
           variant: "default",
         });
         
+        // Refresh categories list
         await fetchCategories();
       }
       
     } catch (err) {
       console.error('Delete category error:', err);
-      setError('An unexpected error occurred while deleting category.');
+      const errorMsg = 'An unexpected error occurred while deleting category.';
+      setError(errorMsg);
       toast({
         title: "Error",
-        description: 'An unexpected error occurred while deleting category.',
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Helper function to get AI state for a specific category
-  const getAIStateForCategory = useCallback((categoryId: number) => {
-    return {
-      enhancedDescription: aiState.enhancedDescriptions[categoryId],
-      suggestedKeywords: aiState.suggestedKeywords[categoryId],
-      deleteImpact: aiState.deleteImpacts[categoryId]
-    };
-  }, [aiState]);
-
-  // Helper function to get current AI suggestion
-  const getCurrentAISuggestion = useCallback(() => {
-    return aiState.suggestions.current;
-  }, [aiState]);
-
-  // Helper function to get similar categories
-  const getSimilarCategories = useCallback(() => {
-    return aiState.suggestions.similarCategories;
-  }, [aiState]);
 
   const handleRegister = async (data: any) => {
     setIsLoading(true);
@@ -595,7 +508,6 @@ const AdminDashboard: React.FC = () => {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         await handleFetchError(response);
@@ -778,16 +690,6 @@ const AdminDashboard: React.FC = () => {
     }
     setError(undefined);
     setSuccessMessage('');
-    
-    // Clear AI state when switching views
-    if (view !== 'manageCategories') {
-      setAiState({
-        suggestions: {},
-        enhancedDescriptions: {},
-        suggestedKeywords: {},
-        deleteImpacts: {}
-      });
-    }
   };
 
   useEffect(() => {
@@ -862,10 +764,6 @@ const AdminDashboard: React.FC = () => {
                 isLoading={isLoading}
                 error={error}
                 successMessage={successMessage}
-                aiState={aiState}
-                getAIStateForCategory={getAIStateForCategory}
-                getCurrentAISuggestion={getCurrentAISuggestion}
-                getSimilarCategories={getSimilarCategories}
               />
             )}
             {(currentView === 'nonAttendees' || currentView === 'viewAllUsers') && (

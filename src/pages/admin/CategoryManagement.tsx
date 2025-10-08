@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info } from 'lucide-react';
+import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -80,10 +80,12 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   const [deleteImpact, setDeleteImpact] = useState<any>(null);
   const [editAiSuggestion, setEditAiSuggestion] = useState<any>(null);
   const [isGeneratingEditSuggestion, setIsGeneratingEditSuggestion] = useState(false);
+  const [similarCategoriesWarning, setSimilarCategoriesWarning] = useState<any>(null);
+  const [inputForSuggestion, setInputForSuggestion] = useState('');
 
   // Auto-fill form when AI suggestion is received
   useEffect(() => {
-    if (aiSuggestion) {
+    if (aiSuggestion && aiSuggestion.name) {
       setFormData({
         name: aiSuggestion.name || '',
         description: aiSuggestion.description || ''
@@ -93,11 +95,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   // Auto-fill edit form when edit AI suggestion is received
   useEffect(() => {
-    if (editAiSuggestion) {
-      setEditFormData({
-        name: editAiSuggestion.name || editFormData.name,
-        description: editAiSuggestion.description || editFormData.description
-      });
+    if (editAiSuggestion && editAiSuggestion.name) {
+      setEditFormData(prev => ({
+        name: editAiSuggestion.name || prev.name,
+        description: editAiSuggestion.description || prev.description
+      }));
     }
   }, [editAiSuggestion]);
 
@@ -118,21 +120,39 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   };
 
   const handleGetAISuggestion = async () => {
-    if (!formData.description.trim() && !formData.name.trim()) return;
+    const inputText = inputForSuggestion.trim() || formData.description.trim() || formData.name.trim();
+    if (!inputText) return;
+    
     setIsGeneratingSuggestion(true);
+    setSimilarCategoriesWarning(null);
+    
     try {
       const response = await onCreateCategory({
         action: 'suggest',
-        description: formData.description || formData.name
+        description: inputText
       });
 
-      if (response && response.suggestion) {
-        setAiSuggestion(response.suggestion);
-      } else {
+      console.log('AI Suggestion Response:', response);
+
+      if (response?.action === 'suggestion_generated' && response.data) {
         setAiSuggestion({
-          name: response?.name || 'AI Generated Name',
-          description: response?.description || formData.description,
-          keywords: response?.keywords || [],
+          name: response.data.name || '',
+          description: response.data.description || '',
+          keywords: response.data.keywords || [],
+          ai_generated: true
+        });
+      } else if (response?.suggestion) {
+        setAiSuggestion({
+          name: response.suggestion.name || '',
+          description: response.suggestion.description || '',
+          keywords: response.suggestion.keywords || [],
+          ai_generated: true
+        });
+      } else if (response?.name || response?.description) {
+        setAiSuggestion({
+          name: response.name || '',
+          description: response.description || '',
+          keywords: response.keywords || [],
           ai_generated: true
         });
       }
@@ -148,17 +168,24 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     setIsGeneratingEditSuggestion(true);
     try {
       const response = await onUpdateCategory?.(categoryId, {
-        action: 'suggest_enhancement',
+        action: 'enhance_description',
         description: editFormData.description || editFormData.name
       });
 
-      if (response && response.suggestion) {
-        setEditAiSuggestion(response.suggestion);
-      } else {
+      console.log('Edit AI Suggestion Response:', response);
+
+      if (response?.action === 'description_enhanced' && response.data) {
         setEditAiSuggestion({
-          name: response?.name || editFormData.name,
-          description: response?.description || editFormData.description,
-          keywords: response?.keywords || [],
+          name: editFormData.name,
+          description: response.data.enhanced || response.data.enhanced_description || '',
+          keywords: [],
+          ai_generated: true
+        });
+      } else if (response?.enhanced_description) {
+        setEditAiSuggestion({
+          name: editFormData.name,
+          description: response.enhanced_description,
+          keywords: [],
           ai_generated: true
         });
       }
@@ -181,18 +208,62 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
   const handleSaveWithAI = async () => {
     if (!formData.name.trim()) return;
-    const categoryData = {
+    
+    setSimilarCategoriesWarning(null);
+    
+    const categoryData: any = {
       action: 'create',
       name: formData.name.trim(),
-      description: formData.description.trim() || undefined,
-      keywords: aiSuggestion?.keywords || []
+      description: formData.description.trim() || undefined
     };
+
+    if (aiSuggestion?.keywords && aiSuggestion.keywords.length > 0) {
+      categoryData.keywords = aiSuggestion.keywords;
+    }
+
     const result = await onCreateCategory(categoryData);
 
-    if (!error) {
+    console.log('Create Category Result:', result);
+
+    if (result?.action === 'similar_categories_found') {
+      setSimilarCategoriesWarning({
+        similar: result.data,
+        warning: result.warning
+      });
+      return;
+    }
+
+    if (result?.action === 'category_created' || result?.success) {
       setFormData({ name: '', description: '' });
       setShowCreateForm(false);
       setAiSuggestion(null);
+      setInputForSuggestion('');
+      setSimilarCategoriesWarning(null);
+    }
+  };
+
+  const handleConfirmDespiteSimilar = async () => {
+    if (!formData.name.trim()) return;
+    
+    const categoryData: any = {
+      action: 'create',
+      name: formData.name.trim(),
+      description: formData.description.trim() || undefined,
+      confirm_despite_similar: true
+    };
+
+    if (aiSuggestion?.keywords && aiSuggestion.keywords.length > 0) {
+      categoryData.keywords = aiSuggestion.keywords;
+    }
+
+    const result = await onCreateCategory(categoryData);
+
+    if (result?.action === 'category_created' || result?.success) {
+      setFormData({ name: '', description: '' });
+      setShowCreateForm(false);
+      setAiSuggestion(null);
+      setInputForSuggestion('');
+      setSimilarCategoriesWarning(null);
     }
   };
 
@@ -207,8 +278,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     try {
       const response = await onUpdateCategory(categoryId, { action: 'enhance_description' });
 
-      if (response && response.enhanced_description) {
-        setEnhancedDescription(response.enhanced_description);
+      if (response?.data?.enhanced || response?.enhanced_description) {
+        setEnhancedDescription(response.data?.enhanced || response.enhanced_description);
       }
     } catch (err) {
       console.error('Error enhancing description:', err);
@@ -219,10 +290,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     if (!onUpdateCategory) return;
 
     try {
-      const response = await onUpdateCategory(categoryId, { action: 'update_keywords' });
+      const response = await onUpdateCategory(categoryId, { action: 'generate_keywords' });
 
-      if (response && response.keywords) {
-        setSuggestedKeywords(response.keywords);
+      if (response?.data?.suggested || response?.suggested_keywords) {
+        setSuggestedKeywords(response.data?.suggested || response.suggested_keywords);
       }
     } catch (err) {
       console.error('Error updating keywords:', err);
@@ -233,12 +304,17 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     if (!onUpdateCategory) return;
 
     try {
-      await onUpdateCategory(categoryId, {
+      const updateData: any = {
         action: 'update',
         name: editFormData.name,
-        description: editFormData.description,
-        keywords: editAiSuggestion?.keywords || []
-      });
+        description: editFormData.description
+      };
+
+      if (editAiSuggestion?.keywords && editAiSuggestion.keywords.length > 0) {
+        updateData.keywords = editAiSuggestion.keywords;
+      }
+
+      await onUpdateCategory(categoryId, updateData);
 
       setEditingCategory(null);
       setEditFormData({ name: '', description: '' });
@@ -254,9 +330,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     setDeletingCategory(categoryId);
     try {
       await onDeleteCategory(categoryId, 'check_impact');
+      
       setDeleteImpact({
         warning: 'This action cannot be undone.',
-        impact: { affected_events: 5 }
+        impact: { affected_events: 0 }
       });
     } catch (err) {
       console.error('Error checking delete impact:', err);
@@ -314,6 +391,46 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         </Alert>
       )}
 
+      {/* Similar Categories Warning */}
+      {similarCategoriesWarning && (
+        <Alert variant="destructive" className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
+          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+            <div className="space-y-2">
+              <p className="font-medium">{similarCategoriesWarning.warning}</p>
+              {similarCategoriesWarning.similar && similarCategoriesWarning.similar.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm mb-1">Similar categories found:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {similarCategoriesWarning.similar.map((cat: any, idx: number) => (
+                      <li key={idx}>{cat.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={handleConfirmDespiteSimilar}
+                  disabled={isLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Create Anyway
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSimilarCategoriesWarning(null)}
+                  className="border-yellow-300"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Create Category Section */}
       <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
@@ -339,56 +456,116 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
         {showCreateForm && (
           <CardContent className="space-y-4">
-            <div className="space-y-4">
-              {/* AI Suggestion Info Banner */}
-              {aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* AI Suggestion Section */}
+              {!aiSuggestion && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
                   <div className="flex items-start gap-3 mb-3">
-                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5" />
+                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Suggestion Applied</h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        The form has been auto-filled with AI suggestions. You can edit the fields or click "Re-suggest" for new suggestions.
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Get AI Assistance</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Describe what kind of category you want to create, and AI will suggest a complete category with name, description, and keywords.
                       </p>
-                      {aiSuggestion.keywords && aiSuggestion.keywords.length > 0 && (
-                        <div className="mt-3">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Suggested Keywords:</span>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {aiSuggestion.keywords.map((keyword: string, idx: number) => (
-                              <span key={idx} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div className="space-y-2">
+                        <Textarea
+                          value={inputForSuggestion}
+                          onChange={(e) => setInputForSuggestion(e.target.value)}
+                          placeholder="E.g., 'I want a category for tech conferences and workshops' or 'Categories for music festivals'"
+                          rows={2}
+                          className="text-sm bg-white dark:bg-gray-800"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleGetAISuggestion}
+                          disabled={isGeneratingSuggestion || isLoading || !inputForSuggestion.trim()}
+                          className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+                        >
+                          {isGeneratingSuggestion ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Generating AI Suggestion...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Generate & Auto-fill Form
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* AI Suggestion Applied Banner */}
+              {aiSuggestion && (
+                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Suggestion Applied</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          The form has been auto-filled with AI suggestions. You can edit the fields or regenerate new suggestions.
+                        </p>
+                        {aiSuggestion.keywords && aiSuggestion.keywords.length > 0 && (
+                          <div className="mt-3">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Suggested Keywords:</span>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {aiSuggestion.keywords.map((keyword: string, idx: number) => (
+                                <span key={idx} className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
+                                  {keyword}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setAiSuggestion(null);
+                        setFormData({ name: '', description: '' });
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <Button
+                    type="button"
                     onClick={handleReSuggest}
                     disabled={isGeneratingSuggestion || isLoading}
                     variant="outline"
                     size="sm"
-                    className="border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                    className="border-green-300 dark:border-green-600 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
                   >
                     {isGeneratingSuggestion ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Re-generating...
+                        Regenerating...
                       </>
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Re-suggest
+                        Regenerate Suggestion
                       </>
                     )}
                   </Button>
                 </div>
               )}
-              <div className="grid gap-4 md:grid-cols-1">
+
+              {/* Form Fields */}
+              <div className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     Category Name *
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-purple-500" />}
                   </Label>
                   <Input
                     id="name"
@@ -398,59 +575,34 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     onChange={handleInputChange}
                     placeholder="Enter category name"
                     disabled={isLoading}
+                    required
                     className="border-gray-300 dark:border-gray-600 focus:border-pink-500 focus:ring-pink-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
                     Description (Optional)
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-purple-500" />}
                   </Label>
                   <Textarea
                     id="description"
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Enter category description or let AI suggest one"
+                    placeholder="Enter category description"
                     disabled={isLoading}
                     rows={3}
                     className="border-gray-300 dark:border-gray-600 focus:border-pink-500 focus:ring-pink-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
                   />
                 </div>
-                {/* AI Suggestion Button */}
-                {!aiSuggestion && (formData.description.trim() || formData.name.trim()) && (
-                  <Button
-                    onClick={handleGetAISuggestion}
-                    disabled={isGeneratingSuggestion || isLoading}
-                    variant="outline"
-                    className="border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                  >
-                    {isGeneratingSuggestion ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating AI Suggestion...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Get AI Suggestion & Auto-fill
-                      </>
-                    )}
-                  </Button>
-                )}
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
-                  onClick={handleSubmit}
+                  type="submit"
                   disabled={isLoading || !formData.name.trim()}
-                  className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex-1 md:flex-none"
+                  className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex-1"
                 >
                   {isLoading ? (
                     <>
@@ -465,11 +617,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   )}
                 </Button>
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     setShowCreateForm(false);
                     setFormData({ name: '', description: '' });
                     setAiSuggestion(null);
+                    setInputForSuggestion('');
+                    setSimilarCategoriesWarning(null);
                   }}
                   disabled={isLoading}
                   className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -477,7 +632,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   Cancel
                 </Button>
               </div>
-            </div>
+            </form>
           </CardContent>
         )}
       </Card>
@@ -536,7 +691,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 >
                   {editingCategory === category.id ? (
                     <div className="space-y-3">
-                      {/* AI Suggestion Info for Edit */}
                       {editAiSuggestion && (
                         <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700 mb-3">
                           <div className="flex items-center gap-2 mb-2">
@@ -545,15 +699,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                               AI Enhanced - Auto-filled
                             </span>
                           </div>
-                          {editAiSuggestion.keywords && editAiSuggestion.keywords.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {editAiSuggestion.keywords.map((keyword: string, idx: number) => (
-                                <span key={idx} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs">
-                                  {keyword}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                           <Button
                             size="sm"
                             onClick={() => handleReSuggestEdit(category.id)}
@@ -569,7 +714,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             ) : (
                               <>
                                 <RefreshCw className="w-3 h-3 mr-1" />
-                                Re-suggest
+                                Regenerate
                               </>
                             )}
                           </Button>
@@ -592,7 +737,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         className="text-xs resize-none"
                       />
 
-                      {/* AI Enhance Button for Edit */}
                       {!editAiSuggestion && (
                         <Button
                           size="sm"
@@ -604,7 +748,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           {isGeneratingEditSuggestion ? (
                             <>
                               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                              Getting AI Suggestion...
+                              Getting AI Enhancement...
                             </>
                           ) : (
                             <>
@@ -682,7 +826,6 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           Active
                         </span>
                       </div>
-                      {/* Action Buttons */}
                       <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
                         <Button
                           size="sm"
@@ -752,7 +895,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 {deleteImpact.warning || 'Are you sure you want to delete this category?'}
               </div>
 
-              {deleteImpact.impact && (
+              {deleteImpact.impact && deleteImpact.impact.affected_events > 0 && (
                 <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded">
                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
                     <Info className="w-4 h-4 inline mr-1" />
