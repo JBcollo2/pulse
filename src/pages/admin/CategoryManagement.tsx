@@ -499,9 +499,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* AI Suggestion Section */}
               {!aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg border border-pink-200 dark:border-pink-700">
                   <div className="flex items-start gap-3 mb-3">
-                    <Sparkles className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Sparkles className="w-5 h-5 text-pink-600 dark:text-pink-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Get AI Assistance</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
@@ -513,13 +513,13 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           onChange={(e) => setInputForSuggestion(e.target.value)}
                           placeholder="E.g., 'I want a category for tech conferences and workshops' or 'Categories for music festivals'"
                           rows={2}
-                          className="text-sm bg-white dark:bg-gray-800 border-emerald-200 dark:border-emerald-700 focus:border-emerald-500 focus:ring-emerald-500"
+                          className="text-sm bg-white dark:bg-gray-800 border-pink-200 dark:border-pink-700 focus:border-pink-500 focus:ring-pink-500"
                         />
                         <Button
                           type="button"
                           onClick={handleGetAISuggestion}
                           disabled={isGeneratingSuggestion || isLoading || !inputForSuggestion.trim()}
-                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           {isGeneratingSuggestion ? (
                             <>
@@ -540,10 +540,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
               )}
               {/* AI Suggestion Applied Banner */}
               {aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg border border-pink-200 dark:border-pink-700">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-start gap-3 flex-1">
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-5 h-5 text-pink-600 dark:text-pink-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">AI Suggestion Applied</h4>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -554,7 +554,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Suggested Keywords:</span>
                             <div className="flex flex-wrap gap-2 mt-2">
                               {aiSuggestion.keywords.map((keyword: string, idx: number) => (
-                                <span key={idx} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded text-xs font-medium">
+                                <span key={idx} className="px-2 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 rounded text-xs font-medium">
                                   {keyword}
                                 </span>
                               ))}
@@ -571,7 +571,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         setAiSuggestion(null);
                         setFormData({ name: '', description: '' });
                       }}
-                      className="flex-shrink-0 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      className="flex-shrink-0 hover:bg-pink-100 dark:hover:bg-pink-900/30"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -582,7 +582,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     disabled={isGeneratingSuggestion || isLoading}
                     variant="outline"
                     size="sm"
-                    className="border-green-300 dark:border-green-600 text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
+                    className="border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20"
                   >
                     {isGeneratingSuggestion ? (
                       <>
@@ -603,7 +603,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     Category Name *
-                    {aiSuggestion && <Sparkles className="w-3 h-3 text-emerald-500" />}
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-pink-500" />}
                   </Label>
                   <Input
                     id="name"
@@ -620,7 +620,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     Description (Optional)
-                    {aiSuggestion && <Sparkles className="w-3 h-3 text-emerald-500" />}
+                    {aiSuggestion && <Sparkles className="w-3 h-3 text-pink-500" />}
                   </Label>
                   <Textarea
                     id="description"
@@ -726,9 +726,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   {editingCategory === category.id ? (
                     <div className="space-y-3">
                       {editAiSuggestion && (
-                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700 mb-3">
+                        <div className="p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-700 mb-3">
                           <div className="flex items-center gap-2 mb-2">
-                            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <Sparkles className="w-4 h-4 text-pink-600 dark:text-pink-400" />
                             <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
                               AI Enhanced - Auto-filled
                             </span>
@@ -738,7 +738,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             onClick={() => handleReSuggestEdit(category.id)}
                             disabled={isGeneratingEditSuggestion || isLoading}
                             variant="outline"
-                            className="mt-2 w-full text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                            className="mt-2 w-full text-xs border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20"
                           >
                             {isGeneratingEditSuggestion ? (
                               <>
@@ -775,7 +775,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           onClick={() => handleGetEditAISuggestion(category.id)}
                           disabled={isGeneratingEditSuggestion || isLoading}
                           variant="outline"
-                          className="w-full text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                          className="w-full text-xs border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20"
                         >
                           {isGeneratingEditSuggestion ? (
                             <>
@@ -825,7 +825,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
                             {category.name}
                             {category.ai_description_enhanced && (
-                              <Sparkles className="w-3 h-3 text-emerald-500 inline-block ml-1" />
+                              <Sparkles className="w-3 h-3 text-pink-500 inline-block ml-1" />
                             )}
                           </h3>
                         </div>
@@ -839,7 +839,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         <div className="mb-3">
                           <div className="flex flex-wrap gap-1">
                             {category.ai_suggested_keywords.slice(0, 3).map((keyword, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded text-xs font-medium">
+                              <span key={idx} className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-200 rounded text-xs font-medium">
                                 {keyword}
                               </span>
                             ))}
@@ -871,7 +871,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             variant="outline"
                             onClick={() => handleEnhanceDescription(category.id)}
                             disabled={isLoading}
-                            className="flex-1 text-xs border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                            className="flex-1 text-xs border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                             title="Enhance with AI"
                           >
                             <Sparkles className="w-3 h-3 mr-1" />
@@ -891,10 +891,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                         )}
                       </div>
                       {category.latest_insight && (
-                        <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs border border-blue-200 dark:border-blue-700">
+                        <div className="mt-3 p-2 bg-pink-50 dark:bg-pink-900/20 rounded text-xs border border-pink-200 dark:border-pink-700">
                           <div className="flex items-center gap-1 mb-1">
-                            <Lightbulb className="w-3 h-3 text-blue-600" />
-                            <span className="font-medium text-blue-700 dark:text-blue-300">AI Insight</span>
+                            <Lightbulb className="w-3 h-3 text-pink-600" />
+                            <span className="font-medium text-pink-700 dark:text-pink-300">AI Insight</span>
                           </div>
                           <p className="text-gray-800 dark:text-gray-200 line-clamp-2 leading-relaxed">
                             {category.latest_insight.insights_text}
