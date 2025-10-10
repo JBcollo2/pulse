@@ -343,24 +343,24 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
     <div className="space-y-6">
       {/* Alerts */}
       {error && (
-        <Alert variant="destructive" className="border-red-200 dark:border-red-800">
+        <Alert variant="destructive" className="border-pink-200 dark:border-pink-800">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {successMessage && (
-        <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-800 dark:text-green-200">
+        <Alert className="border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-900/20">
+          <CheckCircle className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+          <AlertDescription className="text-pink-800 dark:text-pink-200">
             {successMessage}
           </AlertDescription>
         </Alert>
       )}
       {/* Similar Categories Warning */}
       {similarCategoriesWarning && (
-        <Alert variant="destructive" className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
-          <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-          <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+        <Alert variant="destructive" className="border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-900/20">
+          <AlertCircle className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+          <AlertDescription className="text-pink-800 dark:text-pink-200">
             <div className="space-y-2">
               <p className="font-medium">{similarCategoriesWarning.warning}</p>
               {similarCategoriesWarning.similar && similarCategoriesWarning.similar.length > 0 && (
@@ -378,7 +378,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   size="sm"
                   onClick={handleConfirmDespiteSimilar}
                   disabled={isLoading}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  className="bg-pink-600 hover:bg-pink-700 text-white"
                 >
                   Create Anyway
                 </Button>
@@ -386,7 +386,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setSimilarCategoriesWarning(null)}
-                  className="border-yellow-300"
+                  className="border-pink-300"
                 >
                   Cancel
                 </Button>
@@ -397,11 +397,11 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       )}
       {/* Quick Guide Panel */}
       {showGuide && (
-        <Card className="shadow-lg border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+        <Card className="shadow-lg border-pink-200 dark:border-pink-700 bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/40">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-lg font-bold text-blue-900 dark:text-blue-100">
-                <div className="p-2 rounded-lg bg-blue-500 text-white">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold text-pink-900 dark:text-pink-100">
+                <div className="p-2 rounded-lg bg-pink-500 text-white">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 Quick Guide: Category Management
@@ -410,7 +410,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowGuide(false)}
-                className="text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                className="text-pink-600 dark:text-pink-400 hover:bg-pink-100 dark:hover:bg-pink-900/30"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -418,9 +418,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-pink-200 dark:border-pink-700">
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
+                  <div className="w-6 h-6 bg-pink-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Create Categories</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Use AI to generate category names, descriptions, and keywords automatically. Just describe what you want!</p>
@@ -428,9 +428,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-pink-200 dark:border-pink-700">
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
+                  <div className="w-6 h-6 bg-pink-600 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Edit & Enhance</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Click Edit on any category to modify it. Use the AI enhance button to improve descriptions with one click.</p>
@@ -438,9 +438,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-pink-200 dark:border-pink-700">
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
+                  <div className="w-6 h-6 bg-pink-700 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Organize Events</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Categories help you organize and filter your events. Assign categories when creating or editing events.</p>
@@ -448,9 +448,9 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg border border-pink-200 dark:border-pink-700">
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</div>
+                  <div className="w-6 h-6 bg-pink-800 text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">4</div>
                   <div>
                     <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1">Delete Safely</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Before deleting, the system checks how many events use that category to prevent accidental data loss.</p>
@@ -466,14 +466,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           onClick={() => setShowGuide(true)}
           variant="outline"
           size="sm"
-          className="border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+          className="border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20"
         >
           <HelpCircle className="w-4 h-4 mr-2" />
           Show Guide
         </Button>
       )}
       {/* Create Category Section */}
-      <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <Card className="shadow-lg border-pink-200 dark:border-pink-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-gray-200">
@@ -499,7 +499,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* AI Suggestion Section */}
               {!aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg border border-pink-200 dark:border-pink-700">
+                <div className="p-4 bg-gradient-to-r from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/40 rounded-lg border border-pink-200 dark:border-pink-700">
                   <div className="flex items-start gap-3 mb-3">
                     <Sparkles className="w-5 h-5 text-pink-600 dark:text-pink-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
@@ -519,7 +519,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           type="button"
                           onClick={handleGetAISuggestion}
                           disabled={isGeneratingSuggestion || isLoading || !inputForSuggestion.trim()}
-                          className="w-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          className="w-full bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           {isGeneratingSuggestion ? (
                             <>
@@ -540,7 +540,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
               )}
               {/* AI Suggestion Applied Banner */}
               {aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-lg border border-pink-200 dark:border-pink-700">
+                <div className="p-4 bg-gradient-to-r from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-900/40 rounded-lg border border-pink-200 dark:border-pink-700">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-start gap-3 flex-1">
                       <CheckCircle className="w-5 h-5 text-pink-600 dark:text-pink-400 mt-0.5 flex-shrink-0" />
@@ -673,14 +673,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
         )}
       </Card>
       {/* Categories List */}
-      <Card className="shadow-lg border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <Card className="shadow-lg border-pink-200 dark:border-pink-700 bg-white dark:bg-gray-800">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-gray-200">
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20">
-              <Tags className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/20">
+              <Tags className="w-5 h-5 text-pink-600 dark:text-pink-400" />
             </div>
             Existing Categories
-            <span className="ml-2 px-3 py-1 text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+            <span className="ml-2 px-3 py-1 text-xs font-medium bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-full">
               {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
             </span>
           </CardTitle>
@@ -695,8 +695,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             </div>
           ) : categories.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Tags className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+              <div className="w-16 h-16 bg-pink-100 dark:bg-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Tags className="w-8 h-8 text-pink-400 dark:text-pink-500" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 No categories found
@@ -719,7 +719,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <div
                   key={category.id}
                   className={cn(
-                    "p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 hover:shadow-md transition-all duration-300",
+                    "p-4 rounded-lg border border-pink-200 dark:border-pink-600 bg-gradient-to-br from-white to-pink-50 dark:from-gray-700 dark:to-pink-900/20 hover:shadow-md transition-all duration-300",
                     expandedCategory === category.id && "ring-2 ring-pink-500"
                   )}
                 >
@@ -795,7 +795,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           size="sm"
                           onClick={() => handleSaveEdit(category.id)}
                           disabled={isLoading}
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          className="flex-1 bg-pink-500 hover:bg-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           <CheckCircle className="w-3 h-3 mr-1" />
                           Save
@@ -851,17 +851,17 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           <Calendar className="w-3 h-3" />
                           <span>Created {formatDate(category.created_at)}</span>
                         </div>
-                        <span className="px-2 py-1 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                        <span className="px-2 py-1 bg-pink-100 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 rounded-full text-xs font-medium">
                           Active
                         </span>
                       </div>
-                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      <div className="flex gap-2 pt-2 border-t border-pink-200 dark:border-pink-600">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => startEdit(category)}
                           disabled={isLoading}
-                          className="flex-1 text-xs border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                          className="flex-1 text-xs border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                         >
                           Edit
                         </Button>
@@ -884,7 +884,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             variant="outline"
                             onClick={() => handleCheckDeleteImpact(category.id)}
                             disabled={isLoading}
-                            className="flex-1 text-xs border-red-300 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                            className="flex-1 text-xs border-pink-300 dark:border-pink-600 text-pink-700 dark:text-pink-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
                           >
                             Delete
                           </Button>
@@ -913,8 +913,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       {deletingCategory && deleteImpact && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-md w-full shadow-2xl">
-            <CardHeader className="border-b border-gray-200 dark:border-gray-700">
-              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <CardHeader className="border-b border-pink-200 dark:border-pink-700">
+              <CardTitle className="flex items-center gap-2 text-pink-600 dark:text-pink-400">
                 <AlertCircle className="w-5 h-5" />
                 Confirm Deletion
               </CardTitle>
@@ -924,8 +924,8 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 {deleteImpact.warning || 'Are you sure you want to delete this category?'}
               </div>
               {deleteImpact.impact && deleteImpact.impact.affected_events > 0 && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                <div className="p-3 bg-pink-50 dark:bg-pink-900/20 rounded border border-pink-200 dark:border-pink-700">
+                  <p className="text-sm text-pink-800 dark:text-pink-200 font-medium">
                     <Info className="w-4 h-4 inline mr-1" />
                     This will affect <strong>{deleteImpact.impact.affected_events}</strong> event(s)
                   </p>
@@ -935,7 +935,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <Button
                   onClick={() => handleConfirmDelete(deletingCategory)}
                   disabled={isLoading}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  className="flex-1 bg-pink-500 hover:bg-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                 >
                   {isLoading ? (
                     <>
