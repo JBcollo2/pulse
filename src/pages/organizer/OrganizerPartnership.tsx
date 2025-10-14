@@ -9,18 +9,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Loader2, AlertCircle, Users, Plus, Edit, Trash2, Eye, EyeOff,
-  RefreshCw, Globe, Building2, Mail, User, Calendar, MapPin,
-  Filter, Search, ChevronDown, ExternalLink, Handshake, Star,
-  TrendingUp, Activity, Package, Upload, X, Check, Sparkles,
-  Brain, Lightbulb, BarChart3, Target, Zap, Bot, MessageSquare,
-  Wand2, Info, HelpCircle, ArrowRight, Copy, ThumbsUp, ThumbsDown
+import { 
+  Loader2, AlertCircle, Users, Plus, Edit, Trash2, Eye, EyeOff, 
+  RefreshCw, Globe, Building2, Mail, User, Calendar, MapPin, 
+  Filter, Search, ChevronDown, ExternalLink, Handshake, Star, 
+  TrendingUp, Activity, Package, Upload, X, Check, Sparkles, 
+  Brain, Lightbulb, BarChart3, Target, Zap, Bot, MessageSquare, 
+  Wand2, Info, HelpCircle, ArrowRight, Copy, ThumbsUp, ThumbsDown,
+  Phone, MessageCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Partner, RecentCollaboration, Collaboration, Event, PartnersResponse,
-  PartnerDetailsResponse, CollaborationsResponse, COLLABORATION_TYPES,
+import { 
+  Partner, RecentCollaboration, Collaboration, Event, PartnersResponse, 
+  PartnerDetailsResponse, CollaborationsResponse, COLLABORATION_TYPES, 
   SORT_OPTIONS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE, EventsResponse
 } from "@/lib/types";
 
@@ -91,7 +92,7 @@ const OrganizerPartnership: React.FC = () => {
   const [isPartnerDetailsDialogOpen, setIsPartnerDetailsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'partner' | 'collaboration', id: number } | null>(null);
-  
+    
   // AI Feature States
   const [isAISuggestionDialogOpen, setIsAISuggestionDialogOpen] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
@@ -109,14 +110,12 @@ const OrganizerPartnership: React.FC = () => {
   const [aiTrends, setAiTrends] = useState<any>(null);
   const [aiRecommendations, setAiRecommendations] = useState<any>(null);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
-  const [includeAIInsights, setIncludeAIInsights] = useState(true);
-  const [isCoPilotVisible, setIsCoPilotVisible] = useState(true);
-  const [coPilotMessage, setCoPilotMessage] = useState('');
-  const [coPilotSuggestions, setCoPilotSuggestions] = useState<string[]>([]);
+  const [includeAIInsights, setIncludeAIInsights] = useState(false); // Default to false
   const [showEmptyDatabaseRecommendations, setShowEmptyDatabaseRecommendations] = useState(false);
   const [emptyDatabaseRecommendations, setEmptyDatabaseRecommendations] = useState<any[]>([]);
   const [partnerTypesForEvent, setPartnerTypesForEvent] = useState<any[]>([]);
-  
+  const [showContactGuidance, setShowContactGuidance] = useState(true); // New state for contact guidance
+    
   const [partnerForm, setPartnerForm] = useState({
     company_name: '',
     company_description: '',
@@ -225,33 +224,16 @@ const OrganizerPartnership: React.FC = () => {
       setPartners(data.partners);
       setTotalPages(data.pagination.pages);
       setTotalItems(data.pagination.total);
-      
+            
       // Store AI insights if available
       if (data.ai_trends) setAiTrends(data.ai_trends);
       if (data.ai_recommendations_summary) setAiRecommendations(data.ai_recommendations_summary);
       if (data.ai_insights) setAiInsights(data.ai_insights);
-      
+            
       // Check for empty database recommendations
       if (data.empty_database_recommendations) {
         setEmptyDatabaseRecommendations(data.empty_database_recommendations);
         setShowEmptyDatabaseRecommendations(true);
-      }
-      
-      // Update co-pilot with contextual message
-      if (data.partners.length === 0) {
-        setCoPilotMessage("I see you don't have any partners yet. Would you like me to suggest some based on your events?");
-        setCoPilotSuggestions([
-          "Suggest partners for my events",
-          "Create a partner from scratch",
-          "Learn about partnership best practices"
-        ]);
-      } else if (data.ai_trends) {
-        setCoPilotMessage(`I've analyzed your partnership trends. ${data.ai_trends.insights || 'Here are some insights to help you optimize your partnerships.'}`);
-        setCoPilotSuggestions([
-          "View detailed trends analysis",
-          "Get partnership recommendations",
-          "Ask me about best practices"
-        ]);
       }
     } catch (err) {
       handleError("Failed to fetch partners", err);
@@ -277,7 +259,7 @@ const OrganizerPartnership: React.FC = () => {
       const data: PartnerDetailsResponse = await response.json();
       setSelectedPartner(data.partner);
       setPartnerDetailsTotalPages(data.pagination.pages);
-      
+            
       // Store AI insights if available
       const extendedPartner = data.partner as ExtendedPartner;
       if (extendedPartner.ai_performance_analysis) setAiAnalysis(extendedPartner.ai_performance_analysis);
@@ -309,27 +291,10 @@ const OrganizerPartnership: React.FC = () => {
       const data: ExtendedCollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
-      
+            
       // Store AI recommendations if available
       if (data.ai_recommendations) setAiRecommendations(data.ai_recommendations);
       if (data.ai_partner_types) setPartnerTypesForEvent(data.ai_partner_types);
-      
-      // Update co-pilot with contextual message
-      if (data.collaborations.length === 0) {
-        setCoPilotMessage(`I don't see any collaborations for this event yet. Would you like me to suggest some potential partners?`);
-        setCoPilotSuggestions([
-          "Suggest partners for this event",
-          "Create a new partner",
-          "Learn about collaboration types"
-        ]);
-      } else if (data.ai_recommendations) {
-        setCoPilotMessage(`I've found ${data.ai_recommendations.suggested_partners?.length || 0} potential partners for this event.`);
-        setCoPilotSuggestions([
-          "Review suggested partners",
-          "Optimize existing collaborations",
-          "Ask me about partnership strategies"
-        ]);
-      }
     } catch (err) {
       handleError("Failed to fetch collaborations", err);
     } finally {
@@ -377,22 +342,22 @@ const OrganizerPartnership: React.FC = () => {
       const formData = new FormData();
       formData.append('action', 'suggest');
       formData.append('description', description);
-      
+            
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiSuggestion(data.suggestion);
       setAiSuggestions([data.suggestion]); // Store the first suggestion
       setCurrentSuggestionIndex(0);
-      
+            
       // Auto-fill the form with the suggestion
       setPartnerForm({
         company_name: data.suggestion.company_name || '',
@@ -402,15 +367,7 @@ const OrganizerPartnership: React.FC = () => {
         contact_email: '',
         contact_person: ''
       });
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've created a partner suggestion based on your description. You can edit it or ask for alternatives.");
-      setCoPilotSuggestions([
-        "Generate another suggestion",
-        "Refine this suggestion",
-        "Learn about partnership best practices"
-      ]);
-      
+            
       setIsAISuggestionDialogOpen(true);
     } catch (err) {
       handleError("Failed to generate AI suggestion", err);
@@ -422,23 +379,23 @@ const OrganizerPartnership: React.FC = () => {
       const formData = new FormData();
       formData.append('action', 'suggest');
       formData.append('description', description);
-      
+            
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
         body: formData
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
-      
+            
       // Add to suggestions array
       setAiSuggestions(prev => [...prev, data.suggestion]);
       setCurrentSuggestionIndex(aiSuggestions.length);
-      
+            
       // Auto-fill the form with the new suggestion
       setPartnerForm({
         company_name: data.suggestion.company_name || '',
@@ -448,14 +405,6 @@ const OrganizerPartnership: React.FC = () => {
         contact_email: '',
         contact_person: ''
       });
-      
-      // Update co-pilot message
-      setCoPilotMessage("Here's an alternative suggestion. Each one offers different benefits and collaboration approaches.");
-      setCoPilotSuggestions([
-        "Generate another suggestion",
-        "Use this suggestion",
-        "Compare with previous suggestions"
-      ]);
     } catch (err) {
       handleError("Failed to generate alternative AI suggestion", err);
     }
@@ -466,7 +415,7 @@ const OrganizerPartnership: React.FC = () => {
     try {
       const targetId = partnerId || editingPartner?.id;
       if (!targetId) return;
-      
+            
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${targetId}/ai/enhance-description`, {
         method: 'POST',
         credentials: 'include',
@@ -475,21 +424,13 @@ const OrganizerPartnership: React.FC = () => {
         },
         body: JSON.stringify({ action: 'enhance' })
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setEnhancedDescription(data.enhanced_description);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've enhanced the partner description to be more compelling and highlight key value propositions.");
-      setCoPilotSuggestions([
-        "Save this enhanced description",
-        "Generate another enhancement",
-        "Learn about effective partner descriptions"
-      ]);
     } catch (err) {
       handleError("Failed to enhance description with AI", err);
     } finally {
@@ -499,7 +440,7 @@ const OrganizerPartnership: React.FC = () => {
 
   const saveEnhancedDescription = useCallback(async () => {
     if (!enhancedDescription || !editingPartner) return;
-    
+        
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}/ai/enhance-description`, {
         method: 'POST',
@@ -508,32 +449,24 @@ const OrganizerPartnership: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          action: 'save',
+          action: 'save', 
           description: enhancedDescription
         })
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       toast({
         title: "Success",
         description: data.message,
         variant: "default",
       });
-      
+            
       setPartnerForm(prev => ({ ...prev, company_description: enhancedDescription }));
       setEnhancedDescription(null);
-      
-      // Update co-pilot message
-      setCoPilotMessage("Great! I've saved the enhanced description. This will help attract better collaborations.");
-      setCoPilotSuggestions([
-        "Analyze this partner's performance",
-        "Find similar partners",
-        "Suggest collaboration opportunities"
-      ]);
     } catch (err) {
       handleError("Failed to save enhanced description", err);
     }
@@ -549,22 +482,14 @@ const OrganizerPartnership: React.FC = () => {
         },
         body: JSON.stringify({ action: 'analyze' })
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiAnalysis(data.analysis);
       setIsAIAnalysisDialogOpen(true);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've completed a comprehensive analysis of this partner's performance. The insights include both database metrics and industry benchmarks.");
-      setCoPilotSuggestions([
-        "Optimize this partnership",
-        "Find similar high-performing partners",
-        "Learn about partnership strategies"
-      ]);
     } catch (err) {
       handleError("Failed to analyze partner with AI", err);
     }
@@ -576,22 +501,14 @@ const OrganizerPartnership: React.FC = () => {
         method: 'GET',
         credentials: 'include'
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiOptimization(data.optimization);
       setIsAIOptimizationDialogOpen(true);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've analyzed this collaboration and identified optimization opportunities based on both your data and industry best practices.");
-      setCoPilotSuggestions([
-        "Apply these optimizations",
-        "Learn about effective collaborations",
-        "Analyze other partnerships"
-      ]);
     } catch (err) {
       handleError("Failed to optimize collaboration with AI", err);
     }
@@ -599,7 +516,7 @@ const OrganizerPartnership: React.FC = () => {
 
   const processNaturalQuery = useCallback(async () => {
     if (!naturalQuery.trim()) return;
-    
+        
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/assist`, {
         method: 'POST',
@@ -609,23 +526,15 @@ const OrganizerPartnership: React.FC = () => {
         },
         body: JSON.stringify({ query: naturalQuery })
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiQueryResult(data);
       setIsNaturalQueryDialogOpen(false);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've processed your request. Here's what I found based on both your data and industry knowledge.");
-      setCoPilotSuggestions([
-        "Ask another question",
-        "Take action on these insights",
-        "Learn more about partnerships"
-      ]);
-      
+            
       // Handle specific intents
       if (data.intent === 'create_partner' && data.params) {
         setPartnerForm({
@@ -649,7 +558,7 @@ const OrganizerPartnership: React.FC = () => {
           }
         }
       }
-      
+            
       toast({
         title: "AI Assistant",
         description: "I've processed your request. See the results below.",
@@ -666,21 +575,13 @@ const OrganizerPartnership: React.FC = () => {
         method: 'GET',
         credentials: 'include'
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiTrends(data.trends);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've analyzed your partnership trends and compared them with industry benchmarks. Here are some insights to help you grow.");
-      setCoPilotSuggestions([
-        "View detailed trends analysis",
-        "Get partnership recommendations",
-        "Learn about industry best practices"
-      ]);
     } catch (err) {
       handleError("Failed to fetch AI trends", err);
     }
@@ -692,21 +593,13 @@ const OrganizerPartnership: React.FC = () => {
         method: 'GET',
         credentials: 'include'
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiRecommendations(data.summary);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've identified some partnership opportunities based on your events and industry trends. These recommendations consider both your historical data and broader market insights.");
-      setCoPilotSuggestions([
-        "Review these recommendations",
-        "Ask for specific partner suggestions",
-        "Learn about partnership strategies"
-      ]);
     } catch (err) {
       handleError("Failed to fetch AI recommendations", err);
     }
@@ -718,21 +611,13 @@ const OrganizerPartnership: React.FC = () => {
         method: 'GET',
         credentials: 'include'
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setAiInsights(data.insights);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've gathered some insights about partnerships in your industry. These can help you make more informed decisions.");
-      setCoPilotSuggestions([
-        "Ask me about specific insights",
-        "Get partnership recommendations",
-        "Learn about best practices"
-      ]);
     } catch (err) {
       handleError("Failed to fetch AI insights", err);
     }
@@ -744,71 +629,17 @@ const OrganizerPartnership: React.FC = () => {
         method: 'GET',
         credentials: 'include'
       });
-      
+            
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+            
       const data = await response.json();
       setPartnerTypesForEvent(data.partner_types);
-      
-      // Update co-pilot message
-      setCoPilotMessage("Based on your event characteristics, I've identified the most valuable partner types to consider. These recommendations are based on industry best practices and event type analysis.");
-      setCoPilotSuggestions([
-        "Create a partner from these types",
-        "Learn more about these partner types",
-        "Get specific partner suggestions"
-      ]);
     } catch (err) {
       handleError("Failed to fetch partner types for event", err);
     }
   }, [handleError]);
-
-  const handleCoPilotSuggestion = useCallback((suggestion: string) => {
-    if (suggestion.includes("Suggest partners")) {
-      if (selectedEvent) {
-        fetchCollaborations(selectedEvent.id);
-      } else {
-        setIsAISuggestionDialogOpen(true);
-      }
-    } else if (suggestion.includes("Create a partner")) {
-      resetPartnerForm();
-      setIsPartnerDialogOpen(true);
-    } else if (suggestion.includes("best practices")) {
-      setCoPilotMessage("Partnership best practices include: 1) Clear communication of expectations, 2) Regular performance reviews, 3) Mutual benefit alignment, 4) Long-term relationship building. Would you like more specific advice?");
-      setCoPilotSuggestions([
-        "Tell me about tech partnerships",
-        "How to measure partnership success",
-        "Partnership agreement essentials"
-      ]);
-    } else if (suggestion.includes("Generate another suggestion")) {
-      const description = partnerForm.company_description || "A partner for my events";
-      generateAlternativeAISuggestion(description);
-    } else if (suggestion.includes("Refine this suggestion")) {
-      setIsAISuggestionDialogOpen(true);
-    } else if (suggestion.includes("trends analysis")) {
-      fetchAITrends();
-    } else if (suggestion.includes("recommendations")) {
-      fetchAIRecommendations();
-    } else if (suggestion.includes("insights")) {
-      fetchAIInsights();
-    } else if (suggestion.includes("Analyze this partner")) {
-      if (selectedPartner) {
-        analyzePartnerWithAI(selectedPartner.id);
-      }
-    } else if (suggestion.includes("Optimize this partnership")) {
-      if (selectedPartner && selectedEvent) {
-        const collaboration = collaborations.find(c => 
-          c.partner_id === selectedPartner.id && c.event_id === selectedEvent.id
-        );
-        if (collaboration) {
-          optimizeCollaborationWithAI(selectedEvent.id, collaboration.id);
-        }
-      }
-    }
-  }, [selectedEvent, resetPartnerForm, partnerForm.company_description, selectedPartner, collaborations, 
-     generateAlternativeAISuggestion, fetchAITrends, fetchAIRecommendations, fetchAIInsights, 
-     analyzePartnerWithAI, optimizeCollaborationWithAI, fetchCollaborations]);
 
   // --- CRUD Operations ---
   const createPartner = useCallback(async () => {
@@ -825,7 +656,7 @@ const OrganizerPartnership: React.FC = () => {
         formData.append('file', selectedFile);
       }
       formData.append('enhance_with_ai', 'false'); // Set to true if you want auto-enhancement
-      
+            
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
@@ -844,14 +675,6 @@ const OrganizerPartnership: React.FC = () => {
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
-      
-      // Update co-pilot message
-      setCoPilotMessage("Great! I've created the partner. Now you can add collaborations to your events or ask me to analyze their performance.");
-      setCoPilotSuggestions([
-        "Add a collaboration",
-        "Analyze this partner",
-        "Find similar partners"
-      ]);
     } catch (err) {
       handleError("Failed to create partner", err);
     } finally {
@@ -865,7 +688,7 @@ const OrganizerPartnership: React.FC = () => {
     try {
       let body: any;
       let headers: any = {};
-      
+            
       if (selectedFile) {
         body = new FormData();
         body.append('action', 'update');
@@ -882,7 +705,7 @@ const OrganizerPartnership: React.FC = () => {
           ...partnerForm
         });
       }
-      
+            
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}`, {
         method: 'PUT',
         headers,
@@ -905,14 +728,6 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedPartner && selectedPartner.id === editingPartner.id) {
         fetchPartnerDetails(editingPartner.id, partnerDetailsPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've updated the partner information. The changes will be reflected in all their collaborations.");
-      setCoPilotSuggestions([
-        "Analyze this partner's performance",
-        "Add a collaboration",
-        "Find similar partners"
-      ]);
     } catch (err) {
       handleError("Failed to update partner", err);
     } finally {
@@ -951,14 +766,6 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've added the collaboration to your event. Would you like me to suggest ways to optimize this partnership?");
-      setCoPilotSuggestions([
-        "Optimize this collaboration",
-        "Add another collaboration",
-        "Analyze partnership performance"
-      ]);
     } catch (err) {
       handleError("Failed to create collaboration", err);
     } finally {
@@ -995,14 +802,6 @@ const OrganizerPartnership: React.FC = () => {
       resetCollaborationForm();
       setIsCollaborationDialogOpen(false);
       fetchCollaborations(selectedEvent.id, collabCurrentPage);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've updated the collaboration details. Based on industry best practices, this type of collaboration typically performs well when...");
-      setCoPilotSuggestions([
-        "Optimize this collaboration",
-        "Analyze partnership performance",
-        "Learn about collaboration strategies"
-      ]);
     } catch (err) {
       handleError("Failed to update collaboration", err);
     } finally {
@@ -1047,14 +846,6 @@ const OrganizerPartnership: React.FC = () => {
       } else if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage(`I've ${itemToDelete.type === 'partner' ? 'deactivated the partner' : 'removed the collaboration'}. If you'd like, I can help you find replacement options.`);
-      setCoPilotSuggestions([
-        "Find replacement partners",
-        "Analyze impact of this change",
-        "Learn about partnership management"
-      ]);
     } catch (err) {
       handleError(`Failed to delete ${itemToDelete.type}`, err);
     } finally {
@@ -1071,14 +862,6 @@ const OrganizerPartnership: React.FC = () => {
       fetchAIRecommendations();
       fetchAIInsights();
     }
-    
-    // Initial co-pilot message
-    setCoPilotMessage("Hello! I'm your partnership co-pilot. I can help you find, create, and optimize partnerships using both your data and industry insights. How can I assist you today?");
-    setCoPilotSuggestions([
-      "Suggest partners for my events",
-      "Create a new partner profile",
-      "Analyze partnership performance"
-    ]);
   }, [fetchPartners, fetchEvents, includeAIInsights, fetchAITrends, fetchAIRecommendations, fetchAIInsights]);
 
   useEffect(() => {
@@ -1101,14 +884,6 @@ const OrganizerPartnership: React.FC = () => {
     setSelectedFile(null);
     setFilePreview(null);
     setIsPartnerDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage(`I'm opening the editor for ${partner.company_name}. Would you like me to suggest any improvements to their profile?`);
-    setCoPilotSuggestions([
-      "Enhance the description",
-      "Analyze this partner's performance",
-      "Find similar partners"
-    ]);
   }, []);
 
   const handleCollaborationEdit = useCallback((collaboration: Collaboration) => {
@@ -1122,14 +897,6 @@ const OrganizerPartnership: React.FC = () => {
       show_on_event_page: collaboration.show_on_event_page
     });
     setIsCollaborationDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage("I'm opening the collaboration editor. Based on industry best practices, this type of collaboration could be optimized by...");
-    setCoPilotSuggestions([
-      "Optimize this collaboration",
-      "Analyze partnership performance",
-      "Learn about collaboration strategies"
-    ]);
   }, []);
 
   const handleDeleteConfirm = useCallback((type: 'partner' | 'collaboration', id: number) => {
@@ -1157,14 +924,6 @@ const OrganizerPartnership: React.FC = () => {
     setPartnerDetailsPage(1);
     fetchPartnerDetails(partner.id, 1);
     setIsPartnerDetailsDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage(`I'm loading detailed information about ${partner.company_name}. I'll include both your collaboration history and industry insights.`);
-    setCoPilotSuggestions([
-      "Analyze this partner's performance",
-      "Find similar partners",
-      "Suggest collaboration opportunities"
-    ]);
   }, [fetchPartnerDetails]);
 
   const handlePartnerDialogClose = useCallback((open: boolean) => {
@@ -1196,90 +955,6 @@ const OrganizerPartnership: React.FC = () => {
   // --- Component Render ---
   return (
     <div className={cn("min-h-screen p-2 sm:p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800 relative")}>
-      {/* Co-pilot Assistant */}
-      <div className={cn(
-        "fixed bottom-4 right-4 z-50 transition-all duration-300",
-        isCoPilotVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-      )}>
-        <Card className="w-80 shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm dark:text-gray-200 text-gray-800">
-                <Bot className="h-4 w-4 text-purple-500" />
-                Partnership Co-pilot
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsCoPilotVisible(false)}
-                className="h-6 w-6 p-0 dark:text-gray-400 text-gray-600"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              <p className="text-xs dark:text-gray-300 text-gray-700">{coPilotMessage}</p>
-              {coPilotSuggestions.length > 0 && (
-                <div className="space-y-1">
-                  {coPilotSuggestions.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCoPilotSuggestion(suggestion)}
-                      className="w-full justify-start text-xs dark:text-purple-400 text-purple-600 h-auto p-2"
-                    >
-                      <ArrowRight className="h-3 w-3 mr-1" />
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-2 pt-2 border-t dark:border-gray-600 border-gray-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsNaturalQueryDialogOpen(true)}
-                  className="flex-1 text-xs dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Ask
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCoPilotMessage("What would you like to know about partnerships? I can provide insights based on both your data and industry knowledge.");
-                    setCoPilotSuggestions([
-                      "How to measure partnership success",
-                      "Best practices for partner onboarding",
-                      "Types of partnerships for events",
-                      "How to find the right partners"
-                    ]);
-                  }}
-                  className="flex-1 text-xs dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <HelpCircle className="h-3 w-3 mr-1" />
-                  Learn
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Co-pilot Toggle Button */}
-      {!isCoPilotVisible && (
-        <Button
-          onClick={() => setIsCoPilotVisible(true)}
-          className="fixed bottom-4 right-4 z-40 rounded-full h-12 w-12 shadow-lg dark:bg-purple-700 dark:text-purple-200 bg-purple-500 text-white"
-        >
-          <Bot className="h-5 w-5" />
-        </Button>
-      )}
-
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
@@ -1288,19 +963,10 @@ const OrganizerPartnership: React.FC = () => {
               Partnership Management
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Manage your partners and event collaborations with AI assistance
+              Manage your partners and event collaborations
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => setIsNaturalQueryDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-            >
-              <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">AI Assistant</span>
-            </Button>
             <Button
               onClick={fetchPartners}
               variant="outline"
@@ -1314,60 +980,50 @@ const OrganizerPartnership: React.FC = () => {
           </div>
         </div>
 
-        {/* AI Insights Banner */}
-        {includeAIInsights && (aiTrends || aiRecommendations || aiInsights.length > 0) && (
-          <Card className="dark:bg-gray-800 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        {/* Contact Guidance Banner */}
+        {showContactGuidance && (
+          <Card className="dark:bg-blue-900 dark:border-blue-700 bg-blue-50 border-blue-200">
             <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Insights
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-blue-200 text-blue-800">
+                  <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                  Important: Contact Companies First
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowContactGuidance(false)}
+                  className="h-6 w-6 p-0 dark:text-blue-300 text-blue-600"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {aiTrends && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Partnership Trends</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiTrends.insights || "Analyzing your partnership patterns..."}
+              <div className="space-y-3">
+                <p className="text-xs sm:text-sm dark:text-blue-300 text-blue-700">
+                  Before creating a partner profile, please ensure you have:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                  <div className="flex items-start gap-2 p-2 rounded-lg dark:bg-blue-800 bg-blue-100">
+                    <Phone className="h-4 w-4 mt-0.5 text-blue-500" />
+                    <div>
+                      <p className="text-xs font-medium dark:text-blue-200 text-blue-800">Contact the Company</p>
+                      <p className="text-xs dark:text-blue-300 text-blue-700">Reach out and discuss potential collaboration</p>
                     </div>
                   </div>
-                )}
-                {aiRecommendations && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Recommendations</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiRecommendations.summary || "Generating personalized recommendations..."}
+                  <div className="flex items-start gap-2 p-2 rounded-lg dark:bg-blue-800 bg-blue-100">
+                    <MessageCircle className="h-4 w-4 mt-0.5 text-blue-500" />
+                    <div>
+                      <p className="text-xs font-medium dark:text-blue-200 text-blue-800">Get Approval</p>
+                      <p className="text-xs dark:text-blue-300 text-blue-700">Obtain formal agreement for partnership</p>
                     </div>
                   </div>
-                )}
-                {aiInsights.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Industry Insights</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiInsights[0]?.description || "Gathering industry insights..."}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-between items-center mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIncludeAIInsights(false)}
-                  className="text-xs dark:text-gray-400 text-gray-500"
-                >
-                  Hide Insights
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={fetchAIInsights}
-                  className="text-xs dark:text-purple-400 text-purple-600"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Refresh Insights
-                </Button>
+                </div>
+                <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-blue-300 text-blue-700">
+                  <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Only create partner profiles for companies you have contacted and received approval from.</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1536,22 +1192,10 @@ const OrganizerPartnership: React.FC = () => {
                       Partner Companies
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
-                      Manage your partner companies and their details with AI assistance
+                      Manage your partner companies and their details
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        resetPartnerForm();
-                        setIsAISuggestionDialogOpen(true);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                    >
-                      <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">AI Suggest</span>
-                    </Button>
                     <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                       <DialogTrigger asChild>
                         <Button
@@ -1572,6 +1216,21 @@ const OrganizerPartnership: React.FC = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
+                          {/* Contact Reminder */}
+                          <div className="p-3 rounded-lg dark:bg-blue-900 bg-blue-50 border dark:border-blue-700 border-blue-200">
+                            <div className="flex items-start gap-2">
+                              <Info className="h-4 w-4 mt-0.5 text-blue-500" />
+                              <div>
+                                <p className="text-xs font-medium dark:text-blue-200 text-blue-800 mb-1">
+                                  Remember to Contact First
+                                </p>
+                                <p className="text-xs dark:text-blue-300 text-blue-700">
+                                  Ensure you have contacted this company and received approval before creating their profile.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
                           {/* AI Suggestion Indicator */}
                           {aiSuggestion && (
                             <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
@@ -1652,7 +1311,7 @@ const OrganizerPartnership: React.FC = () => {
                               )}
                             </div>
                           )}
-                          
+                                                  
                           <div className="space-y-2">
                             <Label htmlFor="company_name" className="dark:text-gray-200 text-gray-800 text-sm">
                               Company Name *
@@ -1909,21 +1568,6 @@ const OrganizerPartnership: React.FC = () => {
                   >
                     Include inactive partners
                   </Label>
-                  <div className="flex items-center space-x-2 ml-auto">
-                    <Checkbox
-                      id="includeAIInsights"
-                      checked={includeAIInsights}
-                      onCheckedChange={checked => setIncludeAIInsights(checked === true)}
-                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
-                    />
-                    <Label
-                      htmlFor="includeAIInsights"
-                      className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none flex items-center gap-1"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      AI Insights
-                    </Label>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
@@ -1935,22 +1579,10 @@ const OrganizerPartnership: React.FC = () => {
                 ) : filteredPartners.length === 0 ? (
                   <div className="text-center py-8 sm:py-12">
                     <Building2 className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       {searchQuery ? 'No partners found matching your search' : 'No partners found'}
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button
-                        onClick={() => {
-                          resetPartnerForm();
-                          setIsAISuggestionDialogOpen(true);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                      >
-                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        AI Suggest Partner
-                      </Button>
                       <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                         <DialogTrigger asChild>
                           <Button
@@ -2170,7 +1802,7 @@ const OrganizerPartnership: React.FC = () => {
                       Event Collaborations
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
-                      Manage partnerships for specific events with AI optimization
+                      Manage partnerships for specific events
                     </CardDescription>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -2198,43 +1830,6 @@ const OrganizerPartnership: React.FC = () => {
                     </Select>
                     {selectedEvent && (
                       <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Get AI suggestions for this event
-                            fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
-                              method: 'POST',
-                              credentials: 'include',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ action: 'suggest' })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                              if (data.suggested_partners || data.new_partner_suggestions) {
-                                setAiRecommendations(data);
-                                toast({
-                                  title: "AI Suggestions",
-                                  description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
-                                  variant: "default",
-                                });
-                                
-                                // Update co-pilot message
-                                setCoPilotMessage(`I've found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}. These include both existing partners in your network and new partner suggestions based on industry insights.`);
-                                setCoPilotSuggestions([
-                                  "Review suggested partners",
-                                  "Create a new partner from scratch",
-                                  "Learn about partnership strategies"
-                                ]);
-                              }
-                            })
-                            .catch(err => handleError("Failed to get AI suggestions", err));
-                          }}
-                          className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm p-1 sm:p-2"
-                        >
-                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">AI Suggest</span>
-                        </Button>
                         <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                           <DialogTrigger asChild>
                             <Button
@@ -2381,7 +1976,7 @@ const OrganizerPartnership: React.FC = () => {
                 {!selectedEvent ? (
                   <div className="text-center py-8 sm:py-12">
                     <Calendar className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Select an event to view and manage collaborations
                     </p>
                     {events.length === 0 && (
@@ -2402,35 +1997,6 @@ const OrganizerPartnership: React.FC = () => {
                       No collaborations found for {selectedEvent.name}
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Get AI suggestions for this event
-                          fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'suggest' })
-                          })
-                          .then(response => response.json())
-                          .then(data => {
-                            if (data.suggested_partners || data.new_partner_suggestions) {
-                              setAiRecommendations(data);
-                              toast({
-                                title: "AI Suggestions",
-                                description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
-                                variant: "default",
-                              });
-                            }
-                          })
-                          .catch(err => handleError("Failed to get AI suggestions", err));
-                        }}
-                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                      >
-                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        AI Suggest Partners
-                      </Button>
                       <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                         <DialogTrigger asChild>
                           <Button
@@ -2478,7 +2044,7 @@ const OrganizerPartnership: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
+                                        
                     {/* AI Recommendations for Event */}
                     {aiRecommendations && (aiRecommendations.suggested_partners || aiRecommendations.new_partner_suggestions) && (
                       <Card className="dark:bg-gray-700 dark:border-gray-600 bg-purple-50 border-purple-200">
@@ -2489,6 +2055,16 @@ const OrganizerPartnership: React.FC = () => {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
+                          {/* Contact Guidance for AI Suggestions */}
+                          <div className="mb-3 p-2 rounded-lg dark:bg-blue-900 bg-blue-50 border dark:border-blue-700 border-blue-200">
+                            <div className="flex items-start gap-2">
+                              <Info className="h-3 w-3 mt-0.5 text-blue-500" />
+                              <p className="text-xs dark:text-blue-300 text-blue-700">
+                                Remember to contact these companies and get approval before creating partnerships.
+                              </p>
+                            </div>
+                          </div>
+
                           {/* Existing Partner Suggestions */}
                           {aiRecommendations.suggested_partners && aiRecommendations.suggested_partners.length > 0 && (
                             <div className="mb-4">
@@ -2535,7 +2111,7 @@ const OrganizerPartnership: React.FC = () => {
                               </div>
                             </div>
                           )}
-                          
+                                                  
                           {/* New Partner Suggestions */}
                           {aiRecommendations.new_partner_suggestions && aiRecommendations.new_partner_suggestions.length > 0 && (
                             <div>
@@ -2577,7 +2153,7 @@ const OrganizerPartnership: React.FC = () => {
                               </div>
                             </div>
                           )}
-                          
+                                                  
                           {/* Partner Type Suggestions */}
                           {partnerTypesForEvent && partnerTypesForEvent.length > 0 && (
                             <div className="mt-4">
@@ -2594,7 +2170,7 @@ const OrganizerPartnership: React.FC = () => {
                         </CardContent>
                       </Card>
                     )}
-                    
+                                        
                     <div className="grid gap-3 sm:gap-4">
                       {collaborations.map((collaboration) => {
                         const partner = partners.find(p => p.id === collaboration.partner_id);
@@ -2879,7 +2455,7 @@ const OrganizerPartnership: React.FC = () => {
                     </CardContent>
                   </Card>
                 </div>
-                
+                                
                 {/* AI Analysis Section */}
                 {aiAnalysis && (
                   <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4 bg-purple-50 border-purple-200">
@@ -2942,7 +2518,7 @@ const OrganizerPartnership: React.FC = () => {
                     </CardContent>
                   </Card>
                 )}
-                
+                                
                 <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
                   <CardHeader className="pb-2 sm:pb-3">
                     <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Collaboration History</CardTitle>
