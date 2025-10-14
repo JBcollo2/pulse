@@ -92,7 +92,7 @@ const OrganizerPartnership: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'partner' | 'collaboration', id: number } | null>(null);
     
-  // AI Feature States - Removed unnecessary AI states
+  // AI Feature States
   const [isAISuggestionDialogOpen, setIsAISuggestionDialogOpen] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
@@ -109,7 +109,7 @@ const OrganizerPartnership: React.FC = () => {
   const [aiTrends, setAiTrends] = useState<any>(null);
   const [aiRecommendations, setAiRecommendations] = useState<any>(null);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
-  const [includeAIInsights, setIncludeAIInsights] = useState(false); // Disabled by default
+  const [includeAIInsights, setIncludeAIInsights] = useState(false);
   const [showEmptyDatabaseRecommendations, setShowEmptyDatabaseRecommendations] = useState(false);
   const [emptyDatabaseRecommendations, setEmptyDatabaseRecommendations] = useState<any[]>([]);
   const [partnerTypesForEvent, setPartnerTypesForEvent] = useState<any[]>([]);
@@ -207,7 +207,7 @@ const OrganizerPartnership: React.FC = () => {
         sort_by: sortBy,
         sort_order: sortOrder,
         include_inactive: includeInactive.toString(),
-        include_ai_insights: 'false', // Always false now
+        include_ai_insights: 'false',
       });
       if (searchQuery) {
         params.append('search', searchQuery);
@@ -241,7 +241,7 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'false', // Always false now
+        include_ai_insights: 'false',
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}?${params.toString()}`, {
         credentials: 'include'
@@ -268,7 +268,7 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'false', // Always false now
+        include_ai_insights: 'false',
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${targetEventId}?${params.toString()}`, {
         credentials: 'include'
@@ -279,6 +279,10 @@ const OrganizerPartnership: React.FC = () => {
       const data: ExtendedCollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
+
+      // Store AI recommendations if available
+      if (data.ai_recommendations) setAiRecommendations(data.ai_recommendations);
+      if (data.ai_partner_types) setPartnerTypesForEvent(data.ai_partner_types);
     } catch (err) {
       handleError("Failed to fetch collaborations", err);
     } finally {
@@ -320,7 +324,7 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [handleError]);
 
-  // --- AI Functions - Keeping only essential ones ---
+  // --- AI Functions ---
   const generateAISuggestion = useCallback(async (description: string) => {
     try {
       const formData = new FormData();
@@ -339,7 +343,7 @@ const OrganizerPartnership: React.FC = () => {
             
       const data = await response.json();
       setAiSuggestion(data.suggestion);
-      setAiSuggestions([data.suggestion]); // Store the first suggestion
+      setAiSuggestions([data.suggestion]);
       setCurrentSuggestionIndex(0);
             
       // Auto-fill the form with the suggestion
@@ -358,6 +362,60 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [handleError]);
 
+  const generateAlternativeAISuggestion = useCallback(async (description: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('action', 'suggest');
+      formData.append('description', description);
+            
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+            
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+            
+      const data = await response.json();
+            
+      // Add to suggestions array
+      setAiSuggestions(prev => [...prev, data.suggestion]);
+      setCurrentSuggestionIndex(aiSuggestions.length);
+            
+      // Auto-fill the form with the new suggestion
+      setPartnerForm({
+        company_name: data.suggestion.company_name || '',
+        company_description: data.suggestion.company_description || '',
+        logo_url: '',
+        website_url: '',
+        contact_email: '',
+        contact_person: ''
+      });
+    } catch (err) {
+      handleError("Failed to generate alternative AI suggestion", err);
+    }
+  }, [aiSuggestions.length, handleError]);
+
+  const fetchPartnerTypesForEvent = useCallback(async (eventId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/partner-types/${eventId}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+            
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+            
+      const data = await response.json();
+      setPartnerTypesForEvent(data.partner_types);
+    } catch (err) {
+      handleError("Failed to fetch partner types for event", err);
+    }
+  }, [handleError]);
+
   // --- CRUD Operations ---
   const createPartner = useCallback(async () => {
     setIsCreating(true);
@@ -372,7 +430,7 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
-      formData.append('enhance_with_ai', 'false'); // Set to true if you want auto-enhancement
+      formData.append('enhance_with_ai', 'false');
             
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
@@ -869,7 +927,7 @@ const OrganizerPartnership: React.FC = () => {
                                     size="sm"
                                     onClick={() => {
                                       const description = partnerForm.company_description || "A partner for my events";
-                                      generateAISuggestion(description);
+                                      generateAlternativeAISuggestion(description);
                                     }}
                                     className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
                                   >
@@ -1351,7 +1409,7 @@ const OrganizerPartnership: React.FC = () => {
                       Event Collaborations
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
-                      Manage partnerships for specific events
+                      Manage partnerships for specific events with AI suggestions
                     </CardDescription>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -1361,6 +1419,9 @@ const OrganizerPartnership: React.FC = () => {
                         const event = events.find(e => e.id.toString() === value);
                         setSelectedEvent(event || null);
                         setCollabCurrentPage(1);
+                        if (event) {
+                          fetchPartnerTypesForEvent(event.id);
+                        }
                       }}
                     >
                       <SelectTrigger className="w-full sm:w-[220px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
@@ -1376,6 +1437,35 @@ const OrganizerPartnership: React.FC = () => {
                     </Select>
                     {selectedEvent && (
                       <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Get AI suggestions for this event
+                            fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
+                              method: 'POST',
+                              credentials: 'include',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ action: 'suggest' })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                              if (data.suggested_partners || data.new_partner_suggestions) {
+                                setAiRecommendations(data);
+                                toast({
+                                  title: "AI Suggestions",
+                                  description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
+                                  variant: "default",
+                                });
+                              }
+                            })
+                            .catch(err => handleError("Failed to get AI suggestions", err));
+                          }}
+                          className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm p-1 sm:p-2"
+                        >
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">AI Suggest</span>
+                        </Button>
                         <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                           <DialogTrigger asChild>
                             <Button
@@ -1542,61 +1632,92 @@ const OrganizerPartnership: React.FC = () => {
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                       No collaborations found for {selectedEvent.name}
                     </p>
-                    <div className="space-y-4">
-                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-blue-50 border-blue-200">
-                        <CardContent className="p-4">
-                          <div className="space-y-3">
-                            <h3 className="text-sm font-semibold dark:text-gray-200 text-gray-800">
-                              How to Add Collaborations
-                            </h3>
-                            <ol className="text-xs space-y-2 dark:text-gray-300 text-gray-700">
-                              <li className="flex items-start gap-2">
-                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">1</span>
-                                <span>First, contact the company or organization you want to partner with</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">2</span>
-                                <span>Get their approval and agreement for the collaboration</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">3</span>
-                                <span>If they're not already in your partner list, create a partner profile for them</span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">4</span>
-                                <span>Then come back here to add the collaboration to this event</span>
-                              </li>
-                            </ol>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      <div className="flex gap-2 justify-center">
-                        <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
-                          <DialogTrigger asChild>
-                            <Button
-                              onClick={resetPartnerForm}
-                              className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                            >
-                              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                              Create Partner First
-                            </Button>
-                          </DialogTrigger>
-                        </Dialog>
-                        <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
-                          <DialogTrigger asChild>
-                            <Button
-                              onClick={() => {
-                                resetCollaborationForm();
-                                setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
-                              }}
-                              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
-                            >
-                              <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                              Add Collaboration
-                            </Button>
-                          </DialogTrigger>
-                        </Dialog>
-                      </div>
+                    
+                    {/* Guidance Section */}
+                    <Card className="dark:bg-gray-700 dark:border-gray-600 bg-blue-50 border-blue-200 mb-4">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-semibold dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                            <Info className="h-4 w-4 text-blue-500" />
+                            How to Add Collaborations
+                          </h3>
+                          <ol className="text-xs space-y-2 dark:text-gray-300 text-gray-700">
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">1</span>
+                              <span><strong>Contact the company first</strong> - Reach out to potential partners and discuss collaboration opportunities</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">2</span>
+                              <span><strong>Get formal approval</strong> - Ensure you have their agreement before creating the partnership</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">3</span>
+                              <span><strong>Create partner profile</strong> - If they're new, add them to your partners list first</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">4</span>
+                              <span><strong>Add collaboration</strong> - Then come back here to formalize the partnership for this event</span>
+                            </li>
+                          </ol>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Get AI suggestions for this event
+                          fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'suggest' })
+                          })
+                          .then(response => response.json())
+                          .then(data => {
+                            if (data.suggested_partners || data.new_partner_suggestions) {
+                              setAiRecommendations(data);
+                              toast({
+                                title: "AI Suggestions",
+                                description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
+                                variant: "default",
+                              });
+                            }
+                          })
+                          .catch(err => handleError("Failed to get AI suggestions", err));
+                        }}
+                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
+                      >
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        Get AI Partner Suggestions
+                      </Button>
+                      <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={resetPartnerForm}
+                            className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                          >
+                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            Create Partner First
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                      <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={() => {
+                              resetCollaborationForm();
+                              setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
+                            }}
+                            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
+                          >
+                            <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            Add Collaboration
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
                     </div>
                   </div>
                 ) : (
@@ -1630,6 +1751,133 @@ const OrganizerPartnership: React.FC = () => {
                         </div>
                       </div>
                     </div>
+                                        
+                    {/* AI Recommendations for Event */}
+                    {aiRecommendations && (aiRecommendations.suggested_partners || aiRecommendations.new_partner_suggestions) && (
+                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-purple-50 border-purple-200">
+                        <CardHeader className="pb-2 sm:pb-3">
+                          <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
+                            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                            AI Recommended Partners
+                          </CardTitle>
+                          <CardDescription className="dark:text-gray-400 text-gray-600 text-xs">
+                            Based on your event type and industry. Remember to contact these companies first before creating partnerships.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          {/* Existing Partner Suggestions */}
+                          {aiRecommendations.suggested_partners && aiRecommendations.suggested_partners.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">From Your Network</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                {aiRecommendations.suggested_partners.slice(0, 4).map((partner: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
+                                    {partner.logo_url ? (
+                                      <img
+                                        src={partner.logo_url}
+                                        alt={`${partner.company_name} logo`}
+                                        className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
+                                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
+                                        {partner.company_name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {partner.match_reason || 'Good match for this event'}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setCollaborationForm(prev => ({
+                                          ...prev,
+                                          partner_id: partner.id.toString(),
+                                          event_id: selectedEvent.id.toString()
+                                        }));
+                                        setIsCollaborationDialogOpen(true);
+                                      }}
+                                      className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                                                  
+                          {/* New Partner Suggestions */}
+                          {aiRecommendations.new_partner_suggestions && aiRecommendations.new_partner_suggestions.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">New Partner Suggestions</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                {aiRecommendations.new_partner_suggestions.slice(0, 4).map((partner: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-blue-200">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
+                                      <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
+                                        {partner.company_name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {partner.reason || 'Potential partner for this event'}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setPartnerForm({
+                                          company_name: partner.company_name || '',
+                                          company_description: partner.company_description || '',
+                                          logo_url: '',
+                                          website_url: '',
+                                          contact_email: '',
+                                          contact_person: ''
+                                        });
+                                        setIsPartnerDialogOpen(true);
+                                      }}
+                                      className="text-xs dark:text-blue-400 text-blue-600 h-auto p-1"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                                                  
+                          {/* Partner Type Suggestions */}
+                          {partnerTypesForEvent && partnerTypesForEvent.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Recommended Partner Types</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {partnerTypesForEvent.slice(0, 5).map((type: any, index: number) => (
+                                  <div key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                                    {type.type}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Guidance Reminder */}
+                          <div className="mt-4 p-2 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                            <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-center gap-1">
+                              <Info className="h-3 w-3" />
+                              <strong>Remember:</strong> Always contact companies first to discuss partnership opportunities before creating collaborations.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                                         
                     <div className="grid gap-3 sm:gap-4">
                       {collaborations.map((collaboration) => {
