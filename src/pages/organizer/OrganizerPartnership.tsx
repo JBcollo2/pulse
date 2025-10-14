@@ -15,8 +15,7 @@ import {
   Filter, Search, ChevronDown, ExternalLink, Handshake, Star, 
   TrendingUp, Activity, Package, Upload, X, Check, Sparkles, 
   Brain, Lightbulb, BarChart3, Target, Zap, Bot, MessageSquare, 
-  Wand2, Info, HelpCircle, ArrowRight, Copy, ThumbsUp, ThumbsDown,
-  Phone, MessageCircle
+  Wand2, Info, HelpCircle, ArrowRight, Copy, ThumbsUp, ThumbsDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -93,7 +92,7 @@ const OrganizerPartnership: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'partner' | 'collaboration', id: number } | null>(null);
     
-  // AI Feature States
+  // AI Feature States - Removed unnecessary AI states
   const [isAISuggestionDialogOpen, setIsAISuggestionDialogOpen] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
@@ -110,11 +109,10 @@ const OrganizerPartnership: React.FC = () => {
   const [aiTrends, setAiTrends] = useState<any>(null);
   const [aiRecommendations, setAiRecommendations] = useState<any>(null);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
-  const [includeAIInsights, setIncludeAIInsights] = useState(false); // Default to false
+  const [includeAIInsights, setIncludeAIInsights] = useState(false); // Disabled by default
   const [showEmptyDatabaseRecommendations, setShowEmptyDatabaseRecommendations] = useState(false);
   const [emptyDatabaseRecommendations, setEmptyDatabaseRecommendations] = useState<any[]>([]);
   const [partnerTypesForEvent, setPartnerTypesForEvent] = useState<any[]>([]);
-  const [showContactGuidance, setShowContactGuidance] = useState(true); // New state for contact guidance
     
   const [partnerForm, setPartnerForm] = useState({
     company_name: '',
@@ -209,7 +207,7 @@ const OrganizerPartnership: React.FC = () => {
         sort_by: sortBy,
         sort_order: sortOrder,
         include_inactive: includeInactive.toString(),
-        include_ai_insights: includeAIInsights.toString(),
+        include_ai_insights: 'false', // Always false now
       });
       if (searchQuery) {
         params.append('search', searchQuery);
@@ -225,11 +223,6 @@ const OrganizerPartnership: React.FC = () => {
       setTotalPages(data.pagination.pages);
       setTotalItems(data.pagination.total);
             
-      // Store AI insights if available
-      if (data.ai_trends) setAiTrends(data.ai_trends);
-      if (data.ai_recommendations_summary) setAiRecommendations(data.ai_recommendations_summary);
-      if (data.ai_insights) setAiInsights(data.ai_insights);
-            
       // Check for empty database recommendations
       if (data.empty_database_recommendations) {
         setEmptyDatabaseRecommendations(data.empty_database_recommendations);
@@ -240,7 +233,7 @@ const OrganizerPartnership: React.FC = () => {
     } finally {
       setIsLoadingPartners(false);
     }
-  }, [currentPage, sortBy, sortOrder, includeInactive, searchQuery, includeAIInsights, handleError]);
+  }, [currentPage, sortBy, sortOrder, includeInactive, searchQuery, handleError]);
 
   const fetchPartnerDetails = useCallback(async (partnerId: number, page = 1) => {
     setIsLoadingPartnerDetails(true);
@@ -248,7 +241,7 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'true',
+        include_ai_insights: 'false', // Always false now
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}?${params.toString()}`, {
         credentials: 'include'
@@ -259,11 +252,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: PartnerDetailsResponse = await response.json();
       setSelectedPartner(data.partner);
       setPartnerDetailsTotalPages(data.pagination.pages);
-            
-      // Store AI insights if available
-      const extendedPartner = data.partner as ExtendedPartner;
-      if (extendedPartner.ai_performance_analysis) setAiAnalysis(extendedPartner.ai_performance_analysis);
-      if (extendedPartner.ai_insights) setAiInsights(extendedPartner.ai_insights);
     } catch (err) {
       handleError("Failed to fetch partner details", err);
     } finally {
@@ -280,7 +268,7 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'true',
+        include_ai_insights: 'false', // Always false now
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${targetEventId}?${params.toString()}`, {
         credentials: 'include'
@@ -291,10 +279,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: ExtendedCollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
-            
-      // Store AI recommendations if available
-      if (data.ai_recommendations) setAiRecommendations(data.ai_recommendations);
-      if (data.ai_partner_types) setPartnerTypesForEvent(data.ai_partner_types);
     } catch (err) {
       handleError("Failed to fetch collaborations", err);
     } finally {
@@ -336,7 +320,7 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [handleError]);
 
-  // --- AI Functions ---
+  // --- AI Functions - Keeping only essential ones ---
   const generateAISuggestion = useCallback(async (description: string) => {
     try {
       const formData = new FormData();
@@ -371,273 +355,6 @@ const OrganizerPartnership: React.FC = () => {
       setIsAISuggestionDialogOpen(true);
     } catch (err) {
       handleError("Failed to generate AI suggestion", err);
-    }
-  }, [handleError]);
-
-  const generateAlternativeAISuggestion = useCallback(async (description: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('action', 'suggest');
-      formData.append('description', description);
-            
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-            
-      // Add to suggestions array
-      setAiSuggestions(prev => [...prev, data.suggestion]);
-      setCurrentSuggestionIndex(aiSuggestions.length);
-            
-      // Auto-fill the form with the new suggestion
-      setPartnerForm({
-        company_name: data.suggestion.company_name || '',
-        company_description: data.suggestion.company_description || '',
-        logo_url: '',
-        website_url: '',
-        contact_email: '',
-        contact_person: ''
-      });
-    } catch (err) {
-      handleError("Failed to generate alternative AI suggestion", err);
-    }
-  }, [aiSuggestions.length, handleError]);
-
-  const enhanceDescriptionWithAI = useCallback(async (partnerId?: number) => {
-    setIsAIEnhancing(true);
-    try {
-      const targetId = partnerId || editingPartner?.id;
-      if (!targetId) return;
-            
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${targetId}/ai/enhance-description`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'enhance' })
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setEnhancedDescription(data.enhanced_description);
-    } catch (err) {
-      handleError("Failed to enhance description with AI", err);
-    } finally {
-      setIsAIEnhancing(false);
-    }
-  }, [editingPartner, handleError]);
-
-  const saveEnhancedDescription = useCallback(async () => {
-    if (!enhancedDescription || !editingPartner) return;
-        
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}/ai/enhance-description`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'save', 
-          description: enhancedDescription
-        })
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      toast({
-        title: "Success",
-        description: data.message,
-        variant: "default",
-      });
-            
-      setPartnerForm(prev => ({ ...prev, company_description: enhancedDescription }));
-      setEnhancedDescription(null);
-    } catch (err) {
-      handleError("Failed to save enhanced description", err);
-    }
-  }, [enhancedDescription, editingPartner, handleError, toast]);
-
-  const analyzePartnerWithAI = useCallback(async (partnerId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}/ai/analyze`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'analyze' })
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiAnalysis(data.analysis);
-      setIsAIAnalysisDialogOpen(true);
-    } catch (err) {
-      handleError("Failed to analyze partner with AI", err);
-    }
-  }, [handleError]);
-
-  const optimizeCollaborationWithAI = useCallback(async (eventId: number, collaborationId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${eventId}/collaborations/${collaborationId}/ai/optimize`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiOptimization(data.optimization);
-      setIsAIOptimizationDialogOpen(true);
-    } catch (err) {
-      handleError("Failed to optimize collaboration with AI", err);
-    }
-  }, [handleError]);
-
-  const processNaturalQuery = useCallback(async () => {
-    if (!naturalQuery.trim()) return;
-        
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/assist`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: naturalQuery })
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiQueryResult(data);
-      setIsNaturalQueryDialogOpen(false);
-            
-      // Handle specific intents
-      if (data.intent === 'create_partner' && data.params) {
-        setPartnerForm({
-          company_name: data.params.company_name || '',
-          company_description: data.params.company_description || '',
-          logo_url: '',
-          website_url: data.params.website_url || '',
-          contact_email: data.params.contact_email || '',
-          contact_person: data.params.contact_person || ''
-        });
-        setIsPartnerDialogOpen(true);
-      } else if (data.intent === 'find_partners' && data.params) {
-        setSearchQuery(data.params.query || '');
-        setActiveTab('partners');
-      } else if (data.intent === 'suggest_collaborations' && data.params) {
-        if (data.params.event_id) {
-          const event = events.find(e => e.id === data.params.event_id);
-          if (event) {
-            setSelectedEvent(event);
-            setActiveTab('collaborations');
-          }
-        }
-      }
-            
-      toast({
-        title: "AI Assistant",
-        description: "I've processed your request. See the results below.",
-        variant: "default",
-      });
-    } catch (err) {
-      handleError("Failed to process natural query", err);
-    }
-  }, [naturalQuery, events, handleError, toast]);
-
-  const fetchAITrends = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/trends`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiTrends(data.trends);
-    } catch (err) {
-      handleError("Failed to fetch AI trends", err);
-    }
-  }, [handleError]);
-
-  const fetchAIRecommendations = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/recommendations`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiRecommendations(data.summary);
-    } catch (err) {
-      handleError("Failed to fetch AI recommendations", err);
-    }
-  }, [handleError]);
-
-  const fetchAIInsights = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/insights`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setAiInsights(data.insights);
-    } catch (err) {
-      handleError("Failed to fetch AI insights", err);
-    }
-  }, [handleError]);
-
-  const fetchPartnerTypesForEvent = useCallback(async (eventId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/partner-types/${eventId}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-            
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-            
-      const data = await response.json();
-      setPartnerTypesForEvent(data.partner_types);
-    } catch (err) {
-      handleError("Failed to fetch partner types for event", err);
     }
   }, [handleError]);
 
@@ -857,12 +574,7 @@ const OrganizerPartnership: React.FC = () => {
   useEffect(() => {
     fetchPartners();
     fetchEvents();
-    if (includeAIInsights) {
-      fetchAITrends();
-      fetchAIRecommendations();
-      fetchAIInsights();
-    }
-  }, [fetchPartners, fetchEvents, includeAIInsights, fetchAITrends, fetchAIRecommendations, fetchAIInsights]);
+  }, [fetchPartners, fetchEvents]);
 
   useEffect(() => {
     if (activeTab === 'collaborations' && selectedEvent) {
@@ -980,55 +692,6 @@ const OrganizerPartnership: React.FC = () => {
           </div>
         </div>
 
-        {/* Contact Guidance Banner */}
-        {showContactGuidance && (
-          <Card className="dark:bg-blue-900 dark:border-blue-700 bg-blue-50 border-blue-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-blue-200 text-blue-800">
-                  <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                  Important: Contact Companies First
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowContactGuidance(false)}
-                  className="h-6 w-6 p-0 dark:text-blue-300 text-blue-600"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="space-y-3">
-                <p className="text-xs sm:text-sm dark:text-blue-300 text-blue-700">
-                  Before creating a partner profile, please ensure you have:
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                  <div className="flex items-start gap-2 p-2 rounded-lg dark:bg-blue-800 bg-blue-100">
-                    <Phone className="h-4 w-4 mt-0.5 text-blue-500" />
-                    <div>
-                      <p className="text-xs font-medium dark:text-blue-200 text-blue-800">Contact the Company</p>
-                      <p className="text-xs dark:text-blue-300 text-blue-700">Reach out and discuss potential collaboration</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-2 rounded-lg dark:bg-blue-800 bg-blue-100">
-                    <MessageCircle className="h-4 w-4 mt-0.5 text-blue-500" />
-                    <div>
-                      <p className="text-xs font-medium dark:text-blue-200 text-blue-800">Get Approval</p>
-                      <p className="text-xs dark:text-blue-300 text-blue-700">Obtain formal agreement for partnership</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-blue-300 text-blue-700">
-                  <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span>Only create partner profiles for companies you have contacted and received approval from.</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Empty Database Recommendations */}
         {showEmptyDatabaseRecommendations && emptyDatabaseRecommendations.length > 0 && (
           <Card className="dark:bg-gray-800 dark:border-gray-700 bg-blue-50 border-blue-200">
@@ -1104,64 +767,6 @@ const OrganizerPartnership: React.FC = () => {
           </div>
         )}
 
-        {/* AI Query Result Display */}
-        {aiQueryResult && (
-          <Card className="dark:bg-gray-800 dark:border-gray-700 bg-blue-50 border-blue-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                AI Assistant Response
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-xs sm:text-sm dark:text-gray-300 text-gray-700 mb-3">
-                {aiQueryResult.message}
-              </div>
-              {aiQueryResult.next_actions && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium dark:text-gray-400 text-gray-600">Suggested Actions:</h4>
-                  <ul className="text-xs dark:text-gray-300 text-gray-700 space-y-1">
-                    {Object.entries(aiQueryResult.next_actions).map(([key, value]) => (
-                      <li key={key} className="flex items-start gap-1">
-                        <ChevronDown className="h-3 w-3 mt-0.5 text-blue-500" />
-                        <span>{String(value)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex justify-between items-center mt-3">
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (aiQueryResult.intent === 'create_partner') {
-                        setIsPartnerDialogOpen(true);
-                      } else if (aiQueryResult.intent === 'find_partners') {
-                        setActiveTab('partners');
-                      } else if (aiQueryResult.intent === 'suggest_collaborations') {
-                        setActiveTab('collaborations');
-                      }
-                    }}
-                    className="text-xs dark:text-blue-400 text-blue-600"
-                  >
-                    Take Action
-                  </Button>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAiQueryResult(null)}
-                  className="text-xs dark:text-gray-400 text-gray-500"
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1 gap-1">
@@ -1196,6 +801,18 @@ const OrganizerPartnership: React.FC = () => {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        resetPartnerForm();
+                        setIsAISuggestionDialogOpen(true);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
+                    >
+                      <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                      <span className="hidden sm:inline">AI Suggest</span>
+                    </Button>
                     <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                       <DialogTrigger asChild>
                         <Button
@@ -1216,21 +833,6 @@ const OrganizerPartnership: React.FC = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
-                          {/* Contact Reminder */}
-                          <div className="p-3 rounded-lg dark:bg-blue-900 bg-blue-50 border dark:border-blue-700 border-blue-200">
-                            <div className="flex items-start gap-2">
-                              <Info className="h-4 w-4 mt-0.5 text-blue-500" />
-                              <div>
-                                <p className="text-xs font-medium dark:text-blue-200 text-blue-800 mb-1">
-                                  Remember to Contact First
-                                </p>
-                                <p className="text-xs dark:text-blue-300 text-blue-700">
-                                  Ensure you have contacted this company and received approval before creating their profile.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
                           {/* AI Suggestion Indicator */}
                           {aiSuggestion && (
                             <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
@@ -1267,7 +869,7 @@ const OrganizerPartnership: React.FC = () => {
                                     size="sm"
                                     onClick={() => {
                                       const description = partnerForm.company_description || "A partner for my events";
-                                      generateAlternativeAISuggestion(description);
+                                      generateAISuggestion(description);
                                     }}
                                     className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
                                   >
@@ -1325,70 +927,17 @@ const OrganizerPartnership: React.FC = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800 text-sm">
-                                Description
-                              </Label>
-                              {editingPartner && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => enhanceDescriptionWithAI(editingPartner.id)}
-                                  disabled={isAIEnhancing}
-                                  className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                >
-                                  {isAIEnhancing ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                      Enhancing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Sparkles className="h-3 w-3 mr-1" />
-                                      Enhance with AI
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
+                            <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800 text-sm">
+                              Description
+                            </Label>
                             <Textarea
                               id="company_description"
-                              value={enhancedDescription || partnerForm.company_description}
-                              onChange={(e) => {
-                                setPartnerForm(prev => ({ ...prev, company_description: e.target.value }));
-                                if (enhancedDescription) setEnhancedDescription(null);
-                              }}
+                              value={partnerForm.company_description}
+                              onChange={(e) => setPartnerForm(prev => ({ ...prev, company_description: e.target.value }))}
                               className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
                               placeholder="Brief description of the company"
                               rows={3}
                             />
-                            {enhancedDescription && (
-                              <div className="flex items-center gap-2 text-xs dark:text-purple-400 text-purple-600">
-                                <Lightbulb className="h-3 w-3" />
-                                <span>AI-enhanced description</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={saveEnhancedDescription}
-                                  className="text-xs h-auto p-1"
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Save
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEnhancedDescription(null)}
-                                  className="text-xs h-auto p-1"
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Discard
-                                </Button>
-                              </div>
-                            )}
                           </div>
                           {/* Logo Upload Section */}
                           <div className="space-y-2">
@@ -1579,10 +1128,22 @@ const OrganizerPartnership: React.FC = () => {
                 ) : filteredPartners.length === 0 ? (
                   <div className="text-center py-8 sm:py-12">
                     <Building2 className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                       {searchQuery ? 'No partners found matching your search' : 'No partners found'}
                     </p>
                     <div className="flex gap-2 justify-center">
+                      <Button
+                        onClick={() => {
+                          resetPartnerForm();
+                          setIsAISuggestionDialogOpen(true);
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
+                      >
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        AI Suggest Partner
+                      </Button>
                       <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                         <DialogTrigger asChild>
                           <Button
@@ -1724,18 +1285,6 @@ const OrganizerPartnership: React.FC = () => {
                                 variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  analyzePartnerWithAI(partner.id);
-                                }}
-                                className="flex-1 dark:bg-purple-600 dark:text-purple-200 dark:hover:bg-purple-500 bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs sm:text-sm p-1 sm:p-2"
-                              >
-                                <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                <span className="hidden sm:inline">AI</span>
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
                                   handlePartnerEdit(partner);
                                 }}
                                 className="flex-1 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-xs sm:text-sm p-1 sm:p-2"
@@ -1812,9 +1361,6 @@ const OrganizerPartnership: React.FC = () => {
                         const event = events.find(e => e.id.toString() === value);
                         setSelectedEvent(event || null);
                         setCollabCurrentPage(1);
-                        if (event) {
-                          fetchPartnerTypesForEvent(event.id);
-                        }
                       }}
                     >
                       <SelectTrigger className="w-full sm:w-[220px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
@@ -1976,7 +1522,7 @@ const OrganizerPartnership: React.FC = () => {
                 {!selectedEvent ? (
                   <div className="text-center py-8 sm:py-12">
                     <Calendar className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                       Select an event to view and manage collaborations
                     </p>
                     {events.length === 0 && (
@@ -1996,21 +1542,61 @@ const OrganizerPartnership: React.FC = () => {
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                       No collaborations found for {selectedEvent.name}
                     </p>
-                    <div className="flex gap-2 justify-center">
-                      <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
-                        <DialogTrigger asChild>
-                          <Button
-                            onClick={() => {
-                              resetCollaborationForm();
-                              setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
-                            }}
-                            className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                          >
-                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                            Add First Collaboration
-                          </Button>
-                        </DialogTrigger>
-                      </Dialog>
+                    <div className="space-y-4">
+                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-blue-50 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold dark:text-gray-200 text-gray-800">
+                              How to Add Collaborations
+                            </h3>
+                            <ol className="text-xs space-y-2 dark:text-gray-300 text-gray-700">
+                              <li className="flex items-start gap-2">
+                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">1</span>
+                                <span>First, contact the company or organization you want to partner with</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">2</span>
+                                <span>Get their approval and agreement for the collaboration</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">3</span>
+                                <span>If they're not already in your partner list, create a partner profile for them</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">4</span>
+                                <span>Then come back here to add the collaboration to this event</span>
+                              </li>
+                            </ol>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <div className="flex gap-2 justify-center">
+                        <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
+                          <DialogTrigger asChild>
+                            <Button
+                              onClick={resetPartnerForm}
+                              className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                            >
+                              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              Create Partner First
+                            </Button>
+                          </DialogTrigger>
+                        </Dialog>
+                        <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+                          <DialogTrigger asChild>
+                            <Button
+                              onClick={() => {
+                                resetCollaborationForm();
+                                setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
+                              }}
+                              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
+                            >
+                              <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              Add Collaboration
+                            </Button>
+                          </DialogTrigger>
+                        </Dialog>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -2044,132 +1630,6 @@ const OrganizerPartnership: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                                        
-                    {/* AI Recommendations for Event */}
-                    {aiRecommendations && (aiRecommendations.suggested_partners || aiRecommendations.new_partner_suggestions) && (
-                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-purple-50 border-purple-200">
-                        <CardHeader className="pb-2 sm:pb-3">
-                          <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                            AI Recommended Partners
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          {/* Contact Guidance for AI Suggestions */}
-                          <div className="mb-3 p-2 rounded-lg dark:bg-blue-900 bg-blue-50 border dark:border-blue-700 border-blue-200">
-                            <div className="flex items-start gap-2">
-                              <Info className="h-3 w-3 mt-0.5 text-blue-500" />
-                              <p className="text-xs dark:text-blue-300 text-blue-700">
-                                Remember to contact these companies and get approval before creating partnerships.
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Existing Partner Suggestions */}
-                          {aiRecommendations.suggested_partners && aiRecommendations.suggested_partners.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">From Your Network</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                {aiRecommendations.suggested_partners.slice(0, 4).map((partner: any, index: number) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                                    {partner.logo_url ? (
-                                      <img
-                                        src={partner.logo_url}
-                                        alt={`${partner.company_name} logo`}
-                                        className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
-                                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
-                                        {partner.company_name}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {partner.match_reason || 'Good match for this event'}
-                                      </p>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setCollaborationForm(prev => ({
-                                          ...prev,
-                                          partner_id: partner.id.toString(),
-                                          event_id: selectedEvent.id.toString()
-                                        }));
-                                        setIsCollaborationDialogOpen(true);
-                                      }}
-                                      className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                                                  
-                          {/* New Partner Suggestions */}
-                          {aiRecommendations.new_partner_suggestions && aiRecommendations.new_partner_suggestions.length > 0 && (
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">New Partner Suggestions</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                {aiRecommendations.new_partner_suggestions.slice(0, 4).map((partner: any, index: number) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-blue-200">
-                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
-                                      <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
-                                        {partner.company_name}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {partner.reason || 'Potential partner for this event'}
-                                      </p>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setPartnerForm({
-                                          company_name: partner.company_name || '',
-                                          company_description: partner.company_description || '',
-                                          logo_url: '',
-                                          website_url: '',
-                                          contact_email: '',
-                                          contact_person: ''
-                                        });
-                                        setIsPartnerDialogOpen(true);
-                                      }}
-                                      className="text-xs dark:text-blue-400 text-blue-600 h-auto p-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                                                  
-                          {/* Partner Type Suggestions */}
-                          {partnerTypesForEvent && partnerTypesForEvent.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Partner Types for This Event</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {partnerTypesForEvent.slice(0, 5).map((type: any, index: number) => (
-                                  <div key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
-                                    {type.type}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
                                         
                     <div className="grid gap-3 sm:gap-4">
                       {collaborations.map((collaboration) => {
@@ -2272,15 +1732,6 @@ const OrganizerPartnership: React.FC = () => {
                                   </div>
                                 </div>
                                 <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-0 sm:ml-4">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => optimizeCollaborationWithAI(selectedEvent.id, collaboration.id)}
-                                    className="dark:bg-purple-600 dark:text-purple-200 dark:hover:bg-purple-500 bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs sm:text-sm p-1 sm:p-2"
-                                  >
-                                    <Zap className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                                    <span className="hidden sm:inline">AI Optimize</span>
-                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -2456,69 +1907,6 @@ const OrganizerPartnership: React.FC = () => {
                   </Card>
                 </div>
                                 
-                {/* AI Analysis Section */}
-                {aiAnalysis && (
-                  <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4 bg-purple-50 border-purple-200">
-                    <CardHeader className="pb-2 sm:pb-3">
-                      <CardTitle className="flex items-center gap-2 text-xs sm:text-sm dark:text-gray-200 text-gray-800">
-                        <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                        AI Performance Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {aiAnalysis.statistics && (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-purple-500">
-                                {aiAnalysis.statistics.performance_score || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Performance Score</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-blue-500">
-                                {aiAnalysis.statistics.engagement_rate || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Engagement Rate</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-green-500">
-                                {aiAnalysis.statistics.roi || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">ROI</p>
-                            </div>
-                          </div>
-                        )}
-                        {aiAnalysis.insights && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">AI Insights</p>
-                            <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.insights}</p>
-                          </div>
-                        )}
-                        {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Recommendations</p>
-                            <ul className="text-xs sm:text-sm dark:text-gray-300 text-gray-700 space-y-1">
-                              {aiAnalysis.recommendations.map((rec: string, index: number) => (
-                                <li key={index} className="flex items-start gap-1">
-                                  <Target className="h-3 w-3 mt-0.5 text-purple-500" />
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {aiAnalysis.industry_insights && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Industry Insights</p>
-                            <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.industry_insights}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                                
                 <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
                   <CardHeader className="pb-2 sm:pb-3">
                     <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Collaboration History</CardTitle>
@@ -2626,28 +2014,16 @@ const OrganizerPartnership: React.FC = () => {
                 Close
               </Button>
               {selectedPartner && (
-                <>
-                  <Button
-                    onClick={() => {
-                      setIsPartnerDetailsDialogOpen(false);
-                      analyzePartnerWithAI(selectedPartner.id);
-                    }}
-                    className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                  >
-                    <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    AI Analysis
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsPartnerDetailsDialogOpen(false);
-                      handlePartnerEdit(selectedPartner);
-                    }}
-                    className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                  >
-                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    Edit Partner
-                  </Button>
-                </>
+                <Button
+                  onClick={() => {
+                    setIsPartnerDetailsDialogOpen(false);
+                    handlePartnerEdit(selectedPartner);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                >
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Edit Partner
+                </Button>
               )}
             </DialogFooter>
           </DialogContent>
@@ -2800,229 +2176,6 @@ const OrganizerPartnership: React.FC = () => {
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
               >
                 {aiSuggestion ? 'Use Suggestion' : 'Generate Suggestion'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* AI Analysis Dialog */}
-        <Dialog open={isAIAnalysisDialogOpen} onOpenChange={setIsAIAnalysisDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Partner Analysis
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Comprehensive AI analysis of partner performance and recommendations
-              </DialogDescription>
-            </DialogHeader>
-            {aiAnalysis && (
-              <div className="space-y-4">
-                {aiAnalysis.statistics && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-purple-500">
-                        {aiAnalysis.statistics.performance_score || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Performance Score</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-blue-500">
-                        {aiAnalysis.statistics.engagement_rate || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Engagement Rate</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-green-500">
-                        {aiAnalysis.statistics.roi || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">ROI</p>
-                    </div>
-                  </div>
-                )}
-                {aiAnalysis.insights && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">AI Insights</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.insights}</p>
-                  </div>
-                )}
-                {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-blue-50 border dark:border-gray-600 border-blue-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Recommendations</h4>
-                    <ul className="text-sm dark:text-gray-300 text-gray-700 space-y-2">
-                      {aiAnalysis.recommendations.map((rec: string, index: number) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Target className="h-4 w-4 mt-0.5 text-blue-500" />
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {aiAnalysis.industry_insights && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-green-50 border dark:border-gray-600 border-green-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Industry Insights</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.industry_insights}</p>
-                  </div>
-                )}
-              </div>
-            )}
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsAIAnalysisDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Close
-              </Button>
-              {selectedPartner && (
-                <Button
-                  onClick={() => {
-                    setIsAIAnalysisDialogOpen(false);
-                    handlePartnerEdit(selectedPartner);
-                  }}
-                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                >
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Edit Partner
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* AI Optimization Dialog */}
-        <Dialog open={isAIOptimizationDialogOpen} onOpenChange={setIsAIOptimizationDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Collaboration Optimization
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                AI-powered suggestions to optimize this collaboration
-              </DialogDescription>
-            </DialogHeader>
-            {aiOptimization && (
-              <div className="space-y-4">
-                <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                  <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Assessment</h4>
-                  <p className="text-sm dark:text-gray-300 text-gray-700">{aiOptimization.overall_assessment}</p>
-                </div>
-                {aiOptimization.optimizations && aiOptimization.optimizations.length > 0 && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-blue-50 border dark:border-gray-600 border-blue-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Optimization Suggestions</h4>
-                    <ul className="text-sm dark:text-gray-300 text-gray-700 space-y-2">
-                      {aiOptimization.optimizations.map((opt: any, index: number) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Lightbulb className="h-4 w-4 mt-0.5 text-blue-500" />
-                          <div>
-                            <p className="font-medium">{opt.area}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{opt.suggestion}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {aiOptimization.expected_impact && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-green-50 border dark:border-gray-600 border-green-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Expected Impact</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiOptimization.expected_impact}</p>
-                  </div>
-                )}
-              </div>
-            )}
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsAIOptimizationDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Close
-              </Button>
-              {editingCollaboration && (
-                <Button
-                  onClick={() => {
-                    // Apply optimization suggestions
-                    if (aiOptimization && aiOptimization.optimizations) {
-                      const descriptionOpt = aiOptimization.optimizations.find((opt: any) => opt.area === 'Description');
-                      if (descriptionOpt) {
-                        setCollaborationForm(prev => ({ ...prev, description: descriptionOpt.suggestion }));
-                      }
-                    }
-                    setIsAIOptimizationDialogOpen(false);
-                  }}
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
-                >
-                  <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Apply Suggestions
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Natural Language Query Dialog */}
-        <Dialog open={isNaturalQueryDialogOpen} onOpenChange={setIsNaturalQueryDialogOpen}>
-          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Assistant
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Ask me anything about your partners and collaborations in natural language
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="naturalQuery" className="dark:text-gray-200 text-gray-800 text-sm">
-                  Your Query
-                </Label>
-                <Textarea
-                  id="naturalQuery"
-                  placeholder="e.g., Find tech partners for my upcoming conference, or Analyze the performance of Partner X"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                  rows={4}
-                  value={naturalQuery}
-                  onChange={(e) => setNaturalQuery(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Example queries:</p>
-                <div className="space-y-1">
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Find tech partners for my upcoming conference")}>
-                    • Find tech partners for my upcoming conference
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Analyze the performance of Partner X")}>
-                    • Analyze the performance of Partner X
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Suggest collaboration types for event Y")}>
-                    • Suggest collaboration types for event Y
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Create a new partner profile for a marketing agency")}>
-                    • Create a new partner profile for a marketing agency
-                  </div>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsNaturalQueryDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={processNaturalQuery}
-                disabled={!naturalQuery.trim()}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
-              >
-                <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                Process Query
               </Button>
             </DialogFooter>
           </DialogContent>
