@@ -24,17 +24,12 @@ import {
   SORT_OPTIONS, ALLOWED_FILE_TYPES, MAX_FILE_SIZE, EventsResponse
 } from "@/lib/types";
 
-// Extended types to include AI properties
 interface ExtendedPartnersResponse extends PartnersResponse {
-  ai_trends?: any;
-  ai_recommendations_summary?: any;
-  ai_insights?: any;
-  empty_database_recommendations?: any[]; // Added missing property
+  empty_database_recommendations?: any[];
 }
 
 interface ExtendedPartner extends Partner {
   ai_performance_analysis?: any;
-  ai_insights?: any;
 }
 
 interface ExtendedCollaborationsResponse extends CollaborationsResponse {
@@ -52,13 +47,6 @@ interface AISuggestion {
   ai_generated: boolean;
 }
 
-interface AIInsight {
-  title: string;
-  description: string;
-  actionable: boolean;
-  priority: 'high' | 'medium' | 'low';
-}
-
 const OrganizerPartnership: React.FC = () => {
   // --- State Variables ---
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -72,7 +60,6 @@ const OrganizerPartnership: React.FC = () => {
   const [sortBy, setSortBy] = useState('company_name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
-  const [includeInactive, setIncludeInactive] = useState(false);
   const [activeTab, setActiveTab] = useState('partners');
   const [collabCurrentPage, setCollabCurrentPage] = useState(1);
   const [collabTotalPages, setCollabTotalPages] = useState(1);
@@ -91,32 +78,9 @@ const OrganizerPartnership: React.FC = () => {
   const [isPartnerDetailsDialogOpen, setIsPartnerDetailsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'partner' | 'collaboration', id: number } | null>(null);
-  
-  // AI Feature States
-  const [isAISuggestionDialogOpen, setIsAISuggestionDialogOpen] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
-  const [currentSuggestionIndex, setCurrentSuggestionIndex] = useState(0);
-  const [isAIEnhancing, setIsAIEnhancing] = useState(false);
-  const [enhancedDescription, setEnhancedDescription] = useState<string | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
-  const [isAIAnalysisDialogOpen, setIsAIAnalysisDialogOpen] = useState(false);
-  const [aiOptimization, setAiOptimization] = useState<any>(null);
-  const [isAIOptimizationDialogOpen, setIsAIOptimizationDialogOpen] = useState(false);
-  const [naturalQuery, setNaturalQuery] = useState('');
-  const [isNaturalQueryDialogOpen, setIsNaturalQueryDialogOpen] = useState(false);
-  const [aiQueryResult, setAiQueryResult] = useState<any>(null);
-  const [aiTrends, setAiTrends] = useState<any>(null);
-  const [aiRecommendations, setAiRecommendations] = useState<any>(null);
-  const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
-  const [includeAIInsights, setIncludeAIInsights] = useState(true);
-  const [isCoPilotVisible, setIsCoPilotVisible] = useState(true);
-  const [coPilotMessage, setCoPilotMessage] = useState('');
-  const [coPilotSuggestions, setCoPilotSuggestions] = useState<string[]>([]);
   const [showEmptyDatabaseRecommendations, setShowEmptyDatabaseRecommendations] = useState(false);
   const [emptyDatabaseRecommendations, setEmptyDatabaseRecommendations] = useState<any[]>([]);
-  const [partnerTypesForEvent, setPartnerTypesForEvent] = useState<any[]>([]);
-  
+
   const [partnerForm, setPartnerForm] = useState({
     company_name: '',
     company_description: '',
@@ -125,6 +89,7 @@ const OrganizerPartnership: React.FC = () => {
     contact_email: '',
     contact_person: ''
   });
+
   const [collaborationForm, setCollaborationForm] = useState({
     partner_id: '',
     event_id: '',
@@ -133,6 +98,7 @@ const OrganizerPartnership: React.FC = () => {
     display_order: 0,
     show_on_event_page: true
   });
+
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [editingCollaboration, setEditingCollaboration] = useState<Collaboration | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -162,10 +128,6 @@ const OrganizerPartnership: React.FC = () => {
     setEditingPartner(null);
     setSelectedFile(null);
     setFilePreview(null);
-    setEnhancedDescription(null);
-    setAiSuggestion(null);
-    setAiSuggestions([]);
-    setCurrentSuggestionIndex(0);
   }, []);
 
   const resetCollaborationForm = useCallback(() => {
@@ -209,8 +171,6 @@ const OrganizerPartnership: React.FC = () => {
         per_page: '10',
         sort_by: sortBy,
         sort_order: sortOrder,
-        include_inactive: includeInactive.toString(),
-        include_ai_insights: includeAIInsights.toString(),
       });
       if (searchQuery) {
         params.append('search', searchQuery);
@@ -225,40 +185,17 @@ const OrganizerPartnership: React.FC = () => {
       setPartners(data.partners);
       setTotalPages(data.pagination.pages);
       setTotalItems(data.pagination.total);
-      
-      // Store AI insights if available
-      if (data.ai_trends) setAiTrends(data.ai_trends);
-      if (data.ai_recommendations_summary) setAiRecommendations(data.ai_recommendations_summary);
-      if (data.ai_insights) setAiInsights(data.ai_insights);
-      
-      // Check for empty database recommendations
+
       if (data.empty_database_recommendations) {
         setEmptyDatabaseRecommendations(data.empty_database_recommendations);
         setShowEmptyDatabaseRecommendations(true);
-      }
-      
-      // Update co-pilot with contextual message
-      if (data.partners.length === 0) {
-        setCoPilotMessage("I see you don't have any partners yet. Would you like me to suggest some based on your events?");
-        setCoPilotSuggestions([
-          "Suggest partners for my events",
-          "Create a partner from scratch",
-          "Learn about partnership best practices"
-        ]);
-      } else if (data.ai_trends) {
-        setCoPilotMessage(`I've analyzed your partnership trends. ${data.ai_trends.insights || 'Here are some insights to help you optimize your partnerships.'}`);
-        setCoPilotSuggestions([
-          "View detailed trends analysis",
-          "Get partnership recommendations",
-          "Ask me about best practices"
-        ]);
       }
     } catch (err) {
       handleError("Failed to fetch partners", err);
     } finally {
       setIsLoadingPartners(false);
     }
-  }, [currentPage, sortBy, sortOrder, includeInactive, searchQuery, includeAIInsights, handleError]);
+  }, [currentPage, sortBy, sortOrder, searchQuery, handleError]);
 
   const fetchPartnerDetails = useCallback(async (partnerId: number, page = 1) => {
     setIsLoadingPartnerDetails(true);
@@ -266,7 +203,6 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'true',
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}?${params.toString()}`, {
         credentials: 'include'
@@ -277,11 +213,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: PartnerDetailsResponse = await response.json();
       setSelectedPartner(data.partner);
       setPartnerDetailsTotalPages(data.pagination.pages);
-      
-      // Store AI insights if available
-      const extendedPartner = data.partner as ExtendedPartner;
-      if (extendedPartner.ai_performance_analysis) setAiAnalysis(extendedPartner.ai_performance_analysis);
-      if (extendedPartner.ai_insights) setAiInsights(extendedPartner.ai_insights);
     } catch (err) {
       handleError("Failed to fetch partner details", err);
     } finally {
@@ -298,7 +229,6 @@ const OrganizerPartnership: React.FC = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         per_page: '10',
-        include_ai_insights: 'true',
       });
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${targetEventId}?${params.toString()}`, {
         credentials: 'include'
@@ -309,27 +239,6 @@ const OrganizerPartnership: React.FC = () => {
       const data: ExtendedCollaborationsResponse = await response.json();
       setCollaborations(data.collaborations);
       setCollabTotalPages(data.pagination.pages);
-      
-      // Store AI recommendations if available
-      if (data.ai_recommendations) setAiRecommendations(data.ai_recommendations);
-      if (data.ai_partner_types) setPartnerTypesForEvent(data.ai_partner_types);
-      
-      // Update co-pilot with contextual message
-      if (data.collaborations.length === 0) {
-        setCoPilotMessage(`I don't see any collaborations for this event yet. Would you like me to suggest some potential partners?`);
-        setCoPilotSuggestions([
-          "Suggest partners for this event",
-          "Create a new partner",
-          "Learn about collaboration types"
-        ]);
-      } else if (data.ai_recommendations) {
-        setCoPilotMessage(`I've found ${data.ai_recommendations.suggested_partners?.length || 0} potential partners for this event.`);
-        setCoPilotSuggestions([
-          "Review suggested partners",
-          "Optimize existing collaborations",
-          "Ask me about partnership strategies"
-        ]);
-      }
     } catch (err) {
       handleError("Failed to fetch collaborations", err);
     } finally {
@@ -371,445 +280,6 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [handleError]);
 
-  // --- AI Functions ---
-  const generateAISuggestion = useCallback(async (description: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('action', 'suggest');
-      formData.append('description', description);
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiSuggestion(data.suggestion);
-      setAiSuggestions([data.suggestion]); // Store the first suggestion
-      setCurrentSuggestionIndex(0);
-      
-      // Auto-fill the form with the suggestion
-      setPartnerForm({
-        company_name: data.suggestion.company_name || '',
-        company_description: data.suggestion.company_description || '',
-        logo_url: '',
-        website_url: '',
-        contact_email: '',
-        contact_person: ''
-      });
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've created a partner suggestion based on your description. You can edit it or ask for alternatives.");
-      setCoPilotSuggestions([
-        "Generate another suggestion",
-        "Refine this suggestion",
-        "Learn about partnership best practices"
-      ]);
-      
-      setIsAISuggestionDialogOpen(true);
-    } catch (err) {
-      handleError("Failed to generate AI suggestion", err);
-    }
-  }, [handleError]);
-
-  const generateAlternativeAISuggestion = useCallback(async (description: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('action', 'suggest');
-      formData.append('description', description);
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Add to suggestions array
-      setAiSuggestions(prev => [...prev, data.suggestion]);
-      setCurrentSuggestionIndex(aiSuggestions.length);
-      
-      // Auto-fill the form with the new suggestion
-      setPartnerForm({
-        company_name: data.suggestion.company_name || '',
-        company_description: data.suggestion.company_description || '',
-        logo_url: '',
-        website_url: '',
-        contact_email: '',
-        contact_person: ''
-      });
-      
-      // Update co-pilot message
-      setCoPilotMessage("Here's an alternative suggestion. Each one offers different benefits and collaboration approaches.");
-      setCoPilotSuggestions([
-        "Generate another suggestion",
-        "Use this suggestion",
-        "Compare with previous suggestions"
-      ]);
-    } catch (err) {
-      handleError("Failed to generate alternative AI suggestion", err);
-    }
-  }, [aiSuggestions.length, handleError]);
-
-  const enhanceDescriptionWithAI = useCallback(async (partnerId?: number) => {
-    setIsAIEnhancing(true);
-    try {
-      const targetId = partnerId || editingPartner?.id;
-      if (!targetId) return;
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${targetId}/ai/enhance-description`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'enhance' })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setEnhancedDescription(data.enhanced_description);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've enhanced the partner description to be more compelling and highlight key value propositions.");
-      setCoPilotSuggestions([
-        "Save this enhanced description",
-        "Generate another enhancement",
-        "Learn about effective partner descriptions"
-      ]);
-    } catch (err) {
-      handleError("Failed to enhance description with AI", err);
-    } finally {
-      setIsAIEnhancing(false);
-    }
-  }, [editingPartner, handleError]);
-
-  const saveEnhancedDescription = useCallback(async () => {
-    if (!enhancedDescription || !editingPartner) return;
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}/ai/enhance-description`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          action: 'save',
-          description: enhancedDescription
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      toast({
-        title: "Success",
-        description: data.message,
-        variant: "default",
-      });
-      
-      setPartnerForm(prev => ({ ...prev, company_description: enhancedDescription }));
-      setEnhancedDescription(null);
-      
-      // Update co-pilot message
-      setCoPilotMessage("Great! I've saved the enhanced description. This will help attract better collaborations.");
-      setCoPilotSuggestions([
-        "Analyze this partner's performance",
-        "Find similar partners",
-        "Suggest collaboration opportunities"
-      ]);
-    } catch (err) {
-      handleError("Failed to save enhanced description", err);
-    }
-  }, [enhancedDescription, editingPartner, handleError, toast]);
-
-  const analyzePartnerWithAI = useCallback(async (partnerId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${partnerId}/ai/analyze`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'analyze' })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiAnalysis(data.analysis);
-      setIsAIAnalysisDialogOpen(true);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've completed a comprehensive analysis of this partner's performance. The insights include both database metrics and industry benchmarks.");
-      setCoPilotSuggestions([
-        "Optimize this partnership",
-        "Find similar high-performing partners",
-        "Learn about partnership strategies"
-      ]);
-    } catch (err) {
-      handleError("Failed to analyze partner with AI", err);
-    }
-  }, [handleError]);
-
-  const optimizeCollaborationWithAI = useCallback(async (eventId: number, collaborationId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${eventId}/collaborations/${collaborationId}/ai/optimize`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiOptimization(data.optimization);
-      setIsAIOptimizationDialogOpen(true);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've analyzed this collaboration and identified optimization opportunities based on both your data and industry best practices.");
-      setCoPilotSuggestions([
-        "Apply these optimizations",
-        "Learn about effective collaborations",
-        "Analyze other partnerships"
-      ]);
-    } catch (err) {
-      handleError("Failed to optimize collaboration with AI", err);
-    }
-  }, [handleError]);
-
-  const processNaturalQuery = useCallback(async () => {
-    if (!naturalQuery.trim()) return;
-    
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/assist`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: naturalQuery })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiQueryResult(data);
-      setIsNaturalQueryDialogOpen(false);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've processed your request. Here's what I found based on both your data and industry knowledge.");
-      setCoPilotSuggestions([
-        "Ask another question",
-        "Take action on these insights",
-        "Learn more about partnerships"
-      ]);
-      
-      // Handle specific intents
-      if (data.intent === 'create_partner' && data.params) {
-        setPartnerForm({
-          company_name: data.params.company_name || '',
-          company_description: data.params.company_description || '',
-          logo_url: '',
-          website_url: data.params.website_url || '',
-          contact_email: data.params.contact_email || '',
-          contact_person: data.params.contact_person || ''
-        });
-        setIsPartnerDialogOpen(true);
-      } else if (data.intent === 'find_partners' && data.params) {
-        setSearchQuery(data.params.query || '');
-        setActiveTab('partners');
-      } else if (data.intent === 'suggest_collaborations' && data.params) {
-        if (data.params.event_id) {
-          const event = events.find(e => e.id === data.params.event_id);
-          if (event) {
-            setSelectedEvent(event);
-            setActiveTab('collaborations');
-          }
-        }
-      }
-      
-      toast({
-        title: "AI Assistant",
-        description: "I've processed your request. See the results below.",
-        variant: "default",
-      });
-    } catch (err) {
-      handleError("Failed to process natural query", err);
-    }
-  }, [naturalQuery, events, handleError, toast]);
-
-  const fetchAITrends = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/trends`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiTrends(data.trends);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've analyzed your partnership trends and compared them with industry benchmarks. Here are some insights to help you grow.");
-      setCoPilotSuggestions([
-        "View detailed trends analysis",
-        "Get partnership recommendations",
-        "Learn about industry best practices"
-      ]);
-    } catch (err) {
-      handleError("Failed to fetch AI trends", err);
-    }
-  }, [handleError]);
-
-  const fetchAIRecommendations = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/recommendations`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiRecommendations(data.summary);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've identified some partnership opportunities based on your events and industry trends. These recommendations consider both your historical data and broader market insights.");
-      setCoPilotSuggestions([
-        "Review these recommendations",
-        "Ask for specific partner suggestions",
-        "Learn about partnership strategies"
-      ]);
-    } catch (err) {
-      handleError("Failed to fetch AI recommendations", err);
-    }
-  }, [handleError]);
-
-  const fetchAIInsights = useCallback(async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/insights`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAiInsights(data.insights);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've gathered some insights about partnerships in your industry. These can help you make more informed decisions.");
-      setCoPilotSuggestions([
-        "Ask me about specific insights",
-        "Get partnership recommendations",
-        "Learn about best practices"
-      ]);
-    } catch (err) {
-      handleError("Failed to fetch AI insights", err);
-    }
-  }, [handleError]);
-
-  const fetchPartnerTypesForEvent = useCallback(async (eventId: number) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/ai/partner-types/${eventId}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setPartnerTypesForEvent(data.partner_types);
-      
-      // Update co-pilot message
-      setCoPilotMessage("Based on your event characteristics, I've identified the most valuable partner types to consider. These recommendations are based on industry best practices and event type analysis.");
-      setCoPilotSuggestions([
-        "Create a partner from these types",
-        "Learn more about these partner types",
-        "Get specific partner suggestions"
-      ]);
-    } catch (err) {
-      handleError("Failed to fetch partner types for event", err);
-    }
-  }, [handleError]);
-
-  const handleCoPilotSuggestion = useCallback((suggestion: string) => {
-    if (suggestion.includes("Suggest partners")) {
-      if (selectedEvent) {
-        fetchCollaborations(selectedEvent.id);
-      } else {
-        setIsAISuggestionDialogOpen(true);
-      }
-    } else if (suggestion.includes("Create a partner")) {
-      resetPartnerForm();
-      setIsPartnerDialogOpen(true);
-    } else if (suggestion.includes("best practices")) {
-      setCoPilotMessage("Partnership best practices include: 1) Clear communication of expectations, 2) Regular performance reviews, 3) Mutual benefit alignment, 4) Long-term relationship building. Would you like more specific advice?");
-      setCoPilotSuggestions([
-        "Tell me about tech partnerships",
-        "How to measure partnership success",
-        "Partnership agreement essentials"
-      ]);
-    } else if (suggestion.includes("Generate another suggestion")) {
-      const description = partnerForm.company_description || "A partner for my events";
-      generateAlternativeAISuggestion(description);
-    } else if (suggestion.includes("Refine this suggestion")) {
-      setIsAISuggestionDialogOpen(true);
-    } else if (suggestion.includes("trends analysis")) {
-      fetchAITrends();
-    } else if (suggestion.includes("recommendations")) {
-      fetchAIRecommendations();
-    } else if (suggestion.includes("insights")) {
-      fetchAIInsights();
-    } else if (suggestion.includes("Analyze this partner")) {
-      if (selectedPartner) {
-        analyzePartnerWithAI(selectedPartner.id);
-      }
-    } else if (suggestion.includes("Optimize this partnership")) {
-      if (selectedPartner && selectedEvent) {
-        const collaboration = collaborations.find(c => 
-          c.partner_id === selectedPartner.id && c.event_id === selectedEvent.id
-        );
-        if (collaboration) {
-          optimizeCollaborationWithAI(selectedEvent.id, collaboration.id);
-        }
-      }
-    }
-  }, [selectedEvent, resetPartnerForm, partnerForm.company_description, selectedPartner, collaborations, 
-     generateAlternativeAISuggestion, fetchAITrends, fetchAIRecommendations, fetchAIInsights, 
-     analyzePartnerWithAI, optimizeCollaborationWithAI, fetchCollaborations]);
-
   // --- CRUD Operations ---
   const createPartner = useCallback(async () => {
     setIsCreating(true);
@@ -824,8 +294,7 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
-      formData.append('enhance_with_ai', 'false'); // Set to true if you want auto-enhancement
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners`, {
         method: 'POST',
         credentials: 'include',
@@ -844,14 +313,6 @@ const OrganizerPartnership: React.FC = () => {
       resetPartnerForm();
       setIsPartnerDialogOpen(false);
       fetchPartners();
-      
-      // Update co-pilot message
-      setCoPilotMessage("Great! I've created the partner. Now you can add collaborations to your events or ask me to analyze their performance.");
-      setCoPilotSuggestions([
-        "Add a collaboration",
-        "Analyze this partner",
-        "Find similar partners"
-      ]);
     } catch (err) {
       handleError("Failed to create partner", err);
     } finally {
@@ -865,7 +326,7 @@ const OrganizerPartnership: React.FC = () => {
     try {
       let body: any;
       let headers: any = {};
-      
+
       if (selectedFile) {
         body = new FormData();
         body.append('action', 'update');
@@ -882,7 +343,7 @@ const OrganizerPartnership: React.FC = () => {
           ...partnerForm
         });
       }
-      
+
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners/${editingPartner.id}`, {
         method: 'PUT',
         headers,
@@ -905,14 +366,6 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedPartner && selectedPartner.id === editingPartner.id) {
         fetchPartnerDetails(editingPartner.id, partnerDetailsPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've updated the partner information. The changes will be reflected in all their collaborations.");
-      setCoPilotSuggestions([
-        "Analyze this partner's performance",
-        "Add a collaboration",
-        "Find similar partners"
-      ]);
     } catch (err) {
       handleError("Failed to update partner", err);
     } finally {
@@ -951,14 +404,6 @@ const OrganizerPartnership: React.FC = () => {
       if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've added the collaboration to your event. Would you like me to suggest ways to optimize this partnership?");
-      setCoPilotSuggestions([
-        "Optimize this collaboration",
-        "Add another collaboration",
-        "Analyze partnership performance"
-      ]);
     } catch (err) {
       handleError("Failed to create collaboration", err);
     } finally {
@@ -995,14 +440,6 @@ const OrganizerPartnership: React.FC = () => {
       resetCollaborationForm();
       setIsCollaborationDialogOpen(false);
       fetchCollaborations(selectedEvent.id, collabCurrentPage);
-      
-      // Update co-pilot message
-      setCoPilotMessage("I've updated the collaboration details. Based on industry best practices, this type of collaboration typically performs well when...");
-      setCoPilotSuggestions([
-        "Optimize this collaboration",
-        "Analyze partnership performance",
-        "Learn about collaboration strategies"
-      ]);
     } catch (err) {
       handleError("Failed to update collaboration", err);
     } finally {
@@ -1047,14 +484,6 @@ const OrganizerPartnership: React.FC = () => {
       } else if (selectedEvent) {
         fetchCollaborations(selectedEvent.id, collabCurrentPage);
       }
-      
-      // Update co-pilot message
-      setCoPilotMessage(`I've ${itemToDelete.type === 'partner' ? 'deactivated the partner' : 'removed the collaboration'}. If you'd like, I can help you find replacement options.`);
-      setCoPilotSuggestions([
-        "Find replacement partners",
-        "Analyze impact of this change",
-        "Learn about partnership management"
-      ]);
     } catch (err) {
       handleError(`Failed to delete ${itemToDelete.type}`, err);
     } finally {
@@ -1066,20 +495,7 @@ const OrganizerPartnership: React.FC = () => {
   useEffect(() => {
     fetchPartners();
     fetchEvents();
-    if (includeAIInsights) {
-      fetchAITrends();
-      fetchAIRecommendations();
-      fetchAIInsights();
-    }
-    
-    // Initial co-pilot message
-    setCoPilotMessage("Hello! I'm your partnership co-pilot. I can help you find, create, and optimize partnerships using both your data and industry insights. How can I assist you today?");
-    setCoPilotSuggestions([
-      "Suggest partners for my events",
-      "Create a new partner profile",
-      "Analyze partnership performance"
-    ]);
-  }, [fetchPartners, fetchEvents, includeAIInsights, fetchAITrends, fetchAIRecommendations, fetchAIInsights]);
+  }, [fetchPartners, fetchEvents]);
 
   useEffect(() => {
     if (activeTab === 'collaborations' && selectedEvent) {
@@ -1101,14 +517,6 @@ const OrganizerPartnership: React.FC = () => {
     setSelectedFile(null);
     setFilePreview(null);
     setIsPartnerDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage(`I'm opening the editor for ${partner.company_name}. Would you like me to suggest any improvements to their profile?`);
-    setCoPilotSuggestions([
-      "Enhance the description",
-      "Analyze this partner's performance",
-      "Find similar partners"
-    ]);
   }, []);
 
   const handleCollaborationEdit = useCallback((collaboration: Collaboration) => {
@@ -1122,14 +530,6 @@ const OrganizerPartnership: React.FC = () => {
       show_on_event_page: collaboration.show_on_event_page
     });
     setIsCollaborationDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage("I'm opening the collaboration editor. Based on industry best practices, this type of collaboration could be optimized by...");
-    setCoPilotSuggestions([
-      "Optimize this collaboration",
-      "Analyze partnership performance",
-      "Learn about collaboration strategies"
-    ]);
   }, []);
 
   const handleDeleteConfirm = useCallback((type: 'partner' | 'collaboration', id: number) => {
@@ -1157,14 +557,6 @@ const OrganizerPartnership: React.FC = () => {
     setPartnerDetailsPage(1);
     fetchPartnerDetails(partner.id, 1);
     setIsPartnerDetailsDialogOpen(true);
-    
-    // Update co-pilot message
-    setCoPilotMessage(`I'm loading detailed information about ${partner.company_name}. I'll include both your collaboration history and industry insights.`);
-    setCoPilotSuggestions([
-      "Analyze this partner's performance",
-      "Find similar partners",
-      "Suggest collaboration opportunities"
-    ]);
   }, [fetchPartnerDetails]);
 
   const handlePartnerDialogClose = useCallback((open: boolean) => {
@@ -1183,8 +575,8 @@ const OrganizerPartnership: React.FC = () => {
 
   // --- Memoized Values ---
   const filteredPartners = useMemo(() => {
-    return partners.filter(partner => includeInactive || partner.is_active);
-  }, [partners, includeInactive]);
+    return partners;
+  }, [partners]);
 
   const paginationInfo = useMemo(() => {
     return {
@@ -1196,90 +588,6 @@ const OrganizerPartnership: React.FC = () => {
   // --- Component Render ---
   return (
     <div className={cn("min-h-screen p-2 sm:p-4 md:p-6 lg:p-8 dark:bg-gray-900 dark:text-gray-200 bg-gray-50 text-gray-800 relative")}>
-      {/* Co-pilot Assistant */}
-      <div className={cn(
-        "fixed bottom-4 right-4 z-50 transition-all duration-300",
-        isCoPilotVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-      )}>
-        <Card className="w-80 shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm dark:text-gray-200 text-gray-800">
-                <Bot className="h-4 w-4 text-purple-500" />
-                Partnership Co-pilot
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsCoPilotVisible(false)}
-                className="h-6 w-6 p-0 dark:text-gray-400 text-gray-600"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-3">
-              <p className="text-xs dark:text-gray-300 text-gray-700">{coPilotMessage}</p>
-              {coPilotSuggestions.length > 0 && (
-                <div className="space-y-1">
-                  {coPilotSuggestions.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCoPilotSuggestion(suggestion)}
-                      className="w-full justify-start text-xs dark:text-purple-400 text-purple-600 h-auto p-2"
-                    >
-                      <ArrowRight className="h-3 w-3 mr-1" />
-                      {suggestion}
-                    </Button>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-2 pt-2 border-t dark:border-gray-600 border-gray-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsNaturalQueryDialogOpen(true)}
-                  className="flex-1 text-xs dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <MessageSquare className="h-3 w-3 mr-1" />
-                  Ask
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCoPilotMessage("What would you like to know about partnerships? I can provide insights based on both your data and industry knowledge.");
-                    setCoPilotSuggestions([
-                      "How to measure partnership success",
-                      "Best practices for partner onboarding",
-                      "Types of partnerships for events",
-                      "How to find the right partners"
-                    ]);
-                  }}
-                  className="flex-1 text-xs dark:bg-gray-700 dark:text-gray-200"
-                >
-                  <HelpCircle className="h-3 w-3 mr-1" />
-                  Learn
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Co-pilot Toggle Button */}
-      {!isCoPilotVisible && (
-        <Button
-          onClick={() => setIsCoPilotVisible(true)}
-          className="fixed bottom-4 right-4 z-40 rounded-full h-12 w-12 shadow-lg dark:bg-purple-700 dark:text-purple-200 bg-purple-500 text-white"
-        >
-          <Bot className="h-5 w-5" />
-        </Button>
-      )}
-
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
@@ -1288,19 +596,10 @@ const OrganizerPartnership: React.FC = () => {
               Partnership Management
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-              Manage your partners and event collaborations with AI assistance
+              Manage your partners and event collaborations
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={() => setIsNaturalQueryDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-            >
-              <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">AI Assistant</span>
-            </Button>
             <Button
               onClick={fetchPartners}
               variant="outline"
@@ -1313,65 +612,6 @@ const OrganizerPartnership: React.FC = () => {
             </Button>
           </div>
         </div>
-
-        {/* AI Insights Banner */}
-        {includeAIInsights && (aiTrends || aiRecommendations || aiInsights.length > 0) && (
-          <Card className="dark:bg-gray-800 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Insights
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {aiTrends && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Partnership Trends</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiTrends.insights || "Analyzing your partnership patterns..."}
-                    </div>
-                  </div>
-                )}
-                {aiRecommendations && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Recommendations</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiRecommendations.summary || "Generating personalized recommendations..."}
-                    </div>
-                  </div>
-                )}
-                {aiInsights.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-xs sm:text-sm font-medium dark:text-gray-300 text-gray-700">Industry Insights</h4>
-                    <div className="text-xs sm:text-sm dark:text-gray-400 text-gray-600">
-                      {aiInsights[0]?.description || "Gathering industry insights..."}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-between items-center mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIncludeAIInsights(false)}
-                  className="text-xs dark:text-gray-400 text-gray-500"
-                >
-                  Hide Insights
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={fetchAIInsights}
-                  className="text-xs dark:text-purple-400 text-purple-600"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Refresh Insights
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Empty Database Recommendations */}
         {showEmptyDatabaseRecommendations && emptyDatabaseRecommendations.length > 0 && (
@@ -1448,64 +688,6 @@ const OrganizerPartnership: React.FC = () => {
           </div>
         )}
 
-        {/* AI Query Result Display */}
-        {aiQueryResult && (
-          <Card className="dark:bg-gray-800 dark:border-gray-700 bg-blue-50 border-blue-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
-                AI Assistant Response
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-xs sm:text-sm dark:text-gray-300 text-gray-700 mb-3">
-                {aiQueryResult.message}
-              </div>
-              {aiQueryResult.next_actions && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-medium dark:text-gray-400 text-gray-600">Suggested Actions:</h4>
-                  <ul className="text-xs dark:text-gray-300 text-gray-700 space-y-1">
-                    {Object.entries(aiQueryResult.next_actions).map(([key, value]) => (
-                      <li key={key} className="flex items-start gap-1">
-                        <ChevronDown className="h-3 w-3 mt-0.5 text-blue-500" />
-                        <span>{String(value)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex justify-between items-center mt-3">
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (aiQueryResult.intent === 'create_partner') {
-                        setIsPartnerDialogOpen(true);
-                      } else if (aiQueryResult.intent === 'find_partners') {
-                        setActiveTab('partners');
-                      } else if (aiQueryResult.intent === 'suggest_collaborations') {
-                        setActiveTab('collaborations');
-                      }
-                    }}
-                    className="text-xs dark:text-blue-400 text-blue-600"
-                  >
-                    Take Action
-                  </Button>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAiQueryResult(null)}
-                  className="text-xs dark:text-gray-400 text-gray-500"
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700 dark:border-gray-600 bg-gray-200 border-gray-300 rounded-lg p-1 gap-1">
@@ -1536,332 +718,24 @@ const OrganizerPartnership: React.FC = () => {
                       Partner Companies
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
-                      Manage your partner companies and their details with AI assistance
+                      Manage your partner companies and their details
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        resetPartnerForm();
-                        setIsAISuggestionDialogOpen(true);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                    >
-                      <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">AI Suggest</span>
-                    </Button>
                     <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                       <DialogTrigger asChild>
                         <Button
                           onClick={resetPartnerForm}
-                          className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white text-xs sm:text-sm"
+                          className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
                         >
                           <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                           Add Partner
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-                        <DialogHeader>
-                          <DialogTitle className="dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                            {editingPartner ? 'Edit Partner' : 'Add New Partner'}
-                          </DialogTitle>
-                          <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                            {editingPartner ? 'Update partner information' : 'Add a new partner company to your network'}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          {/* AI Suggestion Indicator */}
-                          {aiSuggestion && (
-                            <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <Sparkles className="h-4 w-4 text-purple-500" />
-                                  <span className="text-sm font-medium dark:text-gray-200 text-gray-800">AI Suggestion Applied</span>
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      if (currentSuggestionIndex > 0) {
-                                        setCurrentSuggestionIndex(currentSuggestionIndex - 1);
-                                        const prevSuggestion = aiSuggestions[currentSuggestionIndex - 1];
-                                        setPartnerForm({
-                                          company_name: prevSuggestion.company_name || '',
-                                          company_description: prevSuggestion.company_description || '',
-                                          logo_url: '',
-                                          website_url: '',
-                                          contact_email: '',
-                                          contact_person: ''
-                                        });
-                                      }
-                                    }}
-                                    disabled={currentSuggestionIndex === 0}
-                                    className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                  >
-                                    <ChevronDown className="h-3 w-3 rotate-90" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      const description = partnerForm.company_description || "A partner for my events";
-                                      generateAlternativeAISuggestion(description);
-                                    }}
-                                    className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                  >
-                                    <RefreshCw className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
-                                      setAiSuggestion(null);
-                                      setAiSuggestions([]);
-                                      setCurrentSuggestionIndex(0);
-                                    }}
-                                    className="text-xs dark:text-gray-400 text-gray-600 h-auto p-1"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </div>
-                              <div className="text-xs dark:text-gray-300 text-gray-700">
-                                Suggestion {currentSuggestionIndex + 1} of {aiSuggestions.length}
-                              </div>
-                              {aiSuggestion.potential_benefits && (
-                                <div className="mt-2">
-                                  <p className="text-xs font-medium dark:text-gray-400 text-gray-600 mb-1">Potential Benefits:</p>
-                                  <p className="text-xs dark:text-gray-300 text-gray-700">{aiSuggestion.potential_benefits}</p>
-                                </div>
-                              )}
-                              {aiSuggestion.engagement_strategies && aiSuggestion.engagement_strategies.length > 0 && (
-                                <div className="mt-2">
-                                  <p className="text-xs font-medium dark:text-gray-400 text-gray-600 mb-1">Engagement Strategies:</p>
-                                  <ul className="text-xs dark:text-gray-300 text-gray-700 space-y-1">
-                                    {aiSuggestion.engagement_strategies.map((strategy, index) => (
-                                      <li key={index} className="flex items-start gap-1">
-                                        <ArrowRight className="h-2 w-2 mt-0.5 text-purple-500" />
-                                        <span>{strategy}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          <div className="space-y-2">
-                            <Label htmlFor="company_name" className="dark:text-gray-200 text-gray-800 text-sm">
-                              Company Name *
-                            </Label>
-                            <Input
-                              id="company_name"
-                              value={partnerForm.company_name}
-                              onChange={(e) => setPartnerForm(prev => ({ ...prev, company_name: e.target.value }))}
-                              className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                              placeholder="Enter company name"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800 text-sm">
-                                Description
-                              </Label>
-                              {editingPartner && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => enhanceDescriptionWithAI(editingPartner.id)}
-                                  disabled={isAIEnhancing}
-                                  className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                >
-                                  {isAIEnhancing ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                      Enhancing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Sparkles className="h-3 w-3 mr-1" />
-                                      Enhance with AI
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                            <Textarea
-                              id="company_description"
-                              value={enhancedDescription || partnerForm.company_description}
-                              onChange={(e) => {
-                                setPartnerForm(prev => ({ ...prev, company_description: e.target.value }));
-                                if (enhancedDescription) setEnhancedDescription(null);
-                              }}
-                              className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                              placeholder="Brief description of the company"
-                              rows={3}
-                            />
-                            {enhancedDescription && (
-                              <div className="flex items-center gap-2 text-xs dark:text-purple-400 text-purple-600">
-                                <Lightbulb className="h-3 w-3" />
-                                <span>AI-enhanced description</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={saveEnhancedDescription}
-                                  className="text-xs h-auto p-1"
-                                >
-                                  <Check className="h-3 w-3 mr-1" />
-                                  Save
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEnhancedDescription(null)}
-                                  className="text-xs h-auto p-1"
-                                >
-                                  <X className="h-3 w-3 mr-1" />
-                                  Discard
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          {/* Logo Upload Section */}
-                          <div className="space-y-2">
-                            <Label className="dark:text-gray-200 text-gray-800 text-sm">
-                              Company Logo
-                            </Label>
-                            <div className="space-y-3 sm:space-y-4">
-                              <div className="flex items-center gap-2 sm:gap-4">
-                                <div className="flex-1">
-                                  <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileSelect}
-                                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                                  />
-                                </div>
-                                {selectedFile && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedFile(null);
-                                      setFilePreview(null);
-                                    }}
-                                    className="dark:bg-gray-700 dark:text-gray-200 p-1 sm:p-2"
-                                  >
-                                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              {/* Preview */}
-                              {filePreview && (
-                                <div className="flex items-center gap-2 sm:gap-4">
-                                  <div className="w-12 h-12 sm:w-16 sm:h-16 border rounded-lg overflow-hidden dark:border-gray-600">
-                                    <img
-                                      src={filePreview}
-                                      alt="New logo preview"
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                                    New logo selected
-                                  </div>
-                                </div>
-                              )}
-                              {/* Current logo preview for editing */}
-                              {editingPartner?.logo_url && !filePreview && (
-                                <div className="flex items-center gap-2 sm:gap-4">
-                                  <div className="w-12 h-12 sm:w-16 sm:h-16 border rounded-lg overflow-hidden dark:border-gray-600">
-                                    <img
-                                      src={editingPartner.logo_url}
-                                      alt="Current logo"
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                                    Current logo
-                                  </div>
-                                </div>
-                              )}
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Supported formats: PNG, JPG, JPEG, GIF, WEBP (Max 5MB)
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="contact_person" className="dark:text-gray-200 text-gray-800 text-sm">
-                                Contact Person
-                              </Label>
-                              <Input
-                                id="contact_person"
-                                value={partnerForm.contact_person}
-                                onChange={(e) => setPartnerForm(prev => ({ ...prev, contact_person: e.target.value }))}
-                                className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                                placeholder="Contact person name"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="contact_email" className="dark:text-gray-200 text-gray-800 text-sm">
-                                Contact Email
-                              </Label>
-                              <Input
-                                id="contact_email"
-                                type="email"
-                                value={partnerForm.contact_email}
-                                onChange={(e) => setPartnerForm(prev => ({ ...prev, contact_email: e.target.value }))}
-                                className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                                placeholder="contact@company.com"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="website_url" className="dark:text-gray-200 text-gray-800 text-sm">
-                              Website URL
-                            </Label>
-                            <Input
-                              id="website_url"
-                              value={partnerForm.website_url}
-                              onChange={(e) => setPartnerForm(prev => ({ ...prev, website_url: e.target.value }))}
-                              className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                              placeholder="https://company.com"
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter className="pt-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              resetPartnerForm();
-                              setIsPartnerDialogOpen(false);
-                            }}
-                            className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={editingPartner ? updatePartner : createPartner}
-                            disabled={isCreating || isUpdating || !partnerForm.company_name}
-                            className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                          >
-                            {(isCreating || isUpdating) && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
-                            {editingPartner ? 'Update' : 'Create'}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
                     </Dialog>
                   </div>
                 </div>
+
                 {/* Filters and Search */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-3 sm:pt-4">
                   <div className="flex-1 relative">
@@ -1896,36 +770,8 @@ const OrganizerPartnership: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="includeInactive"
-                    checked={includeInactive}
-                    onCheckedChange={checked => setIncludeInactive(checked === true)}
-                    className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-[#10b981] data-[state=checked]:border-[#10b981]"
-                  />
-                  <Label
-                    htmlFor="includeInactive"
-                    className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none"
-                  >
-                    Include inactive partners
-                  </Label>
-                  <div className="flex items-center space-x-2 ml-auto">
-                    <Checkbox
-                      id="includeAIInsights"
-                      checked={includeAIInsights}
-                      onCheckedChange={checked => setIncludeAIInsights(checked === true)}
-                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
-                    />
-                    <Label
-                      htmlFor="includeAIInsights"
-                      className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none flex items-center gap-1"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      AI Insights
-                    </Label>
-                  </div>
-                </div>
               </CardHeader>
+
               <CardContent className="p-3 sm:p-6">
                 {isLoadingPartners ? (
                   <div className="flex items-center justify-center h-32 sm:h-48">
@@ -1939,18 +785,6 @@ const OrganizerPartnership: React.FC = () => {
                       {searchQuery ? 'No partners found matching your search' : 'No partners found'}
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button
-                        onClick={() => {
-                          resetPartnerForm();
-                          setIsAISuggestionDialogOpen(true);
-                        }}
-                        variant="outline"
-                        size="sm"
-                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                      >
-                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        AI Suggest Partner
-                      </Button>
                       <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
                         <DialogTrigger asChild>
                           <Button
@@ -2092,18 +926,6 @@ const OrganizerPartnership: React.FC = () => {
                                 variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  analyzePartnerWithAI(partner.id);
-                                }}
-                                className="flex-1 dark:bg-purple-600 dark:text-purple-200 dark:hover:bg-purple-500 bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs sm:text-sm p-1 sm:p-2"
-                              >
-                                <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                <span className="hidden sm:inline">AI</span>
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
                                   handlePartnerEdit(partner);
                                 }}
                                 className="flex-1 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-xs sm:text-sm p-1 sm:p-2"
@@ -2170,7 +992,7 @@ const OrganizerPartnership: React.FC = () => {
                       Event Collaborations
                     </CardTitle>
                     <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
-                      Manage partnerships for specific events with AI optimization
+                      Manage partnerships for specific events
                     </CardDescription>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
@@ -2180,9 +1002,6 @@ const OrganizerPartnership: React.FC = () => {
                         const event = events.find(e => e.id.toString() === value);
                         setSelectedEvent(event || null);
                         setCollabCurrentPage(1);
-                        if (event) {
-                          fetchPartnerTypesForEvent(event.id);
-                        }
                       }}
                     >
                       <SelectTrigger className="w-full sm:w-[220px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
@@ -2197,186 +1016,25 @@ const OrganizerPartnership: React.FC = () => {
                       </SelectContent>
                     </Select>
                     {selectedEvent && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            // Get AI suggestions for this event
-                            fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
-                              method: 'POST',
-                              credentials: 'include',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ action: 'suggest' })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                              if (data.suggested_partners || data.new_partner_suggestions) {
-                                setAiRecommendations(data);
-                                toast({
-                                  title: "AI Suggestions",
-                                  description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
-                                  variant: "default",
-                                });
-                                
-                                // Update co-pilot message
-                                setCoPilotMessage(`I've found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}. These include both existing partners in your network and new partner suggestions based on industry insights.`);
-                                setCoPilotSuggestions([
-                                  "Review suggested partners",
-                                  "Create a new partner from scratch",
-                                  "Learn about partnership strategies"
-                                ]);
-                              }
-                            })
-                            .catch(err => handleError("Failed to get AI suggestions", err));
-                          }}
-                          className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm p-1 sm:p-2"
-                        >
-                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                          <span className="hidden sm:inline">AI Suggest</span>
-                        </Button>
-                        <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
-                          <DialogTrigger asChild>
-                            <Button
-                              onClick={() => {
-                                resetCollaborationForm();
-                                setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
-                              }}
-                              className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white text-xs sm:text-sm p-1 sm:p-2"
-                            >
-                              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                              Add Collaboration
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-                            <DialogHeader>
-                              <DialogTitle className="dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                                {editingCollaboration ? 'Edit Collaboration' : 'Add Event Collaboration'}
-                              </DialogTitle>
-                              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                                {editingCollaboration
-                                  ? `Update collaboration for ${selectedEvent.name}`
-                                  : `Add a partner collaboration to ${selectedEvent.name}`}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-3 sm:space-y-4">
-                              {!editingCollaboration && (
-                                <div className="space-y-2">
-                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Partner *</Label>
-                                  <Select
-                                    value={collaborationForm.partner_id}
-                                    onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, partner_id: value }))}
-                                  >
-                                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
-                                      <SelectValue placeholder="Select a partner" />
-                                    </SelectTrigger>
-                                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                                      {partners.filter(p => p.is_active).map((partner) => (
-                                        <SelectItem key={partner.id} value={partner.id.toString()} className="text-xs sm:text-sm">
-                                          <div className="flex items-center gap-1 sm:gap-2">
-                                            {partner.logo_url ? (
-                                              <img
-                                                src={partner.logo_url}
-                                                alt={`${partner.company_name} logo`}
-                                                className="w-3 h-3 sm:w-4 sm:h-4 rounded object-cover"
-                                              />
-                                            ) : (
-                                              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-                                            )}
-                                            {partner.company_name}
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-                              <div className="space-y-2">
-                                <Label className="dark:text-gray-200 text-gray-800 text-sm">Collaboration Type *</Label>
-                                <Select
-                                  value={collaborationForm.collaboration_type}
-                                  onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, collaboration_type: value }))}
-                                >
-                                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                                    {COLLABORATION_TYPES.map((type) => (
-                                      <SelectItem key={type.value} value={type.value} className="text-xs sm:text-sm">
-                                        <div className="flex items-center gap-1 sm:gap-2">
-                                          <type.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", type.color)} />
-                                          {type.label}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="dark:text-gray-200 text-gray-800 text-sm">Description</Label>
-                                <Textarea
-                                  value={collaborationForm.description}
-                                  onChange={(e) => setCollaborationForm(prev => ({ ...prev, description: e.target.value }))}
-                                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
-                                  placeholder="Describe the collaboration..."
-                                  rows={3}
-                                />
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                <div className="space-y-2">
-                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Display Order</Label>
-                                  <Input
-                                    type="number"
-                                    value={collaborationForm.display_order}
-                                    onChange={(e) => setCollaborationForm(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
-                                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
-                                    min="0"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Visibility</Label>
-                                  <div className="flex items-center space-x-1 sm:space-x-2 pt-1 sm:pt-2">
-                                    <Checkbox
-                                      checked={collaborationForm.show_on_event_page}
-                                      onCheckedChange={(checked) => setCollaborationForm(prev => ({ ...prev, show_on_event_page: Boolean(checked) }))}
-                                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4"
-                                    />
-                                    <Label className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">
-                                      Show on event page
-                                    </Label>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            <DialogFooter className="pt-3 sm:pt-4">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                  resetCollaborationForm();
-                                  setIsCollaborationDialogOpen(false);
-                                }}
-                                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                type="button"
-                                onClick={editingCollaboration ? updateCollaboration : createCollaboration}
-                                disabled={isCreating || isUpdating || (!editingCollaboration && !collaborationForm.partner_id)}
-                                className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                              >
-                                {(isCreating || isUpdating) && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
-                                {editingCollaboration ? 'Update' : 'Add'} Collaboration
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </>
+                      <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={() => {
+                              resetCollaborationForm();
+                              setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
+                            }}
+                            className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                          >
+                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            Add Collaboration
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
                     )}
                   </div>
                 </div>
               </CardHeader>
+
               <CardContent className="p-3 sm:p-6">
                 {!selectedEvent ? (
                   <div className="text-center py-8 sm:py-12">
@@ -2402,35 +1060,6 @@ const OrganizerPartnership: React.FC = () => {
                       No collaborations found for {selectedEvent.name}
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          // Get AI suggestions for this event
-                          fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'suggest' })
-                          })
-                          .then(response => response.json())
-                          .then(data => {
-                            if (data.suggested_partners || data.new_partner_suggestions) {
-                              setAiRecommendations(data);
-                              toast({
-                                title: "AI Suggestions",
-                                description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
-                                variant: "default",
-                              });
-                            }
-                          })
-                          .catch(err => handleError("Failed to get AI suggestions", err));
-                        }}
-                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                      >
-                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                        AI Suggest Partners
-                      </Button>
                       <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
                         <DialogTrigger asChild>
                           <Button
@@ -2478,123 +1107,22 @@ const OrganizerPartnership: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* AI Recommendations for Event */}
-                    {aiRecommendations && (aiRecommendations.suggested_partners || aiRecommendations.new_partner_suggestions) && (
-                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-purple-50 border-purple-200">
-                        <CardHeader className="pb-2 sm:pb-3">
-                          <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
-                            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                            AI Recommended Partners
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          {/* Existing Partner Suggestions */}
-                          {aiRecommendations.suggested_partners && aiRecommendations.suggested_partners.length > 0 && (
-                            <div className="mb-4">
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">From Your Network</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                {aiRecommendations.suggested_partners.slice(0, 4).map((partner: any, index: number) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                                    {partner.logo_url ? (
-                                      <img
-                                        src={partner.logo_url}
-                                        alt={`${partner.company_name} logo`}
-                                        className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
-                                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                      </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
-                                        {partner.company_name}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {partner.match_reason || 'Good match for this event'}
-                                      </p>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setCollaborationForm(prev => ({
-                                          ...prev,
-                                          partner_id: partner.id.toString(),
-                                          event_id: selectedEvent.id.toString()
-                                        }));
-                                        setIsCollaborationDialogOpen(true);
-                                      }}
-                                      className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* New Partner Suggestions */}
-                          {aiRecommendations.new_partner_suggestions && aiRecommendations.new_partner_suggestions.length > 0 && (
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">New Partner Suggestions</h4>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                                {aiRecommendations.new_partner_suggestions.slice(0, 4).map((partner: any, index: number) => (
-                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-blue-200">
-                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
-                                      <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
-                                        {partner.company_name}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {partner.reason || 'Potential partner for this event'}
-                                      </p>
-                                    </div>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setPartnerForm({
-                                          company_name: partner.company_name || '',
-                                          company_description: partner.company_description || '',
-                                          logo_url: '',
-                                          website_url: '',
-                                          contact_email: '',
-                                          contact_person: ''
-                                        });
-                                        setIsPartnerDialogOpen(true);
-                                      }}
-                                      className="text-xs dark:text-blue-400 text-blue-600 h-auto p-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Partner Type Suggestions */}
-                          {partnerTypesForEvent && partnerTypesForEvent.length > 0 && (
-                            <div className="mt-4">
-                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Partner Types for This Event</h4>
-                              <div className="flex flex-wrap gap-2">
-                                {partnerTypesForEvent.slice(0, 5).map((type: any, index: number) => (
-                                  <div key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
-                                    {type.type}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-                    
+
+                    {/* Guidance for Collaboration */}
+                    <Card className="dark:bg-gray-700 dark:border-gray-600 bg-blue-50 border-blue-200">
+                      <CardHeader className="pb-2 sm:pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
+                          <Info className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                          Collaboration Guidance
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">
+                          Before creating a collaboration, please ensure you have contacted the company or organization for approval and have established a partnership agreement.
+                        </p>
+                      </CardContent>
+                    </Card>
+
                     <div className="grid gap-3 sm:gap-4">
                       {collaborations.map((collaboration) => {
                         const partner = partners.find(p => p.id === collaboration.partner_id);
@@ -2699,28 +1227,19 @@ const OrganizerPartnership: React.FC = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => optimizeCollaborationWithAI(selectedEvent.id, collaboration.id)}
-                                    className="dark:bg-purple-600 dark:text-purple-200 dark:hover:bg-purple-500 bg-purple-50 text-purple-600 hover:bg-purple-100 text-xs sm:text-sm p-1 sm:p-2"
-                                  >
-                                    <Zap className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                                    <span className="hidden sm:inline">AI Optimize</span>
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
                                     onClick={() => handleCollaborationEdit(collaboration)}
-                                    className="dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-xs sm:text-sm p-1 sm:p-2"
+                                    className="flex-1 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-xs sm:text-sm p-1 sm:p-2"
                                   >
-                                    <Edit className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                     <span className="hidden sm:inline">Edit</span>
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => handleDeleteConfirm('collaboration', collaboration.id)}
-                                    className="dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 bg-red-50 text-red-600 hover:bg-red-100 text-xs sm:text-sm p-1 sm:p-2"
+                                    className="flex-1 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 bg-red-50 text-red-600 hover:bg-red-100 text-xs sm:text-sm p-1 sm:p-2"
                                   >
-                                    <Trash2 className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                     <span className="hidden sm:inline">Delete</span>
                                   </Button>
                                 </div>
@@ -2879,70 +1398,7 @@ const OrganizerPartnership: React.FC = () => {
                     </CardContent>
                   </Card>
                 </div>
-                
-                {/* AI Analysis Section */}
-                {aiAnalysis && (
-                  <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4 bg-purple-50 border-purple-200">
-                    <CardHeader className="pb-2 sm:pb-3">
-                      <CardTitle className="flex items-center gap-2 text-xs sm:text-sm dark:text-gray-200 text-gray-800">
-                        <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                        AI Performance Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {aiAnalysis.statistics && (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-purple-500">
-                                {aiAnalysis.statistics.performance_score || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Performance Score</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-blue-500">
-                                {aiAnalysis.statistics.engagement_rate || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">Engagement Rate</p>
-                            </div>
-                            <div className="text-center p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
-                              <p className="text-lg sm:text-xl font-bold text-green-500">
-                                {aiAnalysis.statistics.roi || 'N/A'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">ROI</p>
-                            </div>
-                          </div>
-                        )}
-                        {aiAnalysis.insights && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">AI Insights</p>
-                            <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.insights}</p>
-                          </div>
-                        )}
-                        {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Recommendations</p>
-                            <ul className="text-xs sm:text-sm dark:text-gray-300 text-gray-700 space-y-1">
-                              {aiAnalysis.recommendations.map((rec: string, index: number) => (
-                                <li key={index} className="flex items-start gap-1">
-                                  <Target className="h-3 w-3 mt-0.5 text-purple-500" />
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {aiAnalysis.industry_insights && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Industry Insights</p>
-                            <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.industry_insights}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-                
+
                 <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
                   <CardHeader className="pb-2 sm:pb-3">
                     <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Collaboration History</CardTitle>
@@ -3050,28 +1506,16 @@ const OrganizerPartnership: React.FC = () => {
                 Close
               </Button>
               {selectedPartner && (
-                <>
-                  <Button
-                    onClick={() => {
-                      setIsPartnerDetailsDialogOpen(false);
-                      analyzePartnerWithAI(selectedPartner.id);
-                    }}
-                    className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
-                  >
-                    <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    AI Analysis
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsPartnerDetailsDialogOpen(false);
-                      handlePartnerEdit(selectedPartner);
-                    }}
-                    className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                  >
-                    <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    Edit Partner
-                  </Button>
-                </>
+                <Button
+                  onClick={() => {
+                    setIsPartnerDetailsDialogOpen(false);
+                    handlePartnerEdit(selectedPartner);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                >
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Edit Partner
+                </Button>
               )}
             </DialogFooter>
           </DialogContent>
@@ -3114,339 +1558,292 @@ const OrganizerPartnership: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* AI Suggestion Dialog */}
-        <Dialog open={isAISuggestionDialogOpen} onOpenChange={setIsAISuggestionDialogOpen}>
-          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
+        {/* Partner Dialog */}
+        <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Partner Suggestion
+              <DialogTitle className="dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                {editingPartner ? 'Edit Partner' : 'Add New Partner'}
               </DialogTitle>
               <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Describe the type of partner you're looking for, and AI will suggest a partner profile
+                {editingPartner ? 'Update partner information' : 'Add a new partner company to your network'}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="partnerDescription" className="dark:text-gray-200 text-gray-800 text-sm">
-                  Partner Description
+                <Label htmlFor="company_name" className="dark:text-gray-200 text-gray-800 text-sm">
+                  Company Name *
                 </Label>
-                <Textarea
-                  id="partnerDescription"
-                  placeholder="e.g., A tech company specializing in event management software with experience in large conferences"
+                <Input
+                  id="company_name"
+                  value={partnerForm.company_name}
+                  onChange={(e) => setPartnerForm(prev => ({ ...prev, company_name: e.target.value }))}
                   className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                  rows={4}
-                  onChange={(e) => {
-                    const description = e.target.value;
-                    if (description.length > 10) {
-                      generateAISuggestion(description);
-                    }
-                  }}
+                  placeholder="Enter company name"
                 />
               </div>
-              {aiSuggestion && (
-                <div className="space-y-3 p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                  <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800">AI Suggestion</h4>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Company Name</p>
-                      <p className="text-sm dark:text-gray-300 text-gray-700">{aiSuggestion.company_name}</p>
+              <div className="space-y-2">
+                <Label htmlFor="company_description" className="dark:text-gray-200 text-gray-800 text-sm">
+                  Description
+                </Label>
+                <Textarea
+                  id="company_description"
+                  value={partnerForm.company_description}
+                  onChange={(e) => setPartnerForm(prev => ({ ...prev, company_description: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
+                  placeholder="Brief description of the company"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="dark:text-gray-200 text-gray-800 text-sm">
+                  Company Logo
+                </Label>
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Description</p>
-                      <p className="text-sm dark:text-gray-300 text-gray-700">{aiSuggestion.company_description}</p>
-                    </div>
-                    {aiSuggestion.suggested_collaboration_types && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Suggested Collaboration Types</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {aiSuggestion.suggested_collaboration_types.map((type: string, index: number) => {
-                            const collabType = COLLABORATION_TYPES.find(t => t.value === type);
-                            return (
-                              <div key={index} className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-600 rounded-full">
-                                {collabType && <collabType.icon className={cn("h-3 w-3", collabType.color)} />}
-                                <span className="text-xs font-medium dark:text-gray-200 text-gray-700">
-                                  {collabType?.label || type}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    {aiSuggestion.potential_benefits && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Potential Benefits</p>
-                        <p className="text-sm dark:text-gray-300 text-gray-700">{aiSuggestion.potential_benefits}</p>
-                      </div>
-                    )}
-                    {aiSuggestion.engagement_strategies && aiSuggestion.engagement_strategies.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Engagement Strategies</p>
-                        <ul className="text-sm dark:text-gray-300 text-gray-700 space-y-1">
-                          {aiSuggestion.engagement_strategies.map((strategy, index) => (
-                            <li key={index} className="flex items-start gap-1">
-                              <ArrowRight className="h-2 w-2 mt-0.5 text-purple-500" />
-                              <span>{strategy}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    {selectedFile && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setFilePreview(null);
+                        }}
+                        className="dark:bg-gray-700 dark:text-gray-200 p-1 sm:p-2"
+                      >
+                        <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
                     )}
                   </div>
+                  {filePreview && (
+                    <div className="flex items-center gap-2 sm:gap-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 border rounded-lg overflow-hidden dark:border-gray-600">
+                        <img
+                          src={filePreview}
+                          alt="New logo preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        New logo selected
+                      </div>
+                    </div>
+                  )}
+                  {editingPartner?.logo_url && !filePreview && (
+                    <div className="flex items-center gap-2 sm:gap-4">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 border rounded-lg overflow-hidden dark:border-gray-600">
+                        <img
+                          src={editingPartner.logo_url}
+                          alt="Current logo"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                        Current logo
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Supported formats: PNG, JPG, JPEG, GIF, WEBP (Max 5MB)
+                  </div>
                 </div>
-              )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contact_person" className="dark:text-gray-200 text-gray-800 text-sm">
+                    Contact Person
+                  </Label>
+                  <Input
+                    id="contact_person"
+                    value={partnerForm.contact_person}
+                    onChange={(e) => setPartnerForm(prev => ({ ...prev, contact_person: e.target.value }))}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
+                    placeholder="Contact person name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact_email" className="dark:text-gray-200 text-gray-800 text-sm">
+                    Contact Email
+                  </Label>
+                  <Input
+                    id="contact_email"
+                    type="email"
+                    value={partnerForm.contact_email}
+                    onChange={(e) => setPartnerForm(prev => ({ ...prev, contact_email: e.target.value }))}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
+                    placeholder="contact@company.com"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website_url" className="dark:text-gray-200 text-gray-800 text-sm">
+                  Website URL
+                </Label>
+                <Input
+                  id="website_url"
+                  value={partnerForm.website_url}
+                  onChange={(e) => setPartnerForm(prev => ({ ...prev, website_url: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
+                  placeholder="https://company.com"
+                />
+              </div>
             </div>
             <DialogFooter className="pt-4">
               <Button
+                type="button"
                 variant="outline"
-                onClick={() => setIsAISuggestionDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Cancel
-              </Button>
-              <Button
                 onClick={() => {
-                  if (aiSuggestion) {
-                    setPartnerForm({
-                      company_name: aiSuggestion.company_name || '',
-                      company_description: aiSuggestion.company_description || '',
-                      logo_url: '',
-                      website_url: '',
-                      contact_email: '',
-                      contact_person: ''
-                    });
-                    setIsAISuggestionDialogOpen(false);
-                    setIsPartnerDialogOpen(true);
-                  }
+                  resetPartnerForm();
+                  setIsPartnerDialogOpen(false);
                 }}
-                disabled={!aiSuggestion}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
-              >
-                {aiSuggestion ? 'Use Suggestion' : 'Generate Suggestion'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* AI Analysis Dialog */}
-        <Dialog open={isAIAnalysisDialogOpen} onOpenChange={setIsAIAnalysisDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Partner Analysis
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Comprehensive AI analysis of partner performance and recommendations
-              </DialogDescription>
-            </DialogHeader>
-            {aiAnalysis && (
-              <div className="space-y-4">
-                {aiAnalysis.statistics && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-purple-500">
-                        {aiAnalysis.statistics.performance_score || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Performance Score</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-blue-500">
-                        {aiAnalysis.statistics.engagement_rate || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Engagement Rate</p>
-                    </div>
-                    <div className="text-center p-3 rounded-lg dark:bg-gray-700 bg-white border dark:border-gray-600 border-purple-200">
-                      <p className="text-xl sm:text-2xl font-bold text-green-500">
-                        {aiAnalysis.statistics.roi || 'N/A'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">ROI</p>
-                    </div>
-                  </div>
-                )}
-                {aiAnalysis.insights && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">AI Insights</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.insights}</p>
-                  </div>
-                )}
-                {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-blue-50 border dark:border-gray-600 border-blue-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Recommendations</h4>
-                    <ul className="text-sm dark:text-gray-300 text-gray-700 space-y-2">
-                      {aiAnalysis.recommendations.map((rec: string, index: number) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Target className="h-4 w-4 mt-0.5 text-blue-500" />
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {aiAnalysis.industry_insights && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-green-50 border dark:border-gray-600 border-green-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Industry Insights</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiAnalysis.industry_insights}</p>
-                  </div>
-                )}
-              </div>
-            )}
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsAIAnalysisDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Close
-              </Button>
-              {selectedPartner && (
-                <Button
-                  onClick={() => {
-                    setIsAIAnalysisDialogOpen(false);
-                    handlePartnerEdit(selectedPartner);
-                  }}
-                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
-                >
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Edit Partner
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* AI Optimization Dialog */}
-        <Dialog open={isAIOptimizationDialogOpen} onOpenChange={setIsAIOptimizationDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Collaboration Optimization
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                AI-powered suggestions to optimize this collaboration
-              </DialogDescription>
-            </DialogHeader>
-            {aiOptimization && (
-              <div className="space-y-4">
-                <div className="p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
-                  <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Assessment</h4>
-                  <p className="text-sm dark:text-gray-300 text-gray-700">{aiOptimization.overall_assessment}</p>
-                </div>
-                {aiOptimization.optimizations && aiOptimization.optimizations.length > 0 && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-blue-50 border dark:border-gray-600 border-blue-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Optimization Suggestions</h4>
-                    <ul className="text-sm dark:text-gray-300 text-gray-700 space-y-2">
-                      {aiOptimization.optimizations.map((opt: any, index: number) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Lightbulb className="h-4 w-4 mt-0.5 text-blue-500" />
-                          <div>
-                            <p className="font-medium">{opt.area}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{opt.suggestion}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {aiOptimization.expected_impact && (
-                  <div className="p-3 rounded-lg dark:bg-gray-700 bg-green-50 border dark:border-gray-600 border-green-200">
-                    <h4 className="text-sm font-medium dark:text-gray-200 text-gray-800 mb-2">Expected Impact</h4>
-                    <p className="text-sm dark:text-gray-300 text-gray-700">{aiOptimization.expected_impact}</p>
-                  </div>
-                )}
-              </div>
-            )}
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsAIOptimizationDialogOpen(false)}
-                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
-              >
-                Close
-              </Button>
-              {editingCollaboration && (
-                <Button
-                  onClick={() => {
-                    // Apply optimization suggestions
-                    if (aiOptimization && aiOptimization.optimizations) {
-                      const descriptionOpt = aiOptimization.optimizations.find((opt: any) => opt.area === 'Description');
-                      if (descriptionOpt) {
-                        setCollaborationForm(prev => ({ ...prev, description: descriptionOpt.suggestion }));
-                      }
-                    }
-                    setIsAIOptimizationDialogOpen(false);
-                  }}
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
-                >
-                  <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Apply Suggestions
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Natural Language Query Dialog */}
-        <Dialog open={isNaturalQueryDialogOpen} onOpenChange={setIsNaturalQueryDialogOpen}>
-          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
-                <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                AI Assistant
-              </DialogTitle>
-              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Ask me anything about your partners and collaborations in natural language
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="naturalQuery" className="dark:text-gray-200 text-gray-800 text-sm">
-                  Your Query
-                </Label>
-                <Textarea
-                  id="naturalQuery"
-                  placeholder="e.g., Find tech partners for my upcoming conference, or Analyze the performance of Partner X"
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-sm"
-                  rows={4}
-                  value={naturalQuery}
-                  onChange={(e) => setNaturalQuery(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Example queries:</p>
-                <div className="space-y-1">
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Find tech partners for my upcoming conference")}>
-                    • Find tech partners for my upcoming conference
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Analyze the performance of Partner X")}>
-                    • Analyze the performance of Partner X
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Suggest collaboration types for event Y")}>
-                    • Suggest collaboration types for event Y
-                  </div>
-                  <div className="text-xs dark:text-gray-400 text-gray-600 cursor-pointer hover:text-purple-600 dark:hover:text-purple-400" onClick={() => setNaturalQuery("Create a new partner profile for a marketing agency")}>
-                    • Create a new partner profile for a marketing agency
-                  </div>
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsNaturalQueryDialogOpen(false)}
                 className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
               >
                 Cancel
               </Button>
               <Button
-                onClick={processNaturalQuery}
-                disabled={!naturalQuery.trim()}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
+                type="button"
+                onClick={editingPartner ? updatePartner : createPartner}
+                disabled={isCreating || isUpdating || !partnerForm.company_name}
+                className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
               >
-                <Brain className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                Process Query
+                {(isCreating || isUpdating) && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
+                {editingPartner ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Collaboration Dialog */}
+        <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                {editingCollaboration ? 'Edit Collaboration' : 'Add Event Collaboration'}
+              </DialogTitle>
+              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
+                {editingCollaboration
+                  ? `Update collaboration for ${selectedEvent?.name}`
+                  : `Add a partner collaboration to ${selectedEvent?.name}`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 sm:space-y-4">
+              {!editingCollaboration && (
+                <div className="space-y-2">
+                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Partner *</Label>
+                  <Select
+                    value={collaborationForm.partner_id}
+                    onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, partner_id: value }))}
+                  >
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                      <SelectValue placeholder="Select a partner" />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                      {partners.filter(p => p.is_active).map((partner) => (
+                        <SelectItem key={partner.id} value={partner.id.toString()} className="text-xs sm:text-sm">
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            {partner.logo_url ? (
+                              <img
+                                src={partner.logo_url}
+                                alt={`${partner.company_name} logo`}
+                                className="w-3 h-3 sm:w-4 sm:h-4 rounded object-cover"
+                              />
+                            ) : (
+                              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                            )}
+                            {partner.company_name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label className="dark:text-gray-200 text-gray-800 text-sm">Collaboration Type *</Label>
+                <Select
+                  value={collaborationForm.collaboration_type}
+                  onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, collaboration_type: value }))}
+                >
+                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                    {COLLABORATION_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value} className="text-xs sm:text-sm">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <type.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", type.color)} />
+                          {type.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="dark:text-gray-200 text-gray-800 text-sm">Description</Label>
+                <Textarea
+                  value={collaborationForm.description}
+                  onChange={(e) => setCollaborationForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
+                  placeholder="Describe the collaboration..."
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Display Order</Label>
+                  <Input
+                    type="number"
+                    value={collaborationForm.display_order}
+                    onChange={(e) => setCollaborationForm(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
+                    min="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Visibility</Label>
+                  <div className="flex items-center space-x-1 sm:space-x-2 pt-1 sm:pt-2">
+                    <Checkbox
+                      checked={collaborationForm.show_on_event_page}
+                      onCheckedChange={(checked) => setCollaborationForm(prev => ({ ...prev, show_on_event_page: Boolean(checked) }))}
+                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4"
+                    />
+                    <Label className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">
+                      Show on event page
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="pt-3 sm:pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  resetCollaborationForm();
+                  setIsCollaborationDialogOpen(false);
+                }}
+                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={editingCollaboration ? updateCollaboration : createCollaboration}
+                disabled={isCreating || isUpdating || (!editingCollaboration && !collaborationForm.partner_id)}
+                className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+              >
+                {(isCreating || isUpdating) && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
+                {editingCollaboration ? 'Update' : 'Add'} Collaboration
               </Button>
             </DialogFooter>
           </DialogContent>
