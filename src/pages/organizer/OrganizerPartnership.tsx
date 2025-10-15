@@ -29,7 +29,7 @@ interface ExtendedPartnersResponse extends PartnersResponse {
   ai_trends?: any;
   ai_recommendations_summary?: any;
   ai_insights?: any;
-  empty_database_recommendations?: any[];
+  empty_database_recommendations?: any[]; // Added missing property
 }
 
 interface ExtendedPartner extends Partner {
@@ -50,9 +50,6 @@ interface AISuggestion {
   potential_benefits: string;
   engagement_strategies: string[];
   ai_generated: boolean;
-  website_url?: string;
-  contact_email?: string;
-  contact_person?: string;
 }
 
 interface AIInsight {
@@ -61,14 +58,6 @@ interface AIInsight {
   actionable: boolean;
   priority: 'high' | 'medium' | 'low';
 }
-
-// Filter options for partners
-const FILTER_OPTIONS = [
-  { value: 'company_name', label: 'Company Name' },
-  { value: 'total_collaborations', label: 'Total Collaborations' },
-  { value: 'created_at', label: 'Date Created' },
-  { value: 'is_active', label: 'Active Status' }
-];
 
 const OrganizerPartnership: React.FC = () => {
   // --- State Variables ---
@@ -124,12 +113,6 @@ const OrganizerPartnership: React.FC = () => {
   const [showEmptyDatabaseRecommendations, setShowEmptyDatabaseRecommendations] = useState(false);
   const [emptyDatabaseRecommendations, setEmptyDatabaseRecommendations] = useState<any[]>([]);
   const [partnerTypesForEvent, setPartnerTypesForEvent] = useState<any[]>([]);
-  
-  // Filter states
-  const [companyNameFilter, setCompanyNameFilter] = useState('');
-  const [totalCollaborationsFilter, setTotalCollaborationsFilter] = useState('');
-  const [dateCreatedFilter, setDateCreatedFilter] = useState('');
-  const [activeStatusFilter, setActiveStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
     
   const [partnerForm, setPartnerForm] = useState({
     company_name: '',
@@ -229,20 +212,6 @@ const OrganizerPartnership: React.FC = () => {
       if (searchQuery) {
         params.append('search', searchQuery);
       }
-      // Add filter parameters
-      if (companyNameFilter) {
-        params.append('company_name', companyNameFilter);
-      }
-      if (totalCollaborationsFilter) {
-        params.append('total_collaborations', totalCollaborationsFilter);
-      }
-      if (dateCreatedFilter) {
-        params.append('created_at', dateCreatedFilter);
-      }
-      if (activeStatusFilter !== 'all') {
-        params.append('is_active', activeStatusFilter === 'active' ? 'true' : 'false');
-      }
-      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/partners?${params.toString()}`, {
         credentials: 'include'
       });
@@ -264,11 +233,7 @@ const OrganizerPartnership: React.FC = () => {
     } finally {
       setIsLoadingPartners(false);
     }
-  }, [
-    currentPage, sortBy, sortOrder, includeInactive, searchQuery, 
-    companyNameFilter, totalCollaborationsFilter, dateCreatedFilter, activeStatusFilter, 
-    handleError
-  ]);
+  }, [currentPage, sortBy, sortOrder, includeInactive, searchQuery, handleError]);
 
   const fetchPartnerDetails = useCallback(async (partnerId: number, page = 1) => {
     setIsLoadingPartnerDetails(true);
@@ -377,28 +342,18 @@ const OrganizerPartnership: React.FC = () => {
       }
             
       const data = await response.json();
-      const suggestion = data.suggestion;
-      
-      // Enhanced AI suggestion with auto-filled contact info
-      const enhancedSuggestion: AISuggestion = {
-        ...suggestion,
-        website_url: suggestion.website_url || `https://${suggestion.company_name?.toLowerCase().replace(/\s+/g, '')}.com`,
-        contact_email: suggestion.contact_email || `contact@${suggestion.company_name?.toLowerCase().replace(/\s+/g, '')}.com`,
-        contact_person: suggestion.contact_person || 'Business Development Manager'
-      };
-      
-      setAiSuggestion(enhancedSuggestion);
-      setAiSuggestions([enhancedSuggestion]);
+      setAiSuggestion(data.suggestion);
+      setAiSuggestions([data.suggestion]);
       setCurrentSuggestionIndex(0);
             
-      // Auto-fill the form with the enhanced suggestion
+      // Auto-fill the form with the suggestion
       setPartnerForm({
-        company_name: enhancedSuggestion.company_name || '',
-        company_description: enhancedSuggestion.company_description || '',
+        company_name: data.suggestion.company_name || '',
+        company_description: data.suggestion.company_description || '',
         logo_url: '',
-        website_url: enhancedSuggestion.website_url || '',
-        contact_email: enhancedSuggestion.contact_email || '',
-        contact_person: enhancedSuggestion.contact_person || ''
+        website_url: '',
+        contact_email: '',
+        contact_person: ''
       });
             
       setIsAISuggestionDialogOpen(true);
@@ -424,28 +379,19 @@ const OrganizerPartnership: React.FC = () => {
       }
             
       const data = await response.json();
-      const suggestion = data.suggestion;
-      
-      // Enhanced AI suggestion with auto-filled contact info
-      const enhancedSuggestion: AISuggestion = {
-        ...suggestion,
-        website_url: suggestion.website_url || `https://${suggestion.company_name?.toLowerCase().replace(/\s+/g, '')}.com`,
-        contact_email: suggestion.contact_email || `contact@${suggestion.company_name?.toLowerCase().replace(/\s+/g, '')}.com`,
-        contact_person: suggestion.contact_person || 'Business Development Manager'
-      };
             
       // Add to suggestions array
-      setAiSuggestions(prev => [...prev, enhancedSuggestion]);
+      setAiSuggestions(prev => [...prev, data.suggestion]);
       setCurrentSuggestionIndex(aiSuggestions.length);
             
-      // Auto-fill the form with the new enhanced suggestion
+      // Auto-fill the form with the new suggestion
       setPartnerForm({
-        company_name: enhancedSuggestion.company_name || '',
-        company_description: enhancedSuggestion.company_description || '',
+        company_name: data.suggestion.company_name || '',
+        company_description: data.suggestion.company_description || '',
         logo_url: '',
-        website_url: enhancedSuggestion.website_url || '',
-        contact_email: enhancedSuggestion.contact_email || '',
-        contact_person: enhancedSuggestion.contact_person || ''
+        website_url: '',
+        contact_email: '',
+        contact_person: ''
       });
     } catch (err) {
       handleError("Failed to generate alternative AI suggestion", err);
@@ -694,15 +640,6 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [activeTab, selectedEvent, collabCurrentPage, fetchCollaborations]);
 
-  // Filter effect
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchPartners();
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  }, [companyNameFilter, totalCollaborationsFilter, dateCreatedFilter, activeStatusFilter, fetchPartners]);
-
   // --- Event Handlers ---
   const handlePartnerEdit = useCallback((partner: Partner) => {
     setEditingPartner(partner);
@@ -773,65 +710,10 @@ const OrganizerPartnership: React.FC = () => {
     }
   }, [resetCollaborationForm]);
 
-  // Filter handlers
-  const handleCompanyNameFilter = useCallback((value: string) => {
-    setCompanyNameFilter(value);
-    setCurrentPage(1);
-  }, []);
-
-  const handleTotalCollaborationsFilter = useCallback((value: string) => {
-    setTotalCollaborationsFilter(value);
-    setCurrentPage(1);
-  }, []);
-
-  const handleDateCreatedFilter = useCallback((value: string) => {
-    setDateCreatedFilter(value);
-    setCurrentPage(1);
-  }, []);
-
-  const handleActiveStatusFilter = useCallback((value: 'all' | 'active' | 'inactive') => {
-    setActiveStatusFilter(value);
-    setCurrentPage(1);
-  }, []);
-
-  // Reset filters
-  const resetFilters = useCallback(() => {
-    setCompanyNameFilter('');
-    setTotalCollaborationsFilter('');
-    setDateCreatedFilter('');
-    setActiveStatusFilter('all');
-    setSearchQuery('');
-    setCurrentPage(1);
-  }, []);
-
   // --- Memoized Values ---
   const filteredPartners = useMemo(() => {
-    let filtered = partners;
-    
-    // Apply client-side filtering as backup
-    if (companyNameFilter) {
-      filtered = filtered.filter(partner => 
-        partner.company_name.toLowerCase().includes(companyNameFilter.toLowerCase())
-      );
-    }
-    
-    if (totalCollaborationsFilter) {
-      const targetCount = parseInt(totalCollaborationsFilter);
-      if (!isNaN(targetCount)) {
-        filtered = filtered.filter(partner => 
-          (partner.total_collaborations || 0) >= targetCount
-        );
-      }
-    }
-    
-    if (activeStatusFilter !== 'all') {
-      filtered = filtered.filter(partner => 
-        activeStatusFilter === 'active' ? partner.is_active : !partner.is_active
-      );
-    }
-    
-    return filtered.filter(partner => includeInactive || partner.is_active);
-  }, [partners, includeInactive, companyNameFilter, totalCollaborationsFilter, activeStatusFilter]);
+    return partners.filter(partner => includeInactive || partner.is_active);
+  }, [partners, includeInactive]);
 
   const paginationInfo = useMemo(() => {
     return {
@@ -896,9 +778,9 @@ const OrganizerPartnership: React.FC = () => {
                               company_name: '',
                               company_description: 'A local business interested in community events',
                               logo_url: '',
-                              website_url: 'https://example.com',
-                              contact_email: 'contact@example.com',
-                              contact_person: 'Business Owner'
+                              website_url: '',
+                              contact_email: '',
+                              contact_person: ''
                             });
                             setIsPartnerDialogOpen(true);
                           } else if (rec.title.includes("Media Partners")) {
@@ -906,9 +788,9 @@ const OrganizerPartnership: React.FC = () => {
                               company_name: '',
                               company_description: 'A media company specializing in event promotion',
                               logo_url: '',
-                              website_url: 'https://mediapartner.com',
-                              contact_email: 'partnerships@mediapartner.com',
-                              contact_person: 'Partnership Manager'
+                              website_url: '',
+                              contact_email: '',
+                              contact_person: ''
                             });
                             setIsPartnerDialogOpen(true);
                           }
@@ -1029,9 +911,9 @@ const OrganizerPartnership: React.FC = () => {
                                           company_name: prevSuggestion.company_name || '',
                                           company_description: prevSuggestion.company_description || '',
                                           logo_url: '',
-                                          website_url: prevSuggestion.website_url || '',
-                                          contact_email: prevSuggestion.contact_email || '',
-                                          contact_person: prevSuggestion.contact_person || ''
+                                          website_url: '',
+                                          contact_email: '',
+                                          contact_person: ''
                                         });
                                       }
                                     }}
@@ -1246,117 +1128,53 @@ const OrganizerPartnership: React.FC = () => {
                     </Dialog>
                   </div>
                 </div>
-                
-                {/* Enhanced Filters and Search */}
-                <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-                  {/* Search Bar */}
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" />
-                      <Input
-                        placeholder="Search partners..."
-                        value={searchQuery}
-                        onChange={(e) => handleSearchChange(e.target.value)}
-                        className="pl-8 sm:pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-100 border-gray-300 text-gray-800 text-xs sm:text-sm"
-                      />
-                    </div>
-                    <div className="flex gap-1 sm:gap-2">
-                      <Select value={sortBy} onValueChange={handleSortChange}>
-                        <SelectTrigger className="w-[140px] sm:w-[180px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                          {SORT_OPTIONS.map(option => (
-                            <SelectItem key={option.value} value={option.value} className="text-xs sm:text-sm">
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSortOrderToggle}
-                        className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
-                      >
-                        {sortOrder === 'asc' ? '↑' : '↓'}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Advanced Filters */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="companyNameFilter" className="text-xs dark:text-gray-300 text-gray-700">
-                        Company Name
-                      </Label>
-                      <Input
-                        id="companyNameFilter"
-                        placeholder="Filter by name..."
-                        value={companyNameFilter}
-                        onChange={(e) => handleCompanyNameFilter(e.target.value)}
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label htmlFor="collaborationsFilter" className="text-xs dark:text-gray-300 text-gray-700">
-                        Min Collaborations
-                      </Label>
-                      <Input
-                        id="collaborationsFilter"
-                        type="number"
-                        placeholder="0"
-                        value={totalCollaborationsFilter}
-                        onChange={(e) => handleTotalCollaborationsFilter(e.target.value)}
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs"
-                        min="0"
-                      />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <Label htmlFor="statusFilter" className="text-xs dark:text-gray-300 text-gray-700">
-                        Status
-                      </Label>
-                      <Select value={activeStatusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => handleActiveStatusFilter(value)}>
-                        <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                          <SelectItem value="all" className="text-xs">All Status</SelectItem>
-                          <SelectItem value="active" className="text-xs">Active Only</SelectItem>
-                          <SelectItem value="inactive" className="text-xs">Inactive Only</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-1 flex items-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={resetFilters}
-                        className="dark:bg-gray-700 dark:text-gray-200 text-xs w-full"
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Reset Filters
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="includeInactive"
-                      checked={includeInactive}
-                      onCheckedChange={checked => setIncludeInactive(checked === true)}
-                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-[#10b981] data-[state=checked]:border-[#10b981]"
+                {/* Filters and Search */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-3 sm:pt-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-500 dark:text-gray-400" />
+                    <Input
+                      placeholder="Search partners..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      className="pl-8 sm:pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 bg-gray-100 border-gray-300 text-gray-800 text-xs sm:text-sm"
                     />
-                    <Label
-                      htmlFor="includeInactive"
-                      className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none"
-                    >
-                      Include inactive partners
-                    </Label>
                   </div>
+                  <div className="flex gap-1 sm:gap-2">
+                    <Select value={sortBy} onValueChange={handleSortChange}>
+                      <SelectTrigger className="w-[140px] sm:w-[180px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {SORT_OPTIONS.map(option => (
+                          <SelectItem key={option.value} value={option.value} className="text-xs sm:text-sm">
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSortOrderToggle}
+                      className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="includeInactive"
+                    checked={includeInactive}
+                    onCheckedChange={checked => setIncludeInactive(checked === true)}
+                    className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4 data-[state=checked]:bg-[#10b981] data-[state=checked]:border-[#10b981]"
+                  />
+                  <Label
+                    htmlFor="includeInactive"
+                    className="text-xs sm:text-sm dark:text-gray-200 text-gray-800 cursor-pointer select-none leading-none"
+                  >
+                    Include inactive partners
+                  </Label>
                 </div>
               </CardHeader>
               <CardContent className="p-3 sm:p-6">
@@ -1369,7 +1187,7 @@ const OrganizerPartnership: React.FC = () => {
                   <div className="text-center py-8 sm:py-12">
                     <Building2 className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
-                      {searchQuery || companyNameFilter || totalCollaborationsFilter ? 'No partners found matching your filters' : 'No partners found'}
+                      {searchQuery ? 'No partners found matching your search' : 'No partners found'}
                     </p>
                     <div className="flex gap-2 justify-center">
                       <Button
@@ -1401,11 +1219,6 @@ const OrganizerPartnership: React.FC = () => {
                   <div className="space-y-4">
                     <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                       Showing {paginationInfo.showing} of {paginationInfo.total} partners
-                      {(companyNameFilter || totalCollaborationsFilter || activeStatusFilter !== 'all') && (
-                        <span className="ml-2 text-green-600 dark:text-green-400">
-                          (filtered)
-                        </span>
-                      )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                       {filteredPartners.map((partner) => (
@@ -1585,23 +1398,923 @@ const OrganizerPartnership: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Collaborations Tab - Content remains the same as before */}
+          {/* Collaborations Tab */}
           <TabsContent value="collaborations" className="mt-4 sm:mt-6">
-            {/* ... (Collaborations tab content remains unchanged) ... */}
+            <Card className="shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200">
+              <CardHeader className="p-3 sm:p-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-1 sm:gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                      <Handshake className="h-4 w-4 sm:h-5 sm:w-5" />
+                      Event Collaborations
+                    </CardTitle>
+                    <CardDescription className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm">
+                      Manage partnerships for specific events with AI suggestions
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                    <Select
+                      value={selectedEvent ? selectedEvent.id.toString() : ""}
+                      onValueChange={(value) => {
+                        const event = events.find(e => e.id.toString() === value);
+                        setSelectedEvent(event || null);
+                        setCollabCurrentPage(1);
+                        if (event) {
+                          fetchPartnerTypesForEvent(event.id);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full sm:w-[220px] dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                        <SelectValue placeholder="Select event" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                        {events.map(event => (
+                          <SelectItem key={event.id} value={event.id.toString()} className="text-xs sm:text-sm">
+                            {event.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedEvent && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Get AI suggestions for this event
+                            fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
+                              method: 'POST',
+                              credentials: 'include',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ action: 'suggest' })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                              if (data.suggested_partners || data.new_partner_suggestions) {
+                                setAiRecommendations(data);
+                                toast({
+                                  title: "AI Suggestions",
+                                  description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
+                                  variant: "default",
+                                });
+                              }
+                            })
+                            .catch(err => handleError("Failed to get AI suggestions", err));
+                          }}
+                          className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm p-1 sm:p-2"
+                        >
+                          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                          <span className="hidden sm:inline">AI Suggest</span>
+                        </Button>
+                        <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+                          <DialogTrigger asChild>
+                            <Button
+                              onClick={() => {
+                                resetCollaborationForm();
+                                setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
+                              }}
+                              className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] hover:scale-105 transition-all text-white text-xs sm:text-sm p-1 sm:p-2"
+                            >
+                              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                              Add Collaboration
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
+                            <DialogHeader>
+                              <DialogTitle className="dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                                {editingCollaboration ? 'Edit Collaboration' : 'Add Event Collaboration'}
+                              </DialogTitle>
+                              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
+                                {editingCollaboration
+                                  ? `Update collaboration for ${selectedEvent.name}`
+                                  : `Add a partner collaboration to ${selectedEvent.name}`}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-3 sm:space-y-4">
+                              {!editingCollaboration && (
+                                <div className="space-y-2">
+                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Partner *</Label>
+                                  <Select
+                                    value={collaborationForm.partner_id}
+                                    onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, partner_id: value }))}
+                                  >
+                                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                                      <SelectValue placeholder="Select a partner" />
+                                    </SelectTrigger>
+                                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                                      {partners.filter(p => p.is_active).map((partner) => (
+                                        <SelectItem key={partner.id} value={partner.id.toString()} className="text-xs sm:text-sm">
+                                          <div className="flex items-center gap-1 sm:gap-2">
+                                            {partner.logo_url ? (
+                                              <img
+                                                src={partner.logo_url}
+                                                alt={`${partner.company_name} logo`}
+                                                className="w-3 h-3 sm:w-4 sm:h-4 rounded object-cover"
+                                              />
+                                            ) : (
+                                              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                                            )}
+                                            {partner.company_name}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                              <div className="space-y-2">
+                                <Label className="dark:text-gray-200 text-gray-800 text-sm">Collaboration Type *</Label>
+                                <Select
+                                  value={collaborationForm.collaboration_type}
+                                  onValueChange={(value) => setCollaborationForm(prev => ({ ...prev, collaboration_type: value }))}
+                                >
+                                  <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
+                                    {COLLABORATION_TYPES.map((type) => (
+                                      <SelectItem key={type.value} value={type.value} className="text-xs sm:text-sm">
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                          <type.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", type.color)} />
+                                          {type.label}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="dark:text-gray-200 text-gray-800 text-sm">Description</Label>
+                                <Textarea
+                                  value={collaborationForm.description}
+                                  onChange={(e) => setCollaborationForm(prev => ({ ...prev, description: e.target.value }))}
+                                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
+                                  placeholder="Describe the collaboration..."
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                <div className="space-y-2">
+                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Display Order</Label>
+                                  <Input
+                                    type="number"
+                                    value={collaborationForm.display_order}
+                                    onChange={(e) => setCollaborationForm(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
+                                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 text-xs sm:text-sm"
+                                    min="0"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="dark:text-gray-200 text-gray-800 text-sm">Visibility</Label>
+                                  <div className="flex items-center space-x-1 sm:space-x-2 pt-1 sm:pt-2">
+                                    <Checkbox
+                                      checked={collaborationForm.show_on_event_page}
+                                      onCheckedChange={(checked) => setCollaborationForm(prev => ({ ...prev, show_on_event_page: Boolean(checked) }))}
+                                      className="dark:border-gray-500 h-3 w-3 sm:h-4 sm:w-4"
+                                    />
+                                    <Label className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">
+                                      Show on event page
+                                    </Label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <DialogFooter className="pt-3 sm:pt-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  resetCollaborationForm();
+                                  setIsCollaborationDialogOpen(false);
+                                }}
+                                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={editingCollaboration ? updateCollaboration : createCollaboration}
+                                disabled={isCreating || isUpdating || (!editingCollaboration && !collaborationForm.partner_id)}
+                                className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                              >
+                                {(isCreating || isUpdating) && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
+                                {editingCollaboration ? 'Update' : 'Add'} Collaboration
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6">
+                {!selectedEvent ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <Calendar className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
+                      Select an event to view and manage collaborations
+                    </p>
+                    {events.length === 0 && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        No events available. Create an event first to add collaborations.
+                      </p>
+                    )}
+                  </div>
+                ) : isLoadingCollaborations ? (
+                  <div className="flex items-center justify-center h-32 sm:h-48">
+                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-[#10b981]" />
+                    <span className="ml-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Loading collaborations...</span>
+                  </div>
+                ) : collaborations.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <Handshake className="h-8 w-8 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-2 sm:mb-4" />
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
+                      No collaborations found for {selectedEvent.name}
+                    </p>
+                    
+                    {/* Guidance Section */}
+                    <Card className="dark:bg-gray-700 dark:border-gray-600 bg-blue-50 border-blue-200 mb-4">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-semibold dark:text-gray-200 text-gray-800 flex items-center gap-2">
+                            <Info className="h-4 w-4 text-blue-500" />
+                            How to Add Collaborations
+                          </h3>
+                          <ol className="text-xs space-y-2 dark:text-gray-300 text-gray-700">
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">1</span>
+                              <span><strong>Contact the company first</strong> - Reach out to potential partners and discuss collaboration opportunities</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">2</span>
+                              <span><strong>Get formal approval</strong> - Ensure you have their agreement before creating the partnership</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">3</span>
+                              <span><strong>Create partner profile</strong> - If they're new, add them to your partners list first</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs flex-shrink-0">4</span>
+                              <span><strong>Add collaboration</strong> - Then come back here to formalize the partnership for this event</span>
+                            </li>
+                          </ol>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Get AI suggestions for this event
+                          fetch(`${import.meta.env.VITE_API_URL}/api/partners/events/${selectedEvent.id}`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'suggest' })
+                          })
+                          .then(response => response.json())
+                          .then(data => {
+                            if (data.suggested_partners || data.new_partner_suggestions) {
+                              setAiRecommendations(data);
+                              toast({
+                                title: "AI Suggestions",
+                                description: `Found ${(data.suggested_partners?.length || 0) + (data.new_partner_suggestions?.length || 0)} potential partners for ${selectedEvent.name}`,
+                                variant: "default",
+                              });
+                            }
+                          })
+                          .catch(err => handleError("Failed to get AI suggestions", err));
+                        }}
+                        className="dark:bg-purple-700 dark:text-purple-200 dark:hover:bg-purple-600 bg-purple-100 text-purple-800 hover:bg-purple-200 text-xs sm:text-sm"
+                      >
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                        Get AI Partner Suggestions
+                      </Button>
+                      <Dialog open={isPartnerDialogOpen} onOpenChange={handlePartnerDialogClose}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={resetPartnerForm}
+                            className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                          >
+                            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            Create Partner First
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                      <Dialog open={isCollaborationDialogOpen} onOpenChange={handleCollaborationDialogClose}>
+                        <DialogTrigger asChild>
+                          <Button
+                            onClick={() => {
+                              resetCollaborationForm();
+                              setCollaborationForm(prev => ({ ...prev, event_id: selectedEvent.id.toString() }));
+                            }}
+                            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
+                          >
+                            <Handshake className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                            Add Collaboration
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-gray-700 dark:to-gray-600 p-3 sm:p-4 rounded-lg border dark:border-gray-600">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-base sm:text-lg font-semibold dark:text-gray-200 text-gray-800">
+                            {selectedEvent.name}
+                          </h3>
+                          <div className="flex items-center gap-2 sm:gap-4 mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                            {selectedEvent.date && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                {new Date(selectedEvent.date).toLocaleDateString()}
+                              </div>
+                            )}
+                            {selectedEvent.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                                {selectedEvent.location}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl sm:text-2xl font-bold text-[#10b981]">
+                            {collaborations.length}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Collaborations</p>
+                        </div>
+                      </div>
+                    </div>
+                                        
+                    {/* AI Recommendations for Event */}
+                    {aiRecommendations && (aiRecommendations.suggested_partners || aiRecommendations.new_partner_suggestions) && (
+                      <Card className="dark:bg-gray-700 dark:border-gray-600 bg-purple-50 border-purple-200">
+                        <CardHeader className="pb-2 sm:pb-3">
+                          <CardTitle className="flex items-center gap-2 text-sm sm:text-base dark:text-gray-200 text-gray-800">
+                            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                            AI Recommended Partners
+                          </CardTitle>
+                          <CardDescription className="dark:text-gray-400 text-gray-600 text-xs">
+                            Based on your event type and industry. Remember to contact these companies first before creating partnerships.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          {/* Existing Partner Suggestions */}
+                          {aiRecommendations.suggested_partners && aiRecommendations.suggested_partners.length > 0 && (
+                            <div className="mb-4">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">From Your Network</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                {aiRecommendations.suggested_partners.slice(0, 4).map((partner: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-purple-200">
+                                    {partner.logo_url ? (
+                                      <img
+                                        src={partner.logo_url}
+                                        alt={`${partner.company_name} logo`}
+                                        className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
+                                        <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
+                                        {partner.company_name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {partner.match_reason || 'Good match for this event'}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setCollaborationForm(prev => ({
+                                          ...prev,
+                                          partner_id: partner.id.toString(),
+                                          event_id: selectedEvent.id.toString()
+                                        }));
+                                        setIsCollaborationDialogOpen(true);
+                                      }}
+                                      className="text-xs dark:text-purple-400 text-purple-600 h-auto p-1"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                                                  
+                          {/* New Partner Suggestions */}
+                          {aiRecommendations.new_partner_suggestions && aiRecommendations.new_partner_suggestions.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">New Partner Suggestions</h4>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                {aiRecommendations.new_partner_suggestions.slice(0, 4).map((partner: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-2 p-2 rounded-lg dark:bg-gray-600 bg-white border dark:border-gray-500 border-blue-200">
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-green-500 rounded flex items-center justify-center">
+                                      <Building2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800 truncate">
+                                        {partner.company_name}
+                                      </p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {partner.reason || 'Potential partner for this event'}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setPartnerForm({
+                                          company_name: partner.company_name || '',
+                                          company_description: partner.company_description || '',
+                                          logo_url: '',
+                                          website_url: '',
+                                          contact_email: '',
+                                          contact_person: ''
+                                        });
+                                        setIsPartnerDialogOpen(true);
+                                      }}
+                                      className="text-xs dark:text-blue-400 text-blue-600 h-auto p-1"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                                                  
+                          {/* Partner Type Suggestions */}
+                          {partnerTypesForEvent && partnerTypesForEvent.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Recommended Partner Types</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {partnerTypesForEvent.slice(0, 5).map((type: any, index: number) => (
+                                  <div key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
+                                    {type.type}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Guidance Reminder */}
+                          <div className="mt-4 p-2 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                            <p className="text-xs text-yellow-800 dark:text-yellow-200 flex items-center gap-1">
+                              <Info className="h-3 w-3" />
+                              <strong>Remember:</strong> Always contact companies first to discuss partnership opportunities before creating collaborations.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                                        
+                    <div className="grid gap-3 sm:gap-4">
+                      {collaborations.map((collaboration) => {
+                        const partner = partners.find(p => p.id === collaboration.partner_id);
+                        const collabType = COLLABORATION_TYPES.find(t => t.value === collaboration.collaboration_type);
+                        return (
+                          <Card
+                            key={collaboration.id}
+                            className="dark:bg-gray-700 dark:border-gray-600 bg-white border-gray-200 hover:shadow-lg transition-all duration-300"
+                          >
+                            <CardContent className="p-3 sm:p-6">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
+                                <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                                  <div className="flex-shrink-0">
+                                    {partner?.logo_url ? (
+                                      <img
+                                        src={partner.logo_url}
+                                        alt={`${partner.company_name} logo`}
+                                        className="w-8 h-8 sm:w-12 sm:h-12 rounded-lg object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
+                                        <Building2 className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                                      <h4 className="text-base sm:text-lg font-semibold dark:text-gray-200 text-gray-800 truncate">
+                                        {partner?.company_name || 'Unknown Partner'}
+                                      </h4>
+                                      {collabType && (
+                                        <div className="flex items-center gap-1 px-1 sm:px-2 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-600 rounded-full">
+                                          <collabType.icon className={cn("h-2 w-2 sm:h-3 sm:w-3", collabType.color)} />
+                                          <span className="text-xs font-medium dark:text-gray-200 text-gray-700">
+                                            {collabType.label}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {collaboration.description && (
+                                      <p className="text-xs sm:text-sm dark:text-gray-400 text-gray-600 mb-2 sm:mb-3 line-clamp-2">
+                                        {collaboration.description}
+                                      </p>
+                                    )}
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                      <div className="flex items-center gap-1">
+                                        <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+                                        Order: {collaboration.display_order}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        {collaboration.show_on_event_page ? (
+                                          <>
+                                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                                            <span>Visible</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />
+                                            <span>Hidden</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                        {new Date(collaboration.created_at).toLocaleDateString()}
+                                      </div>
+                                    </div>
+                                    {partner && (
+                                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t dark:border-gray-600 border-gray-200">
+                                        {partner.contact_person && (
+                                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                            <User className="h-2 w-2 sm:h-3 sm:w-3" />
+                                            {partner.contact_person}
+                                          </div>
+                                        )}
+                                        {partner.contact_email && (
+                                          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                            <Mail className="h-2 w-2 sm:h-3 sm:w-3" />
+                                            {partner.contact_email}
+                                          </div>
+                                        )}
+                                        {partner.website_url && (
+                                          <a
+                                            href={partner.website_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                          >
+                                            <Globe className="h-2 w-2 sm:h-3 sm:w-3" />
+                                            Website
+                                            <ExternalLink className="h-1.5 w-1.5 sm:h-2 sm:w-2" />
+                                          </a>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-0 sm:ml-4">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleCollaborationEdit(collaboration)}
+                                    className="dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 text-xs sm:text-sm p-1 sm:p-2"
+                                  >
+                                    <Edit className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                    <span className="hidden sm:inline">Edit</span>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeleteConfirm('collaboration', collaboration.id)}
+                                    className="dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800 bg-red-50 text-red-600 hover:bg-red-100 text-xs sm:text-sm p-1 sm:p-2"
+                                  >
+                                    <Trash2 className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                    <span className="hidden sm:inline">Delete</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                    {collabTotalPages > 1 && (
+                      <div className="flex justify-center items-center gap-1 sm:gap-2 pt-4 sm:pt-6">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCollabCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={collabCurrentPage <= 1}
+                          className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 px-2 sm:px-4">
+                          Page {collabCurrentPage} of {collabTotalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCollabCurrentPage(prev => Math.min(prev + 1, collabTotalPages))}
+                          disabled={collabCurrentPage >= collabTotalPages}
+                          className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Partner Details Dialog - Content remains the same */}
+        {/* Partner Details Dialog */}
         <Dialog open={isPartnerDetailsDialogOpen} onOpenChange={setIsPartnerDetailsDialogOpen}>
-          {/* ... (Partner details dialog content remains unchanged) ... */}
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 sm:gap-3 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                {selectedPartner?.logo_url ? (
+                  <img
+                    src={selectedPartner.logo_url}
+                    alt={`${selectedPartner.company_name} logo`}
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover"
+                  />
+                ) : (
+                  <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-gray-500" />
+                )}
+                {selectedPartner?.company_name}
+              </DialogTitle>
+              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
+                Complete partner information and collaboration history
+              </DialogDescription>
+            </DialogHeader>
+            {selectedPartner && (
+              <div className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Partner Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 sm:space-y-3">
+                      {selectedPartner.company_description && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description</p>
+                          <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">{selectedPartner.company_description}</p>
+                        </div>
+                      )}
+                      {selectedPartner.contact_person && (
+                        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                          <span className="dark:text-gray-300 text-gray-700">{selectedPartner.contact_person}</span>
+                        </div>
+                      )}
+                      {selectedPartner.contact_email && (
+                        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                          <Mail className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                          <span className="dark:text-gray-300 text-gray-700">{selectedPartner.contact_email}</span>
+                        </div>
+                      )}
+                      {selectedPartner.website_url && (
+                        <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+                          <Globe className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                          <a
+                            href={selectedPartner.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="dark:text-blue-400 text-blue-600 hover:underline flex items-center gap-1"
+                          >
+                            {selectedPartner.website_url.replace(/^https?:\/\//, '')}
+                            <ExternalLink className="h-2 w-2 sm:h-3 sm:w-3" />
+                          </a>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Statistics</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 sm:space-y-4">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                        <div className="text-center p-2 sm:p-3 rounded-lg dark:bg-gray-600 bg-gray-100">
+                          <p className="text-base sm:text-2xl font-bold text-[#10b981]">
+                            {selectedPartner.total_collaborations || 0}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Total Collaborations</p>
+                        </div>
+                        <div className="text-center p-2 sm:p-3 rounded-lg dark:bg-gray-600 bg-gray-100">
+                          <p className="text-base sm:text-2xl font-bold text-blue-500">
+                            {selectedPartner.collaboration_stats?.active_collaborations || 0}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Active</p>
+                        </div>
+                      </div>
+                      <div className="space-y-1 sm:space-y-2">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Partnership Since</p>
+                        <p className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">
+                          {new Date(selectedPartner.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="space-y-1 sm:space-y-2">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Status</p>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <div className={cn("w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full", selectedPartner.is_active ? "bg-green-500" : "bg-red-500")} />
+                          <span className="text-xs sm:text-sm dark:text-gray-300 text-gray-700">
+                            {selectedPartner.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedPartner.collaboration_stats?.collaboration_types && selectedPartner.collaboration_stats.collaboration_types.length > 0 && (
+                        <div className="space-y-1 sm:space-y-2">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Collaboration Types</p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedPartner.collaboration_stats.collaboration_types.map((type, index) => {
+                              const collabType = COLLABORATION_TYPES.find(t => t.value === type);
+                              return (
+                                <div key={index} className="flex items-center gap-1 px-1 sm:px-2 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-600 rounded-full">
+                                  {collabType && <collabType.icon className={cn("h-2 w-2 sm:h-3 sm:w-3", collabType.color)} />}
+                                  <span className="text-xs font-medium dark:text-gray-200 text-gray-700">
+                                    {collabType?.label || type}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                                
+                <Card className="dark:bg-gray-700 dark:border-gray-600 p-3 sm:p-4">
+                  <CardHeader className="pb-2 sm:pb-3">
+                    <CardTitle className="text-xs sm:text-sm dark:text-gray-200 text-gray-800">Collaboration History</CardTitle>
+                    <CardDescription className="dark:text-gray-400 text-gray-600 text-xs">
+                      All collaborations with this partner
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isLoadingPartnerDetails ? (
+                      <div className="flex items-center justify-center h-24 sm:h-32">
+                        <Loader2 className="h-4 w-4 sm:h-6 sm:w-6 animate-spin text-[#10b981]" />
+                        <span className="ml-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">Loading...</span>
+                      </div>
+                    ) : selectedPartner.collaborations && selectedPartner.collaborations.length > 0 ? (
+                      <div className="space-y-2 sm:space-y-3">
+                        {selectedPartner.collaborations.map((collaboration, index) => {
+                          const collabType = COLLABORATION_TYPES.find(t => t.value === collaboration.collaboration_type);
+                          return (
+                            <div key={index} className="flex items-center justify-between p-2 sm:p-3 rounded-lg dark:bg-gray-600 bg-gray-50">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                {collabType && <collabType.icon className={cn("h-3 w-3 sm:h-4 sm:w-4", collabType.color)} />}
+                                <div>
+                                  <p className="text-xs sm:text-sm font-medium dark:text-gray-200 text-gray-800">
+                                    {collaboration.event_name || 'Unknown Event'}
+                                  </p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {collabType?.label || collaboration.collaboration_type}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {collaboration.event_date
+                                    ? new Date(collaboration.event_date).toLocaleDateString()
+                                    : new Date(collaboration.created_at).toLocaleDateString()
+                                  }
+                                </p>
+                                <div className="flex items-center gap-1 mt-1">
+                                  {collaboration.show_on_event_page ? (
+                                    <Eye className="h-2 w-2 sm:h-3 sm:w-3 text-green-500" />
+                                  ) : (
+                                    <EyeOff className="h-2 w-2 sm:h-3 sm:w-3 text-gray-400" />
+                                  )}
+                                  <span className={cn(
+                                    "text-xs",
+                                    collaboration.is_active
+                                      ? "text-green-500 dark:text-green-400"
+                                      : "text-red-500 dark:text-red-400"
+                                  )}>
+                                    {collaboration.is_active ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {partnerDetailsTotalPages > 1 && (
+                          <div className="flex justify-center items-center gap-1 sm:gap-2 pt-3 sm:pt-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPartnerDetailsPage(prev => Math.max(prev - 1, 1));
+                                if (selectedPartner) fetchPartnerDetails(selectedPartner.id, Math.max(partnerDetailsPage - 1, 1));
+                              }}
+                              disabled={partnerDetailsPage <= 1}
+                              className="dark:bg-gray-600 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 px-2 sm:px-4">
+                              Page {partnerDetailsPage} of {partnerDetailsTotalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setPartnerDetailsPage(prev => Math.min(prev + 1, partnerDetailsTotalPages));
+                                if (selectedPartner) fetchPartnerDetails(selectedPartner.id, Math.min(partnerDetailsPage + 1, partnerDetailsTotalPages));
+                              }}
+                              disabled={partnerDetailsPage >= partnerDetailsTotalPages}
+                              className="dark:bg-gray-600 dark:text-gray-200 text-xs sm:text-sm p-1 sm:p-2"
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 sm:py-8">
+                        <Handshake className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mx-auto mb-1 sm:mb-2" />
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">No collaboration history found</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            <DialogFooter className="pt-3 sm:pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsPartnerDetailsDialogOpen(false)}
+                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
+              >
+                Close
+              </Button>
+              {selectedPartner && (
+                <Button
+                  onClick={() => {
+                    setIsPartnerDetailsDialogOpen(false);
+                    handlePartnerEdit(selectedPartner);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-[#10b981] hover:from-blue-500 hover:to-[#10b981] text-white text-xs sm:text-sm"
+                >
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  Edit Partner
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog - Content remains the same */}
+        {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          {/* ... (Delete confirmation dialog content remains unchanged) ... */}
+          <DialogContent className="sm:max-w-[400px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-1 sm:gap-2 dark:text-gray-200 text-gray-800 text-lg sm:text-xl">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
+                Confirm Deletion
+              </DialogTitle>
+              <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
+                {itemToDelete?.type === 'partner'
+                  ? 'Are you sure you want to delete this partner? This action cannot be undone and will remove all associated collaborations.'
+                  : 'Are you sure you want to delete this collaboration? This action cannot be undone.'}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-3 sm:pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setItemToDelete(null);
+                }}
+                className="dark:bg-gray-700 dark:text-gray-200 text-xs sm:text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={deleteItem}
+                disabled={isDeleting}
+                className="bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm"
+              >
+                {isDeleting && <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" />}
+                Delete {itemToDelete?.type === 'partner' ? 'Partner' : 'Collaboration'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
-        {/* Enhanced AI Suggestion Dialog */}
+        {/* AI Suggestion Dialog */}
         <Dialog open={isAISuggestionDialogOpen} onOpenChange={setIsAISuggestionDialogOpen}>
           <DialogContent className="sm:max-w-[500px] dark:bg-gray-800 dark:border-gray-700 p-3 sm:p-6">
             <DialogHeader>
@@ -1610,7 +2323,7 @@ const OrganizerPartnership: React.FC = () => {
                 AI Partner Suggestion
               </DialogTitle>
               <DialogDescription className="dark:text-gray-400 text-gray-600 text-sm">
-                Describe the type of partner you're looking for, and AI will suggest a complete partner profile with auto-filled contact information
+                Describe the type of partner you're looking for, and AI will suggest a partner profile
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -1630,9 +2343,6 @@ const OrganizerPartnership: React.FC = () => {
                     }
                   }}
                 />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  AI will automatically generate website URL, contact email, and contact person based on the company name
-                </p>
               </div>
               {aiSuggestion && (
                 <div className="space-y-3 p-3 rounded-lg dark:bg-gray-700 bg-purple-50 border dark:border-gray-600 border-purple-200">
@@ -1645,20 +2355,6 @@ const OrganizerPartnership: React.FC = () => {
                     <div>
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Description</p>
                       <p className="text-sm dark:text-gray-300 text-gray-700">{aiSuggestion.company_description}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Website</p>
-                        <p className="text-sm dark:text-gray-300 text-gray-700 truncate">{aiSuggestion.website_url}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Email</p>
-                        <p className="text-sm dark:text-gray-300 text-gray-700 truncate">{aiSuggestion.contact_email}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Contact Person</p>
-                      <p className="text-sm dark:text-gray-300 text-gray-700">{aiSuggestion.contact_person}</p>
                     </div>
                     {aiSuggestion.suggested_collaboration_types && (
                       <div>
@@ -1716,9 +2412,9 @@ const OrganizerPartnership: React.FC = () => {
                       company_name: aiSuggestion.company_name || '',
                       company_description: aiSuggestion.company_description || '',
                       logo_url: '',
-                      website_url: aiSuggestion.website_url || '',
-                      contact_email: aiSuggestion.contact_email || '',
-                      contact_person: aiSuggestion.contact_person || ''
+                      website_url: '',
+                      contact_email: '',
+                      contact_person: ''
                     });
                     setIsAISuggestionDialogOpen(false);
                     setIsPartnerDialogOpen(true);
@@ -1727,7 +2423,7 @@ const OrganizerPartnership: React.FC = () => {
                 disabled={!aiSuggestion}
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-500 hover:to-blue-500 text-white text-xs sm:text-sm"
               >
-                {aiSuggestion ? 'Use Enhanced Suggestion' : 'Generate Suggestion'}
+                {aiSuggestion ? 'Use Suggestion' : 'Generate Suggestion'}
               </Button>
             </DialogFooter>
           </DialogContent>
