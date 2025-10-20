@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield, Menu, X, Tags } from 'lucide-react';
+import { Users, CalendarDays, DollarSign, CheckCircle, BarChart2, Activity, UserPlus, Shield, Menu, X, Tags, Handshake, TrendingUp, FileText, Target, Sparkles } from 'lucide-react';
 import AdminNavigation from './AdminNavigation';
 import UserManagement from './UserManagement';
 import SystemReports from './SystemReports';
 import RecentEvents from './RecentEvents';
 import CategoryManagement from './CategoryManagement';
+import AdminPartnerManagement from './AdminPartner';
 import { debounce } from 'lodash';
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ interface Category {
 }
 
 const AdminDashboard: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories'>('reports');
+  const [currentView, setCurrentView] = useState<'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories' | 'adminPartnership'>('reports');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
@@ -43,6 +44,363 @@ const AdminDashboard: React.FC = () => {
 
   const { toast } = useToast();
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+
+  // Partner management API functions
+  const getPartnersOverview = async (params?: any) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            queryParams.append(key, String(value));
+          }
+        });
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching partners overview:', err);
+      throw err;
+    }
+  };
+
+  const getPartnerDetail = async (partnerId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/${partnerId}?include_ai_insights=true`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching partner detail:', err);
+      throw err;
+    }
+  };
+
+  const getCollaborationsOverview = async (params?: any) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            queryParams.append(key, String(value));
+          }
+        });
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/collaborations?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching collaborations overview:', err);
+      throw err;
+    }
+  };
+
+  const getEventCollaborations = async (eventId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/collaborations/event/${eventId}?include_ai_insights=true`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching event collaborations:', err);
+      throw err;
+    }
+  };
+
+  const getRecentCollaborations = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/recent?include_ai_insights=true`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching recent collaborations:', err);
+      throw err;
+    }
+  };
+
+  const getInactiveOverview = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/inactive?include_ai_insights=true`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching inactive overview:', err);
+      throw err;
+    }
+  };
+
+  const getPartnershipAnalytics = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/analytics?include_ai_insights=true`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error fetching partnership analytics:', err);
+      throw err;
+    }
+  };
+
+  const processAIQuery = async (query: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/ai/assist`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ query })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error processing AI query:', err);
+      throw err;
+    }
+  };
+
+  const analyzePartner = async (partnerId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/${partnerId}/ai/analyze`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error analyzing partner:', err);
+      throw err;
+    }
+  };
+
+  const qualityAudit = async (organizerId?: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/ai/quality-audit`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(organizerId ? { organizer_id: organizerId } : {})
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error running quality audit:', err);
+      throw err;
+    }
+  };
+
+  const getPlatformTrends = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/ai/platform-trends`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error getting platform trends:', err);
+      throw err;
+    }
+  };
+
+  const bulkAnalyzePartners = async (organizerId?: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/ai/bulk-analyze-all`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(organizerId ? { organizer_id: organizerId } : {})
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error running bulk analysis:', err);
+      throw err;
+    }
+  };
+
+  const optimizeCollaboration = async (collaborationId?: number) => {
+    try {
+      const url = collaborationId 
+        ? `${import.meta.env.VITE_API_URL}/api/admin/partners/ai/optimize-collaborations/${collaborationId}`
+        : `${import.meta.env.VITE_API_URL}/api/admin/partners/ai/optimize-collaborations`;
+        
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error optimizing collaboration:', err);
+      throw err;
+    }
+  };
+
+  const updatePartner = async (partnerId: number, data: any) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/${partnerId}`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error updating partner:', err);
+      throw err;
+    }
+  };
+
+  const deletePartner = async (partnerId: number) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/partners/${partnerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (err) {
+      console.error('Error deleting partner:', err);
+      throw err;
+    }
+  };
 
   const getHeaderContent = () => {
     switch (currentView) {
@@ -101,6 +459,13 @@ const AdminDashboard: React.FC = () => {
           description: "Create and manage event categories with AI assistance.",
           icon: <Tags className="w-8 h-8 md:w-10 md:h-10 text-white" />,
           gradient: "from-pink-500 to-pink-700"
+        };
+      case 'adminPartnership':
+        return {
+          title: "Partner Management",
+          description: "Comprehensive partner and collaboration management with AI-powered insights and analytics.",
+          icon: <Handshake className="w-8 h-8 md:w-10 md:h-10 text-white" />,
+          gradient: "from-teal-500 to-teal-700"
         };
       default:
         return {
@@ -625,7 +990,7 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories') => {
+  const handleViewChange = (view: 'reports' | 'events' | 'nonAttendees' | 'registerAdmin' | 'registerSecurity' | 'viewAllUsers' | 'registerOrganizer' | 'manageCategories' | 'adminPartnership') => {
     setCurrentView(view);
     if (view !== 'viewAllUsers' && view !== 'nonAttendees') {
       setSearchTerm('');
@@ -702,6 +1067,28 @@ const AdminDashboard: React.FC = () => {
                 onCreateCategory={handleCreateCategory}
                 onUpdateCategory={handleUpdateCategory}
                 onDeleteCategory={handleDeleteCategory}
+                isLoading={isLoading}
+                error={error}
+                successMessage={successMessage}
+              />
+            )}
+            {currentView === 'adminPartnership' && (
+              <AdminPartnerManagement
+                getPartnersOverview={getPartnersOverview}
+                getPartnerDetail={getPartnerDetail}
+                getCollaborationsOverview={getCollaborationsOverview}
+                getEventCollaborations={getEventCollaborations}
+                getRecentCollaborations={getRecentCollaborations}
+                getInactiveOverview={getInactiveOverview}
+                getPartnershipAnalytics={getPartnershipAnalytics}
+                processAIQuery={processAIQuery}
+                analyzePartner={analyzePartner}
+                qualityAudit={qualityAudit}
+                getPlatformTrends={getPlatformTrends}
+                bulkAnalyzePartners={bulkAnalyzePartners}
+                optimizeCollaboration={optimizeCollaboration}
+                updatePartner={updatePartner}
+                deletePartner={deletePartner}
                 isLoading={isLoading}
                 error={error}
                 successMessage={successMessage}
