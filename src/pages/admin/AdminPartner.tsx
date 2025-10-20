@@ -264,8 +264,8 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
     },
     collaborations: {
       search: '',
-      status: '',
-      collaborationType: '',
+      status: 'all',
+      collaborationType: 'all',
       sortBy: 'id',
       order: 'asc'
     }
@@ -346,8 +346,8 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
         per_page: pagination.collaborations.perPage,
         sort_by: filters.collaborations.sortBy,
         order: filters.collaborations.order,
-        status: filters.collaborations.status || undefined,
-        collaboration_type: filters.collaborations.collaborationType || undefined,
+        status: filters.collaborations.status !== 'all' ? filters.collaborations.status : undefined,
+        collaboration_type: filters.collaborations.collaborationType !== 'all' ? filters.collaborations.collaborationType : undefined,
         include_ai_insights: true
       };
 
@@ -1176,7 +1176,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
                     </SelectContent>
