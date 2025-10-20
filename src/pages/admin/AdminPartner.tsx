@@ -321,7 +321,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
       };
 
       const response = await getPartnersOverview(params);
-      setPartners(response.partners);
+      setPartners(response.partners || []);
       setPlatformInsights(response.platform_insights || null);
       setPagination(prev => ({
         ...prev,
@@ -352,7 +352,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
       };
 
       const response = await getCollaborationsOverview(params);
-      setCollaborations(response.collaborations);
+      setCollaborations(response.collaborations || []);
       setPagination(prev => ({
         ...prev,
         collaborations: {
@@ -382,7 +382,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
   const loadRecentCollaborations = async () => {
     try {
       const response = await getRecentCollaborations();
-      setRecentCollaborations(response.recent_collaborations);
+      setRecentCollaborations(response.recent_collaborations || []);
       setRecentTrends(response.recent_trends || null);
     } catch (err) {
       console.error('Error loading recent collaborations:', err);
@@ -582,7 +582,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
 
   // Render partner card
   const renderPartnerCard = (partner: Partner) => (
-    <Card key={partner.id} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card key={partner.id} className={cn(
+      "shadow-lg hover:shadow-xl transition-all duration-300",
+      "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+      "border border-gray-200 dark:border-gray-700"
+    )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -680,7 +684,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
 
   // Render collaboration card
   const renderCollaborationCard = (collaboration: Collaboration) => (
-    <Card key={collaboration.id} className="shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card key={collaboration.id} className={cn(
+      "shadow-lg hover:shadow-xl transition-all duration-300",
+      "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+      "border border-gray-200 dark:border-gray-700"
+    )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div>
@@ -772,13 +780,17 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
     
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card>
+        <Card className={cn(
+          "shadow-lg hover:shadow-xl transition-all duration-300",
+          "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/40",
+          "border border-blue-200 dark:border-blue-800"
+        )}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Partners</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-200">Total Partners</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.total_partners}</div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">{analytics.total_partners}</div>
+            <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300 mt-1">
               <span>{analytics.active_partners} active</span>
               <span>•</span>
               <span>{analytics.inactive_partners} inactive</span>
@@ -786,13 +798,17 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={cn(
+          "shadow-lg hover:shadow-xl transition-all duration-300",
+          "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40",
+          "border border-purple-200 dark:border-purple-800"
+        )}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Collaborations</CardTitle>
+            <CardTitle className="text-sm font-medium text-purple-800 dark:text-purple-200">Total Collaborations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.total_collaborations}</div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">{analytics.total_collaborations}</div>
+            <div className="flex items-center gap-2 text-xs text-purple-700 dark:text-purple-300 mt-1">
               <span>{analytics.active_collaborations} active</span>
               <span>•</span>
               <span>{analytics.avg_collaborations_per_partner} per partner</span>
@@ -800,28 +816,36 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={cn(
+          "shadow-lg hover:shadow-xl transition-all duration-300",
+          "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/40",
+          "border border-green-200 dark:border-green-800"
+        )}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Performance Score</CardTitle>
+            <CardTitle className="text-sm font-medium text-green-800 dark:text-green-200">Avg Performance Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(analytics.avg_performance_score * 100).toFixed(0)}%</div>
-            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <div className="text-2xl font-bold text-green-900 dark:text-green-100">{(analytics.avg_performance_score * 100).toFixed(0)}%</div>
+            <div className="flex items-center gap-1 text-xs text-green-700 dark:text-green-300 mt-1">
               {getPerformanceIcon(analytics.avg_performance_score)}
               <span>Platform average</span>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={cn(
+          "shadow-lg hover:shadow-xl transition-all duration-300",
+          "bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/40",
+          "border border-amber-200 dark:border-amber-800"
+        )}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Platform Health</CardTitle>
+            <CardTitle className="text-sm font-medium text-amber-800 dark:text-amber-200">Platform Health</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-amber-900 dark:text-amber-100">
               {analytics.platform_health ? (analytics.platform_health.overall_health_score).toFixed(0) : 'N/A'}%
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300 mt-1">
               {analytics.platform_health && (
                 <Badge variant={analytics.platform_health.status === 'excellent' ? 'default' : 
                                analytics.platform_health.status === 'good' ? 'secondary' : 
@@ -838,10 +862,14 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
 
   // Render AI assistant
   const renderAIAssistant = () => (
-    <Card className="h-full">
+    <Card className={cn(
+      "h-full shadow-lg hover:shadow-xl transition-all duration-300",
+      "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40",
+      "border border-purple-200 dark:border-purple-800"
+    )}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-purple-500" />
+        <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
+          <Sparkles className="w-5 h-5" />
           AI Assistant
         </CardTitle>
       </CardHeader>
@@ -945,7 +973,10 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
       
       {/* Quick Guide */}
       {showGuide && (
-        <Card className="border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+        <Card className={cn(
+          "border-blue-200 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
+          "shadow-lg hover:shadow-xl transition-all duration-300"
+        )}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-3 text-lg font-bold text-blue-900 dark:text-blue-100">
@@ -1053,7 +1084,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
         
         {/* Partners Tab */}
         <TabsContent value="partners" className="space-y-4">
-          <Card>
+          <Card className={cn(
+            "shadow-lg hover:shadow-xl transition-all duration-300",
+            "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+            "border border-gray-200 dark:border-gray-700"
+          )}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Partners Overview</CardTitle>
@@ -1153,7 +1188,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
         
         {/* Collaborations Tab */}
         <TabsContent value="collaborations" className="space-y-4">
-          <Card>
+          <Card className={cn(
+            "shadow-lg hover:shadow-xl transition-all duration-300",
+            "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+            "border border-gray-200 dark:border-gray-700"
+          )}>
             <CardHeader>
               <CardTitle>Collaborations Overview</CardTitle>
             </CardHeader>
@@ -1244,7 +1283,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
           
           {analytics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              <Card className={cn(
+                "shadow-lg hover:shadow-xl transition-all duration-300",
+                "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                "border border-gray-200 dark:border-gray-700"
+              )}>
                 <CardHeader>
                   <CardTitle>Top Performing Partners</CardTitle>
                 </CardHeader>
@@ -1271,7 +1314,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className={cn(
+                "shadow-lg hover:shadow-xl transition-all duration-300",
+                "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                "border border-gray-200 dark:border-gray-700"
+              )}>
                 <CardHeader>
                   <CardTitle>Organizer Breakdown</CardTitle>
                 </CardHeader>
@@ -1303,7 +1350,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
         
         {/* Recent Tab */}
         <TabsContent value="recent" className="space-y-4">
-          <Card>
+          <Card className={cn(
+            "shadow-lg hover:shadow-xl transition-all duration-300",
+            "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+            "border border-gray-200 dark:border-gray-700"
+          )}>
             <CardHeader>
               <CardTitle>Recent Collaborations</CardTitle>
             </CardHeader>
@@ -1317,23 +1368,36 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                   {recentCollaborations.map(renderCollaborationCard)}
                   
                   {recentTrends && (
-                    <Card className="mt-6">
+                    <Card className={cn(
+                      "mt-6 shadow-lg hover:shadow-xl transition-all duration-300",
+                      "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                      "border border-gray-200 dark:border-gray-700"
+                    )}>
                       <CardHeader>
                         <CardTitle>Recent Trends</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className={cn(
+                            "p-4 bg-gray-50 dark:bg-gray-800 rounded-lg",
+                            "border border-gray-200 dark:border-gray-700"
+                          )}>
                             <p className="font-medium mb-2">Most Common Type</p>
                             <p className="text-2xl font-bold">{recentTrends.most_common_type || 'N/A'}</p>
                           </div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className={cn(
+                            "p-4 bg-gray-50 dark:bg-gray-800 rounded-lg",
+                            "border border-gray-200 dark:border-gray-700"
+                          )}>
                             <p className="font-medium mb-2">Avg Contribution Score</p>
                             <p className="text-2xl font-bold">
                               {recentTrends.avg_contribution_score ? `${(recentTrends.avg_contribution_score * 100).toFixed(0)}%` : 'N/A'}
                             </p>
                           </div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className={cn(
+                            "p-4 bg-gray-50 dark:bg-gray-800 rounded-lg",
+                            "border border-gray-200 dark:border-gray-700"
+                          )}>
                             <p className="font-medium mb-2">Trend Direction</p>
                             <Badge 
                               variant={recentTrends.trend_direction === 'positive' ? 'default' : 'destructive'}
@@ -1341,7 +1405,10 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                               {recentTrends.trend_direction || 'N/A'}
                             </Badge>
                           </div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className={cn(
+                            "p-4 bg-gray-50 dark:bg-gray-800 rounded-lg",
+                            "border border-gray-200 dark:border-gray-700"
+                          )}>
                             <p className="font-medium mb-2">Type Distribution</p>
                             <div className="space-y-1">
                               {Object.entries(recentTrends.type_distribution || {}).map(([type, count]) => (
@@ -1364,7 +1431,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
         
         {/* Inactive Tab */}
         <TabsContent value="inactive" className="space-y-4">
-          <Card>
+          <Card className={cn(
+            "shadow-lg hover:shadow-xl transition-all duration-300",
+            "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+            "border border-gray-200 dark:border-gray-700"
+          )}>
             <CardHeader>
               <CardTitle>Inactive Partners & Collaborations</CardTitle>
             </CardHeader>
@@ -1376,14 +1447,18 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
               ) : inactiveOverview ? (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
+                    <Card className={cn(
+                      "shadow-md hover:shadow-lg transition-all duration-300",
+                      "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                      "border border-gray-200 dark:border-gray-700"
+                    )}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Inactive Partners</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold mb-2">{inactiveOverview.totals.inactive_partners}</div>
                         <div className="space-y-2">
-                          {inactiveOverview.inactive_partners.slice(0, 5).map((partner: Partner) => (
+                          {inactiveOverview.inactive_partners && inactiveOverview.inactive_partners.slice(0, 5).map((partner: Partner) => (
                             <div key={partner.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
                               <span className="text-sm font-medium">{partner.company_name}</span>
                               <Button size="sm" variant="outline" onClick={() => loadPartnerDetail(partner.id)}>
@@ -1391,7 +1466,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                               </Button>
                             </div>
                           ))}
-                          {inactiveOverview.inactive_partners.length > 5 && (
+                          {inactiveOverview.inactive_partners && inactiveOverview.inactive_partners.length > 5 && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                               And {inactiveOverview.inactive_partners.length - 5} more...
                             </p>
@@ -1400,14 +1475,18 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                       </CardContent>
                     </Card>
                     
-                    <Card>
+                    <Card className={cn(
+                      "shadow-md hover:shadow-lg transition-all duration-300",
+                      "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                      "border border-gray-200 dark:border-gray-700"
+                    )}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg">Inactive Collaborations</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold mb-2">{inactiveOverview.totals.inactive_collaborations}</div>
                         <div className="space-y-2">
-                          {inactiveOverview.inactive_collaborations.slice(0, 5).map((collab: Collaboration) => (
+                          {inactiveOverview.inactive_collaborations && inactiveOverview.inactive_collaborations.slice(0, 5).map((collab: Collaboration) => (
                             <div key={collab.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded">
                               <span className="text-sm font-medium">{collab.event?.name || 'Unknown Event'}</span>
                               <Button size="sm" variant="outline" onClick={() => loadEventCollaborations(collab.event_id)}>
@@ -1415,7 +1494,7 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                               </Button>
                             </div>
                           ))}
-                          {inactiveOverview.inactive_collaborations.length > 5 && (
+                          {inactiveOverview.inactive_collaborations && inactiveOverview.inactive_collaborations.length > 5 && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                               And {inactiveOverview.inactive_collaborations.length - 5} more...
                             </p>
@@ -1426,7 +1505,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                   </div>
                   
                   {inactiveOverview.ai_reactivation_candidates && inactiveOverview.ai_reactivation_candidates.length > 0 && (
-                    <Card>
+                    <Card className={cn(
+                      "shadow-lg hover:shadow-xl transition-all duration-300",
+                      "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40",
+                      "border border-purple-200 dark:border-purple-800"
+                    )}>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Sparkles className="w-5 h-5 text-purple-500" />
@@ -1484,7 +1567,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
           {partnerDetail && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
+                <Card className={cn(
+                  "shadow-md hover:shadow-lg transition-all duration-300",
+                  "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                  "border border-gray-200 dark:border-gray-700"
+                )}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Basic Information</CardTitle>
                   </CardHeader>
@@ -1573,17 +1660,27 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                   </CardContent>
                 </Card>
                 
-                <Card>
+                <Card className={cn(
+                  "shadow-md hover:shadow-lg transition-all duration-300",
+                  "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                  "border border-gray-200 dark:border-gray-700"
+                )}>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg">Collaboration Summary</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
+                      <div className={cn(
+                        "p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-center",
+                        "border border-gray-200 dark:border-gray-700"
+                      )}>
                         <p className="text-2xl font-bold">{partnerDetail.collaborations_count || 0}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Total Collaborations</p>
                       </div>
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
+                      <div className={cn(
+                        "p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-center",
+                        "border border-gray-200 dark:border-gray-700"
+                      )}>
                         <p className="text-2xl font-bold">{partnerDetail.active_collaborations_count || 0}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Active Collaborations</p>
                       </div>
@@ -1622,7 +1719,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
               </div>
               
               {partnerDetail.ai_performance_analysis && (
-                <Card>
+                <Card className={cn(
+                  "shadow-md hover:shadow-lg transition-all duration-300",
+                  "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40",
+                  "border border-purple-200 dark:border-purple-800"
+                )}>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <Sparkles className="w-5 h-5 text-purple-500" />
@@ -1694,7 +1795,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
           </DialogHeader>
           {eventCollaborations && (
             <div className="space-y-4">
-              <Card>
+              <Card className={cn(
+                "shadow-md hover:shadow-lg transition-all duration-300",
+                "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                "border border-gray-200 dark:border-gray-700"
+              )}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">{eventCollaborations.event.name}</CardTitle>
                   {eventCollaborations.event.date && (
@@ -1713,7 +1818,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
               <div className="space-y-3">
                 <h3 className="text-lg font-medium">Current Collaborations ({eventCollaborations.total})</h3>
                 {eventCollaborations.collaborations.map((collab: any) => (
-                  <Card key={collab.id}>
+                  <Card key={collab.id} className={cn(
+                    "shadow-md hover:shadow-lg transition-all duration-300",
+                    "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+                    "border border-gray-200 dark:border-gray-700"
+                  )}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between">
                         <div>
@@ -1748,7 +1857,11 @@ const AdminPartnerManagement: React.FC<AdminPartnerManagementProps> = ({
                 <div className="space-y-3">
                   <h3 className="text-lg font-medium">AI Suggested Partners</h3>
                   {eventCollaborations.ai_suggested_partners.map((partner: any, index: number) => (
-                    <Card key={index} className="border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
+                    <Card key={index} className={cn(
+                      "shadow-md hover:shadow-lg transition-all duration-300",
+                      "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/40",
+                      "border border-purple-200 dark:border-purple-800"
+                    )}>
                       <CardContent className="pt-4">
                         <div className="flex items-start justify-between">
                           <div>
