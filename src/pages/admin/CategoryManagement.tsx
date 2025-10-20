@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info, X, HelpCircle, TrendingUp, Eye, Zap, Star, Palette, Wand2, FolderOpen, Edit3, Trash2, Save, Clock, Hash } from 'lucide-react';
+import { Loader2, Plus, Tags, Calendar, AlertCircle, CheckCircle, Sparkles, RefreshCw, Lightbulb, Info, X, HelpCircle, TrendingUp, Eye, Zap, Star, MapPin, Music, Coffee, Camera, GamepadIcon, GraduationCap, Briefcase, ShoppingBag, Utensils, Trash2, Edit3 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface Category {
@@ -48,26 +48,73 @@ interface CategoryManagementProps {
   getSimilarCategories?: () => any;
 }
 
+// Enhanced icon mapping for categories
 const getCategoryIcon = (categoryName: string) => {
   const name = categoryName.toLowerCase();
   
-  const iconMap = {
-    'technology': '💻', 'tech': '💻', 'music': '🎵', 'concert': '🎤', 
-    'sports': '⚽', 'fitness': '💪', 'business': '💼', 'art': '🎨',
-    'food': '🍽️', 'education': '📚', 'health': '🏥', 'travel': '✈️',
-    'gaming': '🎮', 'fashion': '👗', 'photography': '📸', 'outdoor': '🏔️',
-    'night': '🌙', 'bootcamp': '🎓', 'agricultural': '🌾', 'farm': '🚜'
+  const iconMap: { [key: string]: React.ReactNode } = {
+    // Technology & Digital
+    'technology': <Zap className="w-4 h-4" />, 'tech': <Zap className="w-4 h-4" />, 'digital': <Zap className="w-4 h-4" />,
+    'software': <Zap className="w-4 h-4" />, 'coding': <Zap className="w-4 h-4" />, 'programming': <Zap className="w-4 h-4" />,
+    
+    // Music & Entertainment
+    'music': <Music className="w-4 h-4" />, 'concert': <Music className="w-4 h-4" />, 'festival': <Music className="w-4 h-4" />,
+    'entertainment': <Music className="w-4 h-4" />, 'band': <Music className="w-4 h-4" />,
+    
+    // Sports & Fitness
+    'sports': <Eye className="w-4 h-4" />, 'fitness': <Eye className="w-4 h-4" />, 'gym': <Eye className="w-4 h-4" />,
+    
+    // Business & Professional
+    'business': <Briefcase className="w-4 h-4" />, 'networking': <Briefcase className="w-4 h-4" />,
+    'conference': <Briefcase className="w-4 h-4" />, 'workshop': <Briefcase className="w-4 h-4" />,
+    
+    // Education
+    'education': <GraduationCap className="w-4 h-4" />, 'bootcamp': <GraduationCap className="w-4 h-4" />,
+    'course': <GraduationCap className="w-4 h-4" />, 'training': <GraduationCap className="w-4 h-4" />,
+    
+    // Food & Dining
+    'food': <Utensils className="w-4 h-4" />, 'dining': <Utensils className="w-4 h-4" />, 'restaurant': <Utensils className="w-4 h-4" />,
+    
+    // Travel & Outdoor
+    'travel': <MapPin className="w-4 h-4" />, 'outdoor': <MapPin className="w-4 h-4" />, 'adventure': <MapPin className="w-4 h-4" />,
+    
+    // Fashion
+    'fashion': <ShoppingBag className="w-4 h-4" />, 'clothing': <ShoppingBag className="w-4 h-4" />, 'style': <ShoppingBag className="w-4 h-4" />,
+    
+    // Night Life
+    'night': <Coffee className="w-4 h-4" />, 'party': <Coffee className="w-4 h-4" />, 'club': <Coffee className="w-4 h-4" />,
+    
+    // Photography & Arts
+    'photography': <Camera className="w-4 h-4" />, 'art': <Camera className="w-4 h-4" />, 'gallery': <Camera className="w-4 h-4" />,
+    
+    // Gaming
+    'gaming': <GamepadIcon className="w-4 h-4" />, 'esports': <GamepadIcon className="w-4 h-4" />,
+    
+    // Agriculture
+    'farm': <Utensils className="w-4 h-4" />, 'agricultural': <Utensils className="w-4 h-4" />,
   };
 
   for (const [key, icon] of Object.entries(iconMap)) {
-    if (name.includes(key) || key.includes(name)) {
+    if (name.includes(key)) {
       return icon;
     }
   }
 
-  const genericIcons = ['🎯', '⭐', '🎪', '🎭', '🎨', '🎵', '🎮', '🎊', '🎁', '🔥', '💫', '🌟', '✨', '💎', '🏆'];
-  const charCode = categoryName && categoryName.length > 0 ? categoryName.charCodeAt(0) : 0;
-  return genericIcons[Math.abs(charCode) % genericIcons.length];
+  return <Tags className="w-4 h-4" />;
+};
+
+// Color schemes for categories
+const colorSchemes = [
+  { bg: 'from-blue-500 to-cyan-500', text: 'text-white', border: 'border-blue-400' },
+  { bg: 'from-purple-500 to-pink-500', text: 'text-white', border: 'border-purple-400' },
+  { bg: 'from-green-500 to-emerald-500', text: 'text-white', border: 'border-green-400' },
+  { bg: 'from-orange-500 to-amber-500', text: 'text-white', border: 'border-orange-400' },
+  { bg: 'from-indigo-500 to-violet-500', text: 'text-white', border: 'border-indigo-400' },
+  { bg: 'from-teal-500 to-cyan-500', text: 'text-white', border: 'border-teal-400' },
+];
+
+const getColorScheme = (categoryId: number) => {
+  return colorSchemes[categoryId % colorSchemes.length];
 };
 
 const CategoryManagement: React.FC<CategoryManagementProps> = ({
@@ -301,26 +348,28 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-gray-900 dark:to-gray-800 min-h-screen">
       {/* Alerts */}
       {error && (
-        <Alert variant="destructive" className="border-red-200 dark:border-red-800">
+        <Alert variant="destructive" className="border-red-200 dark:border-red-800 bg-red-50/80 backdrop-blur-sm">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {successMessage && (
-        <Alert className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-800 dark:text-green-200">
+        <Alert className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-900/20 backdrop-blur-sm">
+          <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <AlertDescription className="text-emerald-800 dark:text-emerald-200">
             {successMessage}
           </AlertDescription>
         </Alert>
       )}
+      
+      {/* Similar Categories Warning */}
       {similarCategoriesWarning && (
-        <Alert variant="destructive" className="border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20">
+        <Alert variant="destructive" className="border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-900/20 backdrop-blur-sm">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-          <AlertDescription className="text-amber-900 dark:text-amber-200">
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
             <div className="space-y-2">
               <p className="font-medium">{similarCategoriesWarning.warning}</p>
               {similarCategoriesWarning.similar && similarCategoriesWarning.similar.length > 0 && (
@@ -338,7 +387,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   size="sm"
                   onClick={handleConfirmDespiteSimilar}
                   disabled={isLoading}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  className="bg-amber-600 hover:bg-amber-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   Create Anyway
                 </Button>
@@ -346,7 +395,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setSimilarCategoriesWarning(null)}
-                  className="border-amber-400 hover:bg-amber-50"
+                  className="border-amber-300 text-amber-700 dark:text-amber-300"
                 >
                   Cancel
                 </Button>
@@ -358,11 +407,14 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
       {/* Quick Guide Panel */}
       {showGuide && (
-        <Card className="shadow-xl border-teal-200 dark:border-teal-700 bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-900/20 dark:via-cyan-900/20 dark:to-emerald-900/20">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-lg font-bold text-teal-900 dark:text-teal-100">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-lg">
+        <Card className="shadow-xl border-blue-100 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-sm overflow-hidden">
+          <CardHeader className="pb-3 relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-200/20 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <div className="flex items-center justify-between relative z-10">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold text-blue-900 dark:text-blue-100">
+                <div className="p-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg">
                   <HelpCircle className="w-5 h-5" />
                 </div>
                 Quick Guide: Category Management
@@ -371,61 +423,57 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowGuide(false)}
-                className="text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30 rounded-lg"
+                className="text-blue-600 dark:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 rounded-lg"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 relative z-10">
             <div className="grid md:grid-cols-2 gap-3">
-              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-teal-200/50 dark:border-teal-700/50 shadow-sm hover:shadow-md transition-shadow">
+              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-blue-200/50 dark:border-blue-700/50 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">1</div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">
+                    <Zap className="w-4 h-4" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5 flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-emerald-600" />
-                      Create Categories
-                    </h4>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5">Create Categories</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Use AI to generate category names, descriptions, and keywords automatically. Just describe what you want!</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-teal-200/50 dark:border-teal-700/50 shadow-sm hover:shadow-md transition-shadow">
+              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-blue-200/50 dark:border-blue-700/50 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">2</div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-blue-600" />
-                      Edit & Enhance
-                    </h4>
-                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Click Edit on any category to modify it. Use the AI enhance button to improve descriptions with one click.</p>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5">Edit & Enhance</h4>
+                    <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Click Edit on any category to modify it. Use AI to enhance descriptions and generate keywords with one click.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-teal-200/50 dark:border-teal-700/50 shadow-sm hover:shadow-md transition-shadow">
+              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-blue-200/50 dark:border-blue-700/50 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">3</div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">
+                    <Tags className="w-4 h-4" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5 flex items-center gap-2">
-                      <Tags className="w-4 h-4 text-amber-600" />
-                      Organize Events
-                    </h4>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5">Organize Events</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Categories help you organize and filter your events. Assign categories when creating or editing events.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-teal-200/50 dark:border-teal-700/50 shadow-sm hover:shadow-md transition-shadow">
+              <div className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-blue-200/50 dark:border-blue-700/50 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-rose-400 to-rose-600 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">4</div>
+                  <div className="w-8 h-8 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-md">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-rose-600" />
-                      Delete Safely
-                    </h4>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 mb-1.5">Delete Safely</h4>
                     <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">Before deleting, the system checks how many events use that category to prevent accidental data loss.</p>
                   </div>
                 </div>
@@ -440,7 +488,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
           onClick={() => setShowGuide(true)}
           variant="outline"
           size="sm"
-          className="border-teal-300 dark:border-teal-600 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+          className="border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
         >
           <HelpCircle className="w-4 h-4 mr-2" />
           Show Guide
@@ -448,7 +496,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       )}
 
       {/* Create Category Section */}
-      <Card className="shadow-xl border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-800 overflow-hidden">
+      <Card className="shadow-xl border-purple-200 dark:border-purple-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl -z-0"></div>
         <CardHeader className="pb-4 relative z-10">
           <div className="flex items-center justify-between">
@@ -461,7 +509,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             {!showCreateForm && (
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 hover:from-purple-600 hover:via-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 disabled={isLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -476,10 +524,10 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* AI Suggestion Section */}
               {!aiSuggestion && (
-                <div className="p-5 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-700 shadow-sm">
+                <div className="p-5 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200 dark:border-purple-700 shadow-sm">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 shadow-md">
-                      <Wand2 className="w-5 h-5 text-white" />
+                      <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
@@ -501,7 +549,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                           type="button"
                           onClick={handleGetAISuggestion}
                           disabled={isGeneratingSuggestion || isLoading || !inputForSuggestion.trim()}
-                          className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 hover:from-purple-600 hover:via-pink-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
                         >
                           {isGeneratingSuggestion ? (
                             <>
@@ -510,7 +558,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                             </>
                           ) : (
                             <>
-                              <Wand2 className="w-4 h-4 mr-2" />
+                              <Sparkles className="w-4 h-4 mr-2" />
                               Generate & Auto-fill Form
                             </>
                           )}
@@ -523,7 +571,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
               {/* AI Suggestion Applied Banner */}
               {aiSuggestion && (
-                <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-sm">
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border border-emerald-200 dark:border-emerald-700 shadow-sm">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-start gap-3 flex-1">
                       <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md">
@@ -619,15 +667,16 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     placeholder="Enter category description"
                     disabled={isLoading}
                     rows={3}
-                    className="border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none rounded-lg"
+                    className="border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg resize-none"
                   />
                 </div>
               </div>
+
               <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   type="submit"
                   disabled={isLoading || !formData.name.trim()}
-                  className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 hover:from-purple-600 hover:via-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex-1"
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? (
                     <>
@@ -636,7 +685,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                     </>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 mr-2" />
+                      <CheckCircle className="w-4 h-4 mr-2" />
                       Save Category
                     </>
                   )}
@@ -663,41 +712,40 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
       </Card>
 
       {/* Categories List */}
-      <Card className="shadow-xl border-indigo-200 dark:border-indigo-700 bg-white dark:bg-gray-800 overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 rounded-full blur-3xl -z-0"></div>
-        <CardHeader className="pb-4 relative z-10">
+      <Card className="shadow-xl border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-b">
           <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-gray-200">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg">
-              <FolderOpen className="w-5 h-5" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-lg">
+              <Tags className="w-5 h-5" />
             </div>
             Existing Categories
-            <span className="ml-2 px-3 py-1 text-xs font-medium bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
+            <span className="ml-2 px-3 py-1 text-xs font-medium bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 rounded-full border border-blue-200 dark:border-blue-700">
               {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
             </span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="relative z-10">
+        <CardContent className="pt-6">
           {isLoading && categories.length === 0 ? (
             <div className="min-h-[400px] flex items-center justify-center">
               <div className="flex flex-col items-center space-y-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
                 <p className="text-gray-700 dark:text-gray-300">Loading categories...</p>
               </div>
             </div>
           ) : categories.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FolderOpen className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-16 h-16 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Tags className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                 No categories found
               </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
                 Create your first category to organize events better.
               </p>
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 hover:from-purple-600 hover:via-pink-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 disabled={isLoading}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -705,200 +753,207 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className={cn(
-                    "p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 hover:shadow-lg transition-all duration-300 relative overflow-hidden",
-                    editingCategory === category.id && "ring-2 ring-purple-500"
-                  )}
-                >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-500/5 to-blue-500/5 rounded-full blur-2xl -z-0"></div>
-                  
-                  {editingCategory === category.id ? (
-                    <div className="space-y-3 relative z-10">
-                      {editAiSuggestion && (
-                        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700 mb-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Wand2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                            <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
-                              AI Enhanced - Auto-filled
-                            </span>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {categories.map((category) => {
+                const colorScheme = getColorScheme(category.id);
+                return (
+                  <div
+                    key={category.id}
+                    className={cn(
+                      "group relative p-5 rounded-xl border-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1",
+                      "border-gray-200/50 dark:border-gray-700/50 hover:border-purple-300 dark:hover:border-purple-600"
+                    )}
+                  >
+                    {editingCategory === category.id ? (
+                      <div className="space-y-3">
+                        {editAiSuggestion && (
+                          <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700 mb-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                              <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                                AI Enhanced - Auto-filled
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleGetEditAISuggestion(category.id)}
+                              disabled={isGeneratingEditSuggestion || isLoading}
+                              variant="outline"
+                              className="mt-2 w-full text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            >
+                              {isGeneratingEditSuggestion ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                  Re-generating...
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Regenerate
+                                </>
+                              )}
+                            </Button>
                           </div>
+                        )}
+                        <Input
+                          value={editFormData.name}
+                          name="name"
+                          onChange={handleEditInputChange}
+                          placeholder="Category name"
+                          className="text-sm rounded-lg"
+                        />
+                        <Textarea
+                          value={editFormData.description}
+                          name="description"
+                          onChange={handleEditInputChange}
+                          placeholder="Description"
+                          rows={2}
+                          className="text-xs rounded-lg resize-none"
+                        />
+                        {!editAiSuggestion && (
                           <Button
                             size="sm"
                             onClick={() => handleGetEditAISuggestion(category.id)}
                             disabled={isGeneratingEditSuggestion || isLoading}
                             variant="outline"
-                            className="mt-2 w-full text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            className="w-full text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                           >
                             {isGeneratingEditSuggestion ? (
                               <>
                                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                Re-generating...
+                                Getting AI Enhancement...
                               </>
                             ) : (
                               <>
-                                <RefreshCw className="w-3 h-3 mr-1" />
-                                Regenerate
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                Get AI Enhancement
                               </>
                             )}
                           </Button>
-                        </div>
-                      )}
-                      <Input
-                        value={editFormData.name}
-                        name="name"
-                        onChange={handleEditInputChange}
-                        placeholder="Category name"
-                        className="text-sm"
-                      />
-                      <Textarea
-                        value={editFormData.description}
-                        name="description"
-                        onChange={handleEditInputChange}
-                        placeholder="Description"
-                        rows={2}
-                        className="text-xs resize-none"
-                      />
-                      {!editAiSuggestion && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleGetEditAISuggestion(category.id)}
-                          disabled={isGeneratingEditSuggestion || isLoading}
-                          variant="outline"
-                          className="w-full text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                        >
-                          {isGeneratingEditSuggestion ? (
-                            <>
-                              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                              Getting AI Enhancement...
-                            </>
-                          ) : (
-                            <>
-                              <Wand2 className="w-3 h-3 mr-1" />
-                              Get AI Enhancement
-                            </>
-                          )}
-                        </Button>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveEdit(category.id)}
-                          disabled={isLoading}
-                          className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
-                        >
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingCategory(null);
-                            setEditFormData({ name: '', description: '' });
-                            setEditAiSuggestion(null);
-                          }}
-                          disabled={isLoading}
-                          className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start justify-between mb-3 relative z-10">
-                        <div className="flex items-center gap-2 flex-1">
-                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-lg">{getCategoryIcon(category.name)}</span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                            {category.name}
-                            {category.ai_description_enhanced && (
-                              <Sparkles className="w-3 h-3 text-purple-500 inline-block ml-1" />
-                            )}
-                          </h3>
-                        </div>
-                      </div>
-                      {category.description && (
-                        <p className="text-sm text-gray-800 dark:text-gray-200 mb-3 line-clamp-2 leading-relaxed font-medium relative z-10">
-                          {category.description}
-                        </p>
-                      )}
-                      {category.ai_suggested_keywords && category.ai_suggested_keywords.length > 0 && (
-                        <div className="mb-3 relative z-10">
-                          <div className="flex flex-wrap gap-1">
-                            {category.ai_suggested_keywords.slice(0, 3).map((keyword, idx) => (
-                              <span key={idx} className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-xs font-medium flex items-center gap-1">
-                                <Hash className="w-2 h-2" />
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3 relative z-10">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Created {formatDate(category.created_at)}</span>
-                        </div>
-                        <span className="px-2 py-1 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
-                          Active
-                        </span>
-                      </div>
-                      <div className="flex gap-2 pt-2 border-t border-gray-200 dark:border-gray-600 relative z-10">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => startEdit(category)}
-                          disabled={isLoading}
-                          className="flex-1 text-xs border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
-                        >
-                          <Edit3 className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
-                        {onUpdateCategory && (
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveEdit(category.id)}
+                            disabled={isLoading}
+                            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                          >
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Save
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleGetEditAISuggestion(category.id)}
+                            onClick={() => {
+                              setEditingCategory(null);
+                              setEditFormData({ name: '', description: '' });
+                              setEditAiSuggestion(null);
+                            }}
                             disabled={isLoading}
-                            className="flex-1 text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
-                            title="Enhance with AI"
+                            className="flex-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
-                            <Wand2 className="w-3 h-3" />
+                            Cancel
                           </Button>
-                        )}
-                        {onDeleteCategory && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCheckDeleteImpact(category.id)}
-                            disabled={isLoading}
-                            className="flex-1 text-xs border-red-300 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                        </div>
                       </div>
-                      {category.latest_insight && (
-                        <div className="mt-3 p-2 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded text-xs border border-indigo-200 dark:border-indigo-700 relative z-10">
-                          <div className="flex items-center gap-1 mb-1">
-                            <Lightbulb className="w-3 h-3 text-indigo-600" />
-                            <span className="font-medium text-indigo-700 dark:text-indigo-300">AI Insight</span>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className={`p-2 rounded-lg bg-gradient-to-r ${colorScheme.bg} text-white shadow-md`}>
+                              {getCategoryIcon(category.name)}
+                            </div>
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm flex items-center gap-1">
+                              {category.name}
+                              {category.ai_description_enhanced && (
+                                <Sparkles className="w-3 h-3 text-purple-500" />
+                              )}
+                            </h3>
                           </div>
-                          <p className="text-gray-800 dark:text-gray-200 line-clamp-2 leading-relaxed">
-                            {category.latest_insight.insights_text}
+                        </div>
+
+                        {category.description && (
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2 leading-relaxed">
+                            {category.description}
                           </p>
+                        )}
+
+                        {category.ai_suggested_keywords && category.ai_suggested_keywords.length > 0 && (
+                          <div className="mb-3">
+                            <div className="flex flex-wrap gap-1">
+                              {category.ai_suggested_keywords.slice(0, 3).map((keyword, idx) => (
+                                <span key={idx} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded text-xs font-medium border border-purple-200 dark:border-purple-700">
+                                  {keyword}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Created {formatDate(category.created_at)}</span>
+                          </div>
+                          <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full text-xs font-medium border border-green-200 dark:border-green-700">
+                            Active
+                          </span>
                         </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
+
+                        <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => startEdit(category)}
+                            disabled={isLoading}
+                            className="flex-1 text-xs border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                          >
+                            <Edit3 className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          {onUpdateCategory && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGetEditAISuggestion(category.id)}
+                              disabled={isLoading}
+                              className="flex-1 text-xs border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                              title="Enhance with AI"
+                            >
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              AI
+                            </Button>
+                          )}
+                          {onDeleteCategory && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCheckDeleteImpact(category.id)}
+                              disabled={isLoading}
+                              className="flex-1 text-xs border-red-300 dark:border-red-600 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium shadow-sm hover:shadow transition-all duration-300"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" />
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+
+                        {category.latest_insight && (
+                          <div className="mt-3 p-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Lightbulb className="w-3 h-3 text-purple-600" />
+                              <span className="font-medium text-purple-700 dark:text-purple-300 text-xs">AI Insight</span>
+                            </div>
+                            <p className="text-gray-800 dark:text-gray-200 text-xs line-clamp-2 leading-relaxed">
+                              {category.latest_insight.insights_text}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -906,22 +961,22 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deletingCategory && deleteImpact && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full shadow-2xl">
-            <CardHeader className="border-b border-gray-200 dark:border-gray-700">
-              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                <AlertCircle className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <Card className="max-w-md w-full shadow-2xl border-red-200 dark:border-red-800 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+            <CardHeader className="border-b border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20">
+              <CardTitle className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                <AlertCircle className="w-6 h-6" />
                 Confirm Deletion
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <div className="text-sm text-gray-800 dark:text-gray-200 font-medium">
+            <CardContent className="space-y-6 pt-6">
+              <div className="text-gray-800 dark:text-gray-200 font-medium">
                 {deleteImpact.warning || 'Are you sure you want to delete this category?'}
               </div>
               {deleteImpact.impact && deleteImpact.impact.affected_events > 0 && (
-                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-700">
-                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                    <Info className="w-4 h-4 inline mr-1" />
+                <div className="p-4 bg-amber-50/80 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700">
+                  <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                    <Info className="w-4 h-4 inline mr-2" />
                     This will affect <strong>{deleteImpact.impact.affected_events}</strong> event(s)
                   </p>
                 </div>
@@ -930,7 +985,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({
                 <Button
                   onClick={() => handleConfirmDelete(deletingCategory)}
                   disabled={isLoading}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                  className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? (
                     <>
