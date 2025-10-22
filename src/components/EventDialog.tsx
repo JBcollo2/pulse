@@ -22,7 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Utility functions (keeping the existing ones)
+// Utility functions
 const formatDate = (date) => {
   if (!date) return '';
   const year = date.getFullYear();
@@ -149,6 +149,8 @@ const FALLBACK_CATEGORIES = [
   { id: 10, name: "Charity" }
 ];
 
+const FALLBACK_TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
+
 export const EventDialog = ({
   open,
   onOpenChange,
@@ -156,9 +158,9 @@ export const EventDialog = ({
   onEventCreated,
   userRole = null
 }) => {
-  // State for storing event categories and ticket types fetched from API
-  const [categories, setCategories] = useState([]);
-  const [availableTicketTypes, setAvailableTicketTypes] = useState([]);
+  // Initialize state with proper default values
+  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [availableTicketTypes, setAvailableTicketTypes] = useState(FALLBACK_TICKET_TYPES);
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
 
   // Loading states
@@ -185,7 +187,7 @@ export const EventDialog = ({
   });
 
   // AI Assistant states
-  const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'ai'
+  const [activeTab, setActiveTab] = useState('manual');
   const [aiInput, setAiInput] = useState('');
   const [aiResponse, setAiResponse] = useState(null);
   const [aiDraft, setAiDraft] = useState(null);
@@ -226,6 +228,9 @@ export const EventDialog = ({
       // Ensure data.categories is an array
       if (data && Array.isArray(data.categories)) {
         setCategories(data.categories);
+      } else if (data && Array.isArray(data)) {
+        // Handle case where API returns array directly
+        setCategories(data);
       } else {
         console.error('Invalid categories data format:', data);
         setCategories(FALLBACK_CATEGORIES);
@@ -257,15 +262,21 @@ export const EventDialog = ({
       }
 
       const data = await response.json();
-      const apiTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
-      const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
       
-      const allTypes = [...new Set([...fallbackTypes, ...apiTypes])];
+      // Handle different response formats
+      let apiTypes = [];
+      if (data && Array.isArray(data.ticket_types)) {
+        apiTypes = [...new Set(data.ticket_types.map(t => t.type_name))];
+      } else if (data && Array.isArray(data)) {
+        apiTypes = [...new Set(data.map(t => t.type_name || t))];
+      }
+      
+      const allTypes = [...new Set([...FALLBACK_TICKET_TYPES, ...apiTypes])];
       setAvailableTicketTypes(allTypes);
       
     } catch (error) {
       console.error('Error fetching ticket types:', error);
-      setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
+      setAvailableTicketTypes(FALLBACK_TICKET_TYPES);
     } finally {
       setIsLoadingTicketTypes(false);
     }
@@ -284,9 +295,10 @@ export const EventDialog = ({
       }
 
       const data = await response.json();
-      setAiDrafts(data.drafts || []);
+      setAiDrafts(Array.isArray(data.drafts) ? data.drafts : []);
     } catch (error) {
       console.error('Error fetching drafts:', error);
+      setAiDrafts([]);
       toast({
         title: "Error",
         description: error.message || "Failed to fetch AI drafts",
@@ -315,9 +327,9 @@ export const EventDialog = ({
         end_time: editingEvent.end_time || '',
         city: editingEvent.city || '',
         location: editingEvent.location || '',
-        amenities: editingEvent.amenities || [],
+        amenities: Array.isArray(editingEvent.amenities) ? editingEvent.amenities : [],
         image: null,
-        ticket_types: [],
+        ticket_types: Array.isArray(editingEvent.ticket_types) ? editingEvent.ticket_types : [],
         category_id: editingEvent.category_id || null,
         featured: editingEvent.featured || false
       });
@@ -367,11 +379,9 @@ export const EventDialog = ({
     
     setIsAiProcessing(true);
     try {
-      // Add user message to conversation history
       const userMessage = { role: 'user', content: aiInput };
       setAiConversationHistory(prev => [...prev, userMessage]);
       
-      // Call AI assistant API
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?ai_assistant=true&conversational_input=${encodeURIComponent(aiInput)}`, {
         method: 'POST',
         credentials: 'include',
@@ -386,7 +396,6 @@ export const EventDialog = ({
 
       const data = await response.json();
       
-      // Add AI response to conversation history
       const aiMessage = { 
         role: 'assistant', 
         content: data.conversational_response || "I've created a draft for your event.",
@@ -394,14 +403,11 @@ export const EventDialog = ({
       };
       setAiConversationHistory(prev => [...prev, aiMessage]);
       
-      // Set the AI response and draft
       setAiResponse(data);
       setAiDraft(data.draft_id);
       
-      // Refresh drafts list
       fetchAiDrafts();
       
-      // Clear input
       setAiInput('');
       
       toast({
@@ -436,7 +442,6 @@ export const EventDialog = ({
       const data = await response.json();
       const draft = data.draft;
       
-      // Update form with draft data
       setNewEvent({
         name: draft.suggested_name || '',
         description: draft.suggested_description || '',
@@ -446,7 +451,7 @@ export const EventDialog = ({
         end_time: draft.suggested_end_time || '',
         city: draft.suggested_city || '',
         location: draft.suggested_location || '',
-        amenities: draft.suggested_amenities || [],
+        amenities: Array.isArray(draft.suggested_amenities) ? draft.suggested_amenities : [],
         image: null,
         ticket_types: [],
         category_id: draft.suggested_category_id || null,
@@ -497,7 +502,6 @@ export const EventDialog = ({
       onOpenChange(false);
       onEventCreated?.(data.event);
       
-      // Reset form
       setNewEvent({
         name: '',
         description: '',
@@ -546,7 +550,6 @@ export const EventDialog = ({
         throw new Error(`HTTP ${response.status}: Failed to update draft`);
       }
 
-      // Refresh drafts
       fetchAiDrafts();
       
       toast({
@@ -578,7 +581,6 @@ export const EventDialog = ({
         throw new Error(`HTTP ${response.status}: Failed to delete draft`);
       }
 
-      // Refresh drafts
       fetchAiDrafts();
       
       toast({
@@ -599,8 +601,9 @@ export const EventDialog = ({
   // Handle adding amenities
   const handleAddAmenity = useCallback((amenity) => {
     const amenityToAdd = amenity || currentAmenity.trim();
+    const currentAmenities = Array.isArray(newEvent.amenities) ? newEvent.amenities : [];
     
-    if (newEvent.amenities.length >= 5) {
+    if (currentAmenities.length >= 5) {
       toast({
         title: "Maximum Limit Reached",
         description: "You can only add a maximum of 5 amenities per event",
@@ -609,18 +612,15 @@ export const EventDialog = ({
       return;
     }
     
-    if (amenityToAdd && !newEvent.amenities.includes(amenityToAdd)) {
-      setNewEvent(prev => ({
-        ...prev,
-        amenities: [...prev.amenities, amenityToAdd]
-      }));
+    if (amenityToAdd && !currentAmenities.includes(amenityToAdd)) {
+      const updatedAmenities = [...currentAmenities, amenityToAdd];
+      setNewEvent(prev => ({ ...prev, amenities: updatedAmenities }));
       setCurrentAmenity('');
       
-      // Update draft if we're editing one
       if (selectedDraftId) {
-        updateDraftField(selectedDraftId, 'amenities', [...newEvent.amenities, amenityToAdd]);
+        updateDraftField(selectedDraftId, 'amenities', updatedAmenities);
       }
-    } else if (newEvent.amenities.includes(amenityToAdd)) {
+    } else if (currentAmenities.includes(amenityToAdd)) {
       toast({
         title: "Duplicate Amenity",
         description: "This amenity has already been added",
@@ -631,46 +631,51 @@ export const EventDialog = ({
 
   // Handle removing amenities
   const handleRemoveAmenity = useCallback((amenityToRemove) => {
-    setNewEvent(prev => ({
-      ...prev,
-      amenities: prev.amenities.filter(amenity => amenity !== amenityToRemove)
-    }));
+    const currentAmenities = Array.isArray(newEvent.amenities) ? newEvent.amenities : [];
+    const updatedAmenities = currentAmenities.filter(amenity => amenity !== amenityToRemove);
+    setNewEvent(prev => ({ ...prev, amenities: updatedAmenities }));
     
-    // Update draft if we're editing one
     if (selectedDraftId) {
-      updateDraftField(selectedDraftId, 'amenities', newEvent.amenities.filter(amenity => amenity !== amenityToRemove));
+      updateDraftField(selectedDraftId, 'amenities', updatedAmenities);
     }
   }, [newEvent.amenities, selectedDraftId]);
 
   // Add a new ticket type to the form
   const handleAddTicketType = useCallback(() => {
+    const currentTicketTypes = Array.isArray(newEvent.ticket_types) ? newEvent.ticket_types : [];
+    const firstTicketType = Array.isArray(availableTicketTypes) && availableTicketTypes.length > 0 
+      ? availableTicketTypes[0] 
+      : 'REGULAR';
+    
     setNewEvent(prev => ({
       ...prev,
-      ticket_types: [...prev.ticket_types, { 
-        type_name: availableTicketTypes[0] || 'REGULAR', 
+      ticket_types: [...currentTicketTypes, { 
+        type_name: firstTicketType, 
         price: 0, 
         quantity: 0 
       }]
     }));
-  }, [availableTicketTypes]);
+  }, [availableTicketTypes, newEvent.ticket_types]);
 
   // Remove a ticket type from the form by index
   const handleRemoveTicketType = useCallback((index) => {
+    const currentTicketTypes = Array.isArray(newEvent.ticket_types) ? newEvent.ticket_types : [];
     setNewEvent(prev => ({
       ...prev,
-      ticket_types: prev.ticket_types.filter((_, i) => i !== index)
+      ticket_types: currentTicketTypes.filter((_, i) => i !== index)
     }));
-  }, []);
+  }, [newEvent.ticket_types]);
 
   // Update a specific field of a ticket type by index
   const handleTicketTypeChange = useCallback((index, field, value) => {
+    const currentTicketTypes = Array.isArray(newEvent.ticket_types) ? newEvent.ticket_types : [];
     setNewEvent(prev => ({
       ...prev,
-      ticket_types: prev.ticket_types.map((ticket, i) =>
+      ticket_types: currentTicketTypes.map((ticket, i) =>
         i === index ? { ...ticket, [field]: value } : ticket
       )
     }));
-  }, []);
+  }, [newEvent.ticket_types]);
 
   // Update an existing ticket type via API call
   const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
@@ -690,11 +695,11 @@ export const EventDialog = ({
       }
 
       setExistingTicketTypes(prev =>
-        prev.map(ticket =>
+        Array.isArray(prev) ? prev.map(ticket =>
           ticket.id === ticketTypeId
             ? { ...ticket, ...updatedData }
             : ticket
-        )
+        ) : []
       );
 
       toast({
@@ -726,7 +731,9 @@ export const EventDialog = ({
         throw new Error(errorData.error || 'Failed to delete ticket type');
       }
 
-      setExistingTicketTypes(prev => prev.filter(ticket => ticket.id !== ticketTypeId));
+      setExistingTicketTypes(prev =>
+        Array.isArray(prev) ? prev.filter(ticket => ticket.id !== ticketTypeId) : []
+      );
 
       toast({
         title: "Success",
@@ -745,13 +752,11 @@ export const EventDialog = ({
 
   // Enhanced form submission handler
   const handleSubmitEvent = async () => {
-    // If we have a selected draft, publish it directly
     if (selectedDraftId) {
       publishDraft(selectedDraftId);
       return;
     }
     
-    // Client-side validation
     const errors = validateEventData(newEvent);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -790,7 +795,6 @@ export const EventDialog = ({
         formData.append('organizer_id', organizer_id.toString());
       }
 
-      // Add form fields with validation
       const fieldsToAdd = [
         { key: 'name', value: newEvent.name?.trim() },
         { key: 'description', value: newEvent.description?.trim() },
@@ -816,7 +820,6 @@ export const EventDialog = ({
         formData.append('end_date', formatDate(newEvent.end_date));
       }
 
-      // Handle times with proper formatting
       const timeFields = [
         { key: 'start_time', value: newEvent.start_time },
         { key: 'end_time', value: newEvent.end_time }
@@ -831,17 +834,15 @@ export const EventDialog = ({
         }
       });
 
-      // Add amenities as JSON string
-      if (newEvent.amenities.length > 0) {
-        formData.append('amenities', JSON.stringify(newEvent.amenities));
+      const currentAmenities = Array.isArray(newEvent.amenities) ? newEvent.amenities : [];
+      if (currentAmenities.length > 0) {
+        formData.append('amenities', JSON.stringify(currentAmenities));
       }
 
-      // Add featured flag
       if (newEvent.featured) {
         formData.append('featured', 'true');
       }
 
-      // Handle file upload
       if (newEvent.image instanceof File) {
         formData.append('file', newEvent.image);
       }
@@ -881,9 +882,9 @@ export const EventDialog = ({
         eventId = eventData.event?.id || eventData.id;
       }
 
-      // Create new ticket types
-      if (newEvent.ticket_types.length > 0) {
-        const ticketTypePromises = newEvent.ticket_types.map(async (ticketType) => {
+      const currentTicketTypes = Array.isArray(newEvent.ticket_types) ? newEvent.ticket_types : [];
+      if (currentTicketTypes.length > 0) {
+        const ticketTypePromises = currentTicketTypes.map(async (ticketType) => {
           const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
             method: 'POST',
             credentials: 'include',
@@ -923,7 +924,6 @@ export const EventDialog = ({
 
       onEventCreated?.(updatedEventData);
 
-      // Reset form state
       setNewEvent({
         name: '',
         description: '',
@@ -958,7 +958,6 @@ export const EventDialog = ({
     }
   };
 
-  // Show validation errors if any
   const showValidationErrors = validationErrors.length > 0;
 
   return (
@@ -1022,7 +1021,6 @@ export const EventDialog = ({
               </Card>
             )}
 
-            {/* Validation Errors Display */}
             {showValidationErrors && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 mt-4">
                 <h4 className="text-red-800 dark:text-red-200 font-medium mb-2">Please fix the following errors:</h4>
@@ -1035,7 +1033,6 @@ export const EventDialog = ({
             )}
 
             <div className="space-y-4 pt-4">
-              {/* Event Name Field */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
                   Event Name <span className="text-red-500">*</span>
@@ -1050,7 +1047,6 @@ export const EventDialog = ({
                 />
               </div>
 
-              {/* Event Description Field */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">
                   Description <span className="text-red-500">*</span>
@@ -1066,7 +1062,6 @@ export const EventDialog = ({
                 />
               </div>
 
-              {/* City and Location Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city" className="text-gray-700 dark:text-gray-300">
@@ -1105,7 +1100,6 @@ export const EventDialog = ({
                 </div>
               </div>
 
-              {/* Category Selection Field */}
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
                   Category <span className="text-red-500">*</span>
@@ -1155,17 +1149,15 @@ export const EventDialog = ({
                 )}
               </div>
 
-              {/* Amenities Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-gray-700 dark:text-gray-300">Amenities</Label>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {newEvent.amenities.length}/5 amenities
+                    {Array.isArray(newEvent.amenities) ? newEvent.amenities.length : 0}/5 amenities
                   </span>
                 </div>
                 
-                {/* Current Amenities Display */}
-                {newEvent.amenities.length > 0 && (
+                {Array.isArray(newEvent.amenities) && newEvent.amenities.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {newEvent.amenities.map((amenity, index) => (
                       <Badge
@@ -1186,8 +1178,7 @@ export const EventDialog = ({
                   </div>
                 )}
 
-                {/* Maximum limit warning */}
-                {newEvent.amenities.length >= 5 && (
+                {Array.isArray(newEvent.amenities) && newEvent.amenities.length >= 5 && (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-2 mb-2">
                     <p className="text-amber-800 dark:text-amber-200 text-sm">
                       ⚠️ Maximum limit reached. You can only add 5 amenities per event.
@@ -1195,8 +1186,7 @@ export const EventDialog = ({
                   </div>
                 )}
 
-                {/* Add Custom Amenity */}
-                {newEvent.amenities.length < 5 && (
+                {(!Array.isArray(newEvent.amenities) || newEvent.amenities.length < 5) && (
                   <>
                     <div className="flex gap-2">
                       <Input
@@ -1216,23 +1206,22 @@ export const EventDialog = ({
                         variant="outline"
                         size="sm"
                         onClick={() => handleAddAmenity(currentAmenity)}
-                        disabled={!currentAmenity.trim() || newEvent.amenities.length >= 5}
+                        disabled={!currentAmenity.trim() || (Array.isArray(newEvent.amenities) && newEvent.amenities.length >= 5)}
                         className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    {/* Quick Add Common Amenities */}
                     <div className="space-y-2">
                       <Label className="text-sm text-gray-600 dark:text-gray-400">Quick add:</Label>
                       <div className="flex flex-wrap gap-1">
-                        {COMMON_AMENITIES.filter(amenity => !newEvent.amenities.includes(amenity)).slice(0, Math.min(8, 5 - newEvent.amenities.length)).map((amenity) => (
+                        {COMMON_AMENITIES.filter(amenity => !Array.isArray(newEvent.amenities) || !newEvent.amenities.includes(amenity)).slice(0, Math.min(8, 5 - (Array.isArray(newEvent.amenities) ? newEvent.amenities.length : 0))).map((amenity) => (
                           <button
                             key={amenity}
                             type="button"
                             onClick={() => handleAddAmenity(amenity)}
-                            disabled={newEvent.amenities.length >= 5}
+                            disabled={Array.isArray(newEvent.amenities) && newEvent.amenities.length >= 5}
                             className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             + {amenity}
@@ -1244,7 +1233,6 @@ export const EventDialog = ({
                 )}
               </div>
 
-              {/* Featured Event Checkbox */}
               {(userRole === 'ADMIN' || userRole === 'ORGANIZER') && (
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
@@ -1268,7 +1256,6 @@ export const EventDialog = ({
                 </div>
               )}
 
-              {/* Date and Time Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-gray-700 dark:text-gray-300">
@@ -1335,7 +1322,6 @@ export const EventDialog = ({
                 </div>
               </div>
 
-              {/* Image Upload Field */}
               <div className="space-y-2">
                 <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Event Image</Label>
                 <Input
@@ -1368,8 +1354,7 @@ export const EventDialog = ({
                 )}
               </div>
 
-              {/* Existing Ticket Types Section - Only shown when editing */}
-              {isEditing && existingTicketTypes.length > 0 && (
+              {isEditing && Array.isArray(existingTicketTypes) && existingTicketTypes.length > 0 && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-gray-700 dark:text-gray-300">Existing Ticket Types</Label>
@@ -1390,7 +1375,6 @@ export const EventDialog = ({
                 </div>
               )}
 
-              {/* New Ticket Types Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-gray-700 dark:text-gray-300">
@@ -1416,7 +1400,7 @@ export const EventDialog = ({
                   </div>
                 )}
 
-                {newEvent.ticket_types.length === 0 && !isLoadingTicketTypes && (
+                {(!Array.isArray(newEvent.ticket_types) || newEvent.ticket_types.length === 0) && !isLoadingTicketTypes && (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
                     <p className="text-gray-500 dark:text-gray-400 mb-2">No ticket types added yet</p>
                     <p className="text-sm text-gray-400 dark:text-gray-500">
@@ -1425,7 +1409,7 @@ export const EventDialog = ({
                   </div>
                 )}
 
-                {newEvent.ticket_types.map((ticket, index) => (
+                {Array.isArray(newEvent.ticket_types) && newEvent.ticket_types.map((ticket, index) => (
                   <div key={index} className="grid grid-cols-1 gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
@@ -1435,7 +1419,7 @@ export const EventDialog = ({
                           value={ticket.type_name}
                           onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
                         >
-                          {availableTicketTypes && Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
+                          {Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
                             <option key={type} value={type}>{type}</option>
                           ))}
                         </select>
@@ -1485,7 +1469,6 @@ export const EventDialog = ({
                 ))}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <Button
                   type="button"
@@ -1605,7 +1588,6 @@ export const EventDialog = ({
                 </CardContent>
               </Card>
 
-              {/* Example prompts */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm">Example prompts</CardTitle>
@@ -1625,8 +1607,7 @@ export const EventDialog = ({
                 </CardContent>
               </Card>
 
-              {/* AI Conversation History */}
-              {aiConversationHistory.length > 0 && (
+              {Array.isArray(aiConversationHistory) && aiConversationHistory.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-sm">Conversation</CardTitle>
@@ -1666,7 +1647,6 @@ export const EventDialog = ({
                 </Card>
               )}
 
-              {/* Previous Drafts */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm flex items-center justify-between">
@@ -1686,7 +1666,7 @@ export const EventDialog = ({
                     <div className="flex justify-center py-4">
                       <div className="animate-spin h-6 w-6 border-b-2 border-blue-500 rounded-full"></div>
                     </div>
-                  ) : aiDrafts.length === 0 ? (
+                  ) : (!Array.isArray(aiDrafts) || aiDrafts.length === 0) ? (
                     <p className="text-center text-gray-500 dark:text-gray-400 py-4">
                       No drafts yet. Start a conversation with the AI assistant to create one.
                     </p>
@@ -1811,7 +1791,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketType
               onChange={(e) => setEditData({...editData, type_name: e.target.value})}
               disabled={isLoading}
             >
-              {availableTicketTypes && Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
+              {Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
