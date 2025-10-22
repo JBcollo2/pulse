@@ -9,22 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, Edit, Star, X, Bot, Sparkles, Wand2, MessageSquare, Loader2 } from "lucide-react";
+import { Plus, Trash2, Edit, Star, X, Bot, User, Sparkles, Send, Check, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 
-/**
- * Utility function to format Date object to YYYY-MM-DD string format
- */
+// Utility functions (keeping the existing ones)
 const formatDate = (date) => {
   if (!date) return '';
   const year = date.getFullYear();
@@ -33,9 +30,6 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-/**
- * Utility function to validate time format and convert to HH:MM
- */
 const normalizeTimeFormat = (timeStr) => {
   if (!timeStr || typeof timeStr !== 'string') return '';
   const timeParts = timeStr.trim().split(':');
@@ -45,9 +39,6 @@ const normalizeTimeFormat = (timeStr) => {
   return `${hours}:${minutes}`;
 };
 
-/**
- * Utility function to validate form data
- */
 const validateEventData = (eventData) => {
   const errors = [];
   
@@ -130,486 +121,19 @@ const validateEventData = (eventData) => {
   return errors;
 };
 
-// Common amenities list for quick selection
 const COMMON_AMENITIES = [
   "Parking", "WiFi", "Sound System", "DJ", "Live Band", "Catering", 
   "Bar Service", "Photography", "Security", "Air Conditioning", 
   "Stage", "Dance Floor", "VIP Area", "Coat Check", "Valet Parking"
 ];
 
-/**
- * AI Event Creation Assistant Component
- */
-const AIEventAssistant = ({ 
-  onAICreate, 
-  onAIUpdate, 
-  isEditing = false, 
-  currentEvent = null 
-}) => {
-  const [conversationInput, setConversationInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
-  const [draftData, setDraftData] = useState(null);
-  const [activeTab, setActiveTab] = useState('conversation');
-  const { toast } = useToast();
+const AI_PROMPT_EXAMPLES = [
+  "Create a music festival in Nairobi with 5000 attendees",
+  "I want to host a tech conference about AI in Mombasa next month",
+  "Plan a charity gala dinner with live auction in Kisumu",
+  "Organize a product launch event for a new smartphone in Nairobi"
+];
 
-  const handleAIConversation = async () => {
-    if (!conversationInput.trim()) {
-      toast({
-        title: "Input required",
-        description: "Please describe what you want to create or update",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    setAiResponse('');
-    
-    try {
-      const url = isEditing && currentEvent 
-        ? `${import.meta.env.VITE_API_URL}/events/${currentEvent.id}?ai_assistant=true&conversational_input=${encodeURIComponent(conversationInput)}`
-        : `${import.meta.env.VITE_API_URL}/events?ai_assistant=true&conversational_input=${encodeURIComponent(conversationInput)}`;
-
-      const method = isEditing ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`AI service error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      if (data.draft_created) {
-        setDraftData(data);
-        setAiResponse(data.conversational_response);
-        toast({
-          title: "AI Draft Created",
-          description: "Your event draft has been created with AI assistance",
-          variant: "default"
-        });
-      } else if (data.updates_proposed) {
-        setAiResponse(data.summary);
-        setDraftData(data);
-        toast({
-          title: "AI Update Proposal",
-          description: "AI has suggested updates for your event",
-          variant: "default"
-        });
-      } else {
-        setAiResponse(data.message || "AI processing completed");
-      }
-    } catch (error) {
-      console.error('AI conversation error:', error);
-      toast({
-        title: "AI Service Unavailable",
-        description: "Please try manual creation or check back later",
-        variant: "destructive"
-      });
-      setAiResponse("I'm having trouble processing your request. Please try manual creation.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleApplyAIUpdates = () => {
-    if (draftData && isEditing) {
-      onAIUpdate?.(draftData.updates_proposed);
-    } else if (draftData && !isEditing) {
-      onAICreate?.(draftData.draft_id);
-    }
-  };
-
-  const handleQuickTemplate = (template) => {
-    setConversationInput(template);
-  };
-
-  const quickTemplates = [
-    "Create a tech conference in Nairobi for 500 developers with workshops and networking",
-    "I want to organize a music festival with multiple stages and food vendors",
-    "Plan a business networking event with keynote speakers and cocktail reception",
-    "Create a weekend workshop series for creative professionals",
-    "Organize a charity gala dinner with auction and live entertainment"
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 text-lg font-semibold">
-        <Bot className="h-6 w-6 text-blue-500" />
-        <span>AI Event Assistant</span>
-        <Badge variant="outline" className="ml-2">
-          <Sparkles className="h-3 w-3 mr-1" />
-          Beta
-        </Badge>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="conversation" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Conversation
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4" />
-            Quick Templates
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="conversation" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="ai-conversation">
-              {isEditing ? "Describe what you want to update:" : "Describe your event:"}
-            </Label>
-            <Textarea
-              id="ai-conversation"
-              value={conversationInput}
-              onChange={(e) => setConversationInput(e.target.value)}
-              placeholder={
-                isEditing 
-                  ? "e.g., 'Change the date to next month and add VIP tickets...'"
-                  : "e.g., 'I want to create a tech conference in Nairobi for 500 people with workshops...'"
-              }
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-
-          <Button
-            onClick={handleAIConversation}
-            disabled={isProcessing || !conversationInput.trim()}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                AI is thinking...
-              </>
-            ) : (
-              <>
-                <Bot className="h-4 w-4 mr-2" />
-                {isEditing ? 'Generate Update Suggestions' : 'Generate Event Draft'}
-              </>
-            )}
-          </Button>
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <CardDescription>
-            Start with a template and customize it with the AI assistant
-          </CardDescription>
-          
-          <div className="grid gap-2">
-            {quickTemplates.map((template, index) => (
-              <Card 
-                key={index}
-                className="p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-dashed"
-                onClick={() => handleQuickTemplate(template)}
-              >
-                <CardContent className="p-0">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                    {template}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {aiResponse && (
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              AI Response
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-              {aiResponse}
-            </p>
-            
-            {draftData && (
-              <div className="mt-4 space-y-3">
-                {draftData.suggestions && (
-                  <div>
-                    <h4 className="font-medium text-sm mb-2">Suggestions:</h4>
-                    <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
-                      {draftData.suggestions.immediate_actions?.map((action, idx) => (
-                        <li key={idx}>• {action}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {draftData.completion_status && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Completion:</span>
-                    <Badge variant={
-                      draftData.completion_status.ready_to_publish ? "default" : "secondary"
-                    }>
-                      {Math.round(draftData.completion_status.percent_complete)}% Complete
-                    </Badge>
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleApplyAIUpdates}
-                  size="sm"
-                  className="w-full bg-green-500 hover:bg-green-600"
-                >
-                  {isEditing ? 'Apply AI Updates' : 'Continue with AI Draft'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-/**
- * AI Event Draft Manager Component
- */
-const AIEventDraftManager = ({ draftId, onDraftPublished }) => {
-  const [draft, setDraft] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeField, setActiveField] = useState(null);
-  const { toast } = useToast();
-
-  const fetchDraft = async () => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}`, {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setDraft(data);
-      }
-    } catch (error) {
-      console.error('Error fetching draft:', error);
-    }
-  };
-
-  const updateDraftField = async (fieldName, value = null, regenerate = false) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          field_name: fieldName,
-          value: value,
-          regenerate: regenerate
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDraft(data.draft);
-        toast({
-          title: "Draft Updated",
-          description: `Field ${fieldName} has been updated`,
-          variant: "default"
-        });
-      }
-    } catch (error) {
-      console.error('Error updating draft:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update draft field",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-      setActiveField(null);
-    }
-  };
-
-  const publishDraft = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}/publish`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Event Published",
-          description: "Your event has been successfully published",
-          variant: "default"
-        });
-        onDraftPublished?.(data.event);
-      }
-    } catch (error) {
-      console.error('Error publishing draft:', error);
-      toast({
-        title: "Publish Failed",
-        description: "Failed to publish event",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (draftId) {
-      fetchDraft();
-    }
-  }, [draftId]);
-
-  if (!draft) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5 text-blue-500" />
-          AI Event Draft
-        </h3>
-        <Badge variant={draft.completion_status?.ready_to_publish ? "default" : "secondary"}>
-          {Math.round(draft.completion_status?.percent_complete || 0)}% Complete
-        </Badge>
-      </div>
-
-      <ScrollArea className="h-[400px] pr-4">
-        <div className="space-y-4">
-          {/* Draft Fields */}
-          {[
-            { key: 'name', label: 'Event Name', value: draft.draft?.suggested_name },
-            { key: 'description', label: 'Description', value: draft.draft?.suggested_description },
-            { key: 'category', label: 'Category', value: draft.draft?.suggested_category_id },
-            { key: 'date', label: 'Date', value: draft.draft?.suggested_date },
-            { key: 'location', label: 'Location', value: draft.draft?.suggested_location },
-            { key: 'city', label: 'City', value: draft.draft?.suggested_city }
-          ].map((field) => (
-            <Card key={field.key} className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1 flex-1">
-                  <Label className="text-sm font-medium">{field.label}</Label>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {field.value || 'Not set'}
-                  </p>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setActiveField(field.key)}
-                    disabled={isLoading}
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => updateDraftField(field.key, null, true)}
-                    disabled={isLoading}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              {activeField === field.key && (
-                <div className="mt-3 space-y-2">
-                  <Input
-                    value={field.value || ''}
-                    onChange={(e) => setDraft(prev => ({
-                      ...prev,
-                      draft: { ...prev.draft, [`suggested_${field.key}`]: e.target.value }
-                    }))}
-                    placeholder={`Enter ${field.label.toLowerCase()}...`}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => updateDraftField(field.key, draft.draft[`suggested_${field.key}`])}
-                      disabled={isLoading}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setActiveField(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
-      </ScrollArea>
-
-      {/* Review and Actions */}
-      {draft.review && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">AI Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {draft.review.warnings?.map((warning, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm">
-                <span>⚠️</span>
-                <span>{warning}</span>
-              </div>
-            ))}
-            {draft.review.suggestions?.map((suggestion, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-sm">
-                <span>💡</span>
-                <span>{suggestion}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      <Button
-        onClick={publishDraft}
-        disabled={isLoading || !draft.completion_status?.ready_to_publish}
-        className="w-full bg-green-500 hover:bg-green-600"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Publishing...
-          </>
-        ) : (
-          'Publish Event'
-        )}
-      </Button>
-    </div>
-  );
-};
-
-/**
- * Main EventDialog Component with AI Integration
- */
 export const EventDialog = ({
   open,
   onOpenChange,
@@ -620,8 +144,6 @@ export const EventDialog = ({
   // State for storing event categories and ticket types fetched from API
   const [categories, setCategories] = useState([]);
   const [availableTicketTypes, setAvailableTicketTypes] = useState([]);
-
-  // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
 
   // Loading states
@@ -646,16 +168,22 @@ export const EventDialog = ({
     featured: false
   });
 
+  // AI Assistant states
+  const [activeTab, setActiveTab] = useState('manual'); // 'manual' or 'ai'
+  const [aiInput, setAiInput] = useState('');
+  const [aiResponse, setAiResponse] = useState(null);
+  const [aiDraft, setAiDraft] = useState(null);
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [aiConversationHistory, setAiConversationHistory] = useState([]);
+  const [aiDrafts, setAiDrafts] = useState([]);
+  const [selectedDraftId, setSelectedDraftId] = useState(null);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+
   // State for amenity input
   const [currentAmenity, setCurrentAmenity] = useState('');
 
   // Form validation state
   const [validationErrors, setValidationErrors] = useState([]);
-
-  // AI Assistant state
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [activeDraftId, setActiveDraftId] = useState(null);
-  const [aiUpdates, setAiUpdates] = useState(null);
 
   // Toast notification hook for user feedback
   const { toast } = useToast();
@@ -663,9 +191,7 @@ export const EventDialog = ({
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
 
-  /**
-   * Memoized function to fetch categories to prevent unnecessary re-renders
-   */
+  // Fetch categories and ticket types
   const fetchCategories = useCallback(async () => {
     setIsLoadingCategories(true);
     try {
@@ -717,49 +243,33 @@ export const EventDialog = ({
     }
   }, [toast]);
 
-  /**
-   * Effect: Fetch event categories and ticket types from API on component mount
-   */
-  useEffect(() => {
-    if (open) {
-      fetchCategories();
-      fetchTicketTypes();
-      // Reset AI states when dialog opens
-      setShowAIAssistant(false);
-      setActiveDraftId(null);
-      setAiUpdates(null);
-    }
-  }, [open, fetchCategories, fetchTicketTypes]);
+  // Fetch AI drafts
+  const fetchAiDrafts = useCallback(async () => {
+    setIsLoadingDrafts(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts`, {
+        credentials: 'include'
+      });
 
-  /**
-   * Effect: Fetch existing ticket types when editing an event
-   */
-  useEffect(() => {
-    const fetchExistingTicketTypes = async () => {
-      if (editingEvent?.id) {
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/ticket-types`, {
-            credentials: 'include'
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setExistingTicketTypes(data.ticket_types || []);
-          } else {
-            console.warn('Failed to fetch existing ticket types');
-          }
-        } catch (error) {
-          console.error('Error fetching existing ticket types:', error);
-        }
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch drafts`);
       }
-    };
 
-    fetchExistingTicketTypes();
-  }, [editingEvent]);
+      const data = await response.json();
+      setAiDrafts(data.drafts || []);
+    } catch (error) {
+      console.error('Error fetching drafts:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch AI drafts",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingDrafts(false);
+    }
+  }, [toast]);
 
-  /**
-   * Effect: Initialize form data based on editing mode
-   */
+  // Initialize form data based on editing mode
   useEffect(() => {
     if (editingEvent) {
       const parseDate = (dateStr) => {
@@ -805,57 +315,260 @@ export const EventDialog = ({
     setValidationErrors([]);
   }, [editingEvent, open]);
 
-  /**
-   * Handle AI-assisted creation
-   */
-  const handleAICreate = (draftId) => {
-    setActiveDraftId(draftId);
-    setShowAIAssistant(false);
-  };
+  // Fetch data when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+      fetchTicketTypes();
+      fetchAiDrafts();
+    }
+  }, [open, fetchCategories, fetchTicketTypes, fetchAiDrafts]);
 
-  /**
-   * Handle AI-assisted updates
-   */
-  const handleAIUpdate = (updates) => {
-    setAiUpdates(updates);
-    setShowAIAssistant(false);
-    
-    // Apply AI updates to form
-    Object.entries(updates).forEach(([field, value]) => {
-      handleFieldChange(field, value);
-    });
-
-    toast({
-      title: "AI Updates Applied",
-      description: "AI suggestions have been applied to your event",
-      variant: "default"
-    });
-  };
-
-  /**
-   * Handle draft publication
-   */
-  const handleDraftPublished = (event) => {
-    setActiveDraftId(null);
-    onEventCreated?.(event);
-    onOpenChange(false);
-  };
-
-  /**
-   * Handle form field changes with validation
-   */
+  // Handle form field changes
   const handleFieldChange = useCallback((field, value) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
     
-    // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
   }, [validationErrors.length]);
 
-  /**
-   * Handle adding amenities
-   */
+  // Handle AI input submission
+  const handleAiSubmit = async () => {
+    if (!aiInput.trim()) return;
+    
+    setIsAiProcessing(true);
+    try {
+      // Add user message to conversation history
+      const userMessage = { role: 'user', content: aiInput };
+      setAiConversationHistory(prev => [...prev, userMessage]);
+      
+      // Call AI assistant API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events?ai_assistant=true&conversational_input=${encodeURIComponent(aiInput)}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: AI assistant request failed`);
+      }
+
+      const data = await response.json();
+      
+      // Add AI response to conversation history
+      const aiMessage = { 
+        role: 'assistant', 
+        content: data.conversational_response || "I've created a draft for your event.",
+        draftId: data.draft_id
+      };
+      setAiConversationHistory(prev => [...prev, aiMessage]);
+      
+      // Set the AI response and draft
+      setAiResponse(data);
+      setAiDraft(data.draft_id);
+      
+      // Refresh drafts list
+      fetchAiDrafts();
+      
+      // Clear input
+      setAiInput('');
+      
+      toast({
+        title: "AI Assistant",
+        description: "I've created a draft for your event. You can review and edit it before publishing.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error with AI assistant:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to get AI assistance",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  // Load a specific draft
+  const loadDraft = async (draftId) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch draft`);
+      }
+
+      const data = await response.json();
+      const draft = data.draft;
+      
+      // Update form with draft data
+      setNewEvent({
+        name: draft.suggested_name || '',
+        description: draft.suggested_description || '',
+        date: draft.suggested_date ? new Date(draft.suggested_date) : new Date(),
+        end_date: draft.suggested_end_date ? new Date(draft.suggested_end_date) : new Date(),
+        start_time: draft.suggested_start_time || '',
+        end_time: draft.suggested_end_time || '',
+        city: draft.suggested_city || '',
+        location: draft.suggested_location || '',
+        amenities: draft.suggested_amenities || [],
+        image: null,
+        ticket_types: [],
+        category_id: draft.suggested_category_id || null,
+        featured: false
+      });
+      
+      setSelectedDraftId(draftId);
+      setActiveTab('manual');
+      
+      toast({
+        title: "Draft Loaded",
+        description: "You can now edit the AI-generated event details",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error loading draft:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load draft",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Publish a draft directly
+  const publishDraft = async (draftId) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}/publish`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to publish draft`);
+      }
+
+      const data = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "Event created successfully with AI assistance",
+        variant: "default"
+      });
+
+      onOpenChange(false);
+      onEventCreated?.(data.event);
+      
+      // Reset form
+      setNewEvent({
+        name: '',
+        description: '',
+        date: new Date(),
+        end_date: new Date(),
+        start_time: '',
+        end_time: '',
+        city: '',
+        location: '',
+        amenities: [],
+        image: null,
+        ticket_types: [],
+        category_id: null,
+        featured: false
+      });
+      setValidationErrors([]);
+      setSelectedDraftId(null);
+    } catch (error) {
+      console.error('Error publishing draft:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to publish draft",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Update a draft field
+  const updateDraftField = async (draftId, fieldName, value) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          field_name: fieldName,
+          value: value
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to update draft`);
+      }
+
+      // Refresh drafts
+      fetchAiDrafts();
+      
+      toast({
+        title: "Draft Updated",
+        description: "Your changes have been saved to the draft",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error updating draft:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update draft",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Delete a draft
+  const deleteDraft = async (draftId) => {
+    if (!confirm("Are you sure you want to delete this draft?")) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts/${draftId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to delete draft`);
+      }
+
+      // Refresh drafts
+      fetchAiDrafts();
+      
+      toast({
+        title: "Draft Deleted",
+        description: "The draft has been deleted",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete draft",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle adding amenities
   const handleAddAmenity = useCallback((amenity) => {
     const amenityToAdd = amenity || currentAmenity.trim();
     
@@ -874,6 +587,11 @@ export const EventDialog = ({
         amenities: [...prev.amenities, amenityToAdd]
       }));
       setCurrentAmenity('');
+      
+      // Update draft if we're editing one
+      if (selectedDraftId) {
+        updateDraftField(selectedDraftId, 'amenities', [...newEvent.amenities, amenityToAdd]);
+      }
     } else if (newEvent.amenities.includes(amenityToAdd)) {
       toast({
         title: "Duplicate Amenity",
@@ -881,21 +599,22 @@ export const EventDialog = ({
         variant: "destructive"
       });
     }
-  }, [currentAmenity, newEvent.amenities, toast]);
+  }, [currentAmenity, newEvent.amenities, toast, selectedDraftId]);
 
-  /**
-   * Handle removing amenities
-   */
+  // Handle removing amenities
   const handleRemoveAmenity = useCallback((amenityToRemove) => {
     setNewEvent(prev => ({
       ...prev,
       amenities: prev.amenities.filter(amenity => amenity !== amenityToRemove)
     }));
-  }, []);
+    
+    // Update draft if we're editing one
+    if (selectedDraftId) {
+      updateDraftField(selectedDraftId, 'amenities', newEvent.amenities.filter(amenity => amenity !== amenityToRemove));
+    }
+  }, [newEvent.amenities, selectedDraftId]);
 
-  /**
-   * Add a new ticket type to the form
-   */
+  // Add a new ticket type to the form
   const handleAddTicketType = useCallback(() => {
     setNewEvent(prev => ({
       ...prev,
@@ -907,9 +626,7 @@ export const EventDialog = ({
     }));
   }, [availableTicketTypes]);
 
-  /**
-   * Remove a ticket type from the form by index
-   */
+  // Remove a ticket type from the form by index
   const handleRemoveTicketType = useCallback((index) => {
     setNewEvent(prev => ({
       ...prev,
@@ -917,9 +634,7 @@ export const EventDialog = ({
     }));
   }, []);
 
-  /**
-   * Update a specific field of a ticket type by index
-   */
+  // Update a specific field of a ticket type by index
   const handleTicketTypeChange = useCallback((index, field, value) => {
     setNewEvent(prev => ({
       ...prev,
@@ -929,10 +644,85 @@ export const EventDialog = ({
     }));
   }, []);
 
-  /**
-   * Enhanced form submission handler with improved validation and error handling
-   */
+  // Update an existing ticket type via API call
+  const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update ticket type');
+      }
+
+      setExistingTicketTypes(prev =>
+        prev.map(ticket =>
+          ticket.id === ticketTypeId
+            ? { ...ticket, ...updatedData }
+            : ticket
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Ticket type updated successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error updating ticket type:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update ticket type",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  // Delete an existing ticket type via API call
+  const handleDeleteExistingTicketType = async (ticketTypeId) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete ticket type');
+      }
+
+      setExistingTicketTypes(prev => prev.filter(ticket => ticket.id !== ticketTypeId));
+
+      toast({
+        title: "Success",
+        description: "Ticket type deleted successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error deleting ticket type:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete ticket type",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Enhanced form submission handler
   const handleSubmitEvent = async () => {
+    // If we have a selected draft, publish it directly
+    if (selectedDraftId) {
+      publishDraft(selectedDraftId);
+      return;
+    }
+    
     // Client-side validation
     const errors = validateEventData(newEvent);
     if (errors.length > 0) {
@@ -1122,6 +912,7 @@ export const EventDialog = ({
         featured: false
       });
       setValidationErrors([]);
+      setSelectedDraftId(null);
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
         error: error.message,
@@ -1142,91 +933,67 @@ export const EventDialog = ({
   // Show validation errors if any
   const showValidationErrors = validationErrors.length > 0;
 
-  // Determine current view
-  const getCurrentView = () => {
-    if (activeDraftId) {
-      return 'draft';
-    } else if (showAIAssistant) {
-      return 'ai';
-    } else {
-      return 'form';
-    }
-  };
-
-  const currentView = getCurrentView();
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {currentView === 'draft' ? 'AI Event Draft' : 
-                 currentView === 'ai' ? 'AI Event Assistant' :
-                 isEditing ? 'Edit Event' : 'Create New Event'}
-              </DialogTitle>
-              <DialogDescription className="text-gray-600 dark:text-gray-400">
-                {currentView === 'draft' ? 'Review and publish your AI-generated event draft' :
-                 currentView === 'ai' ? 'Use AI to create or update your event with natural language' :
-                 isEditing ? 'Update your event details and ticket information.' : 'Fill in the details to create a new event with ticket types.'}
-              </DialogDescription>
-            </div>
-            
-            {currentView === 'form' && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAIAssistant(true)}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
-              >
-                <Bot className="h-4 w-4 mr-2" />
-                AI Assistant
-              </Button>
-            )}
-          </div>
+          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {isEditing ? 'Edit Event' : 'Create New Event'}
+          </DialogTitle>
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
+            {isEditing ? 'Update your event details and ticket information.' : 'Create an event manually or with AI assistance.'}
+          </DialogDescription>
         </DialogHeader>
 
-        {/* Navigation Breadcrumb */}
-        {(currentView === 'ai' || currentView === 'draft') && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-            <button
-              onClick={() => {
-                setShowAIAssistant(false);
-                setActiveDraftId(null);
-              }}
-              className="hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-            >
-              {isEditing ? 'Edit Event' : 'Create Event'}
-            </button>
-            <span>→</span>
-            <span className="text-gray-800 dark:text-gray-200">
-              {currentView === 'ai' ? 'AI Assistant' : 'AI Draft'}
-            </span>
-          </div>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="manual" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Manual Creation
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              AI Assistant
+            </TabsTrigger>
+          </TabsList>
 
-        {/* AI Draft Manager View */}
-        {currentView === 'draft' && (
-          <AIEventDraftManager
-            draftId={activeDraftId}
-            onDraftPublished={handleDraftPublished}
-          />
-        )}
+          <TabsContent value="manual" className="space-y-4">
+            {selectedDraftId && (
+              <Card className="mb-4 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    AI-Generated Draft
+                  </CardTitle>
+                  <CardDescription className="text-blue-700 dark:text-blue-300">
+                    You're editing an AI-generated draft. Changes will be saved to the draft.
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="pt-0">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => publishDraft(selectedDraftId)}
+                      disabled={isLoading}
+                      className="border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Publish Draft
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSelectedDraftId(null)}
+                      className="text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                    >
+                      Start Over
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            )}
 
-        {/* AI Assistant View */}
-        {currentView === 'ai' && (
-          <AIEventAssistant
-            onAICreate={handleAICreate}
-            onAIUpdate={handleAIUpdate}
-            isEditing={isEditing}
-            currentEvent={editingEvent}
-          />
-        )}
-
-        {/* Traditional Form View */}
-        {currentView === 'form' && (
-          <>
             {/* Validation Errors Display */}
             {showValidationErrors && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 mt-4">
@@ -1239,21 +1006,7 @@ export const EventDialog = ({
               </div>
             )}
 
-            {/* AI Updates Applied Banner */}
-            {aiUpdates && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3 mb-4">
-                <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                  <Bot className="h-4 w-4" />
-                  <span className="font-medium">AI Updates Applied</span>
-                </div>
-                <p className="text-green-700 dark:text-green-300 text-sm mt-1">
-                  AI suggestions have been applied to your event form
-                </p>
-              </div>
-            )}
-
             <div className="space-y-4 pt-4">
-              {/* ... (rest of your existing form fields remain exactly the same) */}
               {/* Event Name Field */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
@@ -1354,8 +1107,335 @@ export const EventDialog = ({
                 )}
               </div>
 
-              {/* ... (rest of your existing form fields - amenities, featured, date/time, image, ticket types) */}
-              {/* These remain exactly the same as in your original code */}
+              {/* Amenities Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-gray-700 dark:text-gray-300">Amenities</Label>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {newEvent.amenities.length}/5 amenities
+                  </span>
+                </div>
+                
+                {/* Current Amenities Display */}
+                {newEvent.amenities.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {newEvent.amenities.map((amenity, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700 px-2 py-1 flex items-center gap-1"
+                      >
+                        {amenity}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAmenity(amenity)}
+                          className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Maximum limit warning */}
+                {newEvent.amenities.length >= 5 && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-2 mb-2">
+                    <p className="text-amber-800 dark:text-amber-200 text-sm">
+                      ⚠️ Maximum limit reached. You can only add 5 amenities per event.
+                    </p>
+                  </div>
+                )}
+
+                {/* Add Custom Amenity */}
+                {newEvent.amenities.length < 5 && (
+                  <>
+                    <div className="flex gap-2">
+                      <Input
+                        value={currentAmenity}
+                        onChange={(e) => setCurrentAmenity(e.target.value)}
+                        placeholder="Add custom amenity..."
+                        className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddAmenity(currentAmenity);
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddAmenity(currentAmenity)}
+                        disabled={!currentAmenity.trim() || newEvent.amenities.length >= 5}
+                        className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Quick Add Common Amenities */}
+                    <div className="space-y-2">
+                      <Label className="text-sm text-gray-600 dark:text-gray-400">Quick add:</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {COMMON_AMENITIES.filter(amenity => !newEvent.amenities.includes(amenity)).slice(0, Math.min(8, 5 - newEvent.amenities.length)).map((amenity) => (
+                          <button
+                            key={amenity}
+                            type="button"
+                            onClick={() => handleAddAmenity(amenity)}
+                            disabled={newEvent.amenities.length >= 5}
+                            className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            + {amenity}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Featured Event Checkbox */}
+              {(userRole === 'ADMIN' || userRole === 'ORGANIZER') && (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="featured"
+                      checked={newEvent.featured}
+                      onCheckedChange={(checked) => handleFieldChange('featured', checked)}
+                      className="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Label 
+                      htmlFor="featured" 
+                      className="text-gray-700 dark:text-gray-300 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      Mark as featured event
+                    </Label>
+                  </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Featured events will be highlighted and appear at the top of event listings
+                  </p>
+                </div>
+              )}
+
+              {/* Date and Time Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-gray-700 dark:text-gray-300">
+                    Start Date <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
+                    <Calendar
+                      mode="single"
+                      selected={newEvent.date}
+                      onSelect={(date) => date && handleFieldChange('date', date)}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
+                      required
+                      className="w-full text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300">
+                      Start Time <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="start_time"
+                      type="time"
+                      value={newEvent.start_time}
+                      onChange={(e) => handleFieldChange('start_time', e.target.value)}
+                      required
+                      step="60"
+                      className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
+                  <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
+                    <Calendar
+                      mode="single"
+                      selected={newEvent.end_date}
+                      onSelect={(date) => date && handleFieldChange('end_date', date)}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const startDate = new Date(newEvent.date);
+                        startDate.setHours(0, 0, 0, 0);
+                        return date < today || date < startDate;
+                      }}
+                      className="text-gray-800 dark:text-gray-200 [&_td]:text-gray-800 dark:[&_td]:text-gray-200 [&_th]:text-gray-500 dark:[&_th]:text-gray-400 [&_div.rdp-day_selected]:bg-purple-500 dark:[&_div.rdp-day_selected]:bg-purple-600 dark:[&_div.rdp-day_selected]:text-white [&_button.rdp-button:hover]:bg-gray-100 dark:[&_button.rdp-button:hover]:bg-gray-600 [&_button.rdp-button:focus-visible]:ring-blue-500 dark:[&_button.rdp-button:focus-visible]:ring-offset-gray-800 [&_div.rdp-nav_button]:dark:text-gray-200 [&_div.rdp-nav_button:hover]:dark:bg-gray-600"
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <Label htmlFor="end_time" className="text-gray-700 dark:text-gray-300">End Time (Optional)</Label>
+                    <Input
+                      id="end_time"
+                      type="time"
+                      value={newEvent.end_time}
+                      onChange={(e) => handleFieldChange('end_time', e.target.value)}
+                      step="60"
+                      className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Image Upload Field */}
+              <div className="space-y-2">
+                <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Event Image</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast({
+                          title: "File too large",
+                          description: "Please select an image smaller than 5MB",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      handleFieldChange('image', file);
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-800 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-green-500 file:text-white hover:file:from-blue-600 hover:file:to-green-600 file:cursor-pointer file:transition-all file:duration-200 file:shadow-md hover:file:shadow-lg file:transform hover:file:scale-105 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 overflow-hidden"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Upload event image (PNG, JPG, JPEG, GIF, WEBP) - Max 5MB
+                </p>
+                {newEvent.image && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    Selected: {newEvent.image.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Existing Ticket Types Section - Only shown when editing */}
+              {isEditing && existingTicketTypes.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-gray-700 dark:text-gray-300">Existing Ticket Types</Label>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {existingTicketTypes.length} existing type{existingTicketTypes.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {existingTicketTypes.map((ticket) => (
+                    <ExistingTicketTypeRow
+                      key={ticket.id}
+                      ticket={ticket}
+                      onUpdate={handleUpdateExistingTicketType}
+                      onDelete={handleDeleteExistingTicketType}
+                      availableTicketTypes={availableTicketTypes}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* New Ticket Types Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-gray-700 dark:text-gray-300">
+                    {isEditing ? 'Add New Ticket Types' : 'Ticket Types'}
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddTicketType}
+                    disabled={isLoadingTicketTypes}
+                    className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Ticket Type
+                  </Button>
+                </div>
+
+                {isLoadingTicketTypes && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin h-6 w-6 border-b-2 border-blue-500 rounded-full mx-auto"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Loading ticket types...</p>
+                  </div>
+                )}
+
+                {newEvent.ticket_types.length === 0 && !isLoadingTicketTypes && (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <p className="text-gray-500 dark:text-gray-400 mb-2">No ticket types added yet</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                      Click "Add Ticket Type" to create tickets for your event
+                    </p>
+                  </div>
+                )}
+
+                {newEvent.ticket_types.map((ticket, index) => (
+                  <div key={index} className="grid grid-cols-1 gap-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 dark:text-gray-300">Type</Label>
+                        <select
+                          className="w-full rounded-md border border-input bg-white dark:bg-gray-800 px-3 py-2 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                          value={ticket.type_name}
+                          onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
+                        >
+                          {availableTicketTypes.map(type => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 dark:text-gray-300">Price (KSh)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={ticket.price || ''}
+                          onChange={(e) => handleTicketTypeChange(index, 'price', parseFloat(e.target.value) || 0)}
+                          required
+                          placeholder="0"
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 dark:text-gray-300">Quantity</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={ticket.quantity || ''}
+                          onChange={(e) => handleTicketTypeChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                          required
+                          placeholder="Enter quantity"
+                          className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveTicketType(index)}
+                        className="text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Ticket Type
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -1399,16 +1479,226 @@ export const EventDialog = ({
                           d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                         />
                       </svg>
-                      {isEditing ? 'Updating...' : 'Creating...'}
+                      {selectedDraftId ? 'Publishing...' : (isEditing ? 'Updating...' : 'Creating...')}
                     </>
                   ) : (
-                    isEditing ? 'Update Event' : 'Create Event'
+                    selectedDraftId ? 'Publish Draft' : (isEditing ? 'Update Event' : 'Create Event')
                   )}
                 </Button>
               </div>
             </div>
-          </>
-        )}
+          </TabsContent>
+
+          <TabsContent value="ai" className="space-y-4">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-blue-500" />
+                    AI Event Assistant
+                  </CardTitle>
+                  <CardDescription>
+                    Describe your event in natural language, and I'll help you create it with all the necessary details.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-input" className="text-gray-700 dark:text-gray-300">
+                      Describe your event
+                    </Label>
+                    <Textarea
+                      id="ai-input"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      placeholder="E.g., I want to organize a tech conference in Nairobi next month with 500 attendees, featuring keynote speakers and workshops..."
+                      rows={4}
+                      className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleAiSubmit}
+                      disabled={!aiInput.trim() || isAiProcessing}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {isAiProcessing ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4 mr-2 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            />
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Generate Event
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Example prompts */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Example prompts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {AI_PROMPT_EXAMPLES.map((example, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setAiInput(example)}
+                        className="w-full text-left p-2 rounded-md bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-sm text-gray-700 dark:text-gray-300 transition-colors"
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Conversation History */}
+              {aiConversationHistory.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Conversation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {aiConversationHistory.map((message, index) => (
+                        <div
+                          key={index}
+                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-lg p-3 ${
+                              message.role === 'user'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                            }`}
+                          >
+                            {message.content}
+                            {message.draftId && (
+                              <div className="mt-2 pt-2 border-t border-blue-400 dark:border-gray-600">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => loadDraft(message.draftId)}
+                                  className="text-xs"
+                                >
+                                  Review Draft
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Previous Drafts */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm flex items-center justify-between">
+                    <span>Previous Drafts</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={fetchAiDrafts}
+                      disabled={isLoadingDrafts}
+                    >
+                      Refresh
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isLoadingDrafts ? (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin h-6 w-6 border-b-2 border-blue-500 rounded-full"></div>
+                    </div>
+                  ) : aiDrafts.length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                      No drafts yet. Start a conversation with the AI assistant to create one.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {aiDrafts.map((draft) => (
+                        <div
+                          key={draft.id}
+                          className="flex items-center justify-between p-3 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
+                        >
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-800 dark:text-gray-200">
+                              {draft.suggested_name || 'Untitled Event'}
+                            </h4>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {draft.suggested_city || 'No location'} • {draft.suggested_date ? new Date(draft.suggested_date).toLocaleDateString() : 'No date'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {draft.completion_status || 'Draft'}
+                              </Badge>
+                              {draft.ai_confidence_score && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">AI confidence:</span>
+                                  <Progress value={draft.ai_confidence_score * 100} className="w-16 h-2" />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => loadDraft(draft.id)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => publishDraft(draft.id)}
+                            >
+                              Publish
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => deleteDraft(draft.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
@@ -1416,7 +1706,6 @@ export const EventDialog = ({
 
 /**
  * ExistingTicketTypeRow Component
- * Enhanced version with better UX and error handling
  */
 const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketTypes }) => {
   const [isEditing, setIsEditing] = useState(false);
