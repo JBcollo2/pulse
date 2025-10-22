@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, Edit, Star, X, Bot, User, Sparkles, Send, Check, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Edit, Star, X, Bot, User, Sparkles, Send, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Utility functions (keeping the existing ones)
 const formatDate = (date) => {
@@ -134,6 +135,20 @@ const AI_PROMPT_EXAMPLES = [
   "Organize a product launch event for a new smartphone in Nairobi"
 ];
 
+// Fallback categories in case API fails
+const FALLBACK_CATEGORIES = [
+  { id: 1, name: "Music" },
+  { id: 2, name: "Technology" },
+  { id: 3, name: "Business" },
+  { id: 4, name: "Sports" },
+  { id: 5, name: "Arts & Culture" },
+  { id: 6, name: "Food & Drink" },
+  { id: 7, name: "Education" },
+  { id: 8, name: "Health & Wellness" },
+  { id: 9, name: "Social" },
+  { id: 10, name: "Charity" }
+];
+
 export const EventDialog = ({
   open,
   onOpenChange,
@@ -150,6 +165,7 @@ export const EventDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingTicketTypes, setIsLoadingTicketTypes] = useState(false);
+  const [categoriesError, setCategoriesError] = useState(null);
 
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
@@ -191,9 +207,11 @@ export const EventDialog = ({
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
 
-  // Fetch categories and ticket types
+  // Fetch categories with error handling
   const fetchCategories = useCallback(async () => {
     setIsLoadingCategories(true);
+    setCategoriesError(null);
+    
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/categories`, {
         credentials: 'include'
@@ -204,12 +222,22 @@ export const EventDialog = ({
       }
 
       const data = await response.json();
-      setCategories(data.categories || []);
+      
+      // Ensure data.categories is an array
+      if (data && Array.isArray(data.categories)) {
+        setCategories(data.categories);
+      } else {
+        console.error('Invalid categories data format:', data);
+        setCategories(FALLBACK_CATEGORIES);
+        setCategoriesError('Using fallback categories due to API error');
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories(FALLBACK_CATEGORIES);
+      setCategoriesError(error.message || 'Failed to fetch categories');
       toast({
         title: "Error",
-        description: error.message || "Failed to fetch categories",
+        description: error.message || "Failed to fetch categories. Using fallback options.",
         variant: "destructive"
       });
     } finally {
@@ -1082,6 +1110,26 @@ export const EventDialog = ({
                 <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
                   Category <span className="text-red-500">*</span>
                 </Label>
+                
+                {categoriesError && (
+                  <Alert className="mb-2 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <AlertTitle className="text-amber-800 dark:text-amber-200 text-sm">API Error</AlertTitle>
+                    <AlertDescription className="text-amber-700 dark:text-amber-300 text-xs">
+                      {categoriesError}. Using fallback categories.
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={fetchCategories}
+                        className="p-0 h-auto text-amber-700 dark:text-amber-300 underline"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Try again
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
                 {isLoadingCategories ? (
                   <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"></div>
                 ) : (
@@ -1093,7 +1141,7 @@ export const EventDialog = ({
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-lg z-50 rounded-md py-1">
-                      {categories.map((category) => (
+                      {categories && Array.isArray(categories) && categories.map((category) => (
                         <SelectItem
                           key={category.id}
                           value={category.id.toString()}
@@ -1387,7 +1435,7 @@ export const EventDialog = ({
                           value={ticket.type_name}
                           onChange={(e) => handleTicketTypeChange(index, 'type_name', e.target.value)}
                         >
-                          {availableTicketTypes.map(type => (
+                          {availableTicketTypes && Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
                             <option key={type} value={type}>{type}</option>
                           ))}
                         </select>
@@ -1763,7 +1811,7 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketType
               onChange={(e) => setEditData({...editData, type_name: e.target.value})}
               disabled={isLoading}
             >
-              {availableTicketTypes.map(type => (
+              {availableTicketTypes && Array.isArray(availableTicketTypes) && availableTicketTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
             </select>
