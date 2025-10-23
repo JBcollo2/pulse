@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,72 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// ============================================
+// STEP 1: Form draft storage utilities
+// ============================================
+
+const FORM_DRAFT_KEY = 'event_form_draft';
+const DRAFT_EXPIRY_HOURS = 24; // Drafts expire after 24 hours
+
+const saveFormDraft = (formData) => {
+  try {
+    const draftData = {
+      ...formData,
+      date: formData.date instanceof Date ? formData.date.toISOString() : formData.date,
+      end_date: formData.end_date instanceof Date ? formData.end_date.toISOString() : formData.end_date,
+      timestamp: new Date().toISOString(),
+      image: null // Don't save file objects
+    };
+    localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draftData));
+    console.log('✅ Form draft saved to localStorage');
+  } catch (error) {
+    console.error('❌ Error saving form draft:', error);
+  }
+};
+
+const loadFormDraft = () => {
+  try {
+    const draft = localStorage.getItem(FORM_DRAFT_KEY);
+    if (!draft) return null;
+    
+    const parsed = JSON.parse(draft);
+    
+    // Check if draft has expired
+    const draftTimestamp = parsed.timestamp ? new Date(parsed.timestamp).getTime() : NaN;
+    if (isNaN(draftTimestamp)) {
+      console.log('⏰ Invalid or missing draft timestamp, clearing...');
+      clearFormDraft();
+      return null;
+    }
+    const draftAge = (Date.now() - draftTimestamp) / (1000 * 60 * 60);
+    if (draftAge > DRAFT_EXPIRY_HOURS) {
+      console.log('⏰ Draft expired, clearing...');
+      clearFormDraft();
+      return null;
+    }
+    
+    // Convert ISO strings back to Date objects
+    return {
+      ...parsed,
+      date: parsed.date ? new Date(parsed.date) : new Date(),
+      end_date: parsed.end_date ? new Date(parsed.end_date) : new Date(),
+      image: null // Reset image
+    };
+  } catch (error) {
+    console.error('❌ Error loading form draft:', error);
+    return null;
+  }
+};
+
+const clearFormDraft = () => {
+  try {
+    localStorage.removeItem(FORM_DRAFT_KEY);
+    console.log('🗑️ Form draft cleared');
+  } catch (error) {
+    console.error('❌ Error clearing form draft:', error);
+  }
+};
 
 // Utility functions
 const formatDate = (date) => {
@@ -158,6 +224,13 @@ export const EventDialog = ({
   onEventCreated,
   userRole = null
 }) => {
+  // ============================================
+  // STEP 2: Add new refs
+  // ============================================
+  const hasInitializedForm = useRef(false);
+  const autoSaveTimeoutRef = useRef(null);
+  const isSubmittingRef = useRef(false);
+
   // Initialize state with proper default values
   const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
   const [availableTicketTypes, setAvailableTicketTypes] = useState(FALLBACK_TICKET_TYPES);
@@ -208,6 +281,172 @@ export const EventDialog = ({
 
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
+
+  // ============================================
+  // STEP 3: Replace initialization useEffect
+  // ============================================
+  useEffect(() => {
+    // Prevent re-initialization if already done
+    if (hasInitializedForm.current && open) return;
+    
+    if (editingEvent) {
+      // Editing existing event - load event data
+      console.log('📝 Loading event for editing:', editingEvent.id);
+      const parseDate = (dateStr) => {
+        if (!dateStr) return new Date();
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? new Date() : date;
+      };
+
+      setNewEvent({
+        name: editingEvent.name || '',
+        description: editingEvent.description || '',
+        date: parseDate(editingEvent.date),
+        end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
+        start_time: editingEvent.start_time || '',
+        end_time: editingEvent.end_time || '',
+        city: editingEvent.city || '',
+        location: editingEvent.location || '',
+        amenities: Array.isArray(editingEvent.amenities) ? editingEvent.amenities : [],
+        image: null,
+        ticket_types: Array.isArray(editingEvent.ticket_types) ? editingEvent.ticket_types : [],
+        category_id: editingEvent.category_id || null,
+        featured: editingEvent.featured || false
+      });
+      setExistingTicketTypes(Array.isArray(editingEvent.ticket_types) ? editingEvent.ticket_types : []);
+      hasInitializedForm.current = true;
+    } else if (open && !editingEvent) {
+      // Creating new event - try to load draft
+      console.log('🆕 Creating new event, checking for drafts...');
+      const draft = loadFormDraft();
+      
+      if (draft && !hasInitializedForm.current) {
+        const shouldRestore = window.confirm(
+          `📋 We found a saved draft from ${new Date(draft.timestamp).toLocaleString()}.\n\nWould you like to restore it?`
+        );
+        
+        if (shouldRestore) {
+          setNewEvent(draft);
+          console.log('✅ Draft restored');
+          toast({
+            title: "Draft Restored",
+            description: "Your previous form data has been restored.",
+            variant: "default"
+          });
+        } else {
+          clearFormDraft();
+          console.log('🗑️ User declined draft restoration');
+        }
+      }
+      hasInitializedForm.current = true;
+    }
+    
+    setValidationErrors([]);
+  }, [editingEvent, open, toast]);
+
+  // ============================================
+  // STEP 4: Add dialog close reset useEffect
+  // ============================================
+  useEffect(() => {
+    if (!open) {
+      console.log('🚪 Dialog closed, resetting initialization flag');
+      hasInitializedForm.current = false;
+      
+      // Clear any pending auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+    }
+  }, [open]);
+
+  // ============================================
+  // STEP 5: Add auto-save useEffect (debounced)
+  // ============================================
+  useEffect(() => {
+    // Don't auto-save if:
+    // - Dialog is closed
+    // - We're editing an existing event
+    // - Form is being submitted
+    if (!open || editingEvent || isSubmittingRef.current) return;
+    
+    const hasFormData = newEvent.name || 
+                        newEvent.description || 
+                        newEvent.location || 
+                        newEvent.city ||
+                        (Array.isArray(newEvent.amenities) && newEvent.amenities.length > 0);
+    
+    if (!hasFormData) return;
+    
+    // Clear previous timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveFormDraft(newEvent);
+    }, 2000); // Save after 2 seconds of inactivity
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [newEvent, open, editingEvent]);
+
+  // ============================================
+  // STEP 6: Add refresh prevention useEffect
+  // ============================================
+  useEffect(() => {
+    if (!open) return;
+    
+    const hasFormData = newEvent.name || 
+                        newEvent.description || 
+                        newEvent.location || 
+                        newEvent.city ||
+                        (Array.isArray(newEvent.amenities) && newEvent.amenities.length > 0) ||
+                        (Array.isArray(newEvent.ticket_types) && newEvent.ticket_types.length > 0);
+    
+    if (!hasFormData) return;
+    
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires this
+      return 'You have unsaved changes. Your progress has been saved as a draft.';
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [open, newEvent]);
+
+  // ============================================
+  // STEP 7: Add dialog close handler
+  // ============================================
+  const handleDialogClose = useCallback((isOpen) => {
+    if (!isOpen && open && !editingEvent) {
+      const hasFormData = newEvent.name || 
+                          newEvent.description || 
+                          newEvent.location || 
+                          newEvent.city ||
+                          (Array.isArray(newEvent.amenities) && newEvent.amenities.length > 0);
+      
+      if (hasFormData) {
+        const shouldClose = window.confirm(
+          '⚠️ You have unsaved changes.\n\nYour progress has been saved as a draft and you can restore it later.\n\nClose anyway?'
+        );
+        
+        if (!shouldClose) {
+          return; // Don't close
+        }
+      }
+    }
+    
+    onOpenChange(isOpen);
+  }, [open, editingEvent, newEvent, onOpenChange]);
 
   // Fetch categories with error handling
   const fetchCategories = useCallback(async () => {
@@ -308,52 +547,6 @@ export const EventDialog = ({
       setIsLoadingDrafts(false);
     }
   }, [toast]);
-
-  // Initialize form data based on editing mode
-  useEffect(() => {
-    if (editingEvent) {
-      const parseDate = (dateStr) => {
-        if (!dateStr) return new Date();
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? new Date() : date;
-      };
-
-      setNewEvent({
-        name: editingEvent.name || '',
-        description: editingEvent.description || '',
-        date: parseDate(editingEvent.date),
-        end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
-        start_time: editingEvent.start_time || '',
-        end_time: editingEvent.end_time || '',
-        city: editingEvent.city || '',
-        location: editingEvent.location || '',
-        amenities: Array.isArray(editingEvent.amenities) ? editingEvent.amenities : [],
-        image: null,
-        ticket_types: Array.isArray(editingEvent.ticket_types) ? editingEvent.ticket_types : [],
-        category_id: editingEvent.category_id || null,
-        featured: editingEvent.featured || false
-      });
-    } else {
-      setNewEvent({
-        name: '',
-        description: '',
-        date: new Date(),
-        end_date: new Date(),
-        start_time: '',
-        end_time: '',
-        city: '',
-        location: '',
-        amenities: [],
-        image: null,
-        ticket_types: [],
-        category_id: null,
-        featured: false
-      });
-      setExistingTicketTypes([]);
-    }
-    
-    setValidationErrors([]);
-  }, [editingEvent, open]);
 
   // Fetch data when dialog opens
   useEffect(() => {
@@ -750,7 +943,9 @@ export const EventDialog = ({
     }
   };
 
-  // Enhanced form submission handler
+  // ============================================
+  // STEP 8: Update handleSubmitEvent function
+  // ============================================
   const handleSubmitEvent = async () => {
     if (selectedDraftId) {
       publishDraft(selectedDraftId);
@@ -768,7 +963,10 @@ export const EventDialog = ({
       return;
     }
 
+    // 🔥 NEW: Set submitting flag
+    isSubmittingRef.current = true;
     setIsLoading(true);
+    
     try {
       let organizer_id = null;
 
@@ -910,6 +1108,10 @@ export const EventDialog = ({
         await Promise.all(ticketTypePromises);
       }
 
+      // 🔥 NEW: After successful submission, clear the draft
+      clearFormDraft();
+      console.log('✅ Event created/updated successfully, draft cleared');
+      
       toast({
         title: "Success",
         description: `Event ${isEditing ? 'updated' : 'created'} successfully`,
@@ -942,11 +1144,7 @@ export const EventDialog = ({
       setValidationErrors([]);
       setSelectedDraftId(null);
     } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
-        error: error.message,
-        eventData: newEvent,
-        isEditing
-      });
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, error);
       
       toast({
         title: "Error",
@@ -955,13 +1153,17 @@ export const EventDialog = ({
       });
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false; // 🔥 NEW: Reset submitting flag
     }
   };
 
   const showValidationErrors = validationErrors.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    // ============================================
+    // STEP 9: Update Dialog component opening tag
+    // ============================================
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -971,6 +1173,34 @@ export const EventDialog = ({
             {isEditing ? 'Update your event details and ticket information.' : 'Create an event manually or with AI assistance.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* ============================================
+            STEP 10: Add auto-save indicator
+        ============================================ */}
+        {!editingEvent && (newEvent.name || newEvent.description) && (
+          <div className="flex items-center justify-between px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-green-700 dark:text-green-300">
+                Auto-saving your progress...
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                saveFormDraft(newEvent);
+                toast({
+                  title: "Draft Saved",
+                  description: "Your progress has been saved manually",
+                  variant: "default"
+                });
+              }}
+              className="text-xs text-green-600 dark:text-green-400 hover:underline"
+            >
+              Save Now
+            </button>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -1473,7 +1703,7 @@ export const EventDialog = ({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleDialogClose(false)}
                   disabled={isLoading}
                   className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
