@@ -202,6 +202,7 @@ const Dashboard = () => {
     return events;
   }, [events]);
 
+  // CRITICAL FIX: Removed events.length from dependencies to prevent circular dependency
   const fetchEvents = useCallback(async (page = 1, reset = false) => {
     if (!user) return;
     
@@ -292,7 +293,8 @@ const Dashboard = () => {
         setHasMore(data.pagination.has_next || false);
       } else {
         setTotalEvents(data.total || data.events.length);
-        setHasMore(data.events.length === pageSize && (data.total ? events.length + data.events.length < data.total : true));
+        // FIXED: Simplified hasMore logic - uses only the current response data
+        setHasMore(data.events.length === pageSize);
       }
       setCurrentPage(page);
 
@@ -305,6 +307,7 @@ const Dashboard = () => {
         }));
       }
     } catch (error) {
+      console.error('Error fetching events:', error);
       toast({
         title: "Error",
         description: "Failed to fetch events",
@@ -320,7 +323,8 @@ const Dashboard = () => {
       setEventsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, cityFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder, pageSize, events.length, toast]);
+  }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, cityFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder, pageSize, toast]);
+  // REMOVED: events.length from dependencies - this was causing the auto-refresh!
 
   const loadMoreEvents = useCallback(() => {
     if (!isLoadingMore && hasMore && !eventsLoading) {
@@ -362,6 +366,7 @@ const Dashboard = () => {
       setHasMore(true);
       fetchEvents(1, true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, eventSearchQuery, categoryFilter, timeFilter, locationFilter, cityFilter, featuredOnly, organizerCompanyFilter, sortBy, sortOrder]);
 
   const allMenuItems = [
