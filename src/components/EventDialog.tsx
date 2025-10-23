@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,17 +20,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { CheckedState } from "@radix-ui/react-checkbox";
 
-// Utility functions (keeping the existing ones)
-const formatDate = (date) => {
+// Utility functions
+const formatDate = (date: Date | string | undefined): string => {
   if (!date) return '';
+  
+  if (typeof date === 'string') {
+    return date;
+  }
+  
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
-const normalizeTimeFormat = (timeStr) => {
+const normalizeTimeFormat = (timeStr: string): string => {
   if (!timeStr || typeof timeStr !== 'string') return '';
   const timeParts = timeStr.trim().split(':');
   if (timeParts.length < 2) return '';
@@ -39,7 +45,7 @@ const normalizeTimeFormat = (timeStr) => {
   return `${hours}:${minutes}`;
 };
 
-const validateEventData = (eventData) => {
+const validateEventData = (eventData: any): string[] => {
   const errors = [];
   
   if (!eventData.name?.trim()) {
@@ -133,11 +139,20 @@ export const EventDialog = ({
   editingEvent = null,
   onEventCreated,
   userRole = null
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingEvent: any | null;
+  onEventCreated?: (event: any) => void;
+  userRole: string | null;
 }) => {
+  // Ref to prevent unnecessary re-renders
+  const aiModeRef = useRef<'manual' | 'ai-assist' | 'ai-conversational'>('manual');
+  
   // State for storing event categories and ticket types fetched from API
-  const [categories, setCategories] = useState([]);
-  const [availableTicketTypes, setAvailableTicketTypes] = useState([]);
-  const [existingTicketTypes, setExistingTicketTypes] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [availableTicketTypes, setAvailableTicketTypes] = useState<string[]>([]);
+  const [existingTicketTypes, setExistingTicketTypes] = useState<any[]>([]);
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
@@ -145,14 +160,15 @@ export const EventDialog = ({
   const [isLoadingTicketTypes, setIsLoadingTicketTypes] = useState(false);
 
   // AI-related states
-  const [aiMode, setAiMode] = useState('manual'); // 'manual', 'ai-assist', 'ai-conversational'
+  const [aiMode, setAiMode] = useState<'manual' | 'ai-assist' | 'ai-conversational'>('manual');
   const [aiConversationalInput, setAiConversationalInput] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState(null);
-  const [aiDraftId, setAiDraftId] = useState(null);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+  const [aiDraftId, setAiDraftId] = useState<number | null>(null);
   const [aiConfidence, setAiConfidence] = useState(0);
-  const [aiGeneratedFields, setAiGeneratedFields] = useState([]);
+  const [aiGeneratedFields, setAiGeneratedFields] = useState<string[]>([]);
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
+  const [autoFillEnabled, setAutoFillEnabled] = useState(true);
 
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
@@ -164,10 +180,10 @@ export const EventDialog = ({
     end_time: '',
     city: '',
     location: '',
-    amenities: [],
-    image: null,
-    ticket_types: [],
-    category_id: null,
+    amenities: [] as string[],
+    image: null as File | null,
+    ticket_types: [] as any[],
+    category_id: null as number | null,
     featured: false
   });
 
@@ -175,13 +191,18 @@ export const EventDialog = ({
   const [currentAmenity, setCurrentAmenity] = useState('');
 
   // Form validation state
-  const [validationErrors, setValidationErrors] = useState([]);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   // Toast notification hook for user feedback
   const { toast } = useToast();
 
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
+
+  // Update ref when aiMode changes
+  useEffect(() => {
+    aiModeRef.current = aiMode;
+  }, [aiMode]);
 
   // Memoized functions to fetch categories and ticket types
   const fetchCategories = useCallback(async () => {
@@ -197,7 +218,7 @@ export const EventDialog = ({
 
       const data = await response.json();
       setCategories(data.categories || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching categories:', error);
       toast({
         title: "Error",
@@ -220,20 +241,62 @@ export const EventDialog = ({
         throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
       }
 
-      const data = await response.json();
-      const apiTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
+      const data: any = await response.json();
+      // Ensure we have a string[] and remove duplicates
+      const apiTypes = Array.from(
+        new Set(
+          (data.ticket_types?.map((t: any) => String(t.type_name)) || []) as string[]
+        )
+      );
       const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
       
-      const allTypes = [...new Set([...fallbackTypes, ...apiTypes])];
+      const allTypes = Array.from(new Set([...fallbackTypes, ...apiTypes])) as string[];
       setAvailableTicketTypes(allTypes);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching ticket types:', error);
       setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
     } finally {
       setIsLoadingTicketTypes(false);
     }
   }, []);
+
+  // Auto-fill form with AI suggestions
+  const autoFillForm = useCallback((suggestions: any) => {
+    if (!suggestions || !autoFillEnabled) return;
+
+    const updatedEvent = { ...newEvent };
+    const generatedFields: string[] = [];
+
+    Object.entries(suggestions).forEach(([field, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        // Handle special cases
+        if (field === 'date' && value) {
+          updatedEvent[field] = new Date(value as string);
+        } else if (field === 'category_id' && value) {
+          updatedEvent[field] = parseInt(value as string);
+        } else if (field === 'amenities' && Array.isArray(value)) {
+          // Type assertion to ensure value is string[]
+          const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
+          updatedEvent[field] = amenitiesArray.slice(0, 5); // Limit to 5 amenities
+        } else if (field === 'featured') {
+          updatedEvent[field] = Boolean(value);
+        } else {
+          updatedEvent[field] = value;
+        }
+        generatedFields.push(field);
+      }
+    });
+
+    setNewEvent(updatedEvent);
+    setAiGeneratedFields(generatedFields);
+    
+    toast({
+      title: "Auto-fill Complete",
+      description: `Form has been automatically filled with ${generatedFields.length} AI-generated fields`,
+      variant: "default"
+    });
+  }, [newEvent, autoFillEnabled, toast]);
 
   // AI-related functions
   const handleAiConversationalCreate = async () => {
@@ -265,8 +328,13 @@ export const EventDialog = ({
       
       if (data.draft_created) {
         setAiDraftId(data.draft_id);
-        setAiSuggestions(data.suggestions);
         setAiConfidence(data.completion_status?.confidence || 0);
+        
+        // Auto-fill the form with AI suggestions
+        if (data.suggestions && autoFillEnabled) {
+          autoFillForm(data.suggestions);
+          setAiSuggestions(data.suggestions);
+        }
         
         // Show conversational response
         toast({
@@ -275,21 +343,18 @@ export const EventDialog = ({
           variant: "default"
         });
         
-        // Switch to AI assist mode to show suggestions
-        setAiMode('ai-assist');
+        // Stay in AI conversational mode but show results
         setShowAiSuggestions(true);
       } else {
         throw new Error('AI failed to create a draft');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI conversational creation:', error);
       toast({
         title: "AI Error",
         description: error.message || "Failed to create event with AI. Please try manual mode.",
         variant: "destructive"
       });
-      // Fall back to manual mode
-      setAiMode('manual');
     } finally {
       setIsAiProcessing(false);
     }
@@ -305,7 +370,7 @@ export const EventDialog = ({
       formData.append('description', newEvent.description || '');
       formData.append('city', newEvent.city || '');
       formData.append('location', newEvent.location || '');
-      formData.append('category_id', newEvent.category_id || '');
+      formData.append('category_id', (newEvent.category_id || '').toString());
       formData.append('enhance_with_ai', 'true');
       
       // Add file if present
@@ -326,20 +391,22 @@ export const EventDialog = ({
 
       const data = await response.json();
       
-      if (data.ai_assisted) {
-        // Update form with AI-enhanced data
-        setNewEvent(prev => ({
-          ...prev,
-          name: data.event.name || prev.name,
-          description: data.event.description || prev.description,
-          city: data.event.city || prev.city,
-          location: data.event.location || prev.location,
-          category_id: data.event.category_id || prev.category_id,
-          amenities: data.event.amenities || prev.amenities
-        }));
+      if (data.ai_assisted && data.event) {
+        // Auto-fill the form with enhanced data
+        const enhancedData = {
+          name: data.event.name,
+          description: data.event.description,
+          city: data.event.city,
+          location: data.event.location,
+          category_id: data.event.category_id,
+          amenities: data.event.amenities,
+          date: data.event.date,
+          start_time: data.event.start_time,
+          end_time: data.event.end_time
+        };
         
+        autoFillForm(enhancedData);
         setAiConfidence(data.ai_confidence || 0);
-        setAiGeneratedFields(data.ai_generated_fields || []);
         
         toast({
           title: "AI Enhancement Complete",
@@ -349,7 +416,7 @@ export const EventDialog = ({
       } else {
         throw new Error('AI enhancement failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI enhancement:', error);
       toast({
         title: "AI Enhancement Error",
@@ -373,7 +440,7 @@ export const EventDialog = ({
       formData.append('description', newEvent.description || '');
       formData.append('city', newEvent.city || '');
       formData.append('location', newEvent.location || '');
-      formData.append('category_id', newEvent.category_id || '');
+      formData.append('category_id', (newEvent.category_id || '').toString());
       formData.append('optimize_with_ai', 'true');
       
       // Add file if present
@@ -395,18 +462,20 @@ export const EventDialog = ({
       const data = await response.json();
       
       if (data.optimization_suggestions) {
+        // Auto-fill with optimization suggestions
+        autoFillForm(data.optimization_suggestions);
         setAiSuggestions(data.optimization_suggestions);
         setShowAiSuggestions(true);
         
         toast({
-          title: "AI Optimization Suggestions",
-          description: "AI has provided suggestions to optimize your event",
+          title: "AI Optimization Complete",
+          description: "Your event has been optimized with AI suggestions",
           variant: "default"
         });
       } else {
         throw new Error('AI optimization failed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI optimization:', error);
       toast({
         title: "AI Optimization Error",
@@ -415,15 +484,6 @@ export const EventDialog = ({
       });
     } finally {
       setIsAiProcessing(false);
-    }
-  };
-
-  const handleApplyAiSuggestion = (field, value) => {
-    setNewEvent(prev => ({ ...prev, [field]: value }));
-    
-    // Track which fields were AI-generated
-    if (!aiGeneratedFields.includes(field)) {
-      setAiGeneratedFields(prev => [...prev, field]);
     }
   };
 
@@ -455,18 +515,19 @@ export const EventDialog = ({
       const data = await response.json();
       
       if (data.requires_confirmation) {
-        // Show proposed updates for confirmation
+        // Auto-fill with proposed updates
+        autoFillForm(data.updates_proposed);
         setAiSuggestions(data.updates_proposed);
         setShowAiSuggestions(true);
         
         toast({
           title: "AI Update Proposal",
-          description: "AI has proposed changes to your event. Please review and confirm.",
+          description: "AI has proposed changes. Review them below.",
           variant: "default"
         });
-      } else {
+      } else if (data.event) {
         // Updates were applied automatically
-        setNewEvent(prev => ({ ...prev, ...data.event }));
+        autoFillForm(data.event);
         
         toast({
           title: "Event Updated",
@@ -477,7 +538,7 @@ export const EventDialog = ({
         onEventCreated?.(data.event);
         onOpenChange(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI conversational update:', error);
       toast({
         title: "AI Update Error",
@@ -489,18 +550,48 @@ export const EventDialog = ({
     }
   };
 
+  const handleApplyAiSuggestion = (field: string, value: any) => {
+    const updatedEvent = { ...newEvent };
+    
+    // Handle special cases
+    if (field === 'date' && value) {
+      updatedEvent[field] = new Date(value as string);
+    } else if (field === 'category_id' && value) {
+      updatedEvent[field] = parseInt(value as string);
+    } else if (field === 'amenities' && Array.isArray(value)) {
+      // Type assertion to ensure value is string[]
+      const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
+      updatedEvent[field] = amenitiesArray.slice(0, 5);
+    } else if (field === 'featured') {
+      updatedEvent[field] = Boolean(value);
+    } else {
+      updatedEvent[field] = value;
+    }
+    
+    setNewEvent(updatedEvent);
+    
+    // Track which fields were AI-generated
+    if (!aiGeneratedFields.includes(field)) {
+      setAiGeneratedFields(prev => [...prev, field]);
+    }
+  };
+
   const handleConfirmAiUpdates = async () => {
     if (!editingEvent?.id || !aiSuggestions) return;
     
     setIsAiProcessing(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/confirm-ai-updates`, {
-        method: 'POST',
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
+        method: 'PUT',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ updates: aiSuggestions })
+        body: JSON.stringify({
+          ...newEvent,
+          ai_assisted: true,
+          draft_id: aiDraftId
+        })
       });
 
       if (!response.ok) {
@@ -510,7 +601,6 @@ export const EventDialog = ({
 
       const data = await response.json();
       
-      setNewEvent(prev => ({ ...prev, ...data.event }));
       setShowAiSuggestions(false);
       
       toast({
@@ -521,7 +611,7 @@ export const EventDialog = ({
       
       onEventCreated?.(data.event);
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error applying AI updates:', error);
       toast({
         title: "Error Applying Updates",
@@ -533,93 +623,8 @@ export const EventDialog = ({
     }
   };
 
-  // Rest of the existing functions (fetchCategories, fetchTicketTypes, etc.)
-  // ... (keeping the existing functions)
-
-  // Effects
-  useEffect(() => {
-    if (open) {
-      fetchCategories();
-      fetchTicketTypes();
-    }
-  }, [open, fetchCategories, fetchTicketTypes]);
-
-  useEffect(() => {
-    const fetchExistingTicketTypes = async () => {
-      if (editingEvent?.id) {
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/ticket-types`, {
-            credentials: 'include'
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setExistingTicketTypes(data.ticket_types || []);
-          } else {
-            console.warn('Failed to fetch existing ticket types');
-          }
-        } catch (error) {
-          console.error('Error fetching existing ticket types:', error);
-        }
-      }
-    };
-
-    fetchExistingTicketTypes();
-  }, [editingEvent]);
-
-  useEffect(() => {
-    if (editingEvent) {
-      const parseDate = (dateStr) => {
-        if (!dateStr) return new Date();
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? new Date() : date;
-      };
-
-      setNewEvent({
-        name: editingEvent.name || '',
-        description: editingEvent.description || '',
-        date: parseDate(editingEvent.date),
-        end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
-        start_time: editingEvent.start_time || '',
-        end_time: editingEvent.end_time || '',
-        city: editingEvent.city || '',
-        location: editingEvent.location || '',
-        amenities: editingEvent.amenities || [],
-        image: null,
-        ticket_types: [],
-        category_id: editingEvent.category_id || null,
-        featured: editingEvent.featured || false
-      });
-    } else {
-      setNewEvent({
-        name: '',
-        description: '',
-        date: new Date(),
-        end_date: new Date(),
-        start_time: '',
-        end_time: '',
-        city: '',
-        location: '',
-        amenities: [],
-        image: null,
-        ticket_types: [],
-        category_id: null,
-        featured: false
-      });
-      setExistingTicketTypes([]);
-    }
-    
-    setValidationErrors([]);
-    setAiMode('manual');
-    setAiSuggestions(null);
-    setShowAiSuggestions(false);
-    setAiConversationalInput('');
-  }, [editingEvent, open]);
-
-  // Rest of the existing functions (handleFieldChange, handleAddAmenity, etc.)
-  // ... (keeping the existing functions)
-
-  const handleFieldChange = useCallback((field, value) => {
+  // Rest of the existing functions
+  const handleFieldChange = useCallback((field: string, value: any) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
     
     if (validationErrors.length > 0) {
@@ -627,7 +632,7 @@ export const EventDialog = ({
     }
   }, [validationErrors.length]);
 
-  const handleAddAmenity = useCallback((amenity) => {
+  const handleAddAmenity = useCallback((amenity?: string) => {
     const amenityToAdd = amenity || currentAmenity.trim();
     
     if (newEvent.amenities.length >= 5) {
@@ -654,7 +659,7 @@ export const EventDialog = ({
     }
   }, [currentAmenity, newEvent.amenities, toast]);
 
-  const handleRemoveAmenity = useCallback((amenityToRemove) => {
+  const handleRemoveAmenity = useCallback((amenityToRemove: string) => {
     setNewEvent(prev => ({
       ...prev,
       amenities: prev.amenities.filter(amenity => amenity !== amenityToRemove)
@@ -672,14 +677,14 @@ export const EventDialog = ({
     }));
   }, [availableTicketTypes]);
 
-  const handleRemoveTicketType = useCallback((index) => {
+  const handleRemoveTicketType = useCallback((index: number) => {
     setNewEvent(prev => ({
       ...prev,
       ticket_types: prev.ticket_types.filter((_, i) => i !== index)
     }));
   }, []);
 
-  const handleTicketTypeChange = useCallback((index, field, value) => {
+  const handleTicketTypeChange = useCallback((index: number, field: string, value: any) => {
     setNewEvent(prev => ({
       ...prev,
       ticket_types: prev.ticket_types.map((ticket, i) =>
@@ -688,7 +693,7 @@ export const EventDialog = ({
     }));
   }, []);
 
-  const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
+  const handleUpdateExistingTicketType = async (ticketTypeId: number, updatedData: any) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
         method: 'PUT',
@@ -717,7 +722,7 @@ export const EventDialog = ({
         description: "Ticket type updated successfully",
         variant: "default"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating ticket type:', error);
       toast({
         title: "Error",
@@ -728,7 +733,7 @@ export const EventDialog = ({
     }
   };
 
-  const handleDeleteExistingTicketType = async (ticketTypeId) => {
+  const handleDeleteExistingTicketType = async (ticketTypeId: number) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
         method: 'DELETE',
@@ -747,7 +752,7 @@ export const EventDialog = ({
         description: "Ticket type deleted successfully",
         variant: "default"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting ticket type:', error);
       toast({
         title: "Error",
@@ -757,7 +762,9 @@ export const EventDialog = ({
     }
   };
 
-  const handleSubmitEvent = async () => {
+  const handleSubmitEvent = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent form submission and page refresh
+    
     const errors = validateEventData(newEvent);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -856,12 +863,12 @@ export const EventDialog = ({
       if (aiMode !== 'manual') {
         formData.append('ai_assisted', 'true');
         if (aiDraftId) {
-          formData.append('draft_id', aiDraftId);
+          formData.append('draft_id', aiDraftId.toString());
         }
       }
 
-      let eventResponse;
-      let eventId;
+      let eventResponse: Response;
+      let eventId: number;
 
       if (isEditing && editingEvent) {
         eventResponse = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
@@ -958,7 +965,7 @@ export const EventDialog = ({
       setAiSuggestions(null);
       setShowAiSuggestions(false);
       setAiConversationalInput('');
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
         error: error.message,
         eventData: newEvent,
@@ -975,7 +982,105 @@ export const EventDialog = ({
     }
   };
 
+  // Effects
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+      fetchTicketTypes();
+    }
+  }, [open, fetchCategories, fetchTicketTypes]);
+
+  useEffect(() => {
+    const fetchExistingTicketTypes = async () => {
+      if (editingEvent?.id) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/ticket-types`, {
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setExistingTicketTypes(data.ticket_types || []);
+          } else {
+            console.warn('Failed to fetch existing ticket types');
+          }
+        } catch (error: any) {
+          console.error('Error fetching existing ticket types:', error);
+        }
+      }
+    };
+
+    fetchExistingTicketTypes();
+  }, [editingEvent]);
+
+  useEffect(() => {
+    if (editingEvent) {
+      const parseDate = (dateStr: string | undefined) => {
+        if (!dateStr) return new Date();
+        const date = new Date(dateStr);
+        return isNaN(date.getTime()) ? new Date() : date;
+      };
+
+      // Safely parse amenities array
+      const parseAmenities = (amenities: any): string[] => {
+        if (!amenities) return [];
+        if (Array.isArray(amenities)) {
+          return amenities.filter(item => typeof item === 'string') as string[];
+        }
+        return [];
+      };
+
+      setNewEvent({
+        name: editingEvent.name || '',
+        description: editingEvent.description || '',
+        date: parseDate(editingEvent.date),
+        end_date: editingEvent.end_date ? parseDate(editingEvent.end_date) : parseDate(editingEvent.date),
+        start_time: editingEvent.start_time || '',
+        end_time: editingEvent.end_time || '',
+        city: editingEvent.city || '',
+        location: editingEvent.location || '',
+        amenities: parseAmenities(editingEvent.amenities),
+        image: null,
+        ticket_types: [],
+        category_id: editingEvent.category_id || null,
+        featured: editingEvent.featured || false
+      });
+    } else {
+      setNewEvent({
+        name: '',
+        description: '',
+        date: new Date(),
+        end_date: new Date(),
+        start_time: '',
+        end_time: '',
+        city: '',
+        location: '',
+        amenities: [],
+        image: null,
+        ticket_types: [],
+        category_id: null,
+        featured: false
+      });
+      setExistingTicketTypes([]);
+    }
+    
+    setValidationErrors([]);
+    // Keep the current AI mode, don't reset to manual
+    setAiSuggestions(null);
+    setShowAiSuggestions(false);
+    setAiConversationalInput('');
+  }, [editingEvent, open]);
+
   const showValidationErrors = validationErrors.length > 0;
+
+  // Helper function to handle checkbox state changes
+  const handleCheckboxChange = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+    return (checked: CheckedState) => {
+      if (typeof checked === 'boolean') {
+        setter(checked);
+      }
+    };
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -997,7 +1102,7 @@ export const EventDialog = ({
 
         {/* AI Mode Selection */}
         <div className="mb-4">
-          <Tabs value={aiMode} onValueChange={setAiMode} className="w-full">
+          <Tabs value={aiMode} onValueChange={(value) => setAiMode(value as 'manual' | 'ai-assist' | 'ai-conversational')} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="manual" className="flex items-center gap-2">
                 <Edit className="h-4 w-4" />
@@ -1041,6 +1146,17 @@ export const EventDialog = ({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="autofill"
+                      checked={autoFillEnabled}
+                      onCheckedChange={handleCheckboxChange(setAutoFillEnabled)}
+                    />
+                    <Label htmlFor="autofill" className="text-sm">
+                      Enable auto-fill (automatically apply AI suggestions to form)
+                    </Label>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
                     <Button 
                       onClick={handleAiEnhanceForm} 
@@ -1102,6 +1218,17 @@ export const EventDialog = ({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="autofill-chat"
+                      checked={autoFillEnabled}
+                      onCheckedChange={handleCheckboxChange(setAutoFillEnabled)}
+                    />
+                    <Label htmlFor="autofill-chat" className="text-sm">
+                      Enable auto-fill (automatically fill form with AI response)
+                    </Label>
+                  </div>
+                  
                   <Textarea
                     placeholder="Describe your event in detail. For example: 'I want to organize a tech conference in Nairobi on July 15th with 500 attendees, featuring speakers from major tech companies...'"
                     value={aiConversationalInput}
@@ -1132,47 +1259,30 @@ export const EventDialog = ({
           </Tabs>
         </div>
 
-        {/* AI Suggestions Dialog */}
+        {/* AI Suggestions Display */}
         {showAiSuggestions && aiSuggestions && (
           <Card className="mb-4 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                AI Suggestions
+                AI Suggestions Applied
               </CardTitle>
               <CardDescription>
-                Review the AI-generated suggestions below. You can apply them individually or all at once.
+                The form has been automatically filled with AI suggestions. You can modify any field as needed.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(aiSuggestions).map(([field, suggestion]: [string, any]) => {
-                const suggestionText =
-                  typeof suggestion === 'string'
-                    ? suggestion
-                    : suggestion === null || suggestion === undefined
-                      ? ''
-                      : typeof suggestion === 'object'
-                        ? JSON.stringify(suggestion)
-                        : String(suggestion);
-
-                return (
-                  <div key={field} className="flex items-start gap-2">
-                    <Checkbox
-                      id={`ai-suggestion-${field}`}
-                      checked={newEvent[field] === suggestion}
-                      onCheckedChange={() => handleApplyAiSuggestion(field, suggestion)}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor={`ai-suggestion-${field}`} className="text-sm font-medium capitalize">
-                        {field.replace('_', ' ')}
-                      </Label>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {suggestionText}
-                      </p>
-                    </div>
+            <CardContent>
+              <div className="space-y-2">
+                {Object.entries(aiSuggestions).map(([field, value]) => (
+                  <div key={field} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="font-medium capitalize">{field.replace('_', ' ')}:</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {Array.isArray(value) ? value.join(', ') : String(value)}
+                    </span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button 
@@ -1195,7 +1305,7 @@ export const EventDialog = ({
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Apply All Updates
+                      Confirm Updates
                     </>
                   )}
                 </Button>
@@ -1216,7 +1326,8 @@ export const EventDialog = ({
           </div>
         )}
 
-        <div className="space-y-4 pt-4">
+        {/* Main Form */}
+        <form onSubmit={handleSubmitEvent} className="space-y-4 pt-4">
           {/* Event Name Field */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -1366,6 +1477,9 @@ export const EventDialog = ({
                     className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700 px-2 py-1 flex items-center gap-1"
                   >
                     {amenity}
+                    {aiGeneratedFields.includes('amenities') && (
+                      <Sparkles className="h-3 w-3" />
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveAmenity(amenity)}
@@ -1443,7 +1557,7 @@ export const EventDialog = ({
                 <Checkbox
                   id="featured"
                   checked={newEvent.featured}
-                  onCheckedChange={(checked) => handleFieldChange('featured', checked)}
+                  onCheckedChange={handleCheckboxChange((checked) => handleFieldChange('featured', checked))}
                   className="border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                 />
                 <Label 
@@ -1452,6 +1566,12 @@ export const EventDialog = ({
                 >
                   <Star className="h-4 w-4 text-yellow-500" />
                   Mark as featured event
+                  {aiGeneratedFields.includes('featured') && (
+                    <Badge variant="outline" className="text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI
+                    </Badge>
+                  )}
                 </Label>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1465,6 +1585,12 @@ export const EventDialog = ({
             <div className="space-y-2">
               <Label className="text-gray-700 dark:text-gray-300">
                 Start Date <span className="text-red-500">*</span>
+                {aiGeneratedFields.includes('date') && (
+                  <Badge variant="outline" className="text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
               </Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
@@ -1483,6 +1609,12 @@ export const EventDialog = ({
               <div className="mt-2">
                 <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300">
                   Start Time <span className="text-red-500">*</span>
+                  {aiGeneratedFields.includes('start_time') && (
+                    <Badge variant="outline" className="text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI
+                    </Badge>
+                  )}
                 </Label>
                 <Input
                   id="start_time"
@@ -1514,7 +1646,15 @@ export const EventDialog = ({
                 />
               </div>
               <div className="mt-2">
-                <Label htmlFor="end_time" className="text-gray-700 dark:text-gray-300">End Time (Optional)</Label>
+                <Label htmlFor="end_time" className="text-gray-700 dark:text-gray-300">
+                  End Time (Optional)
+                  {aiGeneratedFields.includes('end_time') && (
+                    <Badge variant="outline" className="text-xs">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      AI
+                    </Badge>
+                  )}
+                </Label>
                 <Input
                   id="end_time"
                   type="time"
@@ -1712,8 +1852,7 @@ export const EventDialog = ({
             )}
 
             <Button
-              type="button"
-              onClick={handleSubmitEvent}
+              type="submit"
               disabled={isLoading || showValidationErrors}
               className={`bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
                 isLoading || showValidationErrors ? 'opacity-70 cursor-not-allowed' : ''
@@ -1748,13 +1887,23 @@ export const EventDialog = ({
               )}
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
 
-const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketTypes }) => {
+const ExistingTicketTypeRow = ({ 
+  ticket, 
+  onUpdate, 
+  onDelete, 
+  availableTicketTypes 
+}: {
+  ticket: any;
+  onUpdate: (id: number, data: any) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+  availableTicketTypes: string[];
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     type_name: ticket.type_name,

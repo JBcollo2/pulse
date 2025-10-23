@@ -678,6 +678,7 @@ const Dashboard = () => {
           onOpenChange={setShowEventDialog}
           editingEvent={editingEvent}
           onEventCreated={handleEventSave}
+          userRole={user?.role || null}  // FIX: Added userRole prop
         />
         
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1123,8 +1124,6 @@ const Dashboard = () => {
 
         {/* Load More Trigger */}
         <div ref={loadMoreRef} className="h-10 w-full" />
-
-        {/* Removed the "End Message" section that showed "You've seen all events!" */}
       </div>
     );
   };
