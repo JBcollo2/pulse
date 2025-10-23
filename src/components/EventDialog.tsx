@@ -261,48 +261,64 @@ export const EventDialog = ({
     }
   }, []);
 
-  // Auto-fill form with AI suggestions
+  // FIXED: Auto-fill form with AI suggestions - Separated state updates
   const autoFillForm = useCallback((suggestions: any) => {
     if (!suggestions || !autoFillEnabled) return;
 
-    // Use functional update to ensure we're working with the latest state
+    console.log('Auto-filling form with suggestions:', suggestions);
+
+    // Track generated fields
+    const generatedFields: string[] = [];
+
+    // First update the form fields
     setNewEvent(prevEvent => {
       const updatedEvent = { ...prevEvent };
-      const generatedFields: string[] = [];
 
       Object.entries(suggestions).forEach(([field, value]) => {
         if (value !== null && value !== undefined && value !== '') {
           // Handle special cases
           if (field === 'date' && value) {
             updatedEvent[field] = new Date(value as string);
+            generatedFields.push(field);
           } else if (field === 'end_date' && value) {
             updatedEvent[field] = new Date(value as string);
+            generatedFields.push(field);
           } else if (field === 'category_id' && value) {
             updatedEvent[field] = parseInt(value as string);
+            generatedFields.push(field);
           } else if (field === 'amenities' && Array.isArray(value)) {
-            // Type assertion to ensure value is string[]
             const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
-            updatedEvent[field] = amenitiesArray.slice(0, 5); // Limit to 5 amenities
+            updatedEvent[field] = amenitiesArray.slice(0, 5);
+            generatedFields.push(field);
           } else if (field === 'featured') {
             updatedEvent[field] = Boolean(value);
-          } else {
+            generatedFields.push(field);
+          } else if (field in updatedEvent) {
             updatedEvent[field] = value;
+            generatedFields.push(field);
           }
-          generatedFields.push(field);
         }
       });
 
-      // Update generated fields state
-      setAiGeneratedFields(prev => [...prev, ...generatedFields]);
-      
       return updatedEvent;
     });
-    
+
+    // Then update the generated fields separately using functional update
+    if (generatedFields.length > 0) {
+      setAiGeneratedFields(prev => {
+        const uniqueFields = Array.from(new Set([...prev, ...generatedFields]));
+        console.log('Updated AI generated fields:', uniqueFields);
+        return uniqueFields;
+      });
+    }
+
+    // Show success message
     toast({
-      title: "Auto-fill Complete",
-      description: `Form has been automatically filled with AI suggestions. Scroll down to review.`,
+      title: "Auto-fill Complete ✨",
+      description: `Form has been automatically filled with ${generatedFields.length} AI suggestions. Scroll down to review!`,
       variant: "default"
     });
+
   }, [autoFillEnabled, toast]);
 
   // AI-related functions
@@ -337,7 +353,7 @@ export const EventDialog = ({
         setAiDraftId(data.draft_id);
         setAiConfidence(data.completion_status?.confidence || 0);
         
-        // Set suggestions first, then auto-fill
+        // Set suggestions first
         setAiSuggestions(data.suggestions);
         
         // Auto-fill the form with AI suggestions
@@ -347,8 +363,8 @@ export const EventDialog = ({
         
         // Show conversational response
         toast({
-          title: "AI Response",
-          description: data.conversational_response,
+          title: "AI Response ✨",
+          description: data.conversational_response || "I've created your event based on your description. Please review the details below.",
           variant: "default"
         });
         
@@ -419,7 +435,7 @@ export const EventDialog = ({
         setAiConfidence(data.ai_confidence || 0);
         
         toast({
-          title: "AI Enhancement Complete",
+          title: "AI Enhancement Complete ✨",
           description: "Your event details have been enhanced with AI suggestions",
           variant: "default"
         });
@@ -478,7 +494,7 @@ export const EventDialog = ({
         setShowAiSuggestions(true);
         
         toast({
-          title: "AI Optimization Complete",
+          title: "AI Optimization Complete ✨",
           description: "Your event has been optimized with AI suggestions",
           variant: "default"
         });
@@ -531,7 +547,7 @@ export const EventDialog = ({
         setShowAiSuggestions(true);
         
         toast({
-          title: "AI Update Proposal",
+          title: "AI Update Proposal ✨",
           description: "AI has proposed changes. Review them below.",
           variant: "default"
         });
@@ -540,7 +556,7 @@ export const EventDialog = ({
         autoFillForm(data.event);
         
         toast({
-          title: "Event Updated",
+          title: "Event Updated ✨",
           description: "Your event has been updated with AI assistance",
           variant: "default"
         });
@@ -571,7 +587,6 @@ export const EventDialog = ({
     } else if (field === 'category_id' && value) {
       updatedEvent[field] = parseInt(value as string);
     } else if (field === 'amenities' && Array.isArray(value)) {
-      // Type assertion to ensure value is string[]
       const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
       updatedEvent[field] = amenitiesArray.slice(0, 5);
     } else if (field === 'featured') {
@@ -616,7 +631,7 @@ export const EventDialog = ({
       setShowAiSuggestions(false);
       
       toast({
-        title: "Updates Applied",
+        title: "Updates Applied ✨",
         description: "AI suggested changes have been applied to your event",
         variant: "default"
       });
@@ -973,10 +988,7 @@ export const EventDialog = ({
         featured: false
       });
       setValidationErrors([]);
-      setAiMode('manual');
-      setAiSuggestions(null);
-      setShowAiSuggestions(false);
-      setAiConversationalInput('');
+      // Don't reset AI mode here - let the useEffect handle it when dialog closes
     } catch (error: any) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
         error: error.message,
@@ -1025,6 +1037,7 @@ export const EventDialog = ({
     fetchExistingTicketTypes();
   }, [editingEvent]);
 
+  // FIXED: Only reset AI state when dialog closes
   useEffect(() => {
     if (editingEvent) {
       const parseDate = (dateStr: string | undefined) => {
@@ -1077,14 +1090,16 @@ export const EventDialog = ({
     }
     
     setValidationErrors([]);
-    // Don't reset AI mode or suggestions when dialog opens
-    // Only reset when dialog closes
+    
+    // FIXED: Only reset AI state when dialog closes, not when it opens
     if (!open) {
       setAiMode('manual');
       setAiSuggestions(null);
       setShowAiSuggestions(false);
       setAiConversationalInput('');
       setAiGeneratedFields([]);
+      setAiConfidence(0);
+      setAiDraftId(null);
     }
   }, [editingEvent, open]);
 
@@ -1208,15 +1223,14 @@ export const EventDialog = ({
                   )}
                   
                   {aiGeneratedFields.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">AI-generated fields:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {aiGeneratedFields.map(field => (
-                          <Badge key={field} variant="outline" className="text-xs">
-                            {field}
-                          </Badge>
-                        ))}
-                      </div>
+                    <div className="space-y-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        AI Auto-fill Complete!
+                      </p>
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        {aiGeneratedFields.length} fields filled: {aiGeneratedFields.join(', ')}
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -1275,9 +1289,18 @@ export const EventDialog = ({
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>AI Confidence</span>
-                        <span>{Math.round(aiConfidence * 100)}%</span>
+                        <span className="font-semibold">{Math.round(aiConfidence * 100)}%</span>
                       </div>
                       <Progress value={aiConfidence * 100} className="h-2" />
+                    </div>
+                  )}
+                  
+                  {showAiSuggestions && aiSuggestions && (
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        ✨ Form auto-filled! Scroll down to review and submit.
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -1299,14 +1322,16 @@ export const EventDialog = ({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {Object.entries(aiSuggestions).map(([field, value]) => (
-                  <div key={field} className="flex items-center gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="font-medium capitalize">{field.replace('_', ' ')}:</span>
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {Array.isArray(value) ? value.join(', ') : String(value)}
-                    </span>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {Object.entries(aiSuggestions).slice(0, 8).map(([field, value]) => (
+                  <div key={field} className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span className="font-medium capitalize">{field.replace('_', ' ')}:</span>
+                      <span className="text-gray-600 dark:text-gray-400 ml-1">
+                        {Array.isArray(value) ? value.join(', ') : String(value)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1360,7 +1385,7 @@ export const EventDialog = ({
             <Label htmlFor="name" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Event Name <span className="text-red-500">*</span>
               {aiGeneratedFields.includes('name') && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI
                 </Badge>
@@ -1381,7 +1406,7 @@ export const EventDialog = ({
             <Label htmlFor="description" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Description <span className="text-red-500">*</span>
               {aiGeneratedFields.includes('description') && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI
                 </Badge>
@@ -1404,7 +1429,7 @@ export const EventDialog = ({
               <Label htmlFor="city" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 City <span className="text-red-500">*</span>
                 {aiGeneratedFields.includes('city') && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                     <Sparkles className="h-3 w-3 mr-1" />
                     AI
                   </Badge>
@@ -1424,7 +1449,7 @@ export const EventDialog = ({
               <Label htmlFor="location" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 Location <span className="text-red-500">*</span>
                 {aiGeneratedFields.includes('location') && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                     <Sparkles className="h-3 w-3 mr-1" />
                     AI
                   </Badge>
@@ -1454,7 +1479,7 @@ export const EventDialog = ({
             <Label htmlFor="category" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Category <span className="text-red-500">*</span>
               {aiGeneratedFields.includes('category_id') && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI
                 </Badge>
@@ -1488,7 +1513,15 @@ export const EventDialog = ({
           {/* Amenities Section */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-gray-700 dark:text-gray-300">Amenities</Label>
+              <Label className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                Amenities
+                {aiGeneratedFields.includes('amenities') && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </Label>
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {newEvent.amenities.length}/5 amenities
               </span>
@@ -1505,7 +1538,7 @@ export const EventDialog = ({
                   >
                     {amenity}
                     {aiGeneratedFields.includes('amenities') && (
-                      <Sparkles className="h-3 w-3" />
+                      <Sparkles className="h-3 w-3 text-green-600" />
                     )}
                     <button
                       type="button"
@@ -1594,7 +1627,7 @@ export const EventDialog = ({
                   <Star className="h-4 w-4 text-yellow-500" />
                   Mark as featured event
                   {aiGeneratedFields.includes('featured') && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       <Sparkles className="h-3 w-3 mr-1" />
                       AI
                     </Badge>
@@ -1610,10 +1643,10 @@ export const EventDialog = ({
           {/* Date and Time Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-gray-700 dark:text-gray-300">
+              <Label className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 Start Date <span className="text-red-500">*</span>
                 {aiGeneratedFields.includes('date') && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                     <Sparkles className="h-3 w-3 mr-1" />
                     AI
                   </Badge>
@@ -1634,10 +1667,10 @@ export const EventDialog = ({
                 />
               </div>
               <div className="mt-2">
-                <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300">
+                <Label htmlFor="start_time" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   Start Time <span className="text-red-500">*</span>
                   {aiGeneratedFields.includes('start_time') && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       <Sparkles className="h-3 w-3 mr-1" />
                       AI
                     </Badge>
@@ -1656,7 +1689,15 @@ export const EventDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-700 dark:text-gray-300">End Date</Label>
+              <Label className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                End Date
+                {aiGeneratedFields.includes('end_date') && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
+              </Label>
               <div className="border rounded-md p-2 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex justify-center">
                 <Calendar
                   mode="single"
@@ -1673,10 +1714,10 @@ export const EventDialog = ({
                 />
               </div>
               <div className="mt-2">
-                <Label htmlFor="end_time" className="text-gray-700 dark:text-gray-300">
+                <Label htmlFor="end_time" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   End Time (Optional)
                   {aiGeneratedFields.includes('end_time') && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
                       <Sparkles className="h-3 w-3 mr-1" />
                       AI
                     </Badge>
