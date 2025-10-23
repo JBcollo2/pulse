@@ -12,15 +12,16 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Trash2, Edit, Star, X } from "lucide-react";
+import { Plus, Trash2, Edit, Star, X, Sparkles, Wand2, RefreshCw, CheckCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
-/**
- * Utility function to format Date object to YYYY-MM-DD string format
- * Used for API calls that expect date strings in this format
- */
+// Utility functions (keeping the existing ones)
 const formatDate = (date) => {
   if (!date) return '';
   const year = date.getFullYear();
@@ -29,9 +30,6 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-/**
- * Utility function to validate time format and convert to HH:MM
- */
 const normalizeTimeFormat = (timeStr) => {
   if (!timeStr || typeof timeStr !== 'string') return '';
   const timeParts = timeStr.trim().split(':');
@@ -41,9 +39,6 @@ const normalizeTimeFormat = (timeStr) => {
   return `${hours}:${minutes}`;
 };
 
-/**
- * Utility function to validate form data
- */
 const validateEventData = (eventData) => {
   const errors = [];
   
@@ -63,12 +58,10 @@ const validateEventData = (eventData) => {
     errors.push('Event location is required');
   }
   
-  // Validate that city is entered before location can be set
   if (eventData.location?.trim() && !eventData.city?.trim()) {
     errors.push('Please enter the city before setting the event location');
   }
   
-  // Validate maximum amenities limit
   if (eventData.amenities && eventData.amenities.length > 5) {
     errors.push('Maximum of 5 amenities allowed per event');
   }
@@ -81,7 +74,6 @@ const validateEventData = (eventData) => {
     errors.push('Start time is required');
   }
   
-  // Validate date is not in the past
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const eventDate = new Date(eventData.date);
@@ -91,7 +83,6 @@ const validateEventData = (eventData) => {
     errors.push('Event date cannot be in the past');
   }
   
-  // Validate end date if provided
   if (eventData.end_date && formatDate(eventData.end_date) !== formatDate(eventData.date)) {
     const endDate = new Date(eventData.end_date);
     endDate.setHours(0, 0, 0, 0);
@@ -105,7 +96,6 @@ const validateEventData = (eventData) => {
     }
   }
   
-  // Validate time sequence for same-day events
   if (eventData.start_time && eventData.end_time && 
       formatDate(eventData.date) === formatDate(eventData.end_date)) {
     const startTime = normalizeTimeFormat(eventData.start_time);
@@ -118,7 +108,6 @@ const validateEventData = (eventData) => {
       const startTotalMinutes = startHour * 60 + startMin;
       let endTotalMinutes = endHour * 60 + endMin;
       
-      // Handle midnight crossing
       if (endTotalMinutes === 0 && startTotalMinutes > 0) {
         endTotalMinutes = 24 * 60;
       }
@@ -132,24 +121,12 @@ const validateEventData = (eventData) => {
   return errors;
 };
 
-// Common amenities list for quick selection
 const COMMON_AMENITIES = [
   "Parking", "WiFi", "Sound System", "DJ", "Live Band", "Catering", 
   "Bar Service", "Photography", "Security", "Air Conditioning", 
   "Stage", "Dance Floor", "VIP Area", "Coat Check", "Valet Parking"
 ];
 
-/**
- * Main EventDialog Component
- * A modal dialog for creating new events or editing existing ones
- *
- * Props:
- * - open: boolean - Controls dialog visibility
- * - onOpenChange: function - Callback when dialog open state changes
- * - editingEvent: object|null - Event data when editing, null when creating new
- * - onEventCreated: function - Callback when event is successfully created/updated
- * - userRole: string - Current user's role for feature access control
- */
 export const EventDialog = ({
   open,
   onOpenChange,
@@ -160,14 +137,22 @@ export const EventDialog = ({
   // State for storing event categories and ticket types fetched from API
   const [categories, setCategories] = useState([]);
   const [availableTicketTypes, setAvailableTicketTypes] = useState([]);
-
-  // State for existing ticket types when editing an event
   const [existingTicketTypes, setExistingTicketTypes] = useState([]);
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingTicketTypes, setIsLoadingTicketTypes] = useState(false);
+
+  // AI-related states
+  const [aiMode, setAiMode] = useState('manual'); // 'manual', 'ai-assist', 'ai-conversational'
+  const [aiConversationalInput, setAiConversationalInput] = useState('');
+  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [aiDraftId, setAiDraftId] = useState(null);
+  const [aiConfidence, setAiConfidence] = useState(0);
+  const [aiGeneratedFields, setAiGeneratedFields] = useState([]);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
@@ -198,9 +183,7 @@ export const EventDialog = ({
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
 
-  /**
-   * Memoized function to fetch categories to prevent unnecessary re-renders
-   */
+  // Memoized functions to fetch categories and ticket types
   const fetchCategories = useCallback(async () => {
     setIsLoadingCategories(true);
     try {
@@ -224,45 +207,336 @@ export const EventDialog = ({
     } finally {
       setIsLoadingCategories(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only create once
+  }, [toast]);
 
-/**
- * Fetch available ticket types from the database
- */
-const fetchTicketTypes = useCallback(async () => {
-  setIsLoadingTicketTypes(true);
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
-      credentials: 'include'
-    });
+  const fetchTicketTypes = useCallback(async () => {
+    setIsLoadingTicketTypes(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
+        credentials: 'include'
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to fetch ticket types`);
+      }
+
+      const data = await response.json();
+      const apiTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
+      const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
+      
+      const allTypes = [...new Set([...fallbackTypes, ...apiTypes])];
+      setAvailableTicketTypes(allTypes);
+      
+    } catch (error) {
+      console.error('Error fetching ticket types:', error);
+      setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
+    } finally {
+      setIsLoadingTicketTypes(false);
+    }
+  }, []);
+
+  // AI-related functions
+  const handleAiConversationalCreate = async () => {
+    if (!aiConversationalInput.trim()) {
+      toast({
+        title: "Input Required",
+        description: "Please describe the event you want to create",
+        variant: "destructive"
+      });
+      return;
     }
 
-    const data = await response.json();
-    // Extract unique ticket type names from the organizer's ticket types
-    const apiTypes = [...new Set(data.ticket_types?.map(t => t.type_name) || [])];
-    const fallbackTypes = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
-    
-    // Always include fallback types, merged with any additional types from API
-    const allTypes = [...new Set([...fallbackTypes, ...apiTypes])];
-    setAvailableTicketTypes(allTypes);
-    
-  } catch (error) {
-    console.error('Error fetching ticket types:', error);
-    // Fallback to basic ticket types if fetch fails
-    setAvailableTicketTypes(["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"]);
-  } finally {
-    setIsLoadingTicketTypes(false);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []); // Empty dependency array - only create once
+    setIsAiProcessing(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events?ai_assistant=true&conversational_input=${encodeURIComponent(aiConversationalInput)}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
 
-  /**
-   * Effect: Fetch event categories and ticket types from API on component mount
-   */
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create event with AI');
+      }
+
+      const data = await response.json();
+      
+      if (data.draft_created) {
+        setAiDraftId(data.draft_id);
+        setAiSuggestions(data.suggestions);
+        setAiConfidence(data.completion_status?.confidence || 0);
+        
+        // Show conversational response
+        toast({
+          title: "AI Response",
+          description: data.conversational_response,
+          variant: "default"
+        });
+        
+        // Switch to AI assist mode to show suggestions
+        setAiMode('ai-assist');
+        setShowAiSuggestions(true);
+      } else {
+        throw new Error('AI failed to create a draft');
+      }
+    } catch (error) {
+      console.error('Error in AI conversational creation:', error);
+      toast({
+        title: "AI Error",
+        description: error.message || "Failed to create event with AI. Please try manual mode.",
+        variant: "destructive"
+      });
+      // Fall back to manual mode
+      setAiMode('manual');
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleAiEnhanceForm = async () => {
+    setIsAiProcessing(true);
+    try {
+      const formData = new FormData();
+      
+      // Add current form data
+      formData.append('name', newEvent.name || '');
+      formData.append('description', newEvent.description || '');
+      formData.append('city', newEvent.city || '');
+      formData.append('location', newEvent.location || '');
+      formData.append('category_id', newEvent.category_id || '');
+      formData.append('enhance_with_ai', 'true');
+      
+      // Add file if present
+      if (newEvent.image instanceof File) {
+        formData.append('file', newEvent.image);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to enhance form with AI');
+      }
+
+      const data = await response.json();
+      
+      if (data.ai_assisted) {
+        // Update form with AI-enhanced data
+        setNewEvent(prev => ({
+          ...prev,
+          name: data.event.name || prev.name,
+          description: data.event.description || prev.description,
+          city: data.event.city || prev.city,
+          location: data.event.location || prev.location,
+          category_id: data.event.category_id || prev.category_id,
+          amenities: data.event.amenities || prev.amenities
+        }));
+        
+        setAiConfidence(data.ai_confidence || 0);
+        setAiGeneratedFields(data.ai_generated_fields || []);
+        
+        toast({
+          title: "AI Enhancement Complete",
+          description: "Your event details have been enhanced with AI suggestions",
+          variant: "default"
+        });
+      } else {
+        throw new Error('AI enhancement failed');
+      }
+    } catch (error) {
+      console.error('Error in AI enhancement:', error);
+      toast({
+        title: "AI Enhancement Error",
+        description: error.message || "Failed to enhance form with AI",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleAiOptimizeUpdate = async () => {
+    if (!editingEvent?.id) return;
+    
+    setIsAiProcessing(true);
+    try {
+      const formData = new FormData();
+      
+      // Add current form data
+      formData.append('name', newEvent.name || '');
+      formData.append('description', newEvent.description || '');
+      formData.append('city', newEvent.city || '');
+      formData.append('location', newEvent.location || '');
+      formData.append('category_id', newEvent.category_id || '');
+      formData.append('optimize_with_ai', 'true');
+      
+      // Add file if present
+      if (newEvent.image instanceof File) {
+        formData.append('file', newEvent.image);
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to optimize update with AI');
+      }
+
+      const data = await response.json();
+      
+      if (data.optimization_suggestions) {
+        setAiSuggestions(data.optimization_suggestions);
+        setShowAiSuggestions(true);
+        
+        toast({
+          title: "AI Optimization Suggestions",
+          description: "AI has provided suggestions to optimize your event",
+          variant: "default"
+        });
+      } else {
+        throw new Error('AI optimization failed');
+      }
+    } catch (error) {
+      console.error('Error in AI optimization:', error);
+      toast({
+        title: "AI Optimization Error",
+        description: error.message || "Failed to optimize update with AI",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleApplyAiSuggestion = (field, value) => {
+    setNewEvent(prev => ({ ...prev, [field]: value }));
+    
+    // Track which fields were AI-generated
+    if (!aiGeneratedFields.includes(field)) {
+      setAiGeneratedFields(prev => [...prev, field]);
+    }
+  };
+
+  const handleAiConversationalUpdate = async () => {
+    if (!aiConversationalInput.trim() || !editingEvent?.id) {
+      toast({
+        title: "Input Required",
+        description: "Please describe the changes you want to make",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAiProcessing(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}?ai_assistant=true&conversational_input=${encodeURIComponent(aiConversationalInput)}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update event with AI');
+      }
+
+      const data = await response.json();
+      
+      if (data.requires_confirmation) {
+        // Show proposed updates for confirmation
+        setAiSuggestions(data.updates_proposed);
+        setShowAiSuggestions(true);
+        
+        toast({
+          title: "AI Update Proposal",
+          description: "AI has proposed changes to your event. Please review and confirm.",
+          variant: "default"
+        });
+      } else {
+        // Updates were applied automatically
+        setNewEvent(prev => ({ ...prev, ...data.event }));
+        
+        toast({
+          title: "Event Updated",
+          description: "Your event has been updated with AI assistance",
+          variant: "default"
+        });
+        
+        onEventCreated?.(data.event);
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Error in AI conversational update:', error);
+      toast({
+        title: "AI Update Error",
+        description: error.message || "Failed to update event with AI",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  const handleConfirmAiUpdates = async () => {
+    if (!editingEvent?.id || !aiSuggestions) return;
+    
+    setIsAiProcessing(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${editingEvent.id}/confirm-ai-updates`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ updates: aiSuggestions })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to apply AI updates');
+      }
+
+      const data = await response.json();
+      
+      setNewEvent(prev => ({ ...prev, ...data.event }));
+      setShowAiSuggestions(false);
+      
+      toast({
+        title: "Updates Applied",
+        description: "AI suggested changes have been applied to your event",
+        variant: "default"
+      });
+      
+      onEventCreated?.(data.event);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error applying AI updates:', error);
+      toast({
+        title: "Error Applying Updates",
+        description: error.message || "Failed to apply AI updates",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
+
+  // Rest of the existing functions (fetchCategories, fetchTicketTypes, etc.)
+  // ... (keeping the existing functions)
+
+  // Effects
   useEffect(() => {
     if (open) {
       fetchCategories();
@@ -270,9 +544,6 @@ const fetchTicketTypes = useCallback(async () => {
     }
   }, [open, fetchCategories, fetchTicketTypes]);
 
-  /**
-   * Effect: Fetch existing ticket types when editing an event
-   */
   useEffect(() => {
     const fetchExistingTicketTypes = async () => {
       if (editingEvent?.id) {
@@ -296,9 +567,6 @@ const fetchTicketTypes = useCallback(async () => {
     fetchExistingTicketTypes();
   }, [editingEvent]);
 
-  /**
-   * Effect: Initialize form data based on editing mode
-   */
   useEffect(() => {
     if (editingEvent) {
       const parseDate = (dateStr) => {
@@ -342,60 +610,26 @@ const fetchTicketTypes = useCallback(async () => {
     }
     
     setValidationErrors([]);
+    setAiMode('manual');
+    setAiSuggestions(null);
+    setShowAiSuggestions(false);
+    setAiConversationalInput('');
   }, [editingEvent, open]);
 
-  /**
-   * Effect: Save form state to sessionStorage periodically
-   */
-  useEffect(() => {
-    if (newEvent.name || newEvent.description) {
-      const formDraft = {
-        ...newEvent,
-        date: newEvent.date?.toISOString(),
-        end_date: newEvent.end_date?.toISOString()
-      };
-      sessionStorage.setItem('event-form-draft', JSON.stringify(formDraft));
-    }
-  }, [newEvent]);
+  // Rest of the existing functions (handleFieldChange, handleAddAmenity, etc.)
+  // ... (keeping the existing functions)
 
-  /**
-   * Effect: Restore draft on mount
-   */
-  useEffect(() => {
-    const draft = sessionStorage.getItem('event-form-draft');
-    if (draft && !editingEvent) {
-      try {
-        const parsed = JSON.parse(draft);
-        setNewEvent({
-          ...parsed,
-          date: new Date(parsed.date),
-          end_date: new Date(parsed.end_date)
-        });
-      } catch (e) {
-        console.error('Failed to restore draft:', e);
-      }
-    }
-  }, [editingEvent]);
-
-  /**
-   * Handle form field changes with validation
-   */
   const handleFieldChange = useCallback((field, value) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
     
-    // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
   }, [validationErrors.length]);
 
-  /**
-   * Handle adding amenities
-   */
   const handleAddAmenity = useCallback((amenity) => {
     const amenityToAdd = amenity || currentAmenity.trim();
     
-    // Check maximum amenities limit
     if (newEvent.amenities.length >= 5) {
       toast({
         title: "Maximum Limit Reached",
@@ -420,9 +654,6 @@ const fetchTicketTypes = useCallback(async () => {
     }
   }, [currentAmenity, newEvent.amenities, toast]);
 
-  /**
-   * Handle removing amenities
-   */
   const handleRemoveAmenity = useCallback((amenityToRemove) => {
     setNewEvent(prev => ({
       ...prev,
@@ -430,9 +661,6 @@ const fetchTicketTypes = useCallback(async () => {
     }));
   }, []);
 
-  /**
-   * Add a new ticket type to the form
-   */
   const handleAddTicketType = useCallback(() => {
     setNewEvent(prev => ({
       ...prev,
@@ -444,9 +672,6 @@ const fetchTicketTypes = useCallback(async () => {
     }));
   }, [availableTicketTypes]);
 
-  /**
-   * Remove a ticket type from the form by index
-   */
   const handleRemoveTicketType = useCallback((index) => {
     setNewEvent(prev => ({
       ...prev,
@@ -454,9 +679,6 @@ const fetchTicketTypes = useCallback(async () => {
     }));
   }, []);
 
-  /**
-   * Update a specific field of a ticket type by index
-   */
   const handleTicketTypeChange = useCallback((index, field, value) => {
     setNewEvent(prev => ({
       ...prev,
@@ -466,9 +688,6 @@ const fetchTicketTypes = useCallback(async () => {
     }));
   }, []);
 
-  /**
-   * Update an existing ticket type via API call
-   */
   const handleUpdateExistingTicketType = async (ticketTypeId, updatedData) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
@@ -509,9 +728,6 @@ const fetchTicketTypes = useCallback(async () => {
     }
   };
 
-  /**
-   * Delete an existing ticket type via API call
-   */
   const handleDeleteExistingTicketType = async (ticketTypeId) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types/${ticketTypeId}`, {
@@ -541,11 +757,7 @@ const fetchTicketTypes = useCallback(async () => {
     }
   };
 
-  /**
-   * Enhanced form submission handler with improved validation and error handling
-   */
   const handleSubmitEvent = async () => {
-    // Client-side validation
     const errors = validateEventData(newEvent);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -640,6 +852,14 @@ const fetchTicketTypes = useCallback(async () => {
         formData.append('file', newEvent.image);
       }
 
+      // Add AI-related data
+      if (aiMode !== 'manual') {
+        formData.append('ai_assisted', 'true');
+        if (aiDraftId) {
+          formData.append('draft_id', aiDraftId);
+        }
+      }
+
       let eventResponse;
       let eventId;
 
@@ -661,7 +881,6 @@ const fetchTicketTypes = useCallback(async () => {
       if (!eventResponse.ok) {
         const errorData = await eventResponse.json();
         
-        // Handle specific error types
         if (errorData.validation_errors) {
           const errorMessages = Object.values(errorData.validation_errors).flat();
           throw new Error(`Validation errors: ${errorMessages.join(', ')}`);
@@ -718,9 +937,6 @@ const fetchTicketTypes = useCallback(async () => {
 
       onEventCreated?.(updatedEventData);
 
-      // Clear draft after successful save
-      sessionStorage.removeItem('event-form-draft');
-
       // Reset form state
       setNewEvent({
         name: '',
@@ -738,6 +954,10 @@ const fetchTicketTypes = useCallback(async () => {
         featured: false
       });
       setValidationErrors([]);
+      setAiMode('manual');
+      setAiSuggestions(null);
+      setShowAiSuggestions(false);
+      setAiConversationalInput('');
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
         error: error.message,
@@ -755,20 +975,234 @@ const fetchTicketTypes = useCallback(async () => {
     }
   };
 
-  // Show validation errors if any
   const showValidationErrors = validationErrors.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
-          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             {isEditing ? 'Edit Event' : 'Create New Event'}
+            {aiMode !== 'manual' && (
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                <Sparkles className="h-3 w-3 mr-1" />
+                AI Assisted
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
             {isEditing ? 'Update your event details and ticket information.' : 'Fill in the details to create a new event with ticket types.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* AI Mode Selection */}
+        <div className="mb-4">
+          <Tabs value={aiMode} onValueChange={setAiMode} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="manual" className="flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Manual
+              </TabsTrigger>
+              <TabsTrigger value="ai-assist" className="flex items-center gap-2">
+                <Wand2 className="h-4 w-4" />
+                AI Assist
+              </TabsTrigger>
+              <TabsTrigger value="ai-conversational" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                AI Chat
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="manual" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Manual Event Creation</CardTitle>
+                  <CardDescription>
+                    Fill in all the event details manually. This gives you full control over every aspect of your event.
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <p className="text-sm text-gray-500">
+                    You can switch to AI mode at any time if you need assistance.
+                  </p>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="ai-assist" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Wand2 className="h-5 w-5 text-purple-600" />
+                    AI-Assisted Event Creation
+                  </CardTitle>
+                  <CardDescription>
+                    Let AI help you create your event. Fill in some details, and AI will suggest improvements.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={handleAiEnhanceForm} 
+                      disabled={isAiProcessing || !newEvent.name || !newEvent.description}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isAiProcessing ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4 mr-2" />
+                          Enhance with AI
+                        </>
+                      )}
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                      Fill in at least name and description, then click to enhance
+                    </span>
+                  </div>
+                  
+                  {aiConfidence > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>AI Confidence</span>
+                        <span>{Math.round(aiConfidence * 100)}%</span>
+                      </div>
+                      <Progress value={aiConfidence * 100} className="h-2" />
+                    </div>
+                  )}
+                  
+                  {aiGeneratedFields.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">AI-generated fields:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {aiGeneratedFields.map(field => (
+                          <Badge key={field} variant="outline" className="text-xs">
+                            {field}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="ai-conversational" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    Conversational AI Event Creation
+                  </CardTitle>
+                  <CardDescription>
+                    Describe your event in natural language, and AI will create it for you.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    placeholder="Describe your event in detail. For example: 'I want to organize a tech conference in Nairobi on July 15th with 500 attendees, featuring speakers from major tech companies...'"
+                    value={aiConversationalInput}
+                    onChange={(e) => setAiConversationalInput(e.target.value)}
+                    rows={4}
+                    className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  />
+                  <Button 
+                    onClick={isEditing ? handleAiConversationalUpdate : handleAiConversationalCreate}
+                    disabled={isAiProcessing || !aiConversationalInput.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 w-full"
+                  >
+                    {isAiProcessing ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {isEditing ? 'Update Event with AI' : 'Create Event with AI'}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* AI Suggestions Dialog */}
+        {showAiSuggestions && aiSuggestions && (
+          <Card className="mb-4 border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                AI Suggestions
+              </CardTitle>
+              <CardDescription>
+                Review the AI-generated suggestions below. You can apply them individually or all at once.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Object.entries(aiSuggestions).map(([field, suggestion]: [string, any]) => {
+                const suggestionText =
+                  typeof suggestion === 'string'
+                    ? suggestion
+                    : suggestion === null || suggestion === undefined
+                      ? ''
+                      : typeof suggestion === 'object'
+                        ? JSON.stringify(suggestion)
+                        : String(suggestion);
+
+                return (
+                  <div key={field} className="flex items-start gap-2">
+                    <Checkbox
+                      id={`ai-suggestion-${field}`}
+                      checked={newEvent[field] === suggestion}
+                      onCheckedChange={() => handleApplyAiSuggestion(field, suggestion)}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor={`ai-suggestion-${field}`} className="text-sm font-medium capitalize">
+                        {field.replace('_', ' ')}
+                      </Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {suggestionText}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAiSuggestions(false)}
+              >
+                Dismiss
+              </Button>
+              {isEditing && (
+                <Button 
+                  onClick={handleConfirmAiUpdates}
+                  disabled={isAiProcessing}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isAiProcessing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Apply All Updates
+                    </>
+                  )}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        )}
 
         {/* Validation Errors Display */}
         {showValidationErrors && (
@@ -785,8 +1219,14 @@ const fetchTicketTypes = useCallback(async () => {
         <div className="space-y-4 pt-4">
           {/* Event Name Field */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-gray-700 dark:text-gray-300">
+            <Label htmlFor="name" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Event Name <span className="text-red-500">*</span>
+              {aiGeneratedFields.includes('name') && (
+                <Badge variant="outline" className="text-xs">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI
+                </Badge>
+              )}
             </Label>
             <Input
               id="name"
@@ -800,8 +1240,14 @@ const fetchTicketTypes = useCallback(async () => {
 
           {/* Event Description Field */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-gray-700 dark:text-gray-300">
+            <Label htmlFor="description" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Description <span className="text-red-500">*</span>
+              {aiGeneratedFields.includes('description') && (
+                <Badge variant="outline" className="text-xs">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI
+                </Badge>
+              )}
             </Label>
             <Textarea
               id="description"
@@ -817,8 +1263,14 @@ const fetchTicketTypes = useCallback(async () => {
           {/* City and Location Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city" className="text-gray-700 dark:text-gray-300">
+              <Label htmlFor="city" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 City <span className="text-red-500">*</span>
+                {aiGeneratedFields.includes('city') && (
+                  <Badge variant="outline" className="text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
               </Label>
               <Input
                 id="city"
@@ -831,15 +1283,21 @@ const fetchTicketTypes = useCallback(async () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location" className="text-gray-700 dark:text-gray-300">
+              <Label htmlFor="location" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
                 Location <span className="text-red-500">*</span>
+                {aiGeneratedFields.includes('location') && (
+                  <Badge variant="outline" className="text-xs">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    AI
+                  </Badge>
+                )}
               </Label>
               <Input
                 id="location"
                 value={newEvent.location}
                 onChange={(e) => handleFieldChange('location', e.target.value)}
                 required
-                disabled={!newEvent.city?.trim()} // Disable if city is not entered
+                disabled={!newEvent.city?.trim()}
                 className={`bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-offset-gray-800 ${
                   !newEvent.city?.trim() ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
@@ -855,8 +1313,14 @@ const fetchTicketTypes = useCallback(async () => {
 
           {/* Category Selection Field */}
           <div className="space-y-2">
-            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300">
+            <Label htmlFor="category" className="text-gray-700 dark:text-gray-300 flex items-center gap-2">
               Category <span className="text-red-500">*</span>
+              {aiGeneratedFields.includes('category_id') && (
+                <Badge variant="outline" className="text-xs">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI
+                </Badge>
+              )}
             </Label>
             {isLoadingCategories ? (
               <div className="h-10 bg-gray-100 dark:bg-gray-700 rounded-md animate-pulse"></div>
@@ -972,7 +1436,7 @@ const fetchTicketTypes = useCallback(async () => {
             )}
           </div>
 
-          {/* Featured Event Checkbox - Only show for admins or organizers */}
+          {/* Featured Event Checkbox */}
           {(userRole === 'ADMIN' || userRole === 'ORGANIZER') && (
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
@@ -1073,7 +1537,6 @@ const fetchTicketTypes = useCallback(async () => {
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  // Validate file size (max 5MB)
                   if (file.size > 5 * 1024 * 1024) {
                     toast({
                       title: "File too large",
@@ -1226,6 +1689,28 @@ const fetchTicketTypes = useCallback(async () => {
               Cancel
             </Button>
 
+            {isEditing && aiMode === 'ai-assist' && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAiOptimizeUpdate}
+                disabled={isAiProcessing}
+                className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/40"
+              >
+                {isAiProcessing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Optimizing...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Optimize with AI
+                  </>
+                )}
+              </Button>
+            )}
+
             <Button
               type="button"
               onClick={handleSubmitEvent}
@@ -1269,10 +1754,6 @@ const fetchTicketTypes = useCallback(async () => {
   );
 };
 
-/**
- * ExistingTicketTypeRow Component
- * Enhanced version with better UX and error handling
- */
 const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketTypes }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
