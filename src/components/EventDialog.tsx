@@ -265,38 +265,45 @@ export const EventDialog = ({
   const autoFillForm = useCallback((suggestions: any) => {
     if (!suggestions || !autoFillEnabled) return;
 
-    const updatedEvent = { ...newEvent };
-    const generatedFields: string[] = [];
+    // Use functional update to ensure we're working with the latest state
+    setNewEvent(prevEvent => {
+      const updatedEvent = { ...prevEvent };
+      const generatedFields: string[] = [];
 
-    Object.entries(suggestions).forEach(([field, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        // Handle special cases
-        if (field === 'date' && value) {
-          updatedEvent[field] = new Date(value as string);
-        } else if (field === 'category_id' && value) {
-          updatedEvent[field] = parseInt(value as string);
-        } else if (field === 'amenities' && Array.isArray(value)) {
-          // Type assertion to ensure value is string[]
-          const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
-          updatedEvent[field] = amenitiesArray.slice(0, 5); // Limit to 5 amenities
-        } else if (field === 'featured') {
-          updatedEvent[field] = Boolean(value);
-        } else {
-          updatedEvent[field] = value;
+      Object.entries(suggestions).forEach(([field, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          // Handle special cases
+          if (field === 'date' && value) {
+            updatedEvent[field] = new Date(value as string);
+          } else if (field === 'end_date' && value) {
+            updatedEvent[field] = new Date(value as string);
+          } else if (field === 'category_id' && value) {
+            updatedEvent[field] = parseInt(value as string);
+          } else if (field === 'amenities' && Array.isArray(value)) {
+            // Type assertion to ensure value is string[]
+            const amenitiesArray = (value as unknown[]).filter(item => typeof item === 'string') as string[];
+            updatedEvent[field] = amenitiesArray.slice(0, 5); // Limit to 5 amenities
+          } else if (field === 'featured') {
+            updatedEvent[field] = Boolean(value);
+          } else {
+            updatedEvent[field] = value;
+          }
+          generatedFields.push(field);
         }
-        generatedFields.push(field);
-      }
-    });
+      });
 
-    setNewEvent(updatedEvent);
-    setAiGeneratedFields(generatedFields);
+      // Update generated fields state
+      setAiGeneratedFields(prev => [...prev, ...generatedFields]);
+      
+      return updatedEvent;
+    });
     
     toast({
       title: "Auto-fill Complete",
-      description: `Form has been automatically filled with ${generatedFields.length} AI-generated fields`,
+      description: `Form has been automatically filled with AI suggestions. Scroll down to review.`,
       variant: "default"
     });
-  }, [newEvent, autoFillEnabled, toast]);
+  }, [autoFillEnabled, toast]);
 
   // AI-related functions
   const handleAiConversationalCreate = async () => {
@@ -330,10 +337,12 @@ export const EventDialog = ({
         setAiDraftId(data.draft_id);
         setAiConfidence(data.completion_status?.confidence || 0);
         
+        // Set suggestions first, then auto-fill
+        setAiSuggestions(data.suggestions);
+        
         // Auto-fill the form with AI suggestions
         if (data.suggestions && autoFillEnabled) {
           autoFillForm(data.suggestions);
-          setAiSuggestions(data.suggestions);
         }
         
         // Show conversational response
@@ -405,6 +414,7 @@ export const EventDialog = ({
           end_time: data.event.end_time
         };
         
+        setAiSuggestions(enhancedData);
         autoFillForm(enhancedData);
         setAiConfidence(data.ai_confidence || 0);
         
@@ -463,8 +473,8 @@ export const EventDialog = ({
       
       if (data.optimization_suggestions) {
         // Auto-fill with optimization suggestions
-        autoFillForm(data.optimization_suggestions);
         setAiSuggestions(data.optimization_suggestions);
+        autoFillForm(data.optimization_suggestions);
         setShowAiSuggestions(true);
         
         toast({
@@ -516,8 +526,8 @@ export const EventDialog = ({
       
       if (data.requires_confirmation) {
         // Auto-fill with proposed updates
-        autoFillForm(data.updates_proposed);
         setAiSuggestions(data.updates_proposed);
+        autoFillForm(data.updates_proposed);
         setShowAiSuggestions(true);
         
         toast({
@@ -555,6 +565,8 @@ export const EventDialog = ({
     
     // Handle special cases
     if (field === 'date' && value) {
+      updatedEvent[field] = new Date(value as string);
+    } else if (field === 'end_date' && value) {
       updatedEvent[field] = new Date(value as string);
     } else if (field === 'category_id' && value) {
       updatedEvent[field] = parseInt(value as string);
@@ -1065,10 +1077,15 @@ export const EventDialog = ({
     }
     
     setValidationErrors([]);
-    // Keep the current AI mode, don't reset to manual
-    setAiSuggestions(null);
-    setShowAiSuggestions(false);
-    setAiConversationalInput('');
+    // Don't reset AI mode or suggestions when dialog opens
+    // Only reset when dialog closes
+    if (!open) {
+      setAiMode('manual');
+      setAiSuggestions(null);
+      setShowAiSuggestions(false);
+      setAiConversationalInput('');
+      setAiGeneratedFields([]);
+    }
   }, [editingEvent, open]);
 
   const showValidationErrors = validationErrors.length > 0;
@@ -1253,6 +1270,16 @@ export const EventDialog = ({
                       </>
                     )}
                   </Button>
+                  
+                  {aiConfidence > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>AI Confidence</span>
+                        <span>{Math.round(aiConfidence * 100)}%</span>
+                      </div>
+                      <Progress value={aiConfidence * 100} className="h-2" />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
