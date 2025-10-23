@@ -511,6 +511,111 @@ const Dashboard = () => {
     return () => window.removeEventListener('auth-state-changed', handleAuthStateChange);
   }, [setSearchParams, allMenuItems]);
 
+  // Memoized event handlers to prevent unnecessary re-renders
+  const handleCreateEventClick = useCallback(() => {
+    setEditingEvent(null);
+    setShowEventDialog(true);
+  }, []);
+
+  const handleEditEventClick = useCallback((event) => {
+    // Create a stable reference for the editing event
+    setEditingEvent({
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      date: event.date,
+      end_date: event.end_date,
+      start_time: event.start_time,
+      end_time: event.end_time,
+      city: event.city,
+      location: event.location,
+      amenities: event.amenities,
+      ticket_types: event.ticket_types,
+      category_id: event.category_id,
+      featured: event.featured,
+      organizer: event.organizer,
+      category: event.category
+    });
+    setShowEventDialog(true);
+  }, []);
+
+  const handleViewEventClick = useCallback((event) => {
+    setEditingEvent(event);
+    setShowEventDialog(true);
+  }, []);
+
+  const handleEventSave = useCallback((eventData) => {
+    if (editingEvent) {
+      setEvents(prevEvents =>
+        prevEvents.map(event => (event.id === eventData.id ? eventData : event))
+      );
+    } else {
+      // Reset pagination and fetch fresh data for new events
+      setCurrentPage(1);
+      setHasMore(true);
+      fetchEvents(1, true);
+    }
+    setShowEventDialog(false);
+    setEditingEvent(null);
+  }, [editingEvent, fetchEvents]);
+
+  const handleEventDelete = useCallback(async (eventId) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete event');
+      }
+      // Remove the event from local state
+      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
+      setTotalEvents(prev => prev - 1);
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  // Memoize the editingEvent to prevent unnecessary reference changes
+  const memoizedEditingEvent = useMemo(() => {
+    if (!editingEvent) return null;
+    return {
+      id: editingEvent.id,
+      name: editingEvent.name,
+      description: editingEvent.description,
+      date: editingEvent.date,
+      end_date: editingEvent.end_date,
+      start_time: editingEvent.start_time,
+      end_time: editingEvent.end_time,
+      city: editingEvent.city,
+      location: editingEvent.location,
+      amenities: editingEvent.amenities,
+      ticket_types: editingEvent.ticket_types,
+      category_id: editingEvent.category_id,
+      featured: editingEvent.featured,
+      organizer: editingEvent.organizer,
+      category: editingEvent.category
+    };
+  }, [editingEvent?.id]); // Only recreate when the ID changes
+
+  // Enhanced dialog close handler
+  const handleEventDialogClose = useCallback((openState) => {
+    if (!openState) {
+      // Only clear editing event after dialog is fully closed
+      setTimeout(() => setEditingEvent(null), 300);
+    }
+    setShowEventDialog(openState);
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -585,63 +690,7 @@ const Dashboard = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleCreateEventClick = () => {
-    setEditingEvent(null);
-    setShowEventDialog(true);
-  };
-
-  const handleEditEventClick = (event) => {
-    setEditingEvent(event);
-    setShowEventDialog(true);
-  };
-
-  const handleViewEventClick = (event) => {
-    setEditingEvent(event);
-    setShowEventDialog(true);
-  };
-
-  const handleEventSave = (eventData) => {
-    if (editingEvent) {
-      setEvents(prevEvents =>
-        prevEvents.map(event => (event.id === eventData.id ? eventData : event))
-      );
-    } else {
-      // Reset pagination and fetch fresh data for new events
-      setCurrentPage(1);
-      setHasMore(true);
-      fetchEvents(1, true);
-    }
-    setShowEventDialog(false);
-    setEditingEvent(null);
-  };
-
-  const handleEventDelete = async (eventId) => {
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/events/${eventId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete event');
-      }
-      // Remove the event from local state
-      setEvents(prevEvents => prevEvents.filter(event => event.id !== eventId));
-      setTotalEvents(prev => prev - 1);
-      toast({
-        title: "Success",
-        description: "Event deleted successfully",
-        variant: "default"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete event",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     setEventSearchQuery("");
     setCategoryFilter("");
     setTimeFilter("upcoming");
@@ -653,7 +702,7 @@ const Dashboard = () => {
     setSortOrder("asc");
     setCurrentPage(1);
     setHasMore(true);
-  };
+  }, []);
 
   const hasActiveFilters = eventSearchQuery !== "" ||
     categoryFilter !== "" ||
@@ -670,9 +719,10 @@ const Dashboard = () => {
       <div className="space-y-6 animate-fade-in">
         <EventDialog
           open={showEventDialog}
-          onOpenChange={setShowEventDialog}
-          editingEvent={editingEvent}
+          onOpenChange={handleEventDialogClose}
+          editingEvent={memoizedEditingEvent}
           onEventCreated={handleEventSave}
+          userRole={user?.role}
         />
         
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1098,8 +1148,6 @@ const Dashboard = () => {
 
         {/* Load More Trigger */}
         <div ref={loadMoreRef} className="h-10 w-full" />
-
-        {/* Removed the "End Message" section that showed "You've seen all events!" */}
       </div>
     );
   };

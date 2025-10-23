@@ -151,6 +151,14 @@ const FALLBACK_CATEGORIES = [
 
 const FALLBACK_TICKET_TYPES = ["REGULAR", "VIP", "STUDENT", "GROUP_OF_5", "COUPLES", "EARLY_BIRD", "VVIP", "GIVEAWAY"];
 
+// Session storage keys
+const SESSION_STORAGE_KEYS = {
+  EVENT_FORM: 'event_form_draft',
+  ACTIVE_TAB: 'event_form_active_tab',
+  AI_CONVERSATION: 'event_form_ai_conversation',
+  FORM_DIRTY: 'event_form_dirty'
+};
+
 export const EventDialog = ({
   open,
   onOpenChange,
@@ -168,6 +176,9 @@ export const EventDialog = ({
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingTicketTypes, setIsLoadingTicketTypes] = useState(false);
   const [categoriesError, setCategoriesError] = useState(null);
+
+  // Form dirty tracking
+  const [formDirty, setFormDirty] = useState(false);
 
   // Main form state for new event data
   const [newEvent, setNewEvent] = useState({
@@ -209,8 +220,87 @@ export const EventDialog = ({
   // Determine if we're in editing mode
   const isEditing = !!editingEvent;
 
+  // Save form state to session storage
+  const saveFormToSession = useCallback((formData, tab, conversation, dirty) => {
+    try {
+      const formDataToSave = {
+        ...formData,
+        date: formData.date instanceof Date ? formData.date.toISOString() : new Date().toISOString(),
+        end_date: formData.end_date instanceof Date ? formData.end_date.toISOString() : new Date().toISOString(),
+        image: null // Don't save file objects
+      };
+      sessionStorage.setItem(SESSION_STORAGE_KEYS.EVENT_FORM, JSON.stringify(formDataToSave));
+      sessionStorage.setItem(SESSION_STORAGE_KEYS.ACTIVE_TAB, tab);
+      sessionStorage.setItem(SESSION_STORAGE_KEYS.FORM_DIRTY, dirty.toString());
+      if (conversation) {
+        sessionStorage.setItem(SESSION_STORAGE_KEYS.AI_CONVERSATION, JSON.stringify(conversation));
+      }
+    } catch (error) {
+      console.warn('Failed to save form to session storage:', error);
+    }
+  }, []);
+
+  // Load form state from session storage
+  const loadFormFromSession = useCallback(() => {
+    try {
+      const savedForm = sessionStorage.getItem(SESSION_STORAGE_KEYS.EVENT_FORM);
+      const savedTab = sessionStorage.getItem(SESSION_STORAGE_KEYS.ACTIVE_TAB);
+      const savedConversation = sessionStorage.getItem(SESSION_STORAGE_KEYS.AI_CONVERSATION);
+      const savedDirty = sessionStorage.getItem(SESSION_STORAGE_KEYS.FORM_DIRTY);
+
+      if (savedForm) {
+        const formData = JSON.parse(savedForm);
+        setNewEvent({
+          ...formData,
+          date: new Date(formData.date),
+          end_date: new Date(formData.end_date),
+          image: null
+        });
+        setFormDirty(savedDirty === 'true');
+      }
+
+      if (savedTab) {
+        setActiveTab(savedTab);
+      }
+
+      if (savedConversation) {
+        setAiConversationHistory(JSON.parse(savedConversation));
+      }
+    } catch (error) {
+      console.warn('Failed to load form from session storage:', error);
+    }
+  }, []);
+
+  // Clear session storage
+  const clearSessionStorage = useCallback(() => {
+    try {
+      sessionStorage.removeItem(SESSION_STORAGE_KEYS.EVENT_FORM);
+      sessionStorage.removeItem(SESSION_STORAGE_KEYS.ACTIVE_TAB);
+      sessionStorage.removeItem(SESSION_STORAGE_KEYS.AI_CONVERSATION);
+      sessionStorage.removeItem(SESSION_STORAGE_KEYS.FORM_DIRTY);
+    } catch (error) {
+      console.warn('Failed to clear session storage:', error);
+    }
+  }, []);
+
+  // Auto-save form every 2 seconds when dirty
+  useEffect(() => {
+    if (formDirty && open && !isEditing) {
+      const autoSaveTimer = setTimeout(() => {
+        saveFormToSession(newEvent, activeTab, aiConversationHistory, formDirty);
+      }, 2000);
+
+      return () => clearTimeout(autoSaveTimer);
+    }
+  }, [formDirty, newEvent, activeTab, aiConversationHistory, open, isEditing, saveFormToSession]);
+
   // Fetch categories with error handling
   const fetchCategories = useCallback(async () => {
+    // Only fetch if we don't have categories or there was an error
+    if (categories.length > 0 && !categoriesError && categories !== FALLBACK_CATEGORIES) {
+      return;
+    }
+
     setIsLoadingCategories(true);
     setCategoriesError(null);
     
@@ -248,9 +338,14 @@ export const EventDialog = ({
     } finally {
       setIsLoadingCategories(false);
     }
-  }, [toast]);
+  }, [categories, categoriesError, toast]);
 
   const fetchTicketTypes = useCallback(async () => {
+    // Only fetch if we don't have ticket types
+    if (availableTicketTypes.length > 0 && availableTicketTypes !== FALLBACK_TICKET_TYPES) {
+      return;
+    }
+
     setIsLoadingTicketTypes(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ticket-types`, {
@@ -280,10 +375,12 @@ export const EventDialog = ({
     } finally {
       setIsLoadingTicketTypes(false);
     }
-  }, [toast]);
+  }, [availableTicketTypes]);
 
   // Fetch AI drafts
   const fetchAiDrafts = useCallback(async () => {
+    if (activeTab !== 'ai') return;
+
     setIsLoadingDrafts(true);
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events/drafts`, {
@@ -307,10 +404,41 @@ export const EventDialog = ({
     } finally {
       setIsLoadingDrafts(false);
     }
-  }, [toast]);
+  }, [activeTab, toast]);
+
+  // Reset form to initial state
+  const resetForm = useCallback(() => {
+    setNewEvent({
+      name: '',
+      description: '',
+      date: new Date(),
+      end_date: new Date(),
+      start_time: '',
+      end_time: '',
+      city: '',
+      location: '',
+      amenities: [],
+      image: null,
+      ticket_types: [],
+      category_id: null,
+      featured: false
+    });
+    setExistingTicketTypes([]);
+    setFormDirty(false);
+    setActiveTab('manual');
+    setAiConversationHistory([]);
+    setSelectedDraftId(null);
+    setValidationErrors([]);
+    clearSessionStorage();
+  }, [clearSessionStorage]);
 
   // Initialize form data based on editing mode
   useEffect(() => {
+    // Only reset form when dialog opens, not when it's already open
+    if (!open) return;
+
+    const hasSessionData = sessionStorage.getItem(SESSION_STORAGE_KEYS.EVENT_FORM) && !isEditing;
+
     if (editingEvent) {
       const parseDate = (dateStr) => {
         if (!dateStr) return new Date();
@@ -333,40 +461,69 @@ export const EventDialog = ({
         category_id: editingEvent.category_id || null,
         featured: editingEvent.featured || false
       });
+      setFormDirty(false);
+    } else if (hasSessionData) {
+      // Show recovery dialog for session data
+      const recover = window.confirm(
+        "We found unsaved event data from your previous session. Would you like to restore it?"
+      );
+      
+      if (recover) {
+        loadFormFromSession();
+        toast({
+          title: "Form Restored",
+          description: "Your previous form data has been restored.",
+          variant: "default"
+        });
+      } else {
+        clearSessionStorage();
+        resetForm();
+      }
     } else {
-      setNewEvent({
-        name: '',
-        description: '',
-        date: new Date(),
-        end_date: new Date(),
-        start_time: '',
-        end_time: '',
-        city: '',
-        location: '',
-        amenities: [],
-        image: null,
-        ticket_types: [],
-        category_id: null,
-        featured: false
-      });
-      setExistingTicketTypes([]);
+      resetForm();
     }
     
     setValidationErrors([]);
-  }, [editingEvent, open]);
+  }, [editingEvent?.id, open, isEditing, loadFormFromSession, clearSessionStorage, resetForm, toast]);
 
   // Fetch data when dialog opens
   useEffect(() => {
     if (open) {
       fetchCategories();
       fetchTicketTypes();
-      fetchAiDrafts();
+      if (activeTab === 'ai') {
+        fetchAiDrafts();
+      }
     }
-  }, [open, fetchCategories, fetchTicketTypes, fetchAiDrafts]);
+  }, [open, fetchCategories, fetchTicketTypes, fetchAiDrafts, activeTab]);
+
+  // Handle dialog close with confirmation for unsaved changes
+  const handleDialogClose = useCallback((openState) => {
+    if (formDirty && !openState && !isEditing) {
+      const shouldClose = window.confirm(
+        "You have unsaved changes. Are you sure you want to close? Your progress will be saved automatically."
+      );
+      
+      if (!shouldClose) {
+        return;
+      }
+    }
+    
+    if (!openState) {
+      // Save form state before closing
+      if (formDirty && !isEditing) {
+        saveFormToSession(newEvent, activeTab, aiConversationHistory, formDirty);
+      }
+      onOpenChange(false);
+    } else {
+      onOpenChange(true);
+    }
+  }, [formDirty, newEvent, activeTab, aiConversationHistory, isEditing, onOpenChange, saveFormToSession]);
 
   // Handle form field changes
   const handleFieldChange = useCallback((field, value) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
+    setFormDirty(true);
     
     if (validationErrors.length > 0) {
       setValidationErrors([]);
@@ -380,7 +537,8 @@ export const EventDialog = ({
     setIsAiProcessing(true);
     try {
       const userMessage = { role: 'user', content: aiInput };
-      setAiConversationHistory(prev => [...prev, userMessage]);
+      const updatedConversation = [...aiConversationHistory, userMessage];
+      setAiConversationHistory(updatedConversation);
       
       const response = await fetch(`${import.meta.env.VITE_API_URL}/events?ai_assistant=true&conversational_input=${encodeURIComponent(aiInput)}`, {
         method: 'POST',
@@ -401,7 +559,8 @@ export const EventDialog = ({
         content: data.conversational_response || "I've created a draft for your event.",
         draftId: data.draft_id
       };
-      setAiConversationHistory(prev => [...prev, aiMessage]);
+      const finalConversation = [...updatedConversation, aiMessage];
+      setAiConversationHistory(finalConversation);
       
       setAiResponse(data);
       setAiDraft(data.draft_id);
@@ -409,6 +568,10 @@ export const EventDialog = ({
       fetchAiDrafts();
       
       setAiInput('');
+      setFormDirty(true);
+      
+      // Save conversation to session
+      saveFormToSession(newEvent, activeTab, finalConversation, true);
       
       toast({
         title: "AI Assistant",
@@ -460,6 +623,7 @@ export const EventDialog = ({
       
       setSelectedDraftId(draftId);
       setActiveTab('manual');
+      setFormDirty(true);
       
       toast({
         title: "Draft Loaded",
@@ -499,26 +663,11 @@ export const EventDialog = ({
         variant: "default"
       });
 
+      clearSessionStorage();
       onOpenChange(false);
       onEventCreated?.(data.event);
       
-      setNewEvent({
-        name: '',
-        description: '',
-        date: new Date(),
-        end_date: new Date(),
-        start_time: '',
-        end_time: '',
-        city: '',
-        location: '',
-        amenities: [],
-        image: null,
-        ticket_types: [],
-        category_id: null,
-        featured: false
-      });
-      setValidationErrors([]);
-      setSelectedDraftId(null);
+      resetForm();
     } catch (error) {
       console.error('Error publishing draft:', error);
       toast({
@@ -616,6 +765,7 @@ export const EventDialog = ({
       const updatedAmenities = [...currentAmenities, amenityToAdd];
       setNewEvent(prev => ({ ...prev, amenities: updatedAmenities }));
       setCurrentAmenity('');
+      setFormDirty(true);
       
       if (selectedDraftId) {
         updateDraftField(selectedDraftId, 'amenities', updatedAmenities);
@@ -634,6 +784,7 @@ export const EventDialog = ({
     const currentAmenities = Array.isArray(newEvent.amenities) ? newEvent.amenities : [];
     const updatedAmenities = currentAmenities.filter(amenity => amenity !== amenityToRemove);
     setNewEvent(prev => ({ ...prev, amenities: updatedAmenities }));
+    setFormDirty(true);
     
     if (selectedDraftId) {
       updateDraftField(selectedDraftId, 'amenities', updatedAmenities);
@@ -655,6 +806,7 @@ export const EventDialog = ({
         quantity: 0 
       }]
     }));
+    setFormDirty(true);
   }, [availableTicketTypes, newEvent.ticket_types]);
 
   // Remove a ticket type from the form by index
@@ -664,6 +816,7 @@ export const EventDialog = ({
       ...prev,
       ticket_types: currentTicketTypes.filter((_, i) => i !== index)
     }));
+    setFormDirty(true);
   }, [newEvent.ticket_types]);
 
   // Update a specific field of a ticket type by index
@@ -675,6 +828,7 @@ export const EventDialog = ({
         i === index ? { ...ticket, [field]: value } : ticket
       )
     }));
+    setFormDirty(true);
   }, [newEvent.ticket_types]);
 
   // Update an existing ticket type via API call
@@ -916,6 +1070,7 @@ export const EventDialog = ({
         variant: "default"
       });
 
+      clearSessionStorage();
       onOpenChange(false);
 
       const updatedEventData = isEditing
@@ -924,23 +1079,7 @@ export const EventDialog = ({
 
       onEventCreated?.(updatedEventData);
 
-      setNewEvent({
-        name: '',
-        description: '',
-        date: new Date(),
-        end_date: new Date(),
-        start_time: '',
-        end_time: '',
-        city: '',
-        location: '',
-        amenities: [],
-        image: null,
-        ticket_types: [],
-        category_id: null,
-        featured: false
-      });
-      setValidationErrors([]);
-      setSelectedDraftId(null);
+      resetForm();
     } catch (error) {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} event:`, {
         error: error.message,
@@ -961,18 +1100,31 @@ export const EventDialog = ({
   const showValidationErrors = validationErrors.length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700">
         <DialogHeader className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {isEditing ? 'Edit Event' : 'Create New Event'}
+            {formDirty && !isEditing && (
+              <Badge variant="outline" className="ml-2 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                Unsaved Changes
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription className="text-gray-600 dark:text-gray-400">
             {isEditing ? 'Update your event details and ticket information.' : 'Create an event manually or with AI assistance.'}
+            {formDirty && !isEditing && (
+              <span className="block text-amber-600 dark:text-amber-400 text-sm mt-1">
+                ⚠️ Your progress is being saved automatically
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          setFormDirty(true);
+        }} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="manual" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -1473,7 +1625,7 @@ export const EventDialog = ({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() => handleDialogClose(false)}
                   disabled={isLoading}
                   className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
                 >
@@ -1897,3 +2049,5 @@ const ExistingTicketTypeRow = ({ ticket, onUpdate, onDelete, availableTicketType
     </div>
   );
 };
+
+export default EventDialog;
