@@ -707,10 +707,12 @@ const Dashboard = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
+                <label htmlFor="event-search" className="text-sm font-medium text-gray-700 dark:text-gray-300">Search Events</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <input
+                    id="event-search"
+                    name="event-search"
                     type="text"
                     placeholder="Search by name, description..."
                     value={eventSearchQuery}
@@ -721,8 +723,10 @@ const Dashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Range</label>
+                <label htmlFor="time-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Time Range</label>
                 <select
+                  id="time-filter"
+                  name="time-filter"
                   value={timeFilter}
                   onChange={(e) => setTimeFilter(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -743,8 +747,10 @@ const Dashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                <label htmlFor="category-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                 <select
+                  id="category-filter"
+                  name="category-filter"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -759,9 +765,11 @@ const Dashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
+                <label htmlFor="sort-by" className="text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
                 <div className="flex gap-2">
                   <select
+                    id="sort-by"
+                    name="sort-by"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -780,6 +788,8 @@ const Dashboard = () => {
                     }
                   </select>
                   <button
+                    id="sort-order"
+                    name="sort-order"
                     onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                     className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium transition-colors"
                     title={`Sort ${sortOrder === "asc" ? "Descending" : "Ascending"}`}
@@ -795,8 +805,10 @@ const Dashboard = () => {
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Advanced Filters</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
+                    <label htmlFor="city-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">City</label>
                     <select
+                      id="city-filter"
+                      name="city-filter"
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
                       className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -811,12 +823,14 @@ const Dashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="location-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Location {cityFilter && `in ${cityFilter}`}
                     </label>
                     <div className="relative">
                       {cityFilter ? (
                         <select
+                          id="location-filter"
+                          name="location-filter"
                           value={locationFilter}
                           onChange={(e) => setLocationFilter(e.target.value)}
                           className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -833,6 +847,8 @@ const Dashboard = () => {
                         <>
                           <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                           <input
+                            id="location-filter"
+                            name="location-filter"
                             type="text"
                             placeholder="Filter by location..."
                             value={locationFilter}
@@ -851,8 +867,10 @@ const Dashboard = () => {
 
                   {user?.role === "ADMIN" && (
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Organizer Company</label>
+                      <label htmlFor="organizer-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Organizer Company</label>
                       <select
+                        id="organizer-filter"
+                        name="organizer-filter"
                         value={organizerCompanyFilter}
                         onChange={(e) => setOrganizerCompanyFilter(e.target.value)}
                         className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
@@ -868,8 +886,10 @@ const Dashboard = () => {
                   )}
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label htmlFor="featured-only" className="flex items-center gap-2 cursor-pointer">
                     <input
+                      id="featured-only"
+                      name="featured-only"
                       type="checkbox"
                       checked={featuredOnly}
                       onChange={(e) => setFeaturedOnly(e.target.checked)}
@@ -1155,6 +1175,7 @@ const Dashboard = () => {
            {isMobile && (
             <button
               id="mobile-menu-btn"
+              name="mobile-menu-btn"
               onClick={toggleMobileMenu}
               className="fixed top-20 right-4 z-50 p-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full shadow-2xl border border-gray-300 dark:border-gray-600 md:hidden transition-all duration-200 hover:scale-110"
             >
@@ -1192,6 +1213,8 @@ const Dashboard = () => {
                 )}
                 {isMobile ? (
                   <button
+                    id="close-mobile-menu"
+                    name="close-mobile-menu"
                     onClick={() => setMobileMenuOpen(false)}
                     className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
                   >
@@ -1199,6 +1222,8 @@ const Dashboard = () => {
                   </button>
                 ) : (
                   <button
+                    id="toggle-sidebar"
+                    name="toggle-sidebar"
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                     className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
                   >
@@ -1210,6 +1235,8 @@ const Dashboard = () => {
                 <div className="mt-4 relative animate-fade-in">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <input
+                    id="menu-search"
+                    name="menu-search"
                     type="text"
                     placeholder="Search menu..."
                     value={searchQuery}
@@ -1225,6 +1252,8 @@ const Dashboard = () => {
                 return (
                   <button
                     key={item.id}
+                    id={`menu-item-${item.id}`}
+                    name={`menu-item-${item.id}`}
                     onClick={() => handleTabChange(item.id)}
                     className={`
                       group relative w-full flex items-center gap-3 px-3 sm:px-4 py-3 sm:py-3.5 text-left text-sm rounded-xl
@@ -1274,6 +1303,8 @@ const Dashboard = () => {
                 <div className="space-y-1 sm:space-y-2">
                   {(user?.role === "ADMIN" || user?.role === "ORGANIZER") && (
                     <button
+                      id="create-event-btn"
+                      name="create-event-btn"
                       onClick={handleCreateEventClick}
                       className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900 hover:text-green-600 dark:hover:text-green-400 rounded-lg transition-all duration-200 group"
                     >
@@ -1281,7 +1312,11 @@ const Dashboard = () => {
                       <span className="truncate">Create Event</span>
                     </button>
                   )}
-                  <button className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg transition-all duration-200 group">
+                  <button 
+                    id="notifications-btn"
+                    name="notifications-btn"
+                    className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-800 dark:text-gray-200 hover:bg-purple-50 dark:hover:bg-purple-900 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg transition-all duration-200 group"
+                  >
                     <Bell className="h-4 w-4 group-hover:scale-110 transition-transform duration-200 flex-shrink-0" />
                     <span className="truncate">Notifications</span>
                   </button>
