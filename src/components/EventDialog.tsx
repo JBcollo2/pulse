@@ -355,21 +355,27 @@ export const EventDialog = ({
         
         // Set suggestions first
         setAiSuggestions(data.suggestions);
+        setShowAiSuggestions(true);
+        
+        // CRITICAL FIX: Switch to manual mode FIRST so user can see the form
+        setAiMode('manual');
         
         // Auto-fill the form with AI suggestions
         if (data.suggestions && autoFillEnabled) {
-          autoFillForm(data.suggestions);
+          // Use setTimeout to ensure state updates have completed
+          setTimeout(() => {
+            autoFillForm(data.suggestions);
+          }, 150);
         }
         
-        // Show conversational response
+        // Show conversational response with better messaging
         toast({
           title: "AI Response ✨",
-          description: data.conversational_response || "I've created your event based on your description. Please review the details below.",
-          variant: "default"
+          description: data.conversational_response || "I've created your event! The form below has been auto-filled. Please scroll down to review all fields.",
+          variant: "default",
+          duration: 6000
         });
         
-        // Stay in AI conversational mode but show results
-        setShowAiSuggestions(true);
       } else {
         throw new Error('AI failed to create a draft');
       }
@@ -1070,7 +1076,31 @@ export const EventDialog = ({
         category_id: editingEvent.category_id || null,
         featured: editingEvent.featured || false
       });
+      setValidationErrors([]);
+    } else if (open) {
+      // CHANGED: Only reset form when dialog is OPENING for a new event
+      // Don't reset if we already have AI suggestions
+      if (!aiSuggestions) {
+        setNewEvent({
+          name: '',
+          description: '',
+          date: new Date(),
+          end_date: new Date(),
+          start_time: '',
+          end_time: '',
+          city: '',
+          location: '',
+          amenities: [],
+          image: null,
+          ticket_types: [],
+          category_id: null,
+          featured: false
+        });
+        setExistingTicketTypes([]);
+        setValidationErrors([]);
+      }
     } else {
+      // CHANGED: Only reset AI state when dialog is CLOSING (not opening)
       setNewEvent({
         name: '',
         description: '',
@@ -1087,12 +1117,9 @@ export const EventDialog = ({
         featured: false
       });
       setExistingTicketTypes([]);
-    }
-    
-    setValidationErrors([]);
-    
-    // FIXED: Only reset AI state when dialog closes, not when it opens
-    if (!open) {
+      setValidationErrors([]);
+      
+      // Reset AI state when dialog closes
       setAiMode('manual');
       setAiSuggestions(null);
       setShowAiSuggestions(false);
@@ -1101,7 +1128,7 @@ export const EventDialog = ({
       setAiConfidence(0);
       setAiDraftId(null);
     }
-  }, [editingEvent, open]);
+  }, [editingEvent, open, aiSuggestions]);
 
   const showValidationErrors = validationErrors.length > 0;
 
@@ -1245,7 +1272,7 @@ export const EventDialog = ({
                     Conversational AI Event Creation
                   </CardTitle>
                   <CardDescription>
-                    Describe your event in natural language, and AI will create it for you.
+                    Describe your event in natural language. AI will auto-fill the form below for you to review and submit.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1280,7 +1307,7 @@ export const EventDialog = ({
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4 mr-2" />
-                        {isEditing ? 'Update Event with AI' : 'Create Event with AI'}
+                        {isEditing ? 'Update Event with AI' : 'Generate Event Form'}
                       </>
                     )}
                   </Button>
@@ -1297,9 +1324,9 @@ export const EventDialog = ({
                   
                   {showAiSuggestions && aiSuggestions && (
                     <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                      <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                      <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2 font-medium">
                         <CheckCircle className="h-4 w-4" />
-                        ✨ Form auto-filled! Scroll down to review and submit.
+                        ✨ Form auto-filled! Switch to Manual tab or scroll down to review all fields.
                       </p>
                     </div>
                   )}
